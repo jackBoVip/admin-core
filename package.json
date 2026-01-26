@@ -1,0 +1,45 @@
+{
+  "name": "@admin-core",
+  "private": true,
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest watch",
+    "changeset": "changeset",
+    "changeset:add": "changeset add",
+    "changeset:version": "changeset version",
+    "changeset:status": "changeset status",
+    "changeset:publish": "changeset publish",
+    "version": "changeset version",
+    "check:catalog": "node scripts/check-catalog.mjs",
+    "catalog:replace": "node scripts/replace-catalog.mjs",
+    "catalog:restore": "node scripts/replace-catalog.mjs --restore",
+    "catalog:preview": "node scripts/replace-catalog.mjs --dry-run",
+    "release": "pnpm check:catalog && pnpm build && pnpm catalog:replace && pnpm changeset:publish && pnpm catalog:restore",
+    "release:skip-check": "pnpm build && pnpm catalog:replace && pnpm changeset:publish && pnpm catalog:restore"
+  },
+  "devDependencies": {
+    "@admin-core/eslint-config": "workspace:*",
+    "@admin-core/tsconfig": "workspace:*",
+    "@changesets/cli": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "glob": "catalog:",
+    "husky": "catalog:",
+    "lint-staged": "catalog:",
+    "prettier": "catalog:",
+    "rimraf": "catalog:",
+    "rollup-plugin-visualizer": "catalog:",
+    "tsup": "catalog:",
+    "turbo": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@admin-core/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared ESLint configuration for @admin-core packages",
+  "type": "module",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./vue": "./vue.js",
+    "./react": "./react.js"
+  },
+  "files": [
+    "*.js"
+  ],
+  "keywords": [
+    "eslint",
+    "config"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "eslint": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "eslint-plugin-import-x": "catalog:"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0",
+    "typescript": "^5.0.0"
+  }
+}

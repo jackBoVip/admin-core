@@ -1,0 +1,223 @@
+# ============================================
+# 依赖文件
+# ============================================
+# 所有 node_modules 目录（包括子目录）
+node_modules
+**/node_modules
+.pnp
+.pnp.js
+
+# ============================================
+# 测试相关
+# ============================================
+# 测试覆盖率报告
+coverage
+**/coverage
+*.lcov
+**/*.lcov
+.nyc_output
+**/.nyc_output
+
+# Vitest
+.vitest
+**/.vitest
+test-results.json
+**/test-results.json
+*.snap
+**/*.snap
+
+# ============================================
+# 构建输出
+# ============================================
+# 构建产物目录（所有子目录）
+dist
+**/dist
+build
+**/build
+.next
+**/.next
+out
+**/out
+.turbo
+**/.turbo
+
+# ============================================
+# 系统文件
+# ============================================
+# macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+**/.AppleDouble
+.LSOverride
+**/.LSOverride
+
+# Windows
+Thumbs.db
+**/Thumbs.db
+ehthumbs.db
+**/ehthumbs.db
+Desktop.ini
+**/Desktop.ini
+$RECYCLE.BIN/
+**/$RECYCLE.BIN/
+
+# Linux
+*~
+**/*~
+.directory
+**/.directory
+
+# ============================================
+# IDE 和编辑器
+# ============================================
+# VSCode
+.vscode
+**/.vscode
+*.code-workspace
+
+# JetBrains IDEs
+.idea
+**/.idea
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.swp
+**/*.swp
+*.swo
+**/*.swo
+*.swn
+**/*.swn
+*~
+**/*~
+
+# Emacs
+*~
+**/*~
+\#*\#
+**/\#*\#
+.\#*
+
+# ============================================
+# 日志文件
+# ============================================
+npm-debug.log*
+**/npm-debug.log*
+yarn-debug.log*
+**/yarn-debug.log*
+yarn-error.log*
+**/yarn-error.log*
+pnpm-debug.log*
+**/pnpm-debug.log*
+lerna-debug.log*
+**/lerna-debug.log*
+
+# ============================================
+# 环境变量文件
+# ============================================
+.env
+**/.env
+.env*.local
+**/.env*.local
+.env.development.local
+**/.env.development.local
+.env.test.local
+**/.env.test.local
+.env.production.local
+**/.env.production.local
+
+# ============================================
+# 部署相关
+# ============================================
+# Vercel
+.vercel
+**/.vercel
+
+# Netlify
+.netlify
+**/.netlify
+
+# ============================================
+# TypeScript
+# ============================================
+# TypeScript 构建信息
+*.tsbuildinfo
+**/*.tsbuildinfo
+next-env.d.ts
+**/next-env.d.ts
+
+# ============================================
+# 包管理器
+# ============================================
+# pnpm
+.pnpm-store
+**/.pnpm-store
+.pnpm-debug.log*
+**/.pnpm-debug.log*
+
+# yarn
+.yarn/cache
+**/.yarn/cache
+.yarn/unplugged
+**/.yarn/unplugged
+.yarn/build-state.yml
+**/.yarn/build-state.yml
+.yarn/install-state.gz
+**/.yarn/install-state.gz
+.pnp.*
+
+# ============================================
+# Changeset
+# ============================================
+# Changeset 临时文件
+.changeset/pre.json
+**/.changeset/pre.json
+
+# ============================================
+# 临时文件和缓存
+# ============================================
+# 临时文件
+*.tmp
+**/*.tmp
+*.temp
+**/*.temp
+*.log
+**/*.log
+
+# 缓存目录
+.cache
+**/.cache
+.parcel-cache
+**/.parcel-cache
+.eslintcache
+**/.eslintcache
+.stylelintcache
+**/.stylelintcache
+
+# ============================================
+# 其他
+# ============================================
+# 证书文件
+*.pem
+**/*.pem
+*.key
+**/*.key
+*.cert
+**/*.cert
+
+# 备份文件
+*.bak
+**/*.bak
+*.backup
+**/*.backup
+
+# 压缩文件（如果不需要提交）
+*.zip
+*.tar.gz
+*.rar
+
+# 本地配置文件（根据项目需要调整）
+.local
+**/.local
