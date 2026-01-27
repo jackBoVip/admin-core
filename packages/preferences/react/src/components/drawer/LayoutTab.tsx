@@ -8,11 +8,13 @@ import {
   LAYOUT_OPTIONS,
   TABS_STYLE_OPTIONS,
   getLayoutIcon,
+  getContentWidthIcon,
   translateOptions,
   type LayoutType,
   type LocaleMessages,
   type LayoutHeaderModeType,
   type TabsStyleType,
+  type ContentWidthType,
 } from '@admin-core/preferences';
 import { Block } from './Block';
 import { SwitchItem } from './SwitchItem';
@@ -146,19 +148,29 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale }) => {
 
       {/* 内容宽度 */}
       <Block title={locale.layout.contentWidth}>
-        <div className="radius-options">
-          <button
-            className={`radius-option ${preferences.app.contentCompact === 'wide' ? 'active' : ''}`}
-            onClick={handleSetContentWide}
-          >
-            {locale.layout.contentWide}
-          </button>
-          <button
-            className={`radius-option ${preferences.app.contentCompact === 'compact' ? 'active' : ''}`}
-            onClick={handleSetContentCompact}
-          >
-            {locale.layout.contentCompact}
-          </button>
+        <div className="content-width-grid">
+          <div className="content-width-item" onClick={handleSetContentWide}>
+            <div
+              className={`outline-box flex-center content-width-box ${preferences.app.contentCompact === 'wide' ? 'outline-box-active' : ''}`}
+            >
+              <div
+                className="content-width-preview"
+                dangerouslySetInnerHTML={{ __html: getContentWidthIcon('wide' as ContentWidthType) }}
+              />
+            </div>
+            <span className="content-width-label">{locale.layout.contentWide}</span>
+          </div>
+          <div className="content-width-item" onClick={handleSetContentCompact}>
+            <div
+              className={`outline-box flex-center content-width-box ${preferences.app.contentCompact === 'compact' ? 'outline-box-active' : ''}`}
+            >
+              <div
+                className="content-width-preview"
+                dangerouslySetInnerHTML={{ __html: getContentWidthIcon('compact' as ContentWidthType) }}
+              />
+            </div>
+            <span className="content-width-label">{locale.layout.contentCompact}</span>
+          </div>
         </div>
       </Block>
 

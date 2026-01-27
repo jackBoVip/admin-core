@@ -10,11 +10,13 @@ import {
   TABS_STYLE_OPTIONS,
   DEFAULT_PREFERENCES,
   getLayoutIcon,
+  getContentWidthIcon,
   translateOptions,
   type LayoutType,
   type LocaleMessages,
   type LayoutHeaderModeType,
   type TabsStyleType,
+  type ContentWidthType,
 } from '@admin-core/preferences';
 import Block from './Block.vue';
 import SwitchItem from './SwitchItem.vue';
@@ -145,21 +147,25 @@ const footerFixed = computed({
 
   <!-- 内容宽度 -->
   <Block :title="locale.layout.contentWidth">
-    <div class="radius-options">
-      <button
-        class="radius-option"
-        :class="{ active: contentCompact === 'wide' }"
-        @click="contentCompact = 'wide'"
-      >
-        {{ locale.layout.contentWide }}
-      </button>
-      <button
-        class="radius-option"
-        :class="{ active: contentCompact === 'compact' }"
-        @click="contentCompact = 'compact'"
-      >
-        {{ locale.layout.contentCompact }}
-      </button>
+    <div class="content-width-grid">
+      <div class="content-width-item" @click="contentCompact = 'wide'">
+        <div
+          class="outline-box flex-center content-width-box"
+          :class="{ 'outline-box-active': contentCompact === 'wide' }"
+        >
+          <div class="content-width-preview" v-html="getContentWidthIcon('wide' as ContentWidthType)" />
+        </div>
+        <span class="content-width-label">{{ locale.layout.contentWide }}</span>
+      </div>
+      <div class="content-width-item" @click="contentCompact = 'compact'">
+        <div
+          class="outline-box flex-center content-width-box"
+          :class="{ 'outline-box-active': contentCompact === 'compact' }"
+        >
+          <div class="content-width-preview" v-html="getContentWidthIcon('compact' as ContentWidthType)" />
+        </div>
+        <span class="content-width-label">{{ locale.layout.contentCompact }}</span>
+      </div>
     </div>
   </Block>
 

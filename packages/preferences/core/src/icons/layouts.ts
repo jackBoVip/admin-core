@@ -204,3 +204,65 @@ export const layoutIcons: Record<LayoutType, string> = {
 export function getLayoutIcon(layout: LayoutType): string {
   return layoutIcons[layout] ?? layoutIcons['sidebar-nav'];
 }
+
+/**
+ * 内容宽度类型
+ */
+export type ContentWidthType = 'wide' | 'compact';
+
+/**
+ * 内容宽度图标 SVG
+ * @description 用于内容宽度选择器显示
+ */
+export const contentWidthIcons: Record<ContentWidthType, string> = {
+  // 宽屏模式 - 内容铺满
+  wide: `<svg viewBox="0 0 104 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g>
+      <!-- 背景 -->
+      <rect fill="currentColor" fill-opacity="0.02" height="66" rx="4" width="104"/>
+      <!-- 侧边栏 -->
+      <rect fill="currentColor" fill-opacity="0.15" height="66" width="20" x="0" y="0"/>
+      <!-- 顶栏 -->
+      <rect fill="currentColor" fill-opacity="0.08" height="9" width="84" x="20" y="0"/>
+      <!-- 内容区 (宽) -->
+      <rect fill="hsl(var(--primary))" fill-opacity="0.2" height="53" rx="2" width="78" x="23" y="12"/>
+      <!-- 内容块 -->
+      <rect fill="currentColor" fill-opacity="0.15" height="8" rx="1" width="70" x="27" y="18"/>
+      <rect fill="currentColor" fill-opacity="0.1" height="6" rx="1" width="50" x="27" y="30"/>
+      <rect fill="currentColor" fill-opacity="0.1" height="6" rx="1" width="60" x="27" y="40"/>
+      <rect fill="currentColor" fill-opacity="0.1" height="6" rx="1" width="45" x="27" y="50"/>
+    </g>
+  </svg>`,
+
+  // 紧凑模式 - 内容居中有边距
+  compact: `<svg viewBox="0 0 104 66" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g>
+      <!-- 背景 -->
+      <rect fill="currentColor" fill-opacity="0.02" height="66" rx="4" width="104"/>
+      <!-- 侧边栏 -->
+      <rect fill="currentColor" fill-opacity="0.15" height="66" width="20" x="0" y="0"/>
+      <!-- 顶栏 -->
+      <rect fill="currentColor" fill-opacity="0.08" height="9" width="84" x="20" y="0"/>
+      <!-- 左边距 -->
+      <rect fill="currentColor" fill-opacity="0.04" height="53" width="10" x="23" y="12"/>
+      <!-- 内容区 (窄/居中) -->
+      <rect fill="hsl(var(--primary))" fill-opacity="0.2" height="53" rx="2" width="54" x="35" y="12"/>
+      <!-- 右边距 -->
+      <rect fill="currentColor" fill-opacity="0.04" height="53" width="10" x="91" y="12"/>
+      <!-- 内容块 -->
+      <rect fill="currentColor" fill-opacity="0.15" height="8" rx="1" width="46" x="39" y="18"/>
+      <rect fill="currentColor" fill-opacity="0.1" height="6" rx="1" width="36" x="39" y="30"/>
+      <rect fill="currentColor" fill-opacity="0.1" height="6" rx="1" width="42" x="39" y="40"/>
+      <rect fill="currentColor" fill-opacity="0.1" height="6" rx="1" width="30" x="39" y="50"/>
+    </g>
+  </svg>`,
+};
+
+/**
+ * 获取内容宽度图标
+ * @param type - 内容宽度类型
+ * @returns SVG 字符串
+ */
+export function getContentWidthIcon(type: ContentWidthType): string {
+  return contentWidthIcons[type] ?? contentWidthIcons.wide;
+}

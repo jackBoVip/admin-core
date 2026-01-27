@@ -8,7 +8,13 @@
  */
 
 // 布局图标
-export { getLayoutIcon, layoutIcons } from './layouts';
+export {
+  getLayoutIcon,
+  layoutIcons,
+  getContentWidthIcon,
+  contentWidthIcons,
+  type ContentWidthType,
+} from './layouts';
 
 // 通用图标
 export {

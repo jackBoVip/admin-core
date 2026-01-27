@@ -392,6 +392,10 @@ export {
   // 布局图标
   getLayoutIcon,
   layoutIcons,
+  // 内容宽度图标
+  getContentWidthIcon,
+  contentWidthIcons,
+  type ContentWidthType,
   // 通用图标
   getIcon,
   hasIcon,
