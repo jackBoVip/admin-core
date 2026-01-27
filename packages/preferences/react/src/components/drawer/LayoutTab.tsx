@@ -133,7 +133,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale }) => {
               onClick={() => handleSetLayout(opt.value as LayoutType)}
             >
               <div
-                className={`outline-box flex-center layout-preset-box ${preferences.app.layout === opt.value ? 'outline-box-active' : ''}`}
+                className={`layout-preset-box ${preferences.app.layout === opt.value ? 'outline-box-active' : ''}`}
               >
                 <div
                   className="layout-preset-preview"
@@ -151,7 +151,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale }) => {
         <div className="content-width-grid">
           <div className="content-width-item" onClick={handleSetContentWide}>
             <div
-              className={`outline-box flex-center content-width-box ${preferences.app.contentCompact === 'wide' ? 'outline-box-active' : ''}`}
+              className={`content-width-box ${preferences.app.contentCompact === 'wide' ? 'outline-box-active' : ''}`}
             >
               <div
                 className="content-width-preview"
@@ -162,7 +162,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale }) => {
           </div>
           <div className="content-width-item" onClick={handleSetContentCompact}>
             <div
-              className={`outline-box flex-center content-width-box ${preferences.app.contentCompact === 'compact' ? 'outline-box-active' : ''}`}
+              className={`content-width-box ${preferences.app.contentCompact === 'compact' ? 'outline-box-active' : ''}`}
             >
               <div
                 className="content-width-preview"

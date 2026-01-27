@@ -135,7 +135,7 @@ const footerFixed = computed({
         @click="layout = opt.value as LayoutType"
       >
         <div
-          class="outline-box flex-center layout-preset-box"
+          class="layout-preset-box"
           :class="{ 'outline-box-active': layout === opt.value }"
         >
           <div class="layout-preset-preview" v-html="getLayoutIcon(opt.value as LayoutType)" />
@@ -150,7 +150,7 @@ const footerFixed = computed({
     <div class="content-width-grid">
       <div class="content-width-item" @click="contentCompact = 'wide'">
         <div
-          class="outline-box flex-center content-width-box"
+          class="content-width-box"
           :class="{ 'outline-box-active': contentCompact === 'wide' }"
         >
           <div class="content-width-preview" v-html="getContentWidthIcon('wide' as ContentWidthType)" />
@@ -159,7 +159,7 @@ const footerFixed = computed({
       </div>
       <div class="content-width-item" @click="contentCompact = 'compact'">
         <div
-          class="outline-box flex-center content-width-box"
+          class="content-width-box"
           :class="{ 'outline-box-active': contentCompact === 'compact' }"
         >
           <div class="content-width-preview" v-html="getContentWidthIcon('compact' as ContentWidthType)" />
