@@ -1,0 +1,131 @@
+{
+  "name": "@admin-core/preferences",
+  "version": "0.0.1",
+  "description": "框架无关的偏好设置管理系统，支持主题、布局、国际化等配置",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/index.global.js",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./color": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./utils": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./constants": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./controllers": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles": {
+      "style": "./dist/styles/css/index.css",
+      "import": "./dist/styles/css/index.css",
+      "require": "./dist/styles/css/index.css",
+      "default": "./dist/styles/css/index.css"
+    },
+    "./styles/antd": {
+      "style": "./dist/styles/css/adapters/antd.css",
+      "import": "./dist/styles/css/adapters/antd.css",
+      "require": "./dist/styles/css/adapters/antd.css",
+      "default": "./dist/styles/css/adapters/antd.css"
+    },
+    "./styles/element": {
+      "style": "./dist/styles/css/adapters/element.css",
+      "import": "./dist/styles/css/adapters/element.css",
+      "require": "./dist/styles/css/adapters/element.css",
+      "default": "./dist/styles/css/adapters/element.css"
+    },
+    "./styles/naive": {
+      "style": "./dist/styles/css/adapters/naive.css",
+      "import": "./dist/styles/css/adapters/naive.css",
+      "require": "./dist/styles/css/adapters/naive.css",
+      "default": "./dist/styles/css/adapters/naive.css"
+    },
+    "./styles/shadcn": {
+      "style": "./dist/styles/css/adapters/shadcn.css",
+      "import": "./dist/styles/css/adapters/shadcn.css",
+      "require": "./dist/styles/css/adapters/shadcn.css",
+      "default": "./dist/styles/css/adapters/shadcn.css"
+    },
+    "./styles/adapters": {
+      "style": "./dist/styles/css/adapters/index.css",
+      "import": "./dist/styles/css/adapters/index.css",
+      "require": "./dist/styles/css/adapters/index.css",
+      "default": "./dist/styles/css/adapters/index.css"
+    },
+    "./tailwind": {
+      "import": {
+        "types": "./dist/styles/tailwind/preset.d.ts",
+        "default": "./dist/styles/tailwind/preset.js"
+      },
+      "require": {
+        "types": "./dist/styles/tailwind/preset.d.cts",
+        "default": "./dist/styles/tailwind/preset.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "culori": "catalog:"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@types/culori": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {},
+  "keywords": [
+    "admin",
+    "preferences",
+    "settings",
+    "theme",
+    "layout",
+    "oklch",
+    "tailwindcss"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/preferences/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

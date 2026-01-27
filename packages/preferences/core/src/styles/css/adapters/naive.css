@@ -1,0 +1,163 @@
+/**
+ * Naive UI 主题适配
+ * @description 将 Admin Core CSS 变量映射到 Naive UI 变量
+ * 
+ * 使用方式：
+ * @import "@admin-core/preferences/styles/naive";
+ * 
+ * 注意：Naive UI 主要通过 JS 配置主题，CSS 变量仅作为补充
+ * 完整主题配置请参考 Naive UI 的 ConfigProvider
+ */
+
+:root {
+  /* ========== 主色及变体 ========== */
+  --n-color: var(--primary);
+  --n-color-hover: var(--primary-400);
+  --n-color-pressed: var(--primary-600);
+  --n-color-focus: var(--primary-400);
+  --n-color-disabled: var(--primary-200);
+  --n-color-suppl: var(--primary-300);
+
+  /* 通用命名 */
+  --primary-color: var(--primary);
+  --primary-color-hover: var(--primary-400);
+  --primary-color-pressed: var(--primary-600);
+  --primary-color-suppl: var(--primary-300);
+
+  /* ========== 信息色及变体 ========== */
+  --info-color: var(--info);
+  --info-color-hover: var(--info-400);
+  --info-color-pressed: var(--info-600);
+  --info-color-suppl: var(--info-300);
+
+  /* ========== 成功色及变体 ========== */
+  --success-color: var(--success);
+  --success-color-hover: var(--success-400);
+  --success-color-pressed: var(--success-600);
+  --success-color-suppl: var(--success-300);
+
+  /* ========== 警告色及变体 ========== */
+  --warning-color: var(--warning);
+  --warning-color-hover: var(--warning-400);
+  --warning-color-pressed: var(--warning-600);
+  --warning-color-suppl: var(--warning-300);
+
+  /* ========== 错误色及变体 ========== */
+  --error-color: var(--destructive);
+  --error-color-hover: var(--destructive-400);
+  --error-color-pressed: var(--destructive-600);
+  --error-color-suppl: var(--destructive-300);
+
+  /* ========== 文本色 ========== */
+  --n-text-color: var(--foreground);
+  --n-text-color-base: var(--foreground);
+  --n-text-color-1: var(--foreground);
+  --n-text-color-2: var(--muted-foreground);
+  --n-text-color-3: var(--muted-foreground);
+  --n-text-color-disabled: var(--muted-foreground);
+  --text-color-base: var(--foreground);
+  --text-color-1: var(--foreground);
+  --text-color-2: var(--muted-foreground);
+  --text-color-3: var(--muted-foreground);
+  --text-color-disabled: var(--muted-foreground);
+
+  /* ========== 背景色 ========== */
+  --n-color-embedded: var(--muted);
+  --n-color-modal: var(--card);
+  --n-color-popover: var(--popover);
+  --body-color: var(--background);
+  --card-color: var(--card);
+  --card-color-embedded: var(--muted);
+  --modal-color: var(--card);
+  --popover-color: var(--popover);
+  --table-color: var(--background);
+  --table-color-hover: var(--muted);
+  --table-color-striped: var(--muted);
+  --action-color: var(--muted);
+  --input-color: var(--background);
+  --input-color-disabled: var(--muted);
+  --code-color: var(--muted);
+  --tab-color: var(--muted);
+  --avatar-color: var(--muted);
+  --tag-color: var(--muted);
+
+  /* ========== 边框色 ========== */
+  --n-border-color: var(--border);
+  --n-border-color-modal: var(--border);
+  --n-border-color-popover: var(--border);
+  --border-color: var(--border);
+  --divider-color: var(--border);
+  --close-color-hover: var(--muted-foreground);
+  --close-color-pressed: var(--foreground);
+
+  /* ========== 圆角 ========== */
+  --n-border-radius: var(--radius);
+  --n-border-radius-small: calc(var(--radius) - 2px);
+  --border-radius: var(--radius);
+  --border-radius-small: calc(var(--radius) - 2px);
+
+  /* ========== 字体 ========== */
+  --n-font-size: var(--font-size-base);
+  --n-font-size-tiny: calc(var(--font-size-base) - 4px);
+  --n-font-size-small: calc(var(--font-size-base) - 2px);
+  --n-font-size-medium: var(--font-size-base);
+  --n-font-size-large: calc(var(--font-size-base) + 2px);
+  --n-font-size-huge: calc(var(--font-size-base) + 4px);
+  --font-size: var(--font-size-base);
+  --font-size-tiny: calc(var(--font-size-base) - 4px);
+  --font-size-small: calc(var(--font-size-base) - 2px);
+  --font-size-medium: var(--font-size-base);
+  --font-size-large: calc(var(--font-size-base) + 2px);
+  --font-size-huge: calc(var(--font-size-base) + 4px);
+
+  /* ========== 组件高度 ========== */
+  --n-height-tiny: 22px;
+  --n-height-small: 28px;
+  --n-height-medium: 34px;
+  --n-height-large: 40px;
+  --height-tiny: 22px;
+  --height-small: 28px;
+  --height-medium: 34px;
+  --height-large: 40px;
+
+  /* ========== 阴影 ========== */
+  --n-box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --box-shadow-1: 0 1px 2px -2px rgba(0, 0, 0, 0.08), 0 3px 6px 0 rgba(0, 0, 0, 0.06), 0 5px 12px 4px rgba(0, 0, 0, 0.04);
+  --box-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --box-shadow-3: 0 6px 16px -9px rgba(0, 0, 0, 0.08), 0 9px 28px 0 rgba(0, 0, 0, 0.05), 0 12px 48px 16px rgba(0, 0, 0, 0.03);
+
+  /* ========== 遮罩 ========== */
+  --n-modal-mask-color: rgba(0, 0, 0, 0.4);
+  --modal-mask-color: rgba(0, 0, 0, 0.4);
+
+  /* ========== 动画 ========== */
+  --n-cubic-bezier-ease-in-out: var(--admin-easing-default);
+  --n-cubic-bezier-ease-out: var(--admin-easing-out);
+  --n-cubic-bezier-ease-in: var(--admin-easing-in);
+  --cubic-bezier-ease-in-out: var(--admin-easing-default);
+  --cubic-bezier-ease-out: var(--admin-easing-out);
+  --cubic-bezier-ease-in: var(--admin-easing-in);
+
+  /* ========== 透明度 ========== */
+  --n-opacity-disabled: 0.5;
+  --opacity-disabled: 0.5;
+
+  /* ========== 滚动条 ========== */
+  --scrollbar-color: rgba(0, 0, 0, 0.25);
+  --scrollbar-color-hover: rgba(0, 0, 0, 0.4);
+  --scrollbar-width: 5px;
+  --scrollbar-height: 5px;
+  --scrollbar-border-radius: 5px;
+}
+
+/* ========== 暗色模式 ========== */
+.dark {
+  --n-modal-mask-color: rgba(0, 0, 0, 0.6);
+  --modal-mask-color: rgba(0, 0, 0, 0.6);
+  --n-box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+  --box-shadow-1: 0 1px 2px -2px rgba(0, 0, 0, 0.24), 0 3px 6px 0 rgba(0, 0, 0, 0.18), 0 5px 12px 4px rgba(0, 0, 0, 0.12);
+  --box-shadow-2: 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+  --box-shadow-3: 0 6px 16px -9px rgba(0, 0, 0, 0.08), 0 9px 28px 0 rgba(0, 0, 0, 0.05), 0 12px 48px 16px rgba(0, 0, 0, 0.03);
+  --scrollbar-color: rgba(255, 255, 255, 0.2);
+  --scrollbar-color-hover: rgba(255, 255, 255, 0.3);
+}

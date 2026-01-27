@@ -1,0 +1,163 @@
+/**
+ * Element Plus 主题适配
+ * @description 将 Admin Core CSS 变量映射到 Element Plus 变量
+ * 
+ * 使用方式：
+ * @import "@admin-core/preferences/styles/element";
+ */
+
+:root {
+  /* ========== 主色及色阶 ========== */
+  --el-color-primary: var(--primary);
+  --el-color-primary-light-1: var(--primary-400);
+  --el-color-primary-light-2: var(--primary-300);
+  --el-color-primary-light-3: var(--primary-300);
+  --el-color-primary-light-4: var(--primary-200);
+  --el-color-primary-light-5: var(--primary-200);
+  --el-color-primary-light-6: var(--primary-100);
+  --el-color-primary-light-7: var(--primary-100);
+  --el-color-primary-light-8: var(--primary-50);
+  --el-color-primary-light-9: var(--primary-50);
+  --el-color-primary-dark-2: var(--primary-600);
+
+  /* ========== 成功色及色阶 ========== */
+  --el-color-success: var(--success);
+  --el-color-success-light-1: var(--success-400);
+  --el-color-success-light-2: var(--success-300);
+  --el-color-success-light-3: var(--success-300);
+  --el-color-success-light-4: var(--success-200);
+  --el-color-success-light-5: var(--success-200);
+  --el-color-success-light-6: var(--success-100);
+  --el-color-success-light-7: var(--success-100);
+  --el-color-success-light-8: var(--success-50);
+  --el-color-success-light-9: var(--success-50);
+  --el-color-success-dark-2: var(--success-600);
+
+  /* ========== 警告色及色阶 ========== */
+  --el-color-warning: var(--warning);
+  --el-color-warning-light-1: var(--warning-400);
+  --el-color-warning-light-2: var(--warning-300);
+  --el-color-warning-light-3: var(--warning-300);
+  --el-color-warning-light-4: var(--warning-200);
+  --el-color-warning-light-5: var(--warning-200);
+  --el-color-warning-light-6: var(--warning-100);
+  --el-color-warning-light-7: var(--warning-100);
+  --el-color-warning-light-8: var(--warning-50);
+  --el-color-warning-light-9: var(--warning-50);
+  --el-color-warning-dark-2: var(--warning-600);
+
+  /* ========== 危险色及色阶 ========== */
+  --el-color-danger: var(--destructive);
+  --el-color-danger-light-1: var(--destructive-400);
+  --el-color-danger-light-2: var(--destructive-300);
+  --el-color-danger-light-3: var(--destructive-300);
+  --el-color-danger-light-4: var(--destructive-200);
+  --el-color-danger-light-5: var(--destructive-200);
+  --el-color-danger-light-6: var(--destructive-100);
+  --el-color-danger-light-7: var(--destructive-100);
+  --el-color-danger-light-8: var(--destructive-50);
+  --el-color-danger-light-9: var(--destructive-50);
+  --el-color-danger-dark-2: var(--destructive-600);
+
+  /* ========== 信息色及色阶 ========== */
+  --el-color-info: var(--info);
+  --el-color-info-light-1: var(--info-400);
+  --el-color-info-light-2: var(--info-300);
+  --el-color-info-light-3: var(--info-300);
+  --el-color-info-light-4: var(--info-200);
+  --el-color-info-light-5: var(--info-200);
+  --el-color-info-light-6: var(--info-100);
+  --el-color-info-light-7: var(--info-100);
+  --el-color-info-light-8: var(--info-50);
+  --el-color-info-light-9: var(--info-50);
+  --el-color-info-dark-2: var(--info-600);
+
+  /* ========== 中性色/背景色 ========== */
+  --el-bg-color: var(--background);
+  --el-bg-color-page: var(--muted);
+  --el-bg-color-overlay: var(--card);
+
+  /* ========== 文字色 ========== */
+  --el-text-color-primary: var(--foreground);
+  --el-text-color-regular: var(--foreground);
+  --el-text-color-secondary: var(--muted-foreground);
+  --el-text-color-placeholder: var(--muted-foreground);
+  --el-text-color-disabled: var(--muted-foreground);
+
+  /* ========== 边框色 ========== */
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border);
+  --el-border-color-lighter: var(--border);
+  --el-border-color-extra-light: var(--border);
+  --el-border-color-dark: var(--border);
+  --el-border-color-darker: var(--border);
+
+  /* ========== 填充色 ========== */
+  --el-fill-color: var(--muted);
+  --el-fill-color-light: var(--muted);
+  --el-fill-color-lighter: var(--accent);
+  --el-fill-color-extra-light: var(--accent);
+  --el-fill-color-dark: var(--muted);
+  --el-fill-color-darker: var(--muted);
+  --el-fill-color-blank: var(--background);
+
+  /* ========== 圆角 ========== */
+  --el-border-radius-base: var(--radius);
+  --el-border-radius-small: calc(var(--radius) - 2px);
+  --el-border-radius-round: 20px;
+  --el-border-radius-circle: 100%;
+
+  /* ========== 字体 ========== */
+  --el-font-size-extra-large: calc(var(--font-size-base) + 4px);
+  --el-font-size-large: calc(var(--font-size-base) + 2px);
+  --el-font-size-medium: var(--font-size-base);
+  --el-font-size-base: var(--font-size-base);
+  --el-font-size-small: calc(var(--font-size-base) - 2px);
+  --el-font-size-extra-small: calc(var(--font-size-base) - 4px);
+
+  /* ========== 阴影 ========== */
+  --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, 0.04), 0px 8px 20px rgba(0, 0, 0, 0.08);
+  --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, 0.12);
+  --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, 0.12);
+  --el-box-shadow-dark: 0px 16px 48px 16px rgba(0, 0, 0, 0.08), 0px 12px 32px rgba(0, 0, 0, 0.12), 0px 8px 16px -8px rgba(0, 0, 0, 0.16);
+
+  /* ========== 遮罩 ========== */
+  --el-mask-color: rgba(0, 0, 0, 0.5);
+  --el-mask-color-extra-light: rgba(0, 0, 0, 0.3);
+
+  /* ========== 组件尺寸 ========== */
+  --el-component-size-large: 40px;
+  --el-component-size: 32px;
+  --el-component-size-small: 24px;
+
+  /* ========== 动画 ========== */
+  --el-transition-duration: var(--admin-duration-normal);
+  --el-transition-duration-fast: var(--admin-duration-fast);
+  --el-transition-function-ease-in-out-bezier: var(--admin-easing-default);
+  --el-transition-function-fast-bezier: var(--admin-easing-out);
+
+  /* ========== z-index ========== */
+  --el-index-normal: var(--admin-z-index-base);
+  --el-index-top: var(--admin-z-index-dropdown);
+  --el-index-popper: var(--admin-z-index-popover);
+
+  /* ========== 禁用 ========== */
+  --el-disabled-bg-color: var(--muted);
+  --el-disabled-text-color: var(--muted-foreground);
+  --el-disabled-border-color: var(--border);
+
+  /* ========== 覆盖层 ========== */
+  --el-overlay-color: rgba(0, 0, 0, 0.8);
+  --el-overlay-color-light: rgba(0, 0, 0, 0.7);
+  --el-overlay-color-lighter: rgba(0, 0, 0, 0.5);
+}
+
+/* ========== 暗色模式 ========== */
+.dark {
+  --el-box-shadow: 0px 12px 32px 4px rgba(0, 0, 0, 0.36), 0px 8px 20px rgba(0, 0, 0, 0.72);
+  --el-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, 0.72);
+  --el-box-shadow-lighter: 0px 0px 6px rgba(0, 0, 0, 0.72);
+  --el-box-shadow-dark: 0px 16px 48px 16px rgba(0, 0, 0, 0.72), 0px 12px 32px rgba(0, 0, 0, 0.72), 0px 8px 16px -8px rgba(0, 0, 0, 0.72);
+  --el-mask-color: rgba(0, 0, 0, 0.8);
+  --el-mask-color-extra-light: rgba(0, 0, 0, 0.6);
+}

@@ -1,0 +1,80 @@
+/**
+ * Segmented Tabs Styles
+ * @description Tab navigation (VbenSegmented style)
+ * @note Consistent with Vben Admin
+ */
+
+@layer admin-core {
+  /* ========== Segmented Container ========== */
+  .preferences-segmented {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    width: 100%;
+    padding: 2px;
+    background: var(--muted);
+    border-radius: var(--radius, 8px);
+    border: 1px solid var(--border);
+    transition: all 0.3s ease;
+  }
+
+  /* ========== Tab Item ========== */
+  .preferences-segmented-item {
+    z-index: 20;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius, 8px) - 2px);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .preferences-segmented-item:hover {
+    color: var(--foreground);
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .preferences-segmented-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .preferences-segmented-item.active {
+    color: var(--foreground);
+    font-weight: 600;
+    background: var(--background);
+    box-shadow: 
+      0 1px 2px 0 rgba(0, 0, 0, 0.05),
+      0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  /* ========== Tabs Wrapper ========== */
+  .preferences-tabs-wrapper {
+    position: relative;
+    z-index: 1; /* Low z-index so header tooltips can overlay */
+    padding: 4px 0 16px 0;
+    margin: 0 -24px;
+    padding-left: 24px;
+    padding-right: 24px;
+    background: var(--background);
+    border-bottom: 1px solid transparent;
+  }
+
+  /* Sticky mode: activated by pin button */
+  .preferences-drawer-body .preferences-tabs-wrapper.sticky {
+    position: sticky;
+    top: -12px;
+    padding-top: 16px;
+    z-index: 5; /* Lower than header (z-index: 10) so tooltips can overlay */
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  }
+}

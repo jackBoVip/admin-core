@@ -1,0 +1,15 @@
+/**
+ * Admin Core Preferences - CSS Entry
+ * @description Tailwind CSS v4 optimized styles
+ * @note Uses @layer for proper cascade ordering
+ */
+
+/* Layer order declaration - admin-core has highest priority */
+@layer theme, base, components, utilities, admin-core;
+
+/* Import all styles */
+@import './tokens.css';
+@import './variables.css';
+@import './animations.css';
+@import './utilities.css';
+@import './drawer.css';

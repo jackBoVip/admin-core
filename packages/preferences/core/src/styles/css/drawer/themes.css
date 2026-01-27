@@ -1,0 +1,303 @@
+/**
+ * Theme & Layout Selection Styles
+ * @description Theme modes, preset colors, radius, layout preview
+ * @note Consistent with Vben Admin
+ */
+
+@layer admin-core {
+  /* ========== Theme Mode Selection (3-column layout) ========== */
+  .theme-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+  }
+
+  .theme-mode-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .theme-mode-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    border-radius: var(--radius, 8px);
+    background: var(--muted);
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-mode-box:hover {
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .outline-box-active.theme-mode-box {
+    border-color: var(--primary);
+    background: var(--background);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+  }
+
+  .theme-mode-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--muted-foreground);
+    transition: all 0.2s ease;
+  }
+
+  .outline-box-active .theme-mode-icon {
+    color: var(--primary);
+    transform: scale(1.1);
+  }
+
+  .theme-mode-label {
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+
+  .theme-mode-item:hover .theme-mode-label,
+  .theme-mode-item:has(.outline-box-active) .theme-mode-label {
+    color: var(--foreground);
+  }
+
+  /* ========== Theme Presets Grid (4-column) ========== */
+  .theme-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+  }
+
+  .theme-preset-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .theme-preset-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    border-radius: var(--radius, 8px);
+    background: var(--muted);
+    border: 2px solid transparent;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .theme-preset-box:hover {
+    background: var(--accent);
+    transform: scale(1.05);
+  }
+
+  .outline-box-active.theme-preset-box {
+    border-color: var(--primary);
+    background: var(--background);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+  }
+
+  .theme-preset-color {
+    width: 20px;
+    height: 20px;
+    border-radius: calc(var(--radius, 8px) * 0.5);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+
+  .theme-preset-label {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+
+  .theme-preset-item:hover .theme-preset-label,
+  .theme-preset-item:has(.outline-box-active) .theme-preset-label {
+    color: var(--foreground);
+  }
+
+  /* ========== Custom Color Picker ========== */
+  .theme-preset-custom {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px 0;
+  }
+
+  .theme-preset-custom-inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: calc(var(--radius, 8px) * 0.5);
+  }
+
+  .theme-preset-custom-icon {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+    z-index: 1;
+  }
+
+  .theme-preset-item:hover .theme-preset-custom-icon,
+  .outline-box:hover .theme-preset-custom-icon {
+    opacity: 1;
+  }
+
+  .theme-preset-custom-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* ========== Radius Selection (Segmented Control style) ========== */
+  .radius-options {
+    display: flex;
+    padding: 2px;
+    background: var(--muted);
+    border-radius: var(--radius, 8px);
+    border: 1px solid var(--border);
+  }
+
+  .radius-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted-foreground);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--radius, 8px) - 2px);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .radius-option:hover {
+    color: var(--foreground);
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  .radius-option.active {
+    color: var(--foreground);
+    font-weight: 600;
+    background: var(--background);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .radius-option:not(:first-child) {
+    margin-left: 0;
+  }
+
+  .radius-option:first-child,
+  .radius-option:last-child {
+    border-radius: calc(var(--radius, 8px) - 2px);
+  }
+
+  /* ========== Content Compact Options ========== */
+  .content-compact-options {
+    display: flex;
+    gap: 8px;
+  }
+
+  .content-compact-option {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    font-size: 14px;
+    color: var(--foreground);
+    background: transparent;
+    border: 1px solid var(--input);
+    border-radius: var(--radius, 8px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .content-compact-option:hover {
+    background: var(--accent);
+  }
+
+  .content-compact-option.active {
+    color: var(--primary-foreground);
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+
+  /* ========== Layout Presets Grid ========== */
+  .layout-presets-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .layout-preset-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100px;
+    cursor: pointer;
+  }
+
+  .layout-preset-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .layout-preset-preview {
+    width: 104px;
+    height: 66px;
+    color: var(--foreground);
+  }
+
+  .layout-preset-preview svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .layout-preset-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted-foreground);
+    transition: color 0.15s ease;
+  }
+
+  .layout-preset-label:hover {
+    color: var(--foreground);
+  }
+}

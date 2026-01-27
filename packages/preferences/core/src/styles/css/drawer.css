@@ -1,0 +1,7 @@
+/**
+ * 偏好设置抽屉样式
+ * @description 与 Vben Admin 完全一致的样式风格
+ * @note 样式已拆分到 drawer/ 目录下，此文件仅作为入口
+ */
+
+@import './drawer/index.css';

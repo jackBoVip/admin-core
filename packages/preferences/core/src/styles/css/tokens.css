@@ -1,0 +1,49 @@
+/**
+ * 设计令牌 CSS 变量
+ * @description 由 design-tokens.ts 自动生成，请勿手动修改
+ */
+
+:root {
+  /* 抽屉 */
+  --admin-drawer-width: 384px;
+
+  /* 布局图标 */
+  --admin-layout-icon-width: 104px;
+  --admin-layout-icon-height: 66px;
+
+  /* 图标尺寸 */
+  --admin-icon-size-xs: 12px;
+  --admin-icon-size-sm: 14px;
+  --admin-icon-size-md: 16px;
+  --admin-icon-size-lg: 20px;
+  --admin-icon-size-xl: 24px;
+
+  /* 字体大小 */
+  --admin-font-size-min: 12px;
+  --admin-font-size-max: 20px;
+  --admin-font-size-default: 16px;
+
+  /* 圆角 */
+  --admin-radius-default: 6px;
+
+  /* 边框 */
+  --admin-border-width: 1px;
+  --admin-border-width-active: 2px;
+
+  /* 过渡动画 */
+  --admin-transition-fast: 150ms;
+  --admin-transition-normal: 200ms;
+  --admin-transition-slow: 300ms;
+
+  /* 颜色 */
+  --admin-color-primary: #0066ff;
+  --admin-color-preset-fallback: #888888;
+
+  /* Z-Index */
+  --admin-z-index-dropdown: 1000;
+  --admin-z-index-modal-backdrop: 1040;
+  --admin-z-index-modal: 1050;
+  --admin-z-index-popover: 1060;
+  --admin-z-index-tooltip: 1070;
+  --admin-z-index-notification: 1080;
+}

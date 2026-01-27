@@ -1,0 +1,18 @@
+/**
+ * 所有 UI 库适配器合集
+ * @description 一次性导入所有 UI 库的主题适配
+ * 
+ * 使用方式：
+ * @import "@admin-core/preferences/styles/adapters";
+ * 
+ * 或单独导入：
+ * @import "@admin-core/preferences/styles/antd";
+ * @import "@admin-core/preferences/styles/element";
+ * @import "@admin-core/preferences/styles/naive";
+ * @import "@admin-core/preferences/styles/shadcn";
+ */
+
+@import './antd.css';
+@import './element.css';
+@import './naive.css';
+@import './shadcn.css';

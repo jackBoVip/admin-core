@@ -1,0 +1,525 @@
+/**
+ * Control Styles
+ * @description Switch, number input, buttons
+ * @note Consistent with Vben Admin / shadcn-ui
+ */
+
+/* ========== Switch Component (outside layer for Tailwind v4 compatibility) ========== */
+.preferences-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  background: var(--input, #e5e7eb);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.preferences-switch:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Checked state */
+.preferences-switch[data-state="checked"],
+.preferences-switch.checked {
+  background: var(--primary, #3b82f6);
+}
+
+/* Switch thumb - real element (preferred for Tailwind v4) */
+.preferences-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 9999px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.preferences-switch[data-state="checked"] .preferences-switch-thumb,
+.preferences-switch.checked .preferences-switch-thumb {
+  transform: translateX(18px);
+}
+
+/* Switch thumb - pseudo element fallback */
+.preferences-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 9999px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.preferences-switch[data-state="checked"]::after,
+.preferences-switch.checked::after {
+  transform: translateX(18px);
+}
+
+/* Hide pseudo element when real thumb exists */
+.preferences-switch:has(.preferences-switch-thumb)::after {
+  display: none;
+}
+
+@layer admin-core {
+
+  /* ========== Number Input Field (Vben style) ========== */
+  .number-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .number-field-control {
+    display: flex;
+    align-items: center;
+    position: relative;
+  }
+
+  .number-field-btn {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 100%;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-foreground);
+    transition: all 0.15s ease;
+    z-index: 1;
+  }
+
+  .number-field-btn:hover:not(:disabled) {
+    color: var(--foreground);
+    background: var(--accent);
+  }
+
+  .number-field-btn:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+  }
+
+  .number-field-btn-decrement {
+    left: 0;
+    border-radius: var(--radius, 6px) 0 0 var(--radius, 6px);
+  }
+
+  .number-field-btn-increment {
+    right: 0;
+    border-radius: 0 var(--radius, 6px) var(--radius, 6px) 0;
+  }
+
+  .number-field-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .number-field-input {
+    width: 100%;
+    height: 32px;
+    padding: 4px 32px;
+    font-size: 13px;
+    text-align: center;
+    color: var(--foreground);
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 8px);
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .number-field-input:focus {
+    background: var(--background);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  .number-field-input::-webkit-inner-spin-button,
+  .number-field-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .number-field-unit {
+    font-size: 12px;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+
+  /* ========== Button Base Styles ========== */
+  .preferences-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--foreground);
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 8px);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    user-select: none;
+    outline: none;
+  }
+
+  .preferences-btn:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--input);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  }
+
+  .preferences-btn:active:not(:disabled) {
+    transform: translateY(0);
+    background: var(--muted);
+  }
+
+  .preferences-btn:focus-visible {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
+  }
+
+  .preferences-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--muted) !important;
+    border-color: var(--border) !important;
+    color: var(--muted-foreground) !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* ========== Button Variants ========== */
+  
+  /* Primary Button */
+  .preferences-btn-primary {
+    color: var(--primary-foreground) !important;
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+  }
+
+  .preferences-btn-primary:hover:not(:disabled) {
+    background: var(--primary-600, var(--primary)) !important;
+    border-color: var(--primary-600, var(--primary)) !important;
+    opacity: 1;
+  }
+
+  .preferences-btn-primary:active:not(:disabled) {
+    background: var(--primary-700, var(--primary)) !important;
+    border-color: var(--primary-700, var(--primary)) !important;
+  }
+
+  .preferences-btn-primary:disabled {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+    opacity: 0.4 !important;
+  }
+
+  /* Primary button disabled in copied state - keep primary shade visible */
+  .preferences-btn-primary.is-copied:disabled {
+    background: var(--primary-500, var(--primary)) !important;
+    border-color: var(--primary-500, var(--primary)) !important;
+    color: var(--primary-foreground) !important;
+    opacity: 0.7 !important;
+  }
+
+  /* Secondary/Ghost Button */
+  .preferences-btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted-foreground);
+  }
+
+  .preferences-btn-ghost:hover:not(:disabled) {
+    background: var(--accent);
+    color: var(--foreground);
+    border-color: var(--input);
+  }
+
+  .preferences-btn-sm {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  /* ========== Icon Button ========== */
+  .preferences-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius, 6px);
+    cursor: pointer;
+    color: var(--muted-foreground);
+    transition: all 0.15s ease;
+  }
+
+  .preferences-btn-icon:hover {
+    color: var(--foreground);
+    background: var(--accent);
+  }
+
+  .preferences-btn-icon:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .preferences-btn-icon.relative {
+    position: relative;
+  }
+
+  .preferences-btn-icon .dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 9999px;
+  }
+
+  /* ========== Copy Button Animation ========== */
+  .copy-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+  }
+
+  .copy-btn-text {
+    transition: opacity 0.15s ease;
+  }
+
+  /* Copied state animation */
+  .preferences-btn.is-copied .copy-btn-icon {
+    animation: copy-success 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes copy-success {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.5;
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  /* Primary button in copied state - use primary color shade */
+  .preferences-btn-primary.is-copied {
+    background: var(--primary-500, var(--primary)) !important;
+    border-color: var(--primary-500, var(--primary)) !important;
+  }
+
+  .preferences-btn-primary.is-copied:hover:not(:disabled) {
+    background: var(--primary-600, var(--primary)) !important;
+    border-color: var(--primary-600, var(--primary)) !important;
+  }
+
+  /* ========== Modal/Dialog ========== */
+  .preferences-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    animation: modal-overlay-in 0.2s ease;
+  }
+
+  @keyframes modal-overlay-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .preferences-modal {
+    width: 90%;
+    max-width: 400px;
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius, 8px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: modal-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes modal-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .preferences-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .preferences-modal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .preferences-modal-icon.error {
+    color: var(--destructive, #ef4444);
+  }
+
+  .preferences-modal-icon.success {
+    color: var(--success, #22c55e);
+  }
+
+  .preferences-modal-icon.warning {
+    color: var(--warning, #f59e0b);
+  }
+
+  .preferences-modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .preferences-modal-body {
+    padding: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+  }
+
+  .preferences-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* ========== Tooltip (positioned below button, overlays navigation) ========== */
+  [data-preference-tooltip] {
+    position: relative;
+  }
+
+  [data-preference-tooltip]::before,
+  [data-preference-tooltip]::after {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 99999; /* High z-index to overlay navigation */
+  }
+
+  /* Tooltip text */
+  [data-preference-tooltip]::before {
+    content: attr(data-preference-tooltip);
+    top: calc(100% + 10px); /* 2px gap + 8px arrow */
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--primary-foreground);
+    background: var(--primary);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--primary) 30%, transparent);
+  }
+
+  /* Tooltip arrow (droplet/beak style - rounded and smooth) */
+  [data-preference-tooltip]::after {
+    content: '';
+    top: calc(100% + 6px); /* Positioning to overlap slightly for a seamless look */
+    width: 10px;
+    height: 10px;
+    background: var(--primary);
+    border-radius: 2px; /* Rounded tip for the "water drop" look */
+    transform: translateX(-50%) rotate(45deg);
+    z-index: 99998; /* Just behind the main box */
+  }
+
+  /* Hover state */
+  [data-preference-tooltip]:hover:not(:disabled)::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(4px);
+  }
+
+  [data-preference-tooltip]:hover:not(:disabled)::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(4px) rotate(45deg);
+  }
+
+  /* Animation for appearance */
+  @keyframes tooltip-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(0);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(4px);
+    }
+  }
+
+  @keyframes tooltip-arrow-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(0) rotate(45deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(4px) rotate(45deg);
+    }
+  }
+
+  [data-preference-tooltip]:hover:not(:disabled)::before {
+    animation: tooltip-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  [data-preference-tooltip]:hover:not(:disabled)::after {
+    animation: tooltip-arrow-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+}

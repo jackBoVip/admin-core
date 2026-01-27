@@ -1,0 +1,134 @@
+/**
+ * Drawer Header Styles
+ * @description Title, description, action buttons
+ * @note Consistent with Vben Admin VbenIconButton
+ */
+
+@layer admin-core {
+  /* ========== Header Container ========== */
+  .preferences-drawer-header {
+    position: relative;
+    z-index: 10; /* Higher than nav tabs */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    overflow: visible; /* Allow tooltip to overflow */
+  }
+
+  /* ========== Title Area (Vben style: title + subtitle inline) ========== */
+  .preferences-drawer-title-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .preferences-drawer-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .preferences-drawer-description {
+    font-size: 12px;
+    color: var(--muted-foreground);
+  }
+
+  /* ========== Actions Area ========== */
+  .preferences-drawer-actions {
+    position: relative;
+    z-index: 11; /* Higher than header for tooltip */
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: visible; /* Allow tooltip to overflow */
+  }
+
+  /* ========== Icon Button (Vben VbenIconButton style) ========== */
+  .preferences-btn-icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius, 8px);
+    cursor: pointer;
+    color: var(--muted-foreground);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible; /* Allow tooltip to overflow */
+  }
+
+  /* When hovering, raise z-index for tooltip visibility */
+  .preferences-btn-icon:hover {
+    z-index: 100;
+  }
+
+  .preferences-btn-icon:hover:not(:disabled) {
+    color: var(--foreground);
+    background: var(--muted);
+    transform: scale(1.05);
+  }
+
+  .preferences-btn-icon:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .preferences-btn-icon:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+
+  .preferences-btn-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Red dot indicator (shown when has changes) */
+  .preferences-btn-icon .dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    background: var(--destructive);
+    border: 1.5px solid var(--background);
+    border-radius: 9999px;
+  }
+
+  /* Relative helper class (for indicator positioning) */
+  .preferences-btn-icon.relative {
+    position: relative;
+  }
+
+  /* ========== Close Button ========== */
+  .preferences-drawer-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius, 8px);
+    cursor: pointer;
+    color: var(--muted-foreground);
+    transition: all 0.15s ease;
+  }
+
+  .preferences-drawer-close:hover {
+    color: var(--foreground);
+    background: var(--accent);
+  }
+
+  .preferences-drawer-close svg {
+    width: 16px;
+    height: 16px;
+  }
+}

@@ -1,0 +1,184 @@
+/**
+ * Ant Design 主题适配
+ * @description 将 Admin Core CSS 变量映射到 Ant Design 变量
+ * 支持 antd (React) 和 ant-design-vue
+ * 
+ * 使用方式：
+ * @import "@admin-core/preferences/styles/antd";
+ */
+
+:root {
+  /* ========== 主色及色阶 ========== */
+  --ant-color-primary: var(--primary);
+  --ant-color-primary-bg: var(--primary-50);
+  --ant-color-primary-bg-hover: var(--primary-100);
+  --ant-color-primary-border: var(--primary-200);
+  --ant-color-primary-border-hover: var(--primary-300);
+  --ant-color-primary-hover: var(--primary-400);
+  --ant-color-primary-active: var(--primary-600);
+  --ant-color-primary-text: var(--primary);
+  --ant-color-primary-text-hover: var(--primary-400);
+  --ant-color-primary-text-active: var(--primary-600);
+  
+  /* 主色色阶 1-10 */
+  --ant-primary-1: var(--primary-50);
+  --ant-primary-2: var(--primary-100);
+  --ant-primary-3: var(--primary-200);
+  --ant-primary-4: var(--primary-300);
+  --ant-primary-5: var(--primary-400);
+  --ant-primary-6: var(--primary);
+  --ant-primary-7: var(--primary-600);
+  --ant-primary-8: var(--primary-700);
+  --ant-primary-9: var(--primary-800);
+  --ant-primary-10: var(--primary-900);
+
+  /* ========== 成功色及色阶 ========== */
+  --ant-color-success: var(--success);
+  --ant-color-success-bg: var(--success-50);
+  --ant-color-success-bg-hover: var(--success-100);
+  --ant-color-success-border: var(--success-200);
+  --ant-color-success-border-hover: var(--success-300);
+  --ant-color-success-hover: var(--success-400);
+  --ant-color-success-active: var(--success-600);
+  --ant-color-success-text: var(--success);
+  --ant-color-success-text-hover: var(--success-400);
+  --ant-color-success-text-active: var(--success-600);
+
+  /* ========== 警告色及色阶 ========== */
+  --ant-color-warning: var(--warning);
+  --ant-color-warning-bg: var(--warning-50);
+  --ant-color-warning-bg-hover: var(--warning-100);
+  --ant-color-warning-border: var(--warning-200);
+  --ant-color-warning-border-hover: var(--warning-300);
+  --ant-color-warning-hover: var(--warning-400);
+  --ant-color-warning-active: var(--warning-600);
+  --ant-color-warning-text: var(--warning);
+  --ant-color-warning-text-hover: var(--warning-400);
+  --ant-color-warning-text-active: var(--warning-600);
+
+  /* ========== 错误色及色阶 ========== */
+  --ant-color-error: var(--destructive);
+  --ant-color-error-bg: var(--destructive-50);
+  --ant-color-error-bg-hover: var(--destructive-100);
+  --ant-color-error-border: var(--destructive-200);
+  --ant-color-error-border-hover: var(--destructive-300);
+  --ant-color-error-hover: var(--destructive-400);
+  --ant-color-error-active: var(--destructive-600);
+  --ant-color-error-text: var(--destructive);
+  --ant-color-error-text-hover: var(--destructive-400);
+  --ant-color-error-text-active: var(--destructive-600);
+
+  /* ========== 信息色及色阶 ========== */
+  --ant-color-info: var(--info);
+  --ant-color-info-bg: var(--info-50);
+  --ant-color-info-bg-hover: var(--info-100);
+  --ant-color-info-border: var(--info-200);
+  --ant-color-info-border-hover: var(--info-300);
+  --ant-color-info-hover: var(--info-400);
+  --ant-color-info-active: var(--info-600);
+  --ant-color-info-text: var(--info);
+  --ant-color-info-text-hover: var(--info-400);
+  --ant-color-info-text-active: var(--info-600);
+
+  /* ========== 中性色/背景色 ========== */
+  --ant-color-bg-base: var(--background);
+  --ant-color-bg-container: var(--background);
+  --ant-color-bg-elevated: var(--card);
+  --ant-color-bg-layout: var(--muted);
+  --ant-color-bg-spotlight: var(--accent);
+  --ant-color-bg-mask: rgba(0, 0, 0, 0.45);
+
+  /* ========== 文字色 ========== */
+  --ant-color-text: var(--foreground);
+  --ant-color-text-secondary: var(--muted-foreground);
+  --ant-color-text-tertiary: var(--muted-foreground);
+  --ant-color-text-quaternary: var(--muted-foreground);
+  --ant-color-text-heading: var(--foreground);
+  --ant-color-text-label: var(--foreground);
+  --ant-color-text-description: var(--muted-foreground);
+  --ant-color-text-disabled: var(--muted-foreground);
+  --ant-color-text-placeholder: var(--muted-foreground);
+
+  /* ========== 边框色 ========== */
+  --ant-color-border: var(--border);
+  --ant-color-border-secondary: var(--border);
+  --ant-color-border-bg: var(--border);
+  --ant-color-split: var(--border);
+
+  /* ========== 填充色 ========== */
+  --ant-color-fill: var(--muted);
+  --ant-color-fill-secondary: var(--muted);
+  --ant-color-fill-tertiary: var(--accent);
+  --ant-color-fill-quaternary: var(--accent);
+  --ant-color-fill-content: var(--muted);
+  --ant-color-fill-content-hover: var(--accent);
+  --ant-color-fill-alter: var(--muted);
+
+  /* ========== 圆角 ========== */
+  --ant-border-radius: var(--radius);
+  --ant-border-radius-lg: calc(var(--radius) + 4px);
+  --ant-border-radius-sm: calc(var(--radius) - 2px);
+  --ant-border-radius-xs: calc(var(--radius) - 4px);
+
+  /* ========== 字体 ========== */
+  --ant-font-size: var(--font-size-base);
+  --ant-font-size-sm: calc(var(--font-size-base) - 2px);
+  --ant-font-size-lg: calc(var(--font-size-base) + 2px);
+  --ant-font-size-xl: calc(var(--font-size-base) + 4px);
+  --ant-font-size-heading-1: 38px;
+  --ant-font-size-heading-2: 30px;
+  --ant-font-size-heading-3: 24px;
+  --ant-font-size-heading-4: 20px;
+  --ant-font-size-heading-5: 16px;
+
+  /* ========== 阴影 ========== */
+  --ant-box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --ant-box-shadow-secondary: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+
+  /* ========== 间距 ========== */
+  --ant-margin-xxs: 4px;
+  --ant-margin-xs: 8px;
+  --ant-margin-sm: 12px;
+  --ant-margin: 16px;
+  --ant-margin-md: 20px;
+  --ant-margin-lg: 24px;
+  --ant-margin-xl: 32px;
+  --ant-margin-xxl: 48px;
+
+  --ant-padding-xxs: 4px;
+  --ant-padding-xs: 8px;
+  --ant-padding-sm: 12px;
+  --ant-padding: 16px;
+  --ant-padding-md: 20px;
+  --ant-padding-lg: 24px;
+  --ant-padding-xl: 32px;
+
+  /* ========== 控件高度 ========== */
+  --ant-control-height-xs: 24px;
+  --ant-control-height-sm: 28px;
+  --ant-control-height: 32px;
+  --ant-control-height-lg: 40px;
+
+  /* ========== 线宽 ========== */
+  --ant-line-width: 1px;
+  --ant-line-width-bold: 2px;
+
+  /* ========== 动画 ========== */
+  --ant-motion-duration-fast: var(--admin-duration-fast);
+  --ant-motion-duration-mid: var(--admin-duration-normal);
+  --ant-motion-duration-slow: var(--admin-duration-slow);
+  --ant-motion-ease-in-out: var(--admin-easing-default);
+  --ant-motion-ease-out: var(--admin-easing-out);
+  --ant-motion-ease-in: var(--admin-easing-in);
+
+  /* ========== z-index ========== */
+  --ant-z-index-base: var(--admin-z-index-base);
+  --ant-z-index-popup-base: var(--admin-z-index-dropdown);
+}
+
+/* ========== 暗色模式 ========== */
+.dark {
+  --ant-color-bg-mask: rgba(0, 0, 0, 0.65);
+  --ant-box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+  --ant-box-shadow-secondary: 0 6px 16px 0 rgba(0, 0, 0, 0.32), 0 3px 6px -4px rgba(0, 0, 0, 0.48), 0 9px 28px 8px rgba(0, 0, 0, 0.2);
+}

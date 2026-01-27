@@ -1,0 +1,190 @@
+/**
+ * Animation Styles
+ * @description Page transitions and base animations
+ */
+
+@layer admin-core {
+  /* ========== Fade ========== */
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: opacity var(--admin-duration-normal) var(--admin-easing-default);
+  }
+
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+  }
+
+  /* ========== Fade Slide ========== */
+  .fade-slide-enter-active,
+  .fade-slide-leave-active {
+    transition:
+      opacity var(--admin-duration-normal) var(--admin-easing-default),
+      transform var(--admin-duration-normal) var(--admin-easing-default);
+  }
+
+  .fade-slide-enter-from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+
+  .fade-slide-leave-to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  /* ========== Fade Up ========== */
+  .fade-up-enter-active,
+  .fade-up-leave-active {
+    transition:
+      opacity var(--admin-duration-normal) var(--admin-easing-default),
+      transform var(--admin-duration-normal) var(--admin-easing-default);
+  }
+
+  .fade-up-enter-from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .fade-up-leave-to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  /* ========== Fade Down ========== */
+  .fade-down-enter-active,
+  .fade-down-leave-active {
+    transition:
+      opacity var(--admin-duration-normal) var(--admin-easing-default),
+      transform var(--admin-duration-normal) var(--admin-easing-default);
+  }
+
+  .fade-down-enter-from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  .fade-down-leave-to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  /* ========== Slide Left ========== */
+  .slide-left-enter-active,
+  .slide-left-leave-active {
+    transition: transform var(--admin-duration-normal) var(--admin-easing-default);
+  }
+
+  .slide-left-enter-from {
+    transform: translateX(100%);
+  }
+
+  .slide-left-leave-to {
+    transform: translateX(-100%);
+  }
+
+  /* ========== Slide Right ========== */
+  .slide-right-enter-active,
+  .slide-right-leave-active {
+    transition: transform var(--admin-duration-normal) var(--admin-easing-default);
+  }
+
+  .slide-right-enter-from {
+    transform: translateX(-100%);
+  }
+
+  .slide-right-leave-to {
+    transform: translateX(100%);
+  }
+
+  /* ========== Scale ========== */
+  .scale-enter-active,
+  .scale-leave-active {
+    transition:
+      opacity var(--admin-duration-fast) var(--admin-easing-default),
+      transform var(--admin-duration-fast) var(--admin-easing-default);
+  }
+
+  .scale-enter-from,
+  .scale-leave-to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  /* ========== Expand / Collapse ========== */
+  .expand-enter-active,
+  .expand-leave-active {
+    transition:
+      height var(--admin-duration-normal) var(--admin-easing-default),
+      opacity var(--admin-duration-normal) var(--admin-easing-default);
+    overflow: hidden;
+  }
+
+  .expand-enter-from,
+  .expand-leave-to {
+    height: 0;
+    opacity: 0;
+  }
+
+  /* ========== Keyframes ========== */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  @keyframes bounce {
+    0%,
+    100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* ========== Animation Utilities ========== */
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--muted) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+}

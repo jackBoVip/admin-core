@@ -1,0 +1,120 @@
+/**
+ * 滑动条控件样式
+ * @description 现代、高级感的滑动条样式，适配主题色
+ */
+
+@layer admin-core {
+  /* 滑动条容器 */
+  .slider-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    width: 100%;
+  }
+
+  /* 滑动条包装器 */
+  .slider-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    height: 20px;
+  }
+
+  /* 原生滑动条 */
+  .slider-native {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 2px;
+    outline: none;
+  }
+
+  /* Webkit (Chrome, Safari, Edge) 轨道 */
+  .slider-native::-webkit-slider-runnable-track {
+    height: 4px;
+    background: transparent; /* 透明轨道，显示 input 的渐变背景 */
+    border-radius: 2px;
+  }
+
+  /* Webkit 滑块 */
+  .slider-native::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--background);
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    margin-top: -6px; /* (4 - 16) / 2 */
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .slider-native::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 15%, transparent);
+  }
+
+  .slider-native::-webkit-slider-thumb:active {
+    transform: scale(1.1);
+    background: var(--primary);
+    border-color: var(--background);
+  }
+
+  /* Firefox 轨道 */
+  .slider-native::-moz-range-track {
+    height: 4px;
+    background: transparent;
+    border-radius: 2px;
+    border: none;
+  }
+
+  /* Firefox 滑块 */
+  .slider-native::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: var(--background);
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .slider-native::-moz-range-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--primary) 15%, transparent);
+  }
+
+  /* Firefox 进度条 (原生支持) */
+  .slider-native::-moz-range-progress {
+    height: 4px;
+    background: var(--primary);
+    border-radius: 2px;
+  }
+
+  /* 禁用状态 */
+  .slider-native:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* 当前值显示 */
+  .slider-value {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--primary);
+    min-width: 44px;
+    text-align: right;
+    user-select: none;
+    padding: 2px 6px;
+    background: color-mix(in oklch, var(--primary) 10%, transparent);
+    border-radius: 4px;
+  }
+}
