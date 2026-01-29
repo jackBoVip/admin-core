@@ -60,3 +60,40 @@ export const FONT_SIZE_DEFAULT = tokenFontSize.default;
  * 字体大小步进值
  */
 export const FONT_SIZE_STEP = tokenFontSize.step;
+
+/* ========== 组件交互常量 ========== */
+
+/**
+ * 滑块控件防抖延迟（毫秒）
+ */
+export const SLIDER_DEBOUNCE_MS = 150;
+
+/**
+ * 输入框防抖延迟（毫秒）
+ */
+export const INPUT_DEBOUNCE_MS = 300;
+
+/**
+ * 输入框默认最大长度
+ */
+export const INPUT_MAX_LENGTH = 200;
+
+/**
+ * 复制成功后自动重置延迟（毫秒）
+ */
+export const COPY_RESET_DELAY_MS = 2000;
+
+/**
+ * 清除密码按钮自动重置延迟（毫秒）
+ */
+export const CLEAR_PASSWORD_RESET_DELAY_MS = 2000;
+
+/**
+ * 焦点延迟（毫秒）- 用于模态框/抽屉打开后聚焦
+ */
+export const FOCUS_DELAY_MS = 100;
+
+/**
+ * 关闭动画延迟（毫秒）
+ */
+export const CLOSE_ANIMATION_DELAY_MS = 200;

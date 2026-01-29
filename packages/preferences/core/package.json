@@ -82,7 +82,9 @@
         "types": "./dist/styles/tailwind/preset.d.cts",
         "default": "./dist/styles/tailwind/preset.cjs"
       }
-    }
+    },
+    "./assets/*": "./dist/assets/*",
+    "./dist/assets/*": "./dist/assets/*"
   },
   "files": [
     "dist"

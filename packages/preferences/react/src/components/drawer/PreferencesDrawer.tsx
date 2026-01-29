@@ -1,23 +1,26 @@
 /**
  * 偏好设置抽屉组件
- * @description 完整的偏好设置面板，保持与 Vben Admin 一致的样式
+ * @description 完整的偏好设置面板
  */
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
 import { usePreferences } from '../../hooks';
 import { createPortal } from 'react-dom';
 import {
   getIcon,
   getLocaleByPreferences,
-  getDrawerTabs,
+  getVisibleDrawerTabs,
   getDrawerHeaderActions,
   copyPreferencesConfig,
   importPreferencesConfig,
   getIconStyle,
   createCopyButtonController,
   getCopyButtonA11yProps,
+  getFeatureConfig,
+  mergeDrawerUIConfig,
   type CopyButtonState,
   type DrawerTabType,
   type DrawerHeaderActionType,
+  type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences';
 import { AppearanceTab } from './AppearanceTab';
 import { LayoutTab } from './LayoutTab';
@@ -50,15 +53,18 @@ export interface PreferencesDrawerProps {
   showPinButton?: boolean;
   /** 固定状态变化回调 */
   onPinChange?: (pinned: boolean) => void;
+  /** UI 配置（控制功能项显示/禁用） */
+  uiConfig?: PreferencesDrawerUIConfig;
 }
 
-export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
+export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
   open,
   onClose,
   showOverlay = true,
   closeOnOverlay = true,
-  showPinButton = true, // 默认显示固定按钮（与 Vben 一致）
+  showPinButton = true,
   onPinChange,
+  uiConfig,
 }) => {
   const { preferences, resetPreferences, setPreferences, hasChanges } = usePreferences();
 
@@ -96,12 +102,24 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
     copyControllerRef.current.getInitialState()
   );
 
+  // 使用 ref 存储上一次的 preferences 引用，避免 useEffect 频繁触发
+  const prevPreferencesRef = useRef(preferences);
+  
   // 监听偏好设置变化，自动重置复制状态
+  // 注意：只依赖 preferences，不依赖 copyState，避免循环触发
   useEffect(() => {
-    if (copyControllerRef.current.shouldResetOnChange(copyState, preferences)) {
-      setCopyState(copyControllerRef.current.reset());
+    // 只在引用实际变化时检查
+    if (prevPreferencesRef.current !== preferences) {
+      prevPreferencesRef.current = preferences;
+      // 使用函数式更新获取最新 copyState
+      setCopyState((currentCopyState) => {
+        if (copyControllerRef.current.shouldResetOnChange(currentCopyState, preferences)) {
+          return copyControllerRef.current.reset();
+        }
+        return currentCopyState;
+      });
     }
-  }, [preferences, copyState]);
+  }, [preferences]);
 
   // 组件销毁时清理
   useEffect(() => {
@@ -117,18 +135,79 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
     [preferences]
   );
 
-  // 标签配置（使用 core 的工具函数）
-  const tabs = useMemo(() => getDrawerTabs(locale), [locale]);
+  // 合并后的 UI 配置
+  const mergedUIConfig = useMemo(
+    () => mergeDrawerUIConfig(uiConfig),
+    [uiConfig]
+  );
+
+  // 标签配置（根据 uiConfig 过滤）
+  const tabs = useMemo(
+    () => getVisibleDrawerTabs(locale, mergedUIConfig),
+    [locale, mergedUIConfig]
+  );
+
+  // 计算当前激活 tab 的索引（用于滑动指示器动画）
+  const activeTabIndex = useMemo(() => {
+    const index = tabs.findIndex(tab => tab.value === activeTab);
+    return index >= 0 ? index : 0;
+  }, [tabs, activeTab]);
+
+  // 缓存 tabs 样式对象，避免每次渲染创建新对象
+  const tabsStyle = useMemo(() => ({
+    '--pref-tab-columns': tabs.length,
+    '--pref-active-tab-index': activeTabIndex,
+  } as React.CSSProperties), [tabs.length, activeTabIndex]);
+
+  // 确保 activeTab 在可见 Tab 中
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.some(t => t.value === activeTab)) {
+      setActiveTab(tabs[0].value);
+    }
+  }, [tabs, activeTab]);
 
   // 头部操作按钮配置（使用 core 的共享配置）
   const headerActions = useMemo(() => {
-    const excludeActions: DrawerHeaderActionType[] = showPinButton ? [] : ['pin'];
-    return getDrawerHeaderActions(locale, {
+    const excludeActions: DrawerHeaderActionType[] = [];
+    
+    // 根据 showPinButton prop 和 uiConfig 过滤
+    if (!showPinButton || !getFeatureConfig(mergedUIConfig, 'headerActions.pin').visible) {
+      excludeActions.push('pin');
+    }
+    if (!getFeatureConfig(mergedUIConfig, 'headerActions.import').visible) {
+      excludeActions.push('import');
+    }
+    if (!getFeatureConfig(mergedUIConfig, 'headerActions.reset').visible) {
+      excludeActions.push('reset');
+    }
+    if (!getFeatureConfig(mergedUIConfig, 'headerActions.close').visible) {
+      excludeActions.push('close');
+    }
+    
+    const actions = getDrawerHeaderActions(locale, {
       hasChanges,
       isPinned,
       exclude: excludeActions,
     });
-  }, [locale, hasChanges, isPinned, showPinButton]);
+
+    // 应用 uiConfig 的 disabled 状态
+    return actions.map(action => ({
+      ...action,
+      disabled: action.disabled || getFeatureConfig(mergedUIConfig, `headerActions.${action.type}`).disabled,
+    }));
+  }, [locale, hasChanges, isPinned, showPinButton, mergedUIConfig]);
+
+  // 复制按钮配置
+  const copyButtonConfig = useMemo(
+    () => getFeatureConfig(mergedUIConfig, 'footerActions.copy'),
+    [mergedUIConfig]
+  );
+
+  // 复制按钮是否可见
+  const showCopyButton = copyButtonConfig.visible;
+
+  // 复制按钮是否禁用
+  const copyButtonDisabled = !hasChanges || copyState.isCopied || copyButtonConfig.disabled;
 
   // 点击遮罩
   const handleOverlayClick = useCallback(() => {
@@ -189,16 +268,21 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
     }
   }, [handleImportConfig, resetPreferences, onClose, onPinChange]);
 
-  // 复制配置（使用 core 的工具函数和控制器）
+  // 复制配置（使用 core 的工具函数和控制器，带错误处理）
   const handleCopyConfig = useCallback(async () => {
     if (preferences && !copyState.isCopied) {
-      const success = await copyPreferencesConfig(preferences);
-      if (success) {
-        setCopyState(copyControllerRef.current.handleCopySuccess(preferences));
-        // 设置自动恢复定时器
-        copyControllerRef.current.scheduleAutoReset(() => {
-          setCopyState(copyControllerRef.current.getInitialState());
-        });
+      try {
+        const success = await copyPreferencesConfig(preferences);
+        if (success) {
+          setCopyState(copyControllerRef.current.handleCopySuccess(preferences));
+          // 设置自动恢复定时器
+          copyControllerRef.current.scheduleAutoReset(() => {
+            setCopyState(copyControllerRef.current.getInitialState());
+          });
+        }
+      } catch (error) {
+        console.error('[PreferencesDrawer] Failed to copy config:', error);
+        // 可以在这里添加用户提示
       }
     }
   }, [preferences, copyState.isCopied]);
@@ -209,21 +293,21 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
     [copyState.isCopied]
   );
 
-  // 渲染当前标签内容
-  const renderTabContent = () => {
+  // 渲染当前标签内容（使用 useMemo 优化）
+  const tabContent = useMemo(() => {
     switch (activeTab) {
       case 'appearance':
-        return <AppearanceTab locale={locale} />;
+        return <AppearanceTab locale={locale} uiConfig={mergedUIConfig.appearance} />;
       case 'layout':
-        return <LayoutTab locale={locale} />;
+        return <LayoutTab locale={locale} uiConfig={mergedUIConfig.layout} />;
       case 'shortcutKeys':
-        return <ShortcutKeysTab locale={locale} />;
+        return <ShortcutKeysTab locale={locale} uiConfig={mergedUIConfig.shortcutKeys} />;
       case 'general':
-        return <GeneralTab locale={locale} />;
+        return <GeneralTab locale={locale} uiConfig={mergedUIConfig.general} />;
       default:
         return null;
     }
-  };
+  }, [activeTab, locale, mergedUIConfig]);
 
   return (
     <>
@@ -237,7 +321,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
 
       {/* 抽屉 */}
       <div className={`preferences-drawer ${open ? 'open' : ''}`}>
-        {/* 头部（Vben 风格：标题+副标题同行） */}
+        {/* 头部（标题+副标题同行） */}
         <div className="preferences-drawer-header">
           <div className="preferences-drawer-title-wrapper">
             <div className="preferences-drawer-title">{locale.preferences.title}</div>
@@ -251,6 +335,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
                 key={action.type}
                 className={`preferences-btn-icon${action.showIndicator ? ' relative' : ''}`}
                 disabled={action.disabled}
+                aria-label={action.tooltip}
                 data-preference-tooltip={action.tooltip || undefined}
                 onClick={() => handleHeaderAction(action.type)}
               >
@@ -258,6 +343,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
                 <span
                   dangerouslySetInnerHTML={{ __html: action.icon }}
                   style={ICON_STYLES.md}
+                  aria-hidden="true"
                 />
               </button>
             ))}
@@ -266,13 +352,24 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
 
         {/* 内容区 */}
         <div ref={bodyRef} className="preferences-drawer-body">
-          {/* 分段标签（Vben Segmented 风格） */}
+          {/* 分段标签 */}
           <div className={`preferences-tabs-wrapper${isPinned ? ' sticky' : ''}`}>
-            <div className="preferences-segmented">
+            <div 
+              className="preferences-segmented" 
+              role="tablist" 
+              aria-label="设置分类"
+              style={tabsStyle}
+            >
+              {/* 滑动指示器（水流动画） */}
+              <div className="preferences-segmented-indicator" aria-hidden="true" />
               {tabs.map((tab) => (
                 <button
                   key={tab.value}
+                  role="tab"
+                  id={`pref-tab-${tab.value}`}
                   className={`preferences-segmented-item ${activeTab === tab.value ? 'active' : ''}`}
+                  aria-selected={activeTab === tab.value}
+                  aria-controls={`pref-tabpanel-${tab.value}`}
                   onClick={() => handleTabChange(tab.value)}
                 >
                   {tab.label}
@@ -282,27 +379,35 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
           </div>
 
           {/* 标签内容 */}
-          {renderTabContent()}
+          <div 
+            id={`pref-tabpanel-${activeTab}`}
+            role="tabpanel"
+            aria-labelledby={`pref-tab-${activeTab}`}
+          >
+            {tabContent}
+          </div>
         </div>
 
         {/* 底部 */}
-        <div className="preferences-drawer-footer">
-          <button
-            className={`preferences-btn preferences-btn-primary${copyState.isCopied ? ' is-copied' : ''}`}
-            disabled={!hasChanges || copyState.isCopied}
-            onClick={handleCopyConfig}
-            {...copyButtonA11y}
-          >
-            <span
-              className="copy-btn-icon"
-              dangerouslySetInnerHTML={{ __html: copyState.isCopied ? ICONS.check : ICONS.copy }}
-              style={ICON_STYLES.sm}
-            />
-            <span className="copy-btn-text">
-              {copyState.isCopied ? locale.preferences.copied : locale.preferences.copyConfig}
-            </span>
-          </button>
-        </div>
+        {showCopyButton && (
+          <div className="preferences-drawer-footer">
+            <button
+              className={`preferences-btn preferences-btn-primary${copyState.isCopied ? ' is-copied' : ''}`}
+              disabled={copyButtonDisabled}
+              onClick={handleCopyConfig}
+              {...copyButtonA11y}
+            >
+              <span
+                className="copy-btn-icon"
+                dangerouslySetInnerHTML={{ __html: copyState.isCopied ? ICONS.check : ICONS.copy }}
+                style={ICON_STYLES.sm}
+              />
+              <span className="copy-btn-text">
+                {copyState.isCopied ? locale.preferences.copied : locale.preferences.copyConfig}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 导入错误弹窗 */}
@@ -335,6 +440,8 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = ({
       )}
     </>
   );
-};
+});
+
+PreferencesDrawer.displayName = 'PreferencesDrawer';
 
 export default PreferencesDrawer;

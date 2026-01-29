@@ -9,6 +9,11 @@ export {
   DEFAULT_PRIMARY_COLOR,
   getDefaultPreferences,
   clearDefaultPreferencesCache,
+  // 快捷键配置
+  SHORTCUT_KEY_BINDINGS,
+  getShortcutKeys,
+  getShortcutKeyDisplay,
+  type ShortcutKeyBinding,
 } from './defaults';
 
 // 设计令牌

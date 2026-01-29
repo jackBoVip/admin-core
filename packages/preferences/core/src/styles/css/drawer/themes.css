@@ -1,16 +1,25 @@
 /**
- * Theme & Layout Selection Styles
+ * Theme & Layout Selection Styles - Tailwind CSS v4 优化版
  * @description Theme modes, preset colors, radius, layout preview
- * @note Consistent with Vben Admin
+ *
+ * Tailwind v4 特性利用：
+ * - CSS 原生嵌套
+ * - :has() 选择器
+ * - will-change 性能优化
  */
 
 @layer admin-core {
-  /* ========== Theme Mode Selection (3-column layout) ========== */
+  /* ========== 主题模式选择（3 列网格，响应式） ========== */
   .theme-mode-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: var(--pref-grid-gap-lg);
     width: 100%;
+
+    /* 小屏响应式 */
+    @media (max-width: 320px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .theme-mode-item {
@@ -18,7 +27,41 @@
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: opacity var(--pref-transition);
+    border-radius: var(--radius, var(--pref-control-radius));
+
+    &:hover .theme-mode-label,
+    &:has(.outline-box-active) .theme-mode-label {
+      color: var(--foreground);
+    }
+
+    /* 焦点可见样式 - 无障碍支持 */
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* 禁用状态 - 使用 JS 阻止点击，CSS 只处理视觉样式 */
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+
+      /* 子元素也继承禁用鼠标样式 */
+      & * {
+        cursor: not-allowed !important;
+      }
+
+      /* 禁用 hover 效果 */
+      &:hover .theme-mode-label {
+        color: var(--muted-foreground);
+      }
+
+      .theme-mode-box:hover {
+        background: var(--muted);
+        transform: none;
+        box-shadow: none;
+      }
+    }
   }
 
   .theme-mode-box {
@@ -28,56 +71,61 @@
     width: 100%;
     aspect-ratio: 16 / 9;
     padding: 0;
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, var(--pref-control-radius));
     background: var(--muted);
     border: 2px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+    transition: 
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  .theme-mode-box:hover {
-    background: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
+    &:hover {
+      background: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px color-mix(in oklch, var(--foreground) 5%, transparent);
+      will-change: transform, box-shadow;
+    }
 
-  .outline-box-active.theme-mode-box {
-    border-color: var(--primary);
-    background: var(--background);
-    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+    &.outline-box-active {
+      border-color: var(--primary);
+      background: var(--background);
+      box-shadow: var(--pref-shadow-active);
+    }
   }
 
   .theme-mode-icon {
-    width: 24px;
-    height: 24px;
+    width: var(--pref-icon-size-md);
+    height: var(--pref-icon-size-md);
     color: var(--muted-foreground);
-    transition: all 0.2s ease;
-  }
+    transition: color var(--pref-transition), transform var(--pref-transition);
 
-  .outline-box-active .theme-mode-icon {
-    color: var(--primary);
-    transform: scale(1.1);
+    .outline-box-active & {
+      color: var(--primary);
+      transform: scale(1.1);
+    }
   }
 
   .theme-mode-label {
-    margin-top: 10px;
-    font-size: 12px;
+    margin-top: var(--pref-label-margin);
+    font-size: var(--pref-label-font-size);
     font-weight: 500;
     color: var(--muted-foreground);
     text-align: center;
-    transition: all 0.2s ease;
+    transition: color var(--pref-transition);
   }
 
-  .theme-mode-item:hover .theme-mode-label,
-  .theme-mode-item:has(.outline-box-active) .theme-mode-label {
-    color: var(--foreground);
-  }
-
-  /* ========== Theme Presets Grid (4-column) ========== */
+  /* ========== 主题预设网格（4 列，响应式） ========== */
   .theme-presets-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    gap: var(--pref-grid-gap-md);
     width: 100%;
+
+    /* 小屏响应式 */
+    @media (max-width: 320px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .theme-preset-item {
@@ -85,7 +133,42 @@
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: opacity var(--pref-transition);
+    border-radius: var(--radius, var(--pref-control-radius));
+
+    &:hover .theme-preset-label,
+    &:has(.outline-box-active) .theme-preset-label {
+      color: var(--foreground);
+    }
+
+    &:hover .theme-preset-custom-icon {
+      opacity: 1;
+    }
+
+    /* 焦点可见样式 */
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* 禁用状态 */
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+
+      & * {
+        cursor: not-allowed !important;
+      }
+
+      &:hover .theme-preset-label {
+        color: var(--muted-foreground);
+      }
+
+      .theme-preset-box:hover {
+        background: var(--muted);
+        transform: none;
+      }
+    }
   }
 
   .theme-preset-box {
@@ -95,45 +178,45 @@
     width: 100%;
     aspect-ratio: 1;
     padding: 0;
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, var(--pref-control-radius));
     background: var(--muted);
     border: 2px solid transparent;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
+    transition: 
+      background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  .theme-preset-box:hover {
-    background: var(--accent);
-    transform: scale(1.05);
-  }
+    &:hover {
+      background: var(--accent);
+      transform: scale(1.05);
+      will-change: transform;
+    }
 
-  .outline-box-active.theme-preset-box {
-    border-color: var(--primary);
-    background: var(--background);
-    box-shadow: 0 4px 12px rgba(var(--primary-rgb, 59, 130, 246), 0.1);
+    &.outline-box-active {
+      border-color: var(--primary);
+      background: var(--background);
+      box-shadow: var(--pref-shadow-active);
+    }
   }
 
   .theme-preset-color {
-    width: 20px;
-    height: 20px;
-    border-radius: calc(var(--radius, 8px) * 0.5);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+    width: var(--pref-color-swatch-size);
+    height: var(--pref-color-swatch-size);
+    border-radius: calc(var(--radius, var(--pref-control-radius)) * 0.5);
+    box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 5%, transparent);
   }
 
   .theme-preset-label {
     margin-top: 6px;
-    font-size: 11px;
+    font-size: var(--pref-label-font-size-sm);
     font-weight: 500;
     color: var(--muted-foreground);
     text-align: center;
-    transition: all 0.2s ease;
+    transition: color var(--pref-transition);
   }
 
-  .theme-preset-item:hover .theme-preset-label,
-  .theme-preset-item:has(.outline-box-active) .theme-preset-label {
-    color: var(--foreground);
-  }
-
-  /* ========== Custom Color Picker ========== */
+  /* ========== 自定义颜色选择器 ========== */
   .theme-preset-custom {
     position: relative;
     display: flex;
@@ -141,7 +224,7 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    padding: 8px 0;
+    padding: var(--pref-item-padding) 0;
   }
 
   .theme-preset-custom-inner {
@@ -149,23 +232,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: calc(var(--radius, 8px) * 0.5);
+    width: var(--pref-color-swatch-size);
+    height: var(--pref-color-swatch-size);
+    border-radius: calc(var(--radius, var(--pref-control-radius)) * 0.5);
   }
 
   .theme-preset-custom-icon {
     position: absolute;
-    width: 20px;
-    height: 20px;
+    width: var(--pref-color-swatch-size);
+    height: var(--pref-color-swatch-size);
     opacity: 0.6;
-    transition: opacity 0.15s ease;
+    transition: opacity var(--pref-transition);
     z-index: 1;
-  }
-
-  .theme-preset-item:hover .theme-preset-custom-icon,
-  .outline-box:hover .theme-preset-custom-icon {
-    opacity: 1;
   }
 
   .theme-preset-custom-input {
@@ -177,13 +255,31 @@
     cursor: pointer;
   }
 
-  /* ========== Radius Selection (Segmented Control style) ========== */
+  .outline-box:hover .theme-preset-custom-icon {
+    opacity: 1;
+  }
+
+  /* ========== 圆角选择（分段控件风格） ========== */
   .radius-options {
     display: flex;
     padding: 2px;
     background: var(--muted);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, var(--pref-control-radius));
     border: 1px solid var(--border);
+
+    /* 禁用状态 */
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+
+      & * {
+        cursor: not-allowed !important;
+      }
+
+      .radius-option {
+        pointer-events: none;
+      }
+    }
   }
 
   .radius-option {
@@ -192,41 +288,40 @@
     align-items: center;
     justify-content: center;
     height: 30px;
-    font-size: 12px;
+    font-size: var(--pref-label-font-size);
     font-weight: 500;
     color: var(--muted-foreground);
     background: transparent;
     border: none;
-    border-radius: calc(var(--radius, 8px) - 2px);
+    border-radius: calc(var(--radius, var(--pref-control-radius)) - 2px);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: 
+      color var(--pref-transition),
+      background-color var(--pref-transition),
+      box-shadow var(--pref-transition);
+
+    &:hover {
+      color: var(--foreground);
+      background: color-mix(in oklch, var(--foreground) 4%, transparent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: -2px;
+    }
+
+    &.active {
+      color: var(--foreground);
+      font-weight: 600;
+      background: var(--background);
+      box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 10%, transparent);
+    }
   }
 
-  .radius-option:hover {
-    color: var(--foreground);
-    background: rgba(0, 0, 0, 0.04);
-  }
-
-  .radius-option.active {
-    color: var(--foreground);
-    font-weight: 600;
-    background: var(--background);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .radius-option:not(:first-child) {
-    margin-left: 0;
-  }
-
-  .radius-option:first-child,
-  .radius-option:last-child {
-    border-radius: calc(var(--radius, 8px) - 2px);
-  }
-
-  /* ========== Content Compact Options ========== */
+  /* ========== 内容紧凑选项 ========== */
   .content-compact-options {
     display: flex;
-    gap: 8px;
+    gap: var(--pref-grid-gap-sm);
   }
 
   .content-compact-option {
@@ -239,27 +334,35 @@
     color: var(--foreground);
     background: transparent;
     border: 1px solid var(--input);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, var(--pref-control-radius));
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: 
+      background-color var(--pref-transition),
+      border-color var(--pref-transition),
+      box-shadow var(--pref-transition);
+
+    &:hover {
+      background: var(--accent);
+    }
+
+    &.active {
+      color: var(--primary-foreground);
+      background: var(--primary);
+      border-color: var(--primary);
+    }
   }
 
-  .content-compact-option:hover {
-    background: var(--accent);
-  }
-
-  .content-compact-option.active {
-    color: var(--primary-foreground);
-    background: var(--primary);
-    border-color: var(--primary);
-  }
-
-  /* ========== Layout Presets Grid ========== */
+  /* ========== 布局预设网格（响应式） ========== */
   .layout-presets-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
+    gap: var(--pref-grid-gap-md);
     width: 100%;
+
+    /* 小屏响应式 */
+    @media (max-width: 320px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 
   .layout-preset-item {
@@ -267,98 +370,67 @@
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: var(--radius, var(--pref-control-radius));
+
+    /* 焦点可见样式 */
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* 禁用状态 */
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+
+      & * {
+        cursor: not-allowed !important;
+      }
+
+      &:hover .layout-preset-label {
+        color: var(--muted-foreground);
+      }
+    }
   }
 
   .layout-preset-box {
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 12px 10px;
-    border-radius: var(--radius, 8px);
-    border: 2px solid var(--border);
-    background: var(--muted);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .layout-preset-box:hover {
-    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    background: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .layout-preset-box.outline-box-active {
-    border-color: var(--primary);
-    background: var(--background);
-    box-shadow: 0 4px 16px rgba(var(--primary-rgb, 59, 130, 246), 0.15);
-  }
-
-  /* 选中勾选标记 */
-  .layout-preset-box.outline-box-active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    background: var(--primary);
-    border-radius: 8px 0 var(--radius, 8px) 0;
-    clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  }
-
-  .layout-preset-box.outline-box-active::before {
-    content: '✓';
-    position: absolute;
-    bottom: 1px;
-    right: 2px;
-    font-size: 10px;
-    font-weight: bold;
-    color: white;
-    z-index: 1;
   }
 
   .layout-preset-preview {
     width: 100%;
-    max-width: 80px;
-    aspect-ratio: 80 / 50;
+    max-width: var(--pref-preview-max-width);
+    aspect-ratio: var(--pref-preview-aspect);
     color: var(--foreground);
-  }
 
-  .layout-preset-preview svg {
-    width: 100%;
-    height: 100%;
-    border-radius: 3px;
-    overflow: visible;
+    svg {
+      width: 100%;
+      height: 100%;
+    }
   }
 
   .layout-preset-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 10px;
-    font-size: 12px;
-    font-weight: 500;
+    margin-top: var(--pref-grid-gap-sm);
+    font-size: var(--pref-label-font-size);
     color: var(--muted-foreground);
-    transition: all 0.2s ease;
+    transition: color var(--pref-transition);
+
+    &:hover {
+      color: var(--foreground);
+    }
   }
 
-  .layout-preset-item:hover .layout-preset-label {
-    color: var(--foreground);
-  }
-
-  .layout-preset-item:has(.outline-box-active) .layout-preset-label {
-    color: var(--primary);
-    font-weight: 600;
-  }
-
-  /* ========== Content Width Grid ========== */
+  /* ========== 内容宽度网格 ========== */
   .content-width-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: var(--pref-grid-gap-md);
     width: 100%;
   }
 
@@ -367,90 +439,59 @@
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    border-radius: var(--radius, var(--pref-control-radius));
+
+    /* 焦点可见样式 */
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* 禁用状态 */
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+
+      & * {
+        cursor: not-allowed !important;
+      }
+
+      &:hover .content-width-label {
+        color: var(--muted-foreground);
+      }
+    }
   }
 
   .content-width-box {
-    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 12px 10px;
-    border-radius: var(--radius, 8px);
-    border: 2px solid var(--border);
-    background: var(--muted);
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .content-width-box:hover {
-    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    background: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .content-width-box.outline-box-active {
-    border-color: var(--primary);
-    background: var(--background);
-    box-shadow: 0 4px 16px rgba(var(--primary-rgb, 59, 130, 246), 0.15);
-  }
-
-  /* 选中勾选标记 */
-  .content-width-box.outline-box-active::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    background: var(--primary);
-    border-radius: 8px 0 var(--radius, 8px) 0;
-    clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  }
-
-  .content-width-box.outline-box-active::before {
-    content: '✓';
-    position: absolute;
-    bottom: 1px;
-    right: 2px;
-    font-size: 10px;
-    font-weight: bold;
-    color: white;
-    z-index: 1;
   }
 
   .content-width-preview {
     width: 100%;
-    max-width: 100px;
-    aspect-ratio: 80 / 50;
+    max-width: var(--pref-preview-max-width);
+    aspect-ratio: var(--pref-preview-aspect);
     color: var(--foreground);
-  }
 
-  .content-width-preview svg {
-    width: 100%;
-    height: 100%;
-    border-radius: 3px;
-    overflow: visible;
+    svg {
+      width: 100%;
+      height: 100%;
+    }
   }
 
   .content-width-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 10px;
-    font-size: 12px;
-    font-weight: 500;
+    margin-top: var(--pref-grid-gap-sm);
+    font-size: var(--pref-label-font-size);
     color: var(--muted-foreground);
-    transition: all 0.2s ease;
-  }
+    transition: color var(--pref-transition);
 
-  .content-width-item:hover .content-width-label {
-    color: var(--foreground);
-  }
-
-  .content-width-item:has(.outline-box-active) .content-width-label {
-    color: var(--primary);
-    font-weight: 600;
+    &:hover {
+      color: var(--foreground);
+    }
   }
 }

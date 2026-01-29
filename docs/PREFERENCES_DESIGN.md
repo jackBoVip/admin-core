@@ -4,8 +4,6 @@
 
 ### 1.1 项目目标
 
-将 Vben Admin 框架中的偏好设置功能迁移为独立的 npm 包，实现：
-
 - **框架无关**: 核心逻辑与 Vue/React 解耦
 - **高度可配置**: 所有配置项可通过配置文件定制
 - **主题适配**: 支持 Ant Design、Element Plus、Naive UI、shadcn/ui 等主流 UI 组件库

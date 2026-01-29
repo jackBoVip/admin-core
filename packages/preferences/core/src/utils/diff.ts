@@ -21,16 +21,19 @@ export interface DiffResult<T> {
  * @param original - 原始对象
  * @param current - 当前对象
  * @param prefix - 键前缀（内部使用）
+ * @param detectDeletions - 是否检测删除的键（默认 false，用于偏好设置场景不需要）
  * @returns 差异结果
  */
 export function diffWithKeys<T extends object>(
   original: T,
   current: T,
-  prefix = ''
+  prefix = '',
+  detectDeletions = false
 ): DiffResult<T> {
-  const changes: DeepPartial<T> = {};
+  const changes = {} as DeepPartial<T>;
   const keys: string[] = [];
 
+  // 检查 current 中的变化（新增或修改）
   for (const key in current) {
     if (!Object.prototype.hasOwnProperty.call(current, key)) continue;
 
@@ -39,13 +42,26 @@ export function diffWithKeys<T extends object>(
     const currentValue = current[key];
 
     if (isObject(originalValue) && isObject(currentValue)) {
-      const nested = diffWithKeys(originalValue, currentValue, fullKey);
+      const nested = diffWithKeys(originalValue, currentValue, fullKey, detectDeletions);
       if (Object.keys(nested.changes).length > 0) {
         (changes as Record<string, unknown>)[key] = nested.changes;
         keys.push(...nested.keys);
       }
     } else if (!isEqual(originalValue, currentValue)) {
       (changes as Record<string, unknown>)[key] = currentValue;
+      keys.push(fullKey);
+    }
+  }
+
+  // 检测删除的键（original 有但 current 没有）
+  if (detectDeletions) {
+    for (const key in original) {
+      if (!Object.prototype.hasOwnProperty.call(original, key)) continue;
+      if (Object.prototype.hasOwnProperty.call(current, key)) continue;
+
+      const fullKey = prefix ? `${prefix}.${key}` : key;
+      // 标记为 undefined 表示删除
+      (changes as Record<string, unknown>)[key] = undefined;
       keys.push(fullKey);
     }
   }
@@ -65,13 +81,38 @@ export function diff<T extends object>(original: T, current: T): DeepPartial<T> 
 }
 
 /**
- * 检查对象是否有变化
+ * 检查对象是否有变化（优化版：发现第一个差异即返回）
  * @param original - 原始对象
  * @param current - 当前对象
  * @returns 是否有变化
  */
 export function hasChanges<T extends object>(original: T, current: T): boolean {
-  return diffWithKeys(original, current).keys.length > 0;
+  // 优化：快速检查是否有任何变化，无需计算完整差异
+  return hasAnyChange(original, current);
+}
+
+/**
+ * 快速检查是否有任何变化（内部使用）
+ * @description 发现第一个差异即返回，比 diffWithKeys 更高效
+ */
+function hasAnyChange<T extends object>(original: T, current: T): boolean {
+  // 检查 current 中的变化
+  for (const key in current) {
+    if (!Object.prototype.hasOwnProperty.call(current, key)) continue;
+
+    const originalValue = original[key];
+    const currentValue = current[key];
+
+    if (isObject(originalValue) && isObject(currentValue)) {
+      if (hasAnyChange(originalValue, currentValue)) {
+        return true;
+      }
+    } else if (!isEqual(originalValue, currentValue)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**

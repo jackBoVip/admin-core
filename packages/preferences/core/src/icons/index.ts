@@ -7,7 +7,7 @@
  * 3. 支持自定义图标尺寸和颜色（通过 currentColor）
  */
 
-// 布局图标
+// 布局图标（静态）
 export {
   getLayoutIcon,
   layoutIcons,
@@ -15,6 +15,16 @@ export {
   contentWidthIcons,
   type ContentWidthType,
 } from './layouts';
+
+// 布局预览图生成器（动态）
+export {
+  generateLayoutPreview,
+  generatePreviewFromPreferences,
+  generatePreviewWithOverrides,
+  extractPreviewOptions,
+  DEFAULT_PREVIEW_OPTIONS,
+  type LayoutPreviewOptions,
+} from './layout-preview-generator';
 
 // 通用图标
 export {

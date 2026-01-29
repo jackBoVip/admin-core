@@ -117,6 +117,8 @@ export const CSS_VAR_Z_INDEX = {
   TOOLTIP: '--admin-z-index-tooltip',
   /** Toast 层级 */
   TOAST: '--admin-z-index-toast',
+  /** 锁屏层级 */
+  LOCK_SCREEN: '--admin-z-index-lock-screen',
 } as const;
 
 /**
@@ -129,6 +131,7 @@ export const DEFAULT_Z_INDEX = {
   popover: 1060,
   tooltip: 1070,
   toast: 1080,
+  lockScreen: 9999,
 } as const;
 
 /**

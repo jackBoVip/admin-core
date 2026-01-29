@@ -83,6 +83,12 @@ export interface AppPreferences {
   watermark: boolean;
   /** 水印内容 */
   watermarkContent: string;
+  /** 水印角度 (度) */
+  watermarkAngle: number;
+  /** 水印是否附加日期 */
+  watermarkAppendDate: boolean;
+  /** 水印字体大小 (px) */
+  watermarkFontSize: number;
   /** 全局 z-index 基准值 */
   zIndex: number;
 }
@@ -147,6 +153,12 @@ export interface HeaderPreferences {
   hidden: boolean;
   /** 菜单对齐方式 */
   menuAlign: LayoutHeaderMenuAlignType;
+  /**
+   * 菜单启动器模式
+   * @description 将顶栏菜单折叠为一个启动器按钮，点击后在内容区弹出菜单面板
+   * 适用于菜单项较多的场景，带有 macOS 风格的缩放动画
+   */
+  menuLauncher: boolean;
   /** 顶栏模式 */
   mode: LayoutHeaderModeType;
 }
@@ -330,6 +342,44 @@ export interface WidgetPreferences {
 }
 
 /**
+ * 功能区位置类型
+ */
+export type PanelPositionType = 'left' | 'right';
+
+/**
+ * 功能区偏好设置
+ * @description 全局功能面板配置，可放置在左侧或右侧
+ */
+export interface PanelPreferences {
+  /** 启用功能区 */
+  enable: boolean;
+  /** 功能区位置 */
+  position: PanelPositionType;
+  /** 折叠状态 */
+  collapsed: boolean;
+  /** 显示折叠按钮 */
+  collapsedButton: boolean;
+  /** 展开宽度 (px) */
+  width: number;
+  /** 折叠宽度 (px) */
+  collapsedWidth: number;
+}
+
+/**
+ * 锁屏偏好设置
+ */
+export interface LockScreenPreferences {
+  /** 是否已锁定 */
+  isLocked: boolean;
+  /** 锁屏密码哈希值（空字符串表示未设置） */
+  password: string;
+  /** 锁屏背景图 URL（空字符串表示使用默认背景） */
+  backgroundImage: string;
+  /** 自动锁屏时间（分钟），0 表示禁用 */
+  autoLockTime: number;
+}
+
+/**
  * 完整偏好设置
  */
 export interface Preferences {
@@ -343,10 +393,14 @@ export interface Preferences {
   footer: FooterPreferences;
   /** 顶栏配置 */
   header: HeaderPreferences;
+  /** 锁屏配置 */
+  lockScreen: LockScreenPreferences;
   /** Logo 配置 */
   logo: LogoPreferences;
   /** 导航配置 */
   navigation: NavigationPreferences;
+  /** 功能区配置 */
+  panel: PanelPreferences;
   /** 快捷键配置 */
   shortcutKeys: ShortcutKeyPreferences;
   /** 侧边栏配置 */

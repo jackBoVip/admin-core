@@ -21,8 +21,10 @@ const settingsIcon = getIcon('settings');
   <button
     v-if="show !== false"
     class="preferences-trigger"
+    aria-label="打开偏好设置"
+    title="偏好设置"
     @click="emit('click')"
   >
-    <span v-html="settingsIcon" />
+    <span v-html="settingsIcon" aria-hidden="true" />
   </button>
 </template>

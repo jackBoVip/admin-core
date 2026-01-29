@@ -35,8 +35,11 @@ export type {
   CopyrightPreferences,
   FooterPreferences,
   HeaderPreferences,
+  LockScreenPreferences,
   LogoPreferences,
   NavigationPreferences,
+  PanelPositionType,
+  PanelPreferences,
   Preferences,
   PreferencesKeys,
   ShortcutKeyPreferences,
@@ -74,4 +77,21 @@ export type {
   LayoutTabComponentProps,
   ShortcutKeysTabComponentProps,
   GeneralTabComponentProps,
+  LockScreenComponentProps,
+  LockPasswordModalComponentProps,
+  PreferencesProviderComponentProps,
 } from './components';
+
+// 抽屉 UI 配置类型
+export type {
+  FeatureItemConfig,
+  FeatureBlockConfig,
+  AppearanceTabConfig,
+  LayoutTabConfig,
+  GeneralTabConfig,
+  ShortcutKeysTabConfig,
+  HeaderActionsConfig,
+  FooterActionsConfig,
+  PreferencesDrawerUIConfig,
+  ResolvedFeatureConfig,
+} from './drawer-config';

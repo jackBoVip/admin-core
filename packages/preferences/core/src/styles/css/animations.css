@@ -1,10 +1,17 @@
 /**
- * Animation Styles
- * @description Page transitions and base animations
+ * Animation Styles - Tailwind CSS v4 优化版
+ * @description Vue/React 页面过渡动画和工具类
+ *
+ * 设计原则：
+ * - 基础关键帧由 Tailwind 预设定义，这里只定义 Vue/React 过渡类
+ * - 使用 CSS 变量控制动画时长和缓动
+ * - 使用 CSS 嵌套简化代码
  */
 
 @layer admin-core {
-  /* ========== Fade ========== */
+  /* ========== Vue/React 过渡动画类 ========== */
+  
+  /* Fade - 淡入淡出 */
   .fade-enter-active,
   .fade-leave-active {
     transition: opacity var(--admin-duration-normal) var(--admin-easing-default);
@@ -15,7 +22,7 @@
     opacity: 0;
   }
 
-  /* ========== Fade Slide ========== */
+  /* Fade Slide - 淡入滑动 */
   .fade-slide-enter-active,
   .fade-slide-leave-active {
     transition:
@@ -33,7 +40,7 @@
     transform: translateX(-30px);
   }
 
-  /* ========== Fade Up ========== */
+  /* Fade Up - 淡入上滑 */
   .fade-up-enter-active,
   .fade-up-leave-active {
     transition:
@@ -51,7 +58,7 @@
     transform: translateY(-20px);
   }
 
-  /* ========== Fade Down ========== */
+  /* Fade Down - 淡入下滑 */
   .fade-down-enter-active,
   .fade-down-leave-active {
     transition:
@@ -69,35 +76,20 @@
     transform: translateY(20px);
   }
 
-  /* ========== Slide Left ========== */
+  /* Slide Left/Right - 滑动 */
   .slide-left-enter-active,
-  .slide-left-leave-active {
-    transition: transform var(--admin-duration-normal) var(--admin-easing-default);
-  }
-
-  .slide-left-enter-from {
-    transform: translateX(100%);
-  }
-
-  .slide-left-leave-to {
-    transform: translateX(-100%);
-  }
-
-  /* ========== Slide Right ========== */
+  .slide-left-leave-active,
   .slide-right-enter-active,
   .slide-right-leave-active {
     transition: transform var(--admin-duration-normal) var(--admin-easing-default);
   }
 
-  .slide-right-enter-from {
-    transform: translateX(-100%);
-  }
+  .slide-left-enter-from { transform: translateX(100%); }
+  .slide-left-leave-to { transform: translateX(-100%); }
+  .slide-right-enter-from { transform: translateX(-100%); }
+  .slide-right-leave-to { transform: translateX(100%); }
 
-  .slide-right-leave-to {
-    transform: translateX(100%);
-  }
-
-  /* ========== Scale ========== */
+  /* Scale - 缩放 */
   .scale-enter-active,
   .scale-leave-active {
     transition:
@@ -111,80 +103,47 @@
     transform: scale(0.95);
   }
 
-  /* ========== Expand / Collapse ========== */
+  /* Expand/Collapse - 展开/折叠（使用 max-height 替代 height 避免重排） */
   .expand-enter-active,
   .expand-leave-active {
     transition:
-      height var(--admin-duration-normal) var(--admin-easing-default),
+      max-height var(--admin-duration-normal) var(--admin-easing-default),
       opacity var(--admin-duration-normal) var(--admin-easing-default);
     overflow: hidden;
+    max-height: 500px; /* 足够大的值 */
   }
 
   .expand-enter-from,
   .expand-leave-to {
-    height: 0;
+    max-height: 0;
     opacity: 0;
   }
+}
 
-  /* ========== Keyframes ========== */
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+/* ========== 使用 @utility 定义动画工具类 ========== */
 
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
+/* 骨架屏闪烁效果 - 使用伪元素配合 transform 提升性能 */
+@utility animate-shimmer {
+  position: relative;
+  overflow: hidden;
 
-  @keyframes bounce {
-    0%,
-    100% {
-      transform: translateY(-25%);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-    50% {
-      transform: translateY(0);
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-
-  /* ========== Animation Utilities ========== */
-  .animate-spin {
-    animation: spin 1s linear infinite;
-  }
-
-  .animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  .animate-bounce {
-    animation: bounce 1s infinite;
-  }
-
-  .animate-shimmer {
-    animation: shimmer 2s infinite;
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
     background: linear-gradient(
       90deg,
       transparent 0%,
       var(--muted) 50%,
       transparent 100%
     );
-    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
   }
+}
+
+/* ========== 关键帧定义 ========== */
+/* shimmer 使用 transform 替代 background-position 提升性能 */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }

@@ -1,10 +1,15 @@
 /**
- * Trigger Button Styles
+ * Trigger Button Styles - Tailwind CSS v4 优化版
  * @description Fixed button on the right side to open drawer
+ *
+ * Tailwind v4 特性利用：
+ * - CSS 原生嵌套
+ * - color-mix() 动态阴影
+ * - 移动端响应式
  */
 
 @layer admin-core {
-  /* ========== Trigger Button ========== */
+  /* ========== 触发按钮 ========== */
   .preferences-trigger {
     position: fixed;
     top: 50%;
@@ -21,21 +26,51 @@
     border: none;
     border-radius: var(--radius, 8px) 0 0 var(--radius, 8px);
     cursor: pointer;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
-    transition: all 0.15s ease;
+    box-shadow: -2px 0 8px color-mix(in oklch, var(--foreground) 15%, transparent);
+    transition: width var(--admin-duration-fast) ease;
+
+    /* 悬停展开 */
+    &:hover {
+      width: 48px;
+    }
+
+    /* 聚焦状态 */
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* 图标旋转动画 */
+    svg {
+      width: 20px;
+      height: 20px;
+      animation: preferences-spin 3s linear infinite;
+    }
+
+    /* 移动端适配 - 更大的触摸区域 */
+    @media (max-width: 768px) {
+      width: 44px;
+      height: 44px;
+
+      &:hover {
+        width: 52px;
+      }
+    }
+
+    /* 触摸设备 - 禁用悬停效果 */
+    @media (hover: none) {
+      &:hover {
+        width: 40px;
+      }
+
+      &:active {
+        width: 48px;
+      }
+    }
   }
 
-  .preferences-trigger:hover {
-    width: 48px;
-  }
-
-  .preferences-trigger svg {
-    width: 20px;
-    height: 20px;
-    animation: spin 3s linear infinite;
-  }
-
-  @keyframes spin {
+  /* 旋转动画 */
+  @keyframes preferences-spin {
     to {
       transform: rotate(360deg);
     }

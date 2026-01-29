@@ -40,7 +40,8 @@ function generateBundledCSS(tokensCSS: string): string {
     { path: join(srcDir, 'animations.css'), comment: 'Animations' },
     // 3. 工具类
     { path: join(srcDir, 'utilities.css'), comment: 'Utilities' },
-    // 4. 抽屉组件
+    // 4. 抽屉组件 - Design Tokens 必须在最前面
+    { path: join(srcDir, 'drawer/tokens.css'), comment: 'Drawer Tokens' },
     { path: join(srcDir, 'drawer/container.css'), comment: 'Drawer Container' },
     { path: join(srcDir, 'drawer/header.css'), comment: 'Drawer Header' },
     { path: join(srcDir, 'drawer/tabs.css'), comment: 'Drawer Tabs' },
@@ -49,6 +50,8 @@ function generateBundledCSS(tokensCSS: string): string {
     { path: join(srcDir, 'drawer/themes.css'), comment: 'Drawer Themes' },
     { path: join(srcDir, 'drawer/trigger.css'), comment: 'Drawer Trigger' },
     { path: join(srcDir, 'drawer/slider.css'), comment: 'Drawer Slider' },
+    // 5. 锁屏组件
+    { path: join(srcDir, 'lock-screen.css'), comment: 'Lock Screen' },
   ];
 
   const parts: string[] = [
@@ -57,6 +60,10 @@ function generateBundledCSS(tokensCSS: string): string {
     ' * @description 合并后的样式文件，可直接导入使用',
     ' * @usage @import "@admin-core/preferences/styles";',
     ' */',
+    '',
+    '/* ========== Layer Order Declaration ========== */',
+    '/* admin-core layer has highest priority, must be declared before Tailwind imports */',
+    '@layer theme, base, components, utilities, admin-core;',
     '',
   ];
 
@@ -110,20 +117,31 @@ export default defineConfig([
       options.banner = {
         js: '/* @admin-core/preferences */',
       };
+      // 处理图片文件，转换为 base64 data URL
+      options.loader = {
+        ...options.loader,
+        '.jpg': 'dataurl',
+        '.jpeg': 'dataurl',
+        '.png': 'dataurl',
+        '.gif': 'dataurl',
+        '.webp': 'dataurl',
+      };
     },
     onSuccess: async () => {
       // 生成设计令牌 CSS
       const tokensCSS = await generateTokensCSS();
-      console.log('Design tokens CSS generated');
       
       // 复制原始 CSS 文件（保留分离的文件结构供高级用户使用）
       copyDir('src/styles/css', 'dist/styles/css');
-      console.log('CSS files copied successfully');
+      
+      // 复制 assets 目录（图片等静态资源）
+      if (existsSync('src/assets')) {
+        copyDir('src/assets', 'dist/assets');
+      }
       
       // 生成合并后的 CSS 文件（主要入口，无 @import）
       const bundledCSS = generateBundledCSS(tokensCSS);
       writeFileSync('dist/styles/css/index.css', bundledCSS);
-      console.log('Bundled CSS generated (no @import statements)');
     },
   },
   // IIFE 格式（CDN 使用）
@@ -142,6 +160,15 @@ export default defineConfig([
     esbuildOptions(options) {
       options.banner = {
         js: '/* @admin-core/preferences - CDN Build */',
+      };
+      // 处理图片文件，转换为 base64 data URL
+      options.loader = {
+        ...options.loader,
+        '.jpg': 'dataurl',
+        '.jpeg': 'dataurl',
+        '.png': 'dataurl',
+        '.gif': 'dataurl',
+        '.webp': 'dataurl',
       };
     },
   },

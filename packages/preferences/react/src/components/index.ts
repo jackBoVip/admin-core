@@ -13,7 +13,14 @@ export { LayoutIcon, type LayoutIconProps };
 export const AdminIcon = Icon;
 export const AdminLayoutIcon = LayoutIcon;
 
-// 偏好设置抽屉组件
+// 偏好设置提供者（推荐使用，自动集成锁屏和快捷键）
+export {
+  PreferencesProvider,
+  usePreferencesContext,
+  type PreferencesProviderProps,
+} from './PreferencesProvider';
+
+// 偏好设置抽屉组件（高级场景单独使用）
 export {
   // 主组件
   PreferencesDrawer,
@@ -28,6 +35,7 @@ export {
   SwitchItem as PreferencesSwitchItem,
   SelectItem as PreferencesSelectItem,
   SliderItem as PreferencesSliderItem,
+  InputItem as PreferencesInputItem,
   // 类型
   type PreferencesDrawerProps,
   type PreferencesTriggerProps,
@@ -39,4 +47,8 @@ export {
   type SwitchItemProps as PreferencesSwitchItemProps,
   type SelectItemProps as PreferencesSelectItemProps,
   type SliderItemProps as PreferencesSliderItemProps,
+  type InputItemProps as PreferencesInputItemProps,
 } from './drawer';
+
+// 内部组件（被 PreferencesProvider 使用）
+export { LockScreen, type LockScreenProps } from './lock-screen';

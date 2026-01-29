@@ -17,6 +17,7 @@ export { default as Block } from './Block.vue';
 export { default as SwitchItem } from './SwitchItem.vue';
 export { default as SelectItem } from './SelectItem.vue';
 export { default as SliderItem } from './SliderItem.vue';
+export { default as InputItem } from './InputItem.vue';
 
 // 类型
 export type {
@@ -30,4 +31,5 @@ export type {
   SwitchItemProps,
   SelectItemProps,
   SliderItemProps,
+  InputItemProps,
 } from './types';

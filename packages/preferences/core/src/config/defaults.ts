@@ -17,6 +17,66 @@ import type { Preferences } from '../types';
 export const DEFAULT_PRIMARY_COLOR = 'oklch(0.55 0.2 250)'; // 蓝色
 
 /**
+ * 快捷键配置
+ * @description 定义各功能对应的快捷键组合
+ */
+export interface ShortcutKeyBinding {
+  /** 快捷键标识 */
+  key: string;
+  /** 按键列表 (Windows/Linux) */
+  keys: string[];
+  /** 按键列表 (Mac) */
+  keysMac: string[];
+}
+
+/**
+ * 快捷键映射配置
+ */
+export const SHORTCUT_KEY_BINDINGS: Record<string, ShortcutKeyBinding> = {
+  globalPreferences: {
+    key: 'globalPreferences',
+    keys: ['Ctrl', 'Shift', ','],
+    keysMac: ['⌘', '⇧', ','],
+  },
+  globalSearch: {
+    key: 'globalSearch',
+    keys: ['Ctrl', 'K'],
+    keysMac: ['⌘', 'K'],
+  },
+  globalLockScreen: {
+    key: 'globalLockScreen',
+    keys: ['Ctrl', 'Shift', 'L'],
+    keysMac: ['⌘', '⇧', 'L'],
+  },
+  globalLogout: {
+    key: 'globalLogout',
+    keys: ['Ctrl', 'Shift', 'Q'],
+    keysMac: ['⌘', '⇧', 'Q'],
+  },
+};
+
+/**
+ * 获取快捷键按键列表
+ * @param key 快捷键标识
+ * @param isMac 是否为 Mac 系统
+ */
+export function getShortcutKeys(key: string, isMac = false): string[] {
+  const binding = SHORTCUT_KEY_BINDINGS[key];
+  if (!binding) return [];
+  return isMac ? binding.keysMac : binding.keys;
+}
+
+/**
+ * 获取快捷键显示文本（兼容旧 API）
+ * @param key 快捷键标识
+ * @param isMac 是否为 Mac 系统
+ */
+export function getShortcutKeyDisplay(key: string, isMac = false): string {
+  const keys = getShortcutKeys(key, isMac);
+  return keys.join(' + ');
+}
+
+/**
  * 默认偏好设置
  */
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -82,6 +142,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
     watermark: false,
     /** 水印内容 */
     watermarkContent: '',
+    /** 水印角度 (度) */
+    watermarkAngle: -22,
+    /** 水印是否附加日期 */
+    watermarkAppendDate: false,
+    /** 水印字体大小 (px) */
+    watermarkFontSize: 16,
     /** 全局 z-index 基准值 */
     zIndex: 200,
   },
@@ -138,8 +204,22 @@ export const DEFAULT_PREFERENCES: Preferences = {
     hidden: false,
     /** 菜单对齐方式: start | center | end */
     menuAlign: 'start',
+    /** 菜单启动器模式（将菜单折叠为一个按钮，点击弹出菜单面板） */
+    menuLauncher: false,
     /** 顶栏模式: fixed | static | auto | auto-scroll */
     mode: 'fixed',
+  },
+
+  // ========== 锁屏配置 ==========
+  lockScreen: {
+    /** 是否已锁定 */
+    isLocked: false,
+    /** 锁屏密码 */
+    password: '',
+    /** 锁屏背景图 URL */
+    backgroundImage: '',
+    /** 自动锁屏时间（分钟），0 表示禁用 */
+    autoLockTime: 0,
   },
 
   // ========== Logo 配置 ==========
@@ -150,8 +230,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
     fit: 'contain',
     /** Logo 图片 URL */
     source: '',
-    /** 暗色模式 Logo URL（可选） */
-    sourceDark: undefined,
+    /** 暗色模式 Logo URL（可选，空字符串表示使用默认 source） */
+    sourceDark: '',
   },
 
   // ========== 导航配置 ==========
@@ -162,6 +242,22 @@ export const DEFAULT_PREFERENCES: Preferences = {
     split: true,
     /** 导航风格: rounded | plain */
     styleType: 'rounded',
+  },
+
+  // ========== 功能区配置 ==========
+  panel: {
+    /** 启用功能区 */
+    enable: false,
+    /** 功能区位置: left | right */
+    position: 'right',
+    /** 折叠状态 */
+    collapsed: false,
+    /** 显示折叠按钮 */
+    collapsedButton: true,
+    /** 展开宽度 (px) */
+    width: 260,
+    /** 折叠宽度 (px) */
+    collapsedWidth: 48,
   },
 
   // ========== 快捷键配置 ==========

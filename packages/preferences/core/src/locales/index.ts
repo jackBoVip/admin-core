@@ -5,6 +5,7 @@
 
 import { zhCN } from './zh-CN';
 import { enUS } from './en-US';
+import { get } from '../utils/helpers';
 
 /**
  * 语言消息类型
@@ -85,19 +86,10 @@ export function getLocaleLabel(locale: string): string {
 }
 
 /**
- * 根据路径从语言包获取翻译文本
+ * 根据路径从语言包获取翻译文本（使用 helpers.get 统一实现）
  */
 export function getTranslation(messages: LocaleMessages, path: string): string {
-  const keys = path.split('.');
-  let result: unknown = messages;
-
-  for (const key of keys) {
-    if (result === null || result === undefined || typeof result !== 'object') {
-      return path;
-    }
-    result = (result as Record<string, unknown>)[key];
-  }
-
+  const result = get<string>(messages, path, path);
   return typeof result === 'string' ? result : path;
 }
 

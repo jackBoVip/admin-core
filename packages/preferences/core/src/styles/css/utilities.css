@@ -1,43 +1,94 @@
 /**
- * Utility Styles
- * @description Common helper classes
+ * Utility Styles - Tailwind CSS v4 优化版
+ * @description 使用 @utility 指令创建自定义工具类
+ *
+ * Tailwind v4 特性利用：
+ * - @utility 指令定义自定义工具类
+ * - CSS 原生嵌套
+ * - 自动与 Tailwind 工具类系统集成
  */
 
-@layer admin-core {
-  /* ========== Scrollbar ========== */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: var(--muted-foreground) transparent;
-  }
+/* ========== 自定义工具类（使用 @utility 指令） ========== */
 
-  .scrollbar-thin::-webkit-scrollbar {
+/* 滚动条样式 - 可通过 Tailwind 类使用，如 class="scrollbar-thin" */
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted-foreground) transparent;
+
+  &::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
+  &::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
+  &::-webkit-scrollbar-thumb {
     background: var(--muted-foreground);
     border-radius: 3px;
-  }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: var(--foreground);
+    &:hover {
+      background: var(--foreground);
+    }
   }
+}
 
-  .scrollbar-none {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 
-  .scrollbar-none::-webkit-scrollbar {
+  &::-webkit-scrollbar {
     display: none;
   }
+}
 
-  /* ========== Text Truncation ========== */
+/* 灰色模式（哀悼模式） */
+@utility grayscale-mode {
+  filter: grayscale(100%);
+}
+
+/* 色弱模式（无障碍） */
+@utility color-weak-mode {
+  filter: invert(80%);
+}
+
+/* 禁止选择 */
+@utility no-select {
+  user-select: none;
+}
+
+/* 焦点可见环 */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* 半深色模式 */
+@utility semi-dark {
+  --background: oklch(0.18 0.02 250);
+  --foreground: oklch(0.92 0 0);
+  --muted: oklch(0.22 0.02 250);
+  --muted-foreground: oklch(0.6 0.02 250);
+  --border: oklch(0.28 0.02 250);
+}
+
+/* ========== @layer 内的补充样式 ========== */
+@layer admin-core {
+  /* 全局模式应用到 html */
+  html {
+    &.grayscale-mode {
+      filter: grayscale(100%);
+    }
+
+    &.color-weak-mode {
+      filter: invert(80%);
+    }
+  }
+
+  /* 文本截断工具类（Tailwind 已有，这里作为降级） */
   .truncate {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -58,37 +109,7 @@
     overflow: hidden;
   }
 
-  /* ========== Grayscale Mode (Memorial Mode) ========== */
-  .grayscale-mode {
-    filter: grayscale(100%);
-  }
-
-  /* ========== Color Weak Mode (Accessibility) ========== */
-  .color-weak-mode {
-    filter: invert(80%);
-  }
-
-  /* ???? html ???????? Vben ??? */
-  html.grayscale-mode {
-    filter: grayscale(100%);
-  }
-
-  html.color-weak-mode {
-    filter: invert(80%);
-  }
-
-  /* ========== No Select ========== */
-  .no-select {
-    user-select: none;
-  }
-
-  /* ========== Focus Visible ========== */
-  .focus-visible-ring:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-  }
-
-  /* ========== Transition Utilities ========== */
+  /* 过渡工具类（使用 CSS 变量） */
   .transition-colors {
     transition-property: color, background-color, border-color;
     transition-duration: var(--admin-duration-fast);
@@ -105,20 +126,5 @@
     transition-property: transform;
     transition-duration: var(--admin-duration-fast);
     transition-timing-function: var(--admin-easing-default);
-  }
-
-  .transition-all {
-    transition-property: all;
-    transition-duration: var(--admin-duration-normal);
-    transition-timing-function: var(--admin-easing-default);
-  }
-
-  /* ========== Semi-dark Mode ========== */
-  .semi-dark {
-    --background: oklch(0.18 0.02 250);
-    --foreground: oklch(0.92 0 0);
-    --muted: oklch(0.22 0.02 250);
-    --muted-foreground: oklch(0.6 0.02 250);
-    --border: oklch(0.28 0.02 250);
   }
 }

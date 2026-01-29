@@ -4,7 +4,21 @@
  */
 
 // 共享工具
-export { get, isEmpty, isEqual, isObject } from './helpers';
+export {
+  get,
+  isEmpty,
+  isEqual,
+  isObject,
+  // 布局判断工具
+  LAYOUT_CATEGORIES,
+  isFullContentLayout,
+  isHeaderMenuLayout,
+  isMixedLayout,
+  isSidebarMenuLayout,
+  hasSidebar,
+  hasHeaderMenu,
+  getNavigationPosition,
+} from './helpers';
 
 // 缓存管理
 export {
@@ -60,3 +74,28 @@ export {
 
 // 日志工具
 export { logger, type LogLevel } from './logger';
+
+// 锁屏管理
+export {
+  createLockScreenManager,
+  type LockScreenManagerOptions,
+} from './lock-screen';
+
+// 快捷键管理
+export {
+  createShortcutManager,
+  matchShortcutKey,
+  type ShortcutKeyAction,
+  type ShortcutKeyCallbacks,
+  type ShortcutManagerOptions,
+  type UseShortcutKeysResult,
+} from './shortcuts';
+
+// 密码工具
+export {
+  PASSWORD_MIN_LENGTH,
+  hashPassword,
+  hashPasswordSync,
+  verifyPassword,
+  verifyPasswordSync,
+} from './password';

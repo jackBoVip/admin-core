@@ -3,7 +3,7 @@
  * @description 提供响应式的偏好设置状态
  */
 
-import { computed, shallowRef } from 'vue';
+import { computed, ref } from 'vue';
 import {
   getDefaultLifecycle,
   createPreferencesActions,
@@ -25,8 +25,9 @@ const lifecycle = getDefaultLifecycle();
 
 /**
  * 响应式偏好设置状态
+ * @description 使用 ref 而非 shallowRef，确保深层属性变化能触发响应式更新
  */
-const preferencesState = shallowRef<Preferences | null>(null);
+const preferencesState = ref<Preferences | null>(null);
 
 /**
  * 是否已订阅全局状态

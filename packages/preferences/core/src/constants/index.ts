@@ -46,13 +46,23 @@ export {
 
 // UI 常量（业务选项）
 export {
+  // 圆角
   DEFAULT_RADIUS,
+  RADIUS_OPTIONS,
+  type RadiusOption,
+  // 字体大小
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
   FONT_SIZE_STEP,
-  RADIUS_OPTIONS,
-  type RadiusOption,
+  // 组件交互常量
+  SLIDER_DEBOUNCE_MS,
+  INPUT_DEBOUNCE_MS,
+  INPUT_MAX_LENGTH,
+  COPY_RESET_DELAY_MS,
+  CLEAR_PASSWORD_RESET_DELAY_MS,
+  FOCUS_DELAY_MS,
+  CLOSE_ANIMATION_DELAY_MS,
 } from './ui';
 
 // 消息常量

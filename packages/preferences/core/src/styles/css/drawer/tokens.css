@@ -1,0 +1,86 @@
+/**
+ * Drawer Design Tokens - 统一的设计令牌定义
+ * @description 所有抽屉相关的 CSS 变量集中管理
+ *
+ * 分类：
+ * 1. 布局相关 - 间距、尺寸
+ * 2. 控件相关 - 高度、宽度、圆角
+ * 3. 开关相关 - Switch 组件专用
+ * 4. 按钮相关 - 各类按钮尺寸
+ * 5. 网格相关 - 预设选择器网格
+ * 6. 模态框相关 - 弹窗、提示
+ * 7. 动画相关 - 过渡、阴影
+ */
+
+:root {
+  /* ========== 1. 布局令牌 ========== */
+  --pref-block-gap: 16px;
+  --pref-block-padding: 20px;
+  --pref-item-gap: 14px;
+  --pref-item-padding: 8px;
+
+  /* ========== 2. 控件令牌 ========== */
+  --pref-control-height: 36px;
+  --pref-control-min-width: 120px;
+  --pref-control-radius: 8px;
+
+  /* ========== 3. 开关令牌 ========== */
+  --pref-switch-width: 40px;
+  --pref-switch-height: 22px;
+  --pref-switch-thumb-size: 16px;
+  --pref-switch-thumb-offset: 2px;
+  --pref-switch-thumb-travel: 18px;
+  --pref-switch-bg: var(--input);
+  --pref-switch-bg-checked: var(--primary);
+  --pref-switch-thumb-bg: var(--background);
+  --pref-switch-thumb-shadow: 0 2px 4px color-mix(in oklch, var(--foreground) 10%, transparent);
+
+  /* ========== 4. 按钮令牌 ========== */
+  --pref-btn-height: 36px;
+  --pref-btn-height-sm: 32px;
+  --pref-btn-padding: 0 16px;
+  --pref-btn-padding-sm: 0 12px;
+  --pref-btn-gap: 8px;
+  --pref-btn-font-size: 13px;
+  --pref-btn-font-size-sm: 12px;
+  --pref-btn-icon-size: 36px;
+  --pref-number-btn-width: 28px;
+  --pref-number-input-height: 32px;
+
+  /* ========== 5. 网格令牌 ========== */
+  --pref-grid-gap-lg: 16px;
+  --pref-grid-gap-md: 12px;
+  --pref-grid-gap-sm: 8px;
+  --pref-preview-max-width: 104px;
+  --pref-preview-aspect: 104 / 66;
+  --pref-color-swatch-size: 20px;
+  --pref-icon-size-md: 24px;
+  --pref-label-margin: 10px;
+  --pref-label-font-size: 12px;
+  --pref-label-font-size-sm: 11px;
+
+  /* ========== 6. 标签页令牌 ========== */
+  --pref-tab-padding: 8px 12px;
+  --pref-tab-font-size: 13px;
+  --pref-tab-columns: 4;
+  --pref-tabs-margin-x: 24px;
+  --pref-tabs-z-index: 5;
+
+  /* ========== 7. 模态框令牌 ========== */
+  --pref-modal-max-width: 400px;
+  --pref-modal-padding: 20px;
+  --pref-modal-header-padding: 16px 20px;
+  --pref-modal-z-index: 10001;
+  --pref-tooltip-z-index: 99999;
+
+  /* ========== 8. 动画令牌 ========== */
+  --pref-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --pref-transition-fast: 0.15s ease;
+  --pref-transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ========== 9. 阴影令牌 ========== */
+  --pref-shadow-sm: 0 1px 2px 0 color-mix(in oklch, var(--foreground) 5%, transparent);
+  --pref-shadow-md: 0 2px 4px 0 color-mix(in oklch, var(--foreground) 8%, transparent);
+  --pref-shadow-lg: 0 4px 6px -1px color-mix(in oklch, var(--foreground) 10%, transparent);
+  --pref-shadow-active: 0 4px 12px -2px color-mix(in oklch, var(--primary) 20%, transparent);
+}

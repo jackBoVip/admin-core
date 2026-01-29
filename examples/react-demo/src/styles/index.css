@@ -3,14 +3,18 @@
  * @description Uses @theme, @layer, CSS variables, container queries
  */
 
-/* ========== 1. Import Tailwind ========== */
+/* ========== 1. Layer Order (must be first!) ========== */
+/* admin-core layer has highest priority */
+@layer theme, base, components, utilities, admin-core;
+
+/* ========== 2. Import Tailwind ========== */
 @import "tailwindcss";
 
-/* ========== 2. Source Scanning ========== */
+/* ========== 3. Source Scanning ========== */
 @source "../**/*.tsx";
 @source "../**/*.ts";
 
-/* ========== 3. Import Admin Core Styles ========== */
+/* ========== 4. Import Admin Core Styles ========== */
 @import "@admin-core/preferences/styles";
 
 /* ========== 4. Theme Variables with @theme ========== */
@@ -237,6 +241,7 @@
 
   /* Icon buttons */
   .sidebar-toggle,
+  .lock-toggle,
   .lang-toggle,
   .theme-toggle {
     display: flex;
@@ -253,11 +258,13 @@
   }
 
   .sidebar-toggle:hover,
+  .lock-toggle:hover,
   .lang-toggle:hover,
   .theme-toggle:hover {
     background: var(--accent);
   }
 
+  .lock-toggle,
   .lang-toggle,
   .theme-toggle {
     border: 1px solid var(--border);

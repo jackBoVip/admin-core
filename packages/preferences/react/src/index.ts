@@ -5,16 +5,24 @@
  * 使用方式：
  * ```tsx
  * // App.tsx
- * import { initPreferences, usePreferences, useTheme } from '@admin-core/preferences-react';
+ * import { initPreferences, PreferencesProvider } from '@admin-core/preferences-react';
  *
  * // 初始化（应用启动时调用一次）
  * initPreferences({ namespace: 'my-app' });
  *
- * // 组件中使用
- * function MyComponent() {
- *   const { preferences, setPreferences, isDark, toggleTheme } = usePreferences();
- *   const { theme, setPrimaryColor } = useTheme();
+ * // 使用 PreferencesProvider 包裹应用（自动集成锁屏、快捷键等功能）
+ * function App() {
+ *   return (
+ *     <PreferencesProvider onLogout={...} onSearch={...}>
+ *       <YourApp />
+ *     </PreferencesProvider>
+ *   );
+ * }
  *
+ * // 子组件中使用
+ * function MyComponent() {
+ *   const { preferences, setPreferences } = usePreferences();
+ *   const { lock, togglePreferences } = usePreferencesContext();
  *   return <div>...</div>;
  * }
  * ```
@@ -40,7 +48,11 @@ export {
   AdminLayoutIcon,
   type IconProps,
   type LayoutIconProps,
-  // 主组件
+  // 主组件（推荐）
+  PreferencesProvider,
+  usePreferencesContext,
+  type PreferencesProviderProps,
+  // 单独使用（高级场景）
   PreferencesDrawer,
   PreferencesTrigger,
   type PreferencesDrawerProps,
@@ -58,9 +70,11 @@ export {
   PreferencesBlock,
   PreferencesSwitchItem,
   PreferencesSelectItem,
+  PreferencesSliderItem,
   type PreferencesBlockProps,
   type PreferencesSwitchItemProps,
   type PreferencesSelectItemProps,
+  type PreferencesSliderItemProps,
 } from './components';
 
 // Re-export core types and utilities for convenience
@@ -96,6 +110,8 @@ export {
   LAYOUT_OPTIONS,
   PAGE_TRANSITION_OPTIONS,
   TABS_STYLE_OPTIONS,
+  // Assets
+  defaultLockScreenBg,
   // Locales
   enUS,
   getLocaleLabel,

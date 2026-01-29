@@ -91,3 +91,51 @@ export type ShortcutKeysTabComponentProps = TabComponentProps;
  * 通用设置 Tab Props
  */
 export type GeneralTabComponentProps = TabComponentProps;
+
+/**
+ * 锁屏组件 Props（Vue/React 共享）
+ */
+export interface LockScreenComponentProps {
+  /** 退出登录回调 */
+  onLogout?: () => void;
+  /** 用户头像 URL */
+  avatar?: string;
+  /** 用户名 */
+  username?: string;
+  /** 背景图片 URL，传入空字符串禁用背景，不传则使用默认背景 */
+  backgroundImage?: string;
+}
+
+/**
+ * 锁屏密码弹窗 Props（Vue/React 共享）
+ */
+export interface LockPasswordModalComponentProps {
+  /** 是否显示 */
+  open?: boolean;
+  /** 用户头像 URL */
+  avatar?: string;
+  /** 用户名 */
+  username?: string;
+}
+
+/**
+ * PreferencesProvider Props（Vue/React 共享）
+ */
+export interface PreferencesProviderComponentProps {
+  /** 是否显示触发按钮 */
+  showTrigger?: boolean;
+  /** 退出登录回调 */
+  onLogout?: () => void;
+  /** 全局搜索回调 */
+  onSearch?: () => void;
+  /** 锁屏时回调 */
+  onLock?: () => void;
+  /** 解锁时回调 */
+  onUnlock?: () => void;
+  /** 用户头像 URL */
+  avatar?: string;
+  /** 用户名 */
+  username?: string;
+  /** 锁屏背景图片 URL，传入空字符串禁用背景，不传则使用默认背景 */
+  lockScreenBackground?: string;
+}

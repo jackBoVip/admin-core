@@ -19,6 +19,7 @@ export const zhCN = {
     search: '搜索',
     all: '全部',
     clear: '清除',
+    back: '返回',
   },
 
   // ========== 偏好设置 ==========
@@ -105,6 +106,19 @@ export const zhCN = {
     contentCompact: '紧凑',
   },
 
+  // ========== 功能区 ==========
+  panel: {
+    title: '功能区',
+    enable: '启用功能区',
+    position: '显示位置',
+    positionLeft: '左侧',
+    positionRight: '右侧',
+    collapsed: '折叠状态',
+    collapsedButton: '显示折叠按钮',
+    width: '展开宽度',
+    collapsedWidth: '折叠宽度',
+  },
+
   // ========== 侧边栏 ==========
   sidebar: {
     title: '侧边栏',
@@ -132,6 +146,8 @@ export const zhCN = {
     menuAlignStart: '左对齐',
     menuAlignCenter: '居中',
     menuAlignEnd: '右对齐',
+    menuLauncher: '菜单启动器',
+    menuLauncherTip: '将顶栏菜单折叠为按钮，点击弹出菜单面板',
   },
 
   // ========== 标签栏 ==========
@@ -224,14 +240,45 @@ export const zhCN = {
     globalLockScreen: '锁屏',
   },
 
+  // ========== 锁屏 ==========
+  lockScreen: {
+    title: '锁屏',
+    unlock: '解锁',
+    entry: '进入系统',
+    screenButton: '锁定屏幕',
+    backToLogin: '返回登录',
+    logoutConfirm: '确定要退出登录吗？',
+    setPassword: '设置锁屏密码',
+    enterPassword: '请输入锁屏密码',
+    passwordError: '密码错误',
+    passwordPlaceholder: '请输入密码',
+    confirmPassword: '确认密码',
+    confirmPasswordPlaceholder: '请再次输入密码',
+    passwordMismatch: '两次输入的密码不一致',
+    passwordMinLength: '密码至少 {0} 位',
+    setPasswordTip: '首次锁屏需要设置解锁密码',
+    confirmAndLock: '确认并锁定',
+    showPassword: '显示密码',
+    hidePassword: '隐藏密码',
+    clearPassword: '清空锁屏密码',
+    cleared: '已清空',
+    autoLockTime: '自动锁屏时间',
+    autoLockTimeTip: '进入无操作状态后自动锁屏的时间（分钟）',
+    minute: '分钟',
+  },
+
   // ========== 通用设置 ==========
   general: {
     title: '通用',
     language: '语言',
     dynamicTitle: '动态标题',
     watermark: '水印',
-    colorWeakMode: '色弱模式',
-    colorGrayMode: '灰色模式',
+    watermarkEnable: '启用水印',
+    watermarkContent: '水印内容',
+    watermarkContentPlaceholder: '请输入水印文字',
+    watermarkAngle: '水印角度',
+    watermarkAppendDate: '附加日期',
+    watermarkFontSize: '字体大小',
     checkUpdates: '检查更新',
   },
 };

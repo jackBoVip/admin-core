@@ -1,87 +1,95 @@
 /**
- * Control Styles
+ * Control Styles - Tailwind CSS v4 优化版
  * @description Switch, number input, buttons
- * @note Consistent with Vben Admin / shadcn-ui
+ *
+ * Tailwind v4 特性利用：
+ * - CSS 原生嵌套
+ * - will-change 性能优化
+ * - @starting-style 入场动画（模态框）
  */
 
-/* ========== Switch Component (outside layer for Tailwind v4 compatibility) ========== */
-.preferences-switch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 22px;
-  padding: 0;
-  background: var(--input, #e5e7eb);
-  border: 1px solid transparent;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.preferences-switch:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-/* Checked state */
-.preferences-switch[data-state="checked"],
-.preferences-switch.checked {
-  background: var(--primary, #3b82f6);
-}
-
-/* Switch thumb - real element (preferred for Tailwind v4) */
-.preferences-switch-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  background: white;
-  border-radius: 9999px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-}
-
-.preferences-switch[data-state="checked"] .preferences-switch-thumb,
-.preferences-switch.checked .preferences-switch-thumb {
-  transform: translateX(18px);
-}
-
-/* Switch thumb - pseudo element fallback */
-.preferences-switch::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  background: white;
-  border-radius: 9999px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-}
-
-.preferences-switch[data-state="checked"]::after,
-.preferences-switch.checked::after {
-  transform: translateX(18px);
-}
-
-/* Hide pseudo element when real thumb exists */
-.preferences-switch:has(.preferences-switch-thumb)::after {
-  display: none;
-}
-
 @layer admin-core {
+  /* ========== 开关组件 ========== */
+  .preferences-switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    width: var(--pref-switch-width);
+    height: var(--pref-switch-height);
+    padding: 0;
+    background: var(--pref-switch-bg);
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: background-color var(--pref-transition), border-color var(--pref-transition);
 
-  /* ========== Number Input Field (Vben style) ========== */
+    &:hover {
+      will-change: background-color;
+    }
+  }
+
+  .preferences-switch:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* 选中状态 */
+  .preferences-switch[data-state="checked"],
+  .preferences-switch.checked {
+    background: var(--pref-switch-bg-checked);
+  }
+
+  /* 开关滑块 - 真实元素（优先） */
+  .preferences-switch-thumb {
+    position: absolute;
+    top: var(--pref-switch-thumb-offset);
+    left: var(--pref-switch-thumb-offset);
+    width: var(--pref-switch-thumb-size);
+    height: var(--pref-switch-thumb-size);
+    background: var(--pref-switch-thumb-bg);
+    border-radius: 9999px;
+    box-shadow: var(--pref-switch-thumb-shadow);
+    transition: transform var(--pref-transition);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .preferences-switch[data-state="checked"] .preferences-switch-thumb,
+  .preferences-switch.checked .preferences-switch-thumb {
+    transform: translateX(var(--pref-switch-thumb-travel));
+  }
+
+  /* 开关滑块 - 伪元素降级 */
+  .preferences-switch::after {
+    content: '';
+    position: absolute;
+    top: var(--pref-switch-thumb-offset);
+    left: var(--pref-switch-thumb-offset);
+    width: var(--pref-switch-thumb-size);
+    height: var(--pref-switch-thumb-size);
+    background: var(--pref-switch-thumb-bg);
+    border-radius: 9999px;
+    box-shadow: var(--pref-switch-thumb-shadow);
+    transition: transform var(--pref-transition);
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .preferences-switch[data-state="checked"]::after,
+  .preferences-switch.checked::after {
+    transform: translateX(var(--pref-switch-thumb-travel));
+  }
+
+  /* 当存在真实滑块时隐藏伪元素 */
+  .preferences-switch:has(.preferences-switch-thumb)::after {
+    display: none;
+  }
+  /* ========== 数字输入框========== */
   .number-field {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--pref-btn-gap);
   }
 
   .number-field-control {
@@ -95,14 +103,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
+    width: var(--pref-number-btn-width);
     height: 100%;
     padding: 0;
     background: transparent;
     border: none;
     cursor: pointer;
     color: var(--muted-foreground);
-    transition: all 0.15s ease;
+    transition: 
+      color var(--pref-transition),
+      background-color var(--pref-transition),
+      opacity var(--pref-transition);
     z-index: 1;
   }
 
@@ -133,24 +144,28 @@
 
   .number-field-input {
     width: 100%;
-    height: 32px;
+    height: var(--pref-number-input-height);
     padding: 4px 32px;
-    font-size: 13px;
+    font-size: var(--pref-btn-font-size);
     text-align: center;
     color: var(--foreground);
     background: var(--muted);
     border: 1px solid var(--border);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, var(--pref-control-radius));
     outline: none;
-    transition: all 0.2s ease;
+    transition: 
+      background-color var(--pref-transition),
+      border-color var(--pref-transition),
+      box-shadow var(--pref-transition);
   }
 
   .number-field-input:focus {
     background: var(--background);
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--primary) 10%, transparent);
   }
 
+  /* 隐藏原生数字控件 */
   .number-field-input::-webkit-inner-spin-button,
   .number-field-input::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -158,36 +173,44 @@
   }
 
   .number-field-unit {
-    font-size: 12px;
+    font-size: var(--pref-btn-font-size-sm);
     color: var(--muted-foreground);
     white-space: nowrap;
   }
 
-  /* ========== Button Base Styles ========== */
+  /* ========== 按钮基础样式 ========== */
   .preferences-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    height: 36px;
-    padding: 0 16px;
-    font-size: 13px;
+    gap: var(--pref-btn-gap);
+    height: var(--pref-btn-height);
+    padding: var(--pref-btn-padding);
+    font-size: var(--pref-btn-font-size);
     font-weight: 500;
     color: var(--foreground);
     background: var(--background);
     border: 1px solid var(--border);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, var(--pref-control-radius));
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 明确指定过渡属性 */
+    transition: 
+      background-color var(--pref-transition),
+      border-color var(--pref-transition),
+      transform var(--pref-transition),
+      box-shadow var(--pref-transition),
+      opacity var(--pref-transition);
     user-select: none;
     outline: none;
+    /* will-change 仅在 hover 时启用 */
   }
 
   .preferences-btn:hover:not(:disabled) {
     background: var(--accent);
     border-color: var(--input);
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 6px -1px color-mix(in oklch, var(--foreground) 5%, transparent);
+    will-change: transform, box-shadow;
   }
 
   .preferences-btn:active:not(:disabled) {
@@ -202,49 +225,54 @@
   .preferences-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background: var(--muted) !important;
-    border-color: var(--border) !important;
-    color: var(--muted-foreground) !important;
-    transform: none !important;
-    box-shadow: none !important;
+    background: var(--muted);
+    border-color: var(--border);
+    color: var(--muted-foreground);
+    transform: none;
+    box-shadow: none;
   }
 
-  /* ========== Button Variants ========== */
-  
-  /* Primary Button */
+  /* 主要按钮 */
   .preferences-btn-primary {
-    color: var(--primary-foreground) !important;
-    background: var(--primary) !important;
-    border-color: var(--primary) !important;
+    color: var(--primary-foreground);
+    background: var(--primary);
+    border-color: var(--primary);
   }
 
   .preferences-btn-primary:hover:not(:disabled) {
-    background: var(--primary-600, var(--primary)) !important;
-    border-color: var(--primary-600, var(--primary)) !important;
-    opacity: 1;
+    background: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
+    border-color: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
+    transform: translateY(-1px);
   }
 
   .preferences-btn-primary:active:not(:disabled) {
-    background: var(--primary-700, var(--primary)) !important;
-    border-color: var(--primary-700, var(--primary)) !important;
+    background: var(--primary-700, color-mix(in oklch, var(--primary) 80%, black));
+    border-color: var(--primary-700, color-mix(in oklch, var(--primary) 80%, black));
   }
 
   .preferences-btn-primary:disabled {
-    background: var(--primary) !important;
-    border-color: var(--primary) !important;
-    color: var(--primary-foreground) !important;
-    opacity: 0.4 !important;
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--primary-foreground);
+    opacity: 0.4;
   }
 
-  /* Primary button disabled in copied state - keep primary shade visible */
+  /* 主要按钮 - 已复制状态 */
+  .preferences-btn-primary.is-copied {
+    background: var(--primary-500, var(--primary));
+    border-color: var(--primary-500, var(--primary));
+  }
+
   .preferences-btn-primary.is-copied:disabled {
-    background: var(--primary-500, var(--primary)) !important;
-    border-color: var(--primary-500, var(--primary)) !important;
-    color: var(--primary-foreground) !important;
-    opacity: 0.7 !important;
+    opacity: 0.7;
   }
 
-  /* Secondary/Ghost Button */
+  .preferences-btn-primary.is-copied:hover:not(:disabled) {
+    background: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
+    border-color: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
+  }
+
+  /* 次要/幽灵按钮 */
   .preferences-btn-ghost {
     background: transparent;
     border-color: var(--border);
@@ -257,26 +285,30 @@
     border-color: var(--input);
   }
 
+  /* 小尺寸 */
   .preferences-btn-sm {
-    height: 32px;
-    padding: 0 12px;
-    font-size: 12px;
+    height: var(--pref-btn-height-sm);
+    padding: var(--pref-btn-padding-sm);
+    font-size: var(--pref-btn-font-size-sm);
   }
 
-  /* ========== Icon Button ========== */
+  /* 图标按钮 */
   .preferences-btn-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: var(--pref-btn-icon-size);
+    height: var(--pref-btn-icon-size);
     padding: 0;
     background: transparent;
     border: none;
     border-radius: var(--radius, 6px);
     cursor: pointer;
     color: var(--muted-foreground);
-    transition: all 0.15s ease;
+    transition: 
+      color var(--pref-transition),
+      background-color var(--pref-transition),
+      opacity var(--pref-transition);
   }
 
   .preferences-btn-icon:hover {
@@ -303,88 +335,70 @@
     border-radius: 9999px;
   }
 
-  /* ========== Copy Button Animation ========== */
+  /* 复制成功动画 */
+  .preferences-btn.is-copied .copy-btn-icon {
+    animation: pref-copy-success 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* ========== 复制按钮动画 ========== */
   .copy-btn-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+    transition: transform var(--pref-transition), opacity 0.15s ease;
   }
 
   .copy-btn-text {
     transition: opacity 0.15s ease;
   }
 
-  /* Copied state animation */
-  .preferences-btn.is-copied .copy-btn-icon {
-    animation: copy-success 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @keyframes pref-copy-success {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
   }
 
-  @keyframes copy-success {
-    0% {
-      transform: scale(0.8);
-      opacity: 0.5;
-    }
-    50% {
-      transform: scale(1.1);
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-
-  /* Primary button in copied state - use primary color shade */
-  .preferences-btn-primary.is-copied {
-    background: var(--primary-500, var(--primary)) !important;
-    border-color: var(--primary-500, var(--primary)) !important;
-  }
-
-  .preferences-btn-primary.is-copied:hover:not(:disabled) {
-    background: var(--primary-600, var(--primary)) !important;
-    border-color: var(--primary-600, var(--primary)) !important;
-  }
-
-  /* ========== Modal/Dialog ========== */
+  /* ========== 模态框/对话框 ========== */
   .preferences-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 10001;
+    z-index: var(--pref-modal-z-index);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.5);
+    background: color-mix(in oklch, var(--foreground) 50%, transparent);
     backdrop-filter: blur(2px);
-    animation: modal-overlay-in 0.2s ease;
-  }
+    animation: pref-modal-overlay-in 0.2s ease;
 
-  @keyframes modal-overlay-in {
-    from {
+    /* @starting-style 入场动画（现代浏览器） */
+    @starting-style {
       opacity: 0;
     }
-    to {
-      opacity: 1;
-    }
+  }
+
+  @keyframes pref-modal-overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   .preferences-modal {
     width: 90%;
-    max-width: 400px;
+    max-width: var(--pref-modal-max-width);
     background: var(--background);
     border: 1px solid var(--border);
-    border-radius: var(--radius, 8px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    animation: modal-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border-radius: var(--radius, var(--pref-control-radius));
+    box-shadow: 0 25px 50px -12px color-mix(in oklch, var(--foreground) 25%, transparent);
+    animation: pref-modal-in 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    will-change: transform, opacity;
   }
 
-  @keyframes modal-in {
-    from {
-      opacity: 0;
-      transform: scale(0.95) translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
+  /* @starting-style 入场动画 */
+  @supports (selector(:has(*))) {
+    @starting-style {
+      .preferences-modal {
+        opacity: 0;
+        transform: scale(0.95) translateY(-10px);
+      }
     }
   }
 
@@ -392,7 +406,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 16px 20px;
+    padding: var(--pref-modal-header-padding);
     border-bottom: 1px solid var(--border);
   }
 
@@ -405,17 +419,9 @@
     flex-shrink: 0;
   }
 
-  .preferences-modal-icon.error {
-    color: var(--destructive, #ef4444);
-  }
-
-  .preferences-modal-icon.success {
-    color: var(--success, #22c55e);
-  }
-
-  .preferences-modal-icon.warning {
-    color: var(--warning, #f59e0b);
-  }
+  .preferences-modal-icon.error { color: var(--destructive); }
+  .preferences-modal-icon.success { color: var(--success); }
+  .preferences-modal-icon.warning { color: var(--warning); }
 
   .preferences-modal-title {
     font-size: 16px;
@@ -424,7 +430,7 @@
   }
 
   .preferences-modal-body {
-    padding: 20px;
+    padding: var(--pref-modal-padding);
     font-size: 14px;
     line-height: 1.6;
     color: var(--muted-foreground);
@@ -434,92 +440,344 @@
     display: flex;
     justify-content: flex-end;
     gap: 10px;
-    padding: 16px 20px;
+    padding: var(--pref-modal-header-padding);
     border-top: 1px solid var(--border);
   }
 
-  /* ========== Tooltip (positioned below button, overlays navigation) ========== */
+  @keyframes pref-modal-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* ========== 工具提示 ========== */
   [data-preference-tooltip] {
+    position: relative;
+
+    &::before,
+    &::after {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: none;
+      opacity: 0;
+      transition: 
+        opacity var(--pref-transition),
+        transform var(--pref-transition);
+      z-index: var(--pref-tooltip-z-index);
+    }
+
+    /* 提示文字 */
+    &::before {
+      content: attr(data-preference-tooltip);
+      top: calc(100% + 10px);
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+      color: var(--primary-foreground);
+      background: var(--primary);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--primary) 30%, transparent);
+    }
+
+    /* 箭头 */
+    &::after {
+      content: '';
+      top: calc(100% + 6px);
+      width: 10px;
+      height: 10px;
+      background: var(--primary);
+      border-radius: 2px;
+      transform: translateX(-50%) rotate(45deg);
+      z-index: calc(var(--pref-tooltip-z-index) - 1);
+    }
+
+    /* 悬停状态 */
+    &:hover:not(:disabled) {
+      &::before {
+        opacity: 1;
+        transform: translateX(-50%) translateY(4px);
+        animation: pref-tooltip-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      &::after {
+        opacity: 1;
+        transform: translateX(-50%) translateY(4px) rotate(45deg);
+        animation: pref-tooltip-arrow-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+    }
+  }
+
+  @keyframes pref-tooltip-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(0); }
+    to { opacity: 1; transform: translateX(-50%) translateY(4px); }
+  }
+
+  @keyframes pref-tooltip-arrow-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(0) rotate(45deg); }
+    to { opacity: 1; transform: translateX(-50%) translateY(4px) rotate(45deg); }
+  }
+
+  /* ========== 动画预览网格（响应式） ========== */
+  .transition-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+
+    /* 小屏响应式 */
+    @media (max-width: 320px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .transition-preset-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+
+    &:focus-visible {
+      outline: 2px solid var(--ring);
+      outline-offset: 2px;
+    }
+
+    /* 禁用状态 */
+    &.disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+
+      & * {
+        cursor: not-allowed !important;
+      }
+
+      &:hover .transition-preset-label {
+        color: var(--muted-foreground);
+      }
+    }
+  }
+
+  .transition-preset-box {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    padding: 4px;
+    border-radius: 8px;
+    transition: opacity var(--pref-transition);
+  }
+
+  .transition-preset-box.disabled {
+    opacity: 0.5;
+  }
+
+  .transition-preset-label {
+    font-size: 11px;
+    color: var(--muted-foreground);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  .transition-preset-item:hover .transition-preset-label {
+    color: var(--foreground);
+  }
+
+  /* ========== 动画预览组件 ========== */
+  .transition-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  .transition-preview.disabled {
+    opacity: 0.6;
+  }
+
+  .transition-preview-screen {
+    width: 100%;
+    height: 100%;
+    background: var(--background);
+    border-radius: 4px;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 20% 1fr;
+    grid-template-rows: 16% 1fr;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  .transition-preview-header {
+    grid-column: 1 / -1;
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .transition-preview-header-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--muted-foreground);
+    opacity: 0.4;
+  }
+
+  .transition-preview-sidebar {
+    background: var(--card);
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border-right: 1px solid var(--border);
+  }
+
+  .transition-preview-menu-item {
+    width: 100%;
+    height: 5px;
+    border-radius: 2px;
+    background: var(--muted);
+  }
+
+  .transition-preview-menu-item.active {
+    background: var(--primary);
+    opacity: 0.7;
+  }
+
+  .transition-preview-content {
+    padding: 4px;
+    overflow: hidden;
     position: relative;
   }
 
-  [data-preference-tooltip]::before,
-  [data-preference-tooltip]::after {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%) translateY(0);
-    pointer-events: none;
-    opacity: 0;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 99999; /* High z-index to overlay navigation */
+  .transition-preview-page {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
 
-  /* Tooltip text */
-  [data-preference-tooltip]::before {
-    content: attr(data-preference-tooltip);
-    top: calc(100% + 10px); /* 2px gap + 8px arrow */
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    color: var(--primary-foreground);
+  .transition-preview-card {
+    height: 40%;
     background: var(--primary);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--primary) 30%, transparent);
+    opacity: 0.15;
+    border-radius: 2px;
   }
 
-  /* Tooltip arrow (droplet/beak style - rounded and smooth) */
-  [data-preference-tooltip]::after {
-    content: '';
-    top: calc(100% + 6px); /* Positioning to overlap slightly for a seamless look */
-    width: 10px;
-    height: 10px;
-    background: var(--primary);
-    border-radius: 2px; /* Rounded tip for the "water drop" look */
-    transform: translateX(-50%) rotate(45deg);
-    z-index: 99998; /* Just behind the main box */
+  .transition-preview-card.small {
+    height: 25%;
+    width: 65%;
   }
 
-  /* Hover state */
-  [data-preference-tooltip]:hover:not(:disabled)::before {
-    opacity: 1;
-    transform: translateX(-50%) translateY(4px);
+  /* 动画预览 - 动画类（使用 will-change 优化性能） */
+  .transition-preview-page {
+    will-change: opacity, transform;
   }
 
-  [data-preference-tooltip]:hover:not(:disabled)::after {
-    opacity: 1;
-    transform: translateX(-50%) translateY(4px) rotate(45deg);
+  .transition-preview-fade-enter {
+    animation: previewFadeIn 0.5s ease-out forwards;
+  }
+  .transition-preview-fade-leave {
+    animation: previewFadeOut 0.5s ease-in forwards;
   }
 
-  /* Animation for appearance */
-  @keyframes tooltip-in {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(0);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(4px);
-    }
+  .transition-preview-fade-slide-enter {
+    animation: previewFadeSlideIn 0.5s ease-out forwards;
+  }
+  .transition-preview-fade-slide-leave {
+    animation: previewFadeSlideOut 0.5s ease-in forwards;
   }
 
-  @keyframes tooltip-arrow-in {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(0) rotate(45deg);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(4px) rotate(45deg);
-    }
+  .transition-preview-fade-up-enter {
+    animation: previewFadeUpIn 0.5s ease-out forwards;
+  }
+  .transition-preview-fade-up-leave {
+    animation: previewFadeUpOut 0.5s ease-in forwards;
   }
 
-  [data-preference-tooltip]:hover:not(:disabled)::before {
-    animation: tooltip-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .transition-preview-fade-down-enter {
+    animation: previewFadeDownIn 0.5s ease-out forwards;
+  }
+  .transition-preview-fade-down-leave {
+    animation: previewFadeDownOut 0.5s ease-in forwards;
   }
 
-  [data-preference-tooltip]:hover:not(:disabled)::after {
-    animation: tooltip-arrow-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  .transition-preview-slide-left-enter {
+    animation: previewSlideLeftIn 0.5s ease-out forwards;
+  }
+  .transition-preview-slide-left-leave {
+    animation: previewSlideLeftOut 0.5s ease-in forwards;
+  }
+
+  .transition-preview-slide-right-enter {
+    animation: previewSlideRightIn 0.5s ease-out forwards;
+  }
+  .transition-preview-slide-right-leave {
+    animation: previewSlideRightOut 0.5s ease-in forwards;
+  }
+
+  /* 动画预览 - Keyframes */
+  @keyframes previewFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes previewFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  @keyframes previewFadeSlideIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes previewFadeSlideOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-10px); }
+  }
+
+  @keyframes previewFadeUpIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes previewFadeUpOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-10px); }
+  }
+
+  @keyframes previewFadeDownIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes previewFadeDownOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(10px); }
+  }
+
+  @keyframes previewSlideLeftIn {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes previewSlideLeftOut {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+  }
+
+  @keyframes previewSlideRightIn {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes previewSlideRightOut {
+    from { transform: translateX(0); }
+    to { transform: translateX(100%); }
   }
 }

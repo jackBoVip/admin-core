@@ -3,24 +3,74 @@
  * 通用设置标签页
  * @description 语言、动画、小部件等通用设置
  */
-import { computed } from 'vue';
+import { computed, ref, onUnmounted } from 'vue';
 import { usePreferences } from '../../composables';
 import {
   PAGE_TRANSITION_OPTIONS,
   DEFAULT_PREFERENCES,
   supportedLocales,
   translateOptions,
+  getFeatureItemConfig,
   type LocaleMessages,
   type SupportedLanguagesType,
+  type PageTransitionType,
+  type GeneralTabConfig,
+  type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
 import Block from './Block.vue';
 import SwitchItem from './SwitchItem.vue';
 import SelectItem from './SelectItem.vue';
+import SliderItem from './SliderItem.vue';
+import InputItem from './InputItem.vue';
+import TransitionPreview from './TransitionPreview.vue';
+
+// 清空密码按钮状态（使用 ref 存储定时器，避免多实例冲突）
+const isClearing = ref(false);
+const clearingTimerRef = ref<ReturnType<typeof setTimeout> | null>(null);
+
+// 清理定时器
+onUnmounted(() => {
+  if (clearingTimerRef.value) {
+    clearTimeout(clearingTimerRef.value);
+    clearingTimerRef.value = null;
+  }
+});
 
 const props = defineProps<{
   /** 当前语言包 */
   locale: LocaleMessages;
+  /** UI 配置 */
+  uiConfig?: GeneralTabConfig;
 }>();
+
+// ========== UI 配置解析（使用 computed 缓存） ==========
+// 配置获取辅助函数（响应式）
+const getConfig = (blockKey: keyof GeneralTabConfig, itemKey?: string): ResolvedFeatureConfig =>
+  getFeatureItemConfig(props.uiConfig, blockKey, itemKey);
+
+// 缓存常用配置项（避免模板中重复计算）
+const configs = computed(() => ({
+  // 基础设置
+  language: getConfig('language'),
+  dynamicTitle: getConfig('dynamicTitle'),
+  // 锁屏设置
+  lockScreen: getConfig('lockScreen'),
+  lockScreenEnable: getConfig('lockScreen', 'enable'),
+  lockScreenAutoLockTime: getConfig('lockScreen', 'autoLockTime'),
+  lockScreenClearPassword: getConfig('lockScreen', 'clearPassword'),
+  // 水印设置
+  watermark: getConfig('watermark'),
+  watermarkEnable: getConfig('watermark', 'enable'),
+  watermarkAppendDate: getConfig('watermark', 'appendDate'),
+  watermarkContent: getConfig('watermark', 'content'),
+  watermarkAngle: getConfig('watermark', 'angle'),
+  watermarkFontSize: getConfig('watermark', 'fontSize'),
+  // 动画设置
+  transition: getConfig('transition'),
+  transitionEnable: getConfig('transition', 'enable'),
+  transitionProgress: getConfig('transition', 'progress'),
+  transitionName: getConfig('transition', 'name'),
+}));
 
 const { preferences, setPreferences } = usePreferences();
 
@@ -38,6 +88,16 @@ const languageOptions = supportedLocales.map(l => ({
   value: l.value,
 }));
 
+// 自动锁屏时间选项（memoized）
+const autoLockTimeOptions = computed(() => [
+  { label: props.locale.common.disable, value: 0 },
+  { label: `1 ${props.locale.lockScreen.minute}`, value: 1 },
+  { label: `5 ${props.locale.lockScreen.minute}`, value: 5 },
+  { label: `15 ${props.locale.lockScreen.minute}`, value: 15 },
+  { label: `30 ${props.locale.lockScreen.minute}`, value: 30 },
+  { label: `60 ${props.locale.lockScreen.minute}`, value: 60 },
+]);
+
 // ========== 通用设置 ==========
 const appLocale = computed({
   get: () => preferences.value?.app.locale ?? D.app.locale,
@@ -54,14 +114,24 @@ const watermark = computed({
   set: (value: boolean) => setPreferences({ app: { watermark: value } }),
 });
 
-const colorWeakMode = computed({
-  get: () => preferences.value?.app.colorWeakMode ?? D.app.colorWeakMode,
-  set: (value: boolean) => setPreferences({ app: { colorWeakMode: value } }),
+const watermarkContent = computed({
+  get: () => preferences.value?.app.watermarkContent ?? D.app.watermarkContent,
+  set: (value: string) => setPreferences({ app: { watermarkContent: value } }),
 });
 
-const colorGrayMode = computed({
-  get: () => preferences.value?.app.colorGrayMode ?? D.app.colorGrayMode,
-  set: (value: boolean) => setPreferences({ app: { colorGrayMode: value } }),
+const watermarkAngle = computed({
+  get: () => preferences.value?.app.watermarkAngle ?? D.app.watermarkAngle,
+  set: (value: number) => setPreferences({ app: { watermarkAngle: value } }),
+});
+
+const watermarkAppendDate = computed({
+  get: () => preferences.value?.app.watermarkAppendDate ?? D.app.watermarkAppendDate,
+  set: (value: boolean) => setPreferences({ app: { watermarkAppendDate: value } }),
+});
+
+const watermarkFontSize = computed({
+  get: () => preferences.value?.app.watermarkFontSize ?? D.app.watermarkFontSize,
+  set: (value: number) => setPreferences({ app: { watermarkFontSize: value } }),
 });
 
 // 动画设置
@@ -76,48 +146,187 @@ const transitionProgress = computed({
 });
 
 const transitionName = computed({
-  get: () => preferences.value?.transition.name ?? D.transition.name,
-  set: (value: string) => setPreferences({ transition: { name: value } }),
+  get: () => (preferences.value?.transition.name ?? D.transition.name) as PageTransitionType,
+  set: (value: PageTransitionType) => setPreferences({ transition: { name: value } }),
 });
 
-// 小部件设置
-const widgetFullscreen = computed({
-  get: () => preferences.value?.widget.fullscreen ?? D.widget.fullscreen,
-  set: (value: boolean) => setPreferences({ widget: { fullscreen: value } }),
+// 锁屏设置
+const widgetLockScreen = computed({
+  get: () => preferences.value?.widget.lockScreen ?? D.widget.lockScreen,
+  set: (value: boolean) => setPreferences({ widget: { lockScreen: value } }),
 });
 
-const widgetThemeToggle = computed({
-  get: () => preferences.value?.widget.themeToggle ?? D.widget.themeToggle,
-  set: (value: boolean) => setPreferences({ widget: { themeToggle: value } }),
+const autoLockTime = computed({
+  get: () => preferences.value?.lockScreen.autoLockTime ?? D.lockScreen.autoLockTime,
+  set: (value: number) => setPreferences({ lockScreen: { autoLockTime: value } }),
 });
 
-const widgetLanguageToggle = computed({
-  get: () => preferences.value?.widget.languageToggle ?? D.widget.languageToggle,
-  set: (value: boolean) => setPreferences({ widget: { languageToggle: value } }),
-});
+const hasPassword = computed(() => !!preferences.value?.lockScreen.password);
+
+// 清空密码（带错误处理）
+const clearPassword = () => {
+  if (isClearing.value) return;
+  
+  try {
+    setPreferences({ lockScreen: { password: '' } });
+    isClearing.value = true;
+    
+    // 清除之前的定时器
+    if (clearingTimerRef.value) {
+      clearTimeout(clearingTimerRef.value);
+    }
+    
+    clearingTimerRef.value = setTimeout(() => {
+      isClearing.value = false;
+      clearingTimerRef.value = null;
+    }, 2000);
+  } catch (error) {
+    console.error('[GeneralTab] Failed to clear password:', error);
+  }
+};
 </script>
 
 <template>
   <!-- 基础设置 -->
-  <Block :title="locale.general.title">
-    <SelectItem v-model="appLocale" :label="locale.general.language" :options="languageOptions" />
-    <SwitchItem v-model="dynamicTitle" :label="locale.general.dynamicTitle" />
-    <SwitchItem v-model="watermark" :label="locale.general.watermark" />
-    <SwitchItem v-model="colorWeakMode" :label="locale.general.colorWeakMode" />
-    <SwitchItem v-model="colorGrayMode" :label="locale.general.colorGrayMode" />
+  <Block v-if="configs.language.visible" :title="locale.general.title">
+    <SelectItem 
+      v-model="appLocale" 
+      :label="locale.general.language" 
+      :options="languageOptions" 
+      :disabled="configs.language.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.dynamicTitle.visible"
+      v-model="dynamicTitle" 
+      :label="locale.general.dynamicTitle" 
+      :disabled="configs.dynamicTitle.disabled"
+    />
+  </Block>
+
+  <!-- 锁屏设置 -->
+  <Block v-if="configs.lockScreen.visible" :title="locale.lockScreen.title">
+    <SwitchItem 
+      v-if="configs.lockScreenEnable.visible"
+      v-model="widgetLockScreen" 
+      :label="locale.widget.lockScreen" 
+      :disabled="configs.lockScreenEnable.disabled"
+    />
+    <SelectItem
+      v-if="configs.lockScreenAutoLockTime.visible"
+      v-model="autoLockTime"
+      :label="locale.lockScreen.autoLockTime"
+      :options="autoLockTimeOptions"
+      :disabled="!widgetLockScreen || configs.lockScreenAutoLockTime.disabled"
+    />
+    <div 
+      v-if="configs.lockScreenClearPassword.visible && (hasPassword || isClearing)" 
+      class="select-item"
+    >
+      <span class="select-item-label">{{ locale.lockScreen.clearPassword }}</span>
+      <div class="select-item-control">
+        <button 
+          class="preferences-btn preferences-btn-primary" 
+          :disabled="isClearing || configs.lockScreenClearPassword.disabled"
+          @click="clearPassword"
+        >
+          {{ isClearing ? locale.lockScreen.cleared : locale.common.clear }}
+        </button>
+      </div>
+    </div>
+  </Block>
+
+  <!-- 水印设置 -->
+  <Block v-if="configs.watermark.visible" :title="locale.general.watermark">
+    <SwitchItem 
+      v-if="configs.watermarkEnable.visible"
+      v-model="watermark" 
+      :label="locale.general.watermarkEnable" 
+      :disabled="configs.watermarkEnable.disabled"
+    />
+    <template v-if="watermark">
+      <SwitchItem 
+        v-if="configs.watermarkAppendDate.visible"
+        v-model="watermarkAppendDate" 
+        :label="locale.general.watermarkAppendDate" 
+        :disabled="configs.watermarkAppendDate.disabled"
+      />
+      <InputItem 
+        v-if="configs.watermarkContent.visible"
+        v-model="watermarkContent" 
+        :label="locale.general.watermarkContent" 
+        :placeholder="locale.general.watermarkContentPlaceholder"
+        :disabled="configs.watermarkContent.disabled"
+      />
+      <SliderItem 
+        v-if="configs.watermarkAngle.visible"
+        v-model="watermarkAngle" 
+        :label="locale.general.watermarkAngle" 
+        :min="-90" 
+        :max="90" 
+        :step="1"
+        unit="°"
+        :disabled="configs.watermarkAngle.disabled"
+      />
+      <SliderItem 
+        v-if="configs.watermarkFontSize.visible"
+        v-model="watermarkFontSize" 
+        :label="locale.general.watermarkFontSize" 
+        :min="10" 
+        :max="32" 
+        :step="1"
+        unit="px"
+        :disabled="configs.watermarkFontSize.disabled"
+      />
+    </template>
   </Block>
 
   <!-- 动画设置 -->
-  <Block :title="locale.transition.title">
-    <SwitchItem v-model="transitionEnable" :label="locale.transition.enable" />
-    <SwitchItem v-model="transitionProgress" :label="locale.transition.progress" />
-    <SelectItem v-model="transitionName" :label="locale.transition.name" :options="animationOptions" />
-  </Block>
-
-  <!-- 小部件 -->
-  <Block :title="locale.widget.title">
-    <SwitchItem v-model="widgetFullscreen" :label="locale.widget.fullscreen" />
-    <SwitchItem v-model="widgetThemeToggle" :label="locale.widget.themeToggle" />
-    <SwitchItem v-model="widgetLanguageToggle" :label="locale.widget.languageToggle" />
+  <Block v-if="configs.transition.visible" :title="locale.transition.title">
+    <SwitchItem 
+      v-if="configs.transitionEnable.visible"
+      v-model="transitionEnable" 
+      :label="locale.transition.enable" 
+      :disabled="configs.transitionEnable.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.transitionProgress.visible"
+      v-model="transitionProgress" 
+      :label="locale.transition.progress" 
+      :disabled="configs.transitionProgress.disabled"
+    />
+    <div 
+      v-if="configs.transitionName.visible"
+      class="transition-presets-grid" 
+      role="radiogroup" 
+      :aria-label="locale.transition.name"
+    >
+      <div
+        v-for="opt in animationOptions"
+        :key="opt.value"
+        class="transition-preset-item"
+        role="radio"
+        tabindex="0"
+        :aria-checked="transitionName === opt.value"
+        :aria-label="opt.label"
+        @click="!configs.transitionName.disabled && (transitionName = opt.value as PageTransitionType)"
+        @keydown.enter.space.prevent="!configs.transitionName.disabled && (transitionName = opt.value as PageTransitionType)"
+      >
+        <div
+          class="outline-box flex-center transition-preset-box"
+          :class="{ 
+            'outline-box-active': transitionName === opt.value, 
+            'disabled': !transitionEnable || configs.transitionName.disabled 
+          }"
+        >
+          <TransitionPreview 
+            :transition="opt.value as PageTransitionType" 
+            :enabled="transitionEnable" 
+            :active="transitionName === opt.value"
+            :compact="true" 
+          />
+        </div>
+        <span class="transition-preset-label">{{ opt.label }}</span>
+      </div>
+    </div>
   </Block>
 </template>

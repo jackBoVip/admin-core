@@ -5,6 +5,7 @@
 
 import type { Preferences } from '../types';
 import type { LocaleMessages } from '../locales';
+import { get } from '../utils/helpers';
 
 /**
  * 控件类型
@@ -274,43 +275,22 @@ export const LAYOUT_TAB_CONFIG: TabConfig = {
 // ========== 工具函数 ==========
 
 /**
- * 从嵌套路径获取值
+ * 从嵌套路径获取值（使用 helpers.get 统一实现）
  * @param obj - 对象
  * @param path - 路径，如 'app.locale'
  */
 export function getNestedValue<T>(obj: Record<string, unknown>, path: string): T {
-  const parts = path.split('.');
-  let current: unknown = obj;
-
-  for (const part of parts) {
-    if (current && typeof current === 'object' && part in current) {
-      current = (current as Record<string, unknown>)[part];
-    } else {
-      return undefined as T;
-    }
-  }
-
-  return current as T;
+  return get<T>(obj, path);
 }
 
 /**
- * 从本地化键获取文本
+ * 从本地化键获取文本（使用 helpers.get 统一实现）
  * @param locale - 语言包
  * @param key - 键路径，如 'general.title'
  */
 export function getLocaleText(locale: LocaleMessages, key: string): string {
-  const parts = key.split('.');
-  let current: unknown = locale;
-
-  for (const part of parts) {
-    if (current && typeof current === 'object' && part in current) {
-      current = (current as Record<string, unknown>)[part];
-    } else {
-      return key;
-    }
-  }
-
-  return typeof current === 'string' ? current : key;
+  const result = get<string>(locale, key, key);
+  return typeof result === 'string' ? result : key;
 }
 
 /**

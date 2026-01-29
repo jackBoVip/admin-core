@@ -1,75 +1,105 @@
 <script setup lang="ts">
 /**
- * Vue 滑动条控件
- * @description 使用 Headless Logic 重构，逻辑与 React 完全同步
+ * 滑动条设置项组件
+ * @description 用于数值范围选择，性能优化：使用 debounce 避免频繁更新
  */
-import { computed } from 'vue';
-import { createSliderController } from '@admin-core/preferences';
+import { ref, watch, computed, onUnmounted, getCurrentInstance } from 'vue';
+import { SLIDER_DEBOUNCE_MS } from '@admin-core/preferences';
 
-export interface SliderItemProps {
+const props = withDefaults(defineProps<{
+  /** 标签文本 */
+  label: string;
   /** 最小值 */
-  min: number;
+  min?: number;
   /** 最大值 */
-  max: number;
+  max?: number;
   /** 步进值 */
   step?: number;
   /** 是否禁用 */
   disabled?: boolean;
-  /** 格式化显示值 */
-  formatValue?: (value: number) => string;
-}
-
-const props = withDefaults(defineProps<SliderItemProps>(), {
-  step: 0.05,
-  disabled: false,
-  formatValue: (v: number) => `${Math.round(v * 100)}%`,
+  /** 单位文本 */
+  unit?: string;
+  /** 防抖延迟 (ms) */
+  debounce?: number;
+}>(), {
+  min: 0,
+  max: 100,
+  step: 1,
+  debounce: SLIDER_DEBOUNCE_MS,
 });
 
-const modelValue = defineModel<number>({ required: true });
+const modelValue = defineModel<number>({ default: 0 });
 
-// 创建控制器实例
-const controller = computed(() => createSliderController({
-  min: props.min,
-  max: props.max,
-  step: props.step,
-}));
+// 本地值用于即时响应UI
+const localValue = ref(modelValue.value);
 
-// 计算背景样式 (Headless)
-const backgroundStyle = computed(() => {
-  return controller.value.getBackgroundStyle(
-    modelValue.value,
-    'var(--primary)',
-    'var(--muted)'
-  );
+// 防抖定时器（使用 ref 避免多实例冲突）
+const debounceTimerRef = ref<ReturnType<typeof setTimeout> | null>(null);
+
+// 同步外部值变化
+watch(modelValue, (newVal) => {
+  if (newVal !== localValue.value) {
+    localValue.value = newVal;
+  }
 });
 
-// 格式化显示值
-const displayValue = computed(() => props.formatValue(modelValue.value));
+// 计算已滑动百分比，用于渐变背景（防止除零）
+const progressPercent = computed(() => {
+  const range = props.max - props.min;
+  if (range === 0) return 0;
+  return ((localValue.value - props.min) / range) * 100;
+});
 
-// 处理滑动变化
-function handleChange(e: Event) {
+// 处理滑动变化（防抖）
+const handleInput = (e: Event) => {
   const target = e.target as HTMLInputElement;
-  const newValue = parseFloat(target.value);
-  // 使用控制器限制和舍入数值
-  modelValue.value = controller.value.clamp(newValue);
-}
+  const value = Number(target.value);
+  localValue.value = value;
+  
+  // 清除之前的定时器
+  if (debounceTimerRef.value) {
+    clearTimeout(debounceTimerRef.value);
+  }
+  
+  // 防抖更新
+  debounceTimerRef.value = setTimeout(() => {
+    modelValue.value = value;
+  }, props.debounce);
+};
+
+// 清理定时器
+onUnmounted(() => {
+  if (debounceTimerRef.value) {
+    clearTimeout(debounceTimerRef.value);
+    debounceTimerRef.value = null;
+  }
+});
+
+// 生成稳定的唯一 ID
+const instance = getCurrentInstance();
+const sliderId = `slider-${instance?.uid ?? Math.random().toString(36).slice(2, 9)}`;
 </script>
 
 <template>
-  <div class="slider-control">
-    <div class="slider-wrapper">
-      <input
-        type="range"
-        class="slider-native"
-        :value="modelValue"
-        :min="min"
-        :max="max"
-        :step="step"
-        :disabled="disabled"
-        :style="{ background: backgroundStyle }"
-        @input="handleChange"
-      />
+  <div class="slider-item" :class="{ disabled }">
+    <div class="slider-item-header">
+      <label :id="`${sliderId}-label`" class="slider-item-label">{{ label }}</label>
+      <span class="slider-item-value">{{ localValue }}{{ unit }}</span>
     </div>
-    <span class="slider-value">{{ displayValue }}</span>
+    <input
+      type="range"
+      class="preferences-slider"
+      :min="min"
+      :max="max"
+      :step="step"
+      :value="localValue"
+      :disabled="disabled"
+      :aria-labelledby="`${sliderId}-label`"
+      :aria-valuemin="min"
+      :aria-valuemax="max"
+      :aria-valuenow="localValue"
+      :style="{ '--slider-progress': `${progressPercent}%` }"
+      @input="handleInput"
+    />
   </div>
 </template>

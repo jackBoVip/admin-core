@@ -1,129 +1,65 @@
 /**
- * Tailwind CSS v4 预设
- * @description 将 CSS 变量映射到 Tailwind 配置
+ * Tailwind CSS v4 预设 - 简化版
+ * @description 
+ * Tailwind v4 通过 @theme 指令自动从 CSS 变量生成工具类，
+ * 因此这里只需要定义 v4 未自动处理的配置。
+ *
+ * @theme 指令已定义（在 variables.css 中）：
+ * - 所有颜色 (--color-*)
+ * - 圆角 (--radius-*)
+ * - 间距 (--spacing-*)
+ * - 动画时长 (--duration-*)
+ * - Z-Index (--z-*)
+ *
+ * 此预设仅补充 v4 不支持自动映射的配置。
  */
 
 import type { Config } from 'tailwindcss';
 
 /**
  * Admin Core Tailwind 预设
+ * @description 补充 @theme 指令未覆盖的配置
  */
 export const adminCorePreset: Partial<Config> = {
   darkMode: 'class',
   theme: {
     extend: {
-      // ========== 颜色 ==========
-      colors: {
-        // 使用 CSS 变量（OKLCH 格式），支持动态主题切换
-        primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
-          50: 'var(--primary-50)',
-          100: 'var(--primary-100)',
-          200: 'var(--primary-200)',
-          300: 'var(--primary-300)',
-          400: 'var(--primary-400)',
-          500: 'var(--primary-500)',
-          600: 'var(--primary-600)',
-          700: 'var(--primary-700)',
-          800: 'var(--primary-800)',
-          900: 'var(--primary-900)',
-          950: 'var(--primary-950)',
-        },
-        success: {
-          DEFAULT: 'var(--success)',
-          foreground: 'var(--success-foreground)',
-        },
-        warning: {
-          DEFAULT: 'var(--warning)',
-          foreground: 'var(--warning-foreground)',
-        },
-        destructive: {
-          DEFAULT: 'var(--destructive)',
-          foreground: 'var(--destructive-foreground)',
-        },
-        info: {
-          DEFAULT: 'var(--info)',
-          foreground: 'var(--info-foreground)',
-        },
-        background: 'var(--background)',
-        foreground: 'var(--foreground)',
-        muted: {
-          DEFAULT: 'var(--muted)',
-          foreground: 'var(--muted-foreground)',
-        },
-        accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
-        },
-        card: {
-          DEFAULT: 'var(--card)',
-          foreground: 'var(--card-foreground)',
-        },
-        popover: {
-          DEFAULT: 'var(--popover)',
-          foreground: 'var(--popover-foreground)',
-        },
-        secondary: {
-          DEFAULT: 'var(--secondary)',
-          foreground: 'var(--secondary-foreground)',
-        },
-        border: 'var(--border)',
-        input: 'var(--input)',
-        ring: 'var(--ring)',
-      },
-
-      // ========== 边框圆角 ==========
-      borderRadius: {
-        lg: 'calc(var(--radius) + 4px)',
-        md: 'calc(var(--radius) + 2px)',
-        DEFAULT: 'var(--radius)',
-        sm: 'calc(var(--radius) - 2px)',
-      },
-
-      // ========== 字体大小 ==========
+      // ========== 字体大小（需要指定 lineHeight） ==========
       fontSize: {
         base: ['var(--font-size-base)', { lineHeight: '1.5' }],
         menu: ['var(--menu-font-size)', { lineHeight: '1.5' }],
       },
 
-      // ========== 布局尺寸 ==========
+      // ========== 额外的高度/宽度别名 ==========
       height: {
         header: 'var(--admin-header-height)',
         footer: 'var(--admin-footer-height)',
         tabbar: 'var(--admin-tabbar-height)',
+        // 动态视口高度（移动端兼容）
+        dvh: '100dvh',
+        svh: '100svh',
+        lvh: '100lvh',
       },
       width: {
         sidebar: 'var(--admin-sidebar-width)',
         'sidebar-collapsed': 'var(--admin-sidebar-collapsed-width)',
+        drawer: 'var(--admin-drawer-width)',
+      },
+      maxWidth: {
+        drawer: 'var(--admin-drawer-width)',
       },
       padding: {
         content: 'var(--admin-content-padding)',
       },
 
-      // ========== 动画时长 ==========
-      transitionDuration: {
-        fast: 'var(--admin-duration-fast)',
-        normal: 'var(--admin-duration-normal)',
-        slow: 'var(--admin-duration-slow)',
-      },
+      // ========== 缓动函数别名 ==========
       transitionTimingFunction: {
         DEFAULT: 'var(--admin-easing-default)',
         in: 'var(--admin-easing-in)',
         out: 'var(--admin-easing-out)',
       },
 
-      // ========== z-index ==========
-      zIndex: {
-        base: 'var(--admin-z-index-base)',
-        dropdown: 'var(--admin-z-index-dropdown)',
-        modal: 'var(--admin-z-index-modal)',
-        popover: 'var(--admin-z-index-popover)',
-        tooltip: 'var(--admin-z-index-tooltip)',
-        toast: 'var(--admin-z-index-toast)',
-      },
-
-      // ========== 关键帧动画 ==========
+      // ========== 关键帧动画（Radix UI 组件使用） ==========
       keyframes: {
         'accordion-down': {
           from: { height: '0' },
@@ -141,12 +77,26 @@ export const adminCorePreset: Partial<Config> = {
           from: { height: 'var(--radix-collapsible-content-height)' },
           to: { height: '0' },
         },
+        // 复制成功动画
+        'copy-success': {
+          '0%': { transform: 'scale(0.8)', opacity: '0.5' },
+          '50%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)', opacity: '1' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down var(--admin-duration-normal) var(--admin-easing-out)',
         'accordion-up': 'accordion-up var(--admin-duration-normal) var(--admin-easing-out)',
         'collapsible-down': 'collapsible-down var(--admin-duration-normal) var(--admin-easing-out)',
         'collapsible-up': 'collapsible-up var(--admin-duration-normal) var(--admin-easing-out)',
+        'copy-success': 'copy-success 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
+
+      // ========== 容器查询断点 ==========
+      containers: {
+        drawer: '384px',
+        'drawer-sm': '320px',
+        'drawer-xs': '280px',
       },
     },
   },

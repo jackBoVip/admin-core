@@ -271,6 +271,9 @@ importers:
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../core
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 19.2.3(react@19.2.3)
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*

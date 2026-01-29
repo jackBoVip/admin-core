@@ -3,17 +3,28 @@
  * @description Vue 3 偏好设置集成
  *
  * 使用方式：
- * ```ts
- * // main.ts
- * import { initPreferences } from '@admin-core/preferences-vue';
+ * ```vue
+ * // App.vue
+ * <script setup>
+ * import { initPreferences, PreferencesProvider } from '@admin-core/preferences-vue';
  *
+ * // 初始化（应用启动时调用一次）
  * initPreferences({ namespace: 'my-app' });
+ * </script>
  *
- * // 组件中
- * import { usePreferences, useTheme } from '@admin-core/preferences-vue';
+ * <template>
+ *   <PreferencesProvider @logout="..." @search="...">
+ *     <YourApp />
+ *   </PreferencesProvider>
+ * </template>
  *
- * const { preferences, setPreferences, isDark, toggleTheme } = usePreferences();
- * const { theme, setPrimaryColor } = useTheme();
+ * // 子组件中使用
+ * <script setup>
+ * import { usePreferences, usePreferencesContext } from '@admin-core/preferences-vue';
+ *
+ * const { preferences, setPreferences } = usePreferences();
+ * const { lock, togglePreferences } = usePreferencesContext();
+ * </script>
  * ```
  */
 
@@ -25,6 +36,8 @@ export {
   useLayout,
   usePreferences,
   usePreferencesCategory,
+  usePreferencesContext,
+  type PreferencesContextValue,
   useTheme,
 } from './composables';
 
@@ -37,7 +50,9 @@ export {
   // Icon 组件类型
   type IconProps,
   type LayoutIconProps,
-  // 主组件
+  // 主组件（推荐）
+  PreferencesProvider,
+  // 单独使用（高级场景）
   PreferencesDrawer,
   PreferencesTrigger,
   // Tab 组件（可独立使用）
@@ -49,6 +64,7 @@ export {
   PreferencesBlock,
   PreferencesSwitchItem,
   PreferencesSelectItem,
+  PreferencesSliderItem,
   // 组件类型
   type PreferencesDrawerProps,
   type PreferencesTriggerProps,
@@ -59,7 +75,11 @@ export {
   type PreferencesBlockProps,
   type PreferencesSwitchItemProps,
   type PreferencesSelectItemProps,
+  type PreferencesSliderItemProps,
 } from './components';
+
+// 导出默认锁屏背景图片（供用户自定义使用）
+export { defaultLockScreenBg } from '@admin-core/preferences';
 
 // Re-export core types and utilities for convenience
 export {

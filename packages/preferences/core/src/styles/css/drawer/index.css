@@ -1,8 +1,23 @@
 /**
- * 抽屉样式入口
+ * 抽屉样式入口 - Tailwind CSS v4 优化版
  * @description 导入所有抽屉相关样式
+ *
+ * 导入顺序：
+ * 1. Design Tokens - 统一的 CSS 变量定义
+ * 2. Container - 抽屉容器、遮罩
+ * 3. Header - 头部标题、按钮
+ * 4. Tabs - 分段标签导航
+ * 5. Blocks - 设置块、开关项、下拉项
+ * 6. Controls - 按钮、数字输入、模态框
+ * 7. Themes - 主题选择、布局预览
+ * 8. Trigger - 触发按钮
+ * 9. Slider - 滑块控件
  */
 
+/* 首先导入 Design Tokens */
+@import './tokens.css';
+
+/* 然后按功能导入各模块 */
 @import './container.css';
 @import './header.css';
 @import './tabs.css';

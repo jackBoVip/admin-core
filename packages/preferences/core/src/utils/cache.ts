@@ -201,11 +201,25 @@ export class StorageManager implements StorageAdapter {
   }
 }
 
+/** 内存存储最大条目数（防止 SSR 环境下内存无限增长） */
+const MEMORY_STORAGE_MAX_SIZE = 1000;
+
 /**
  * 创建内存存储（用于 SSR 或不支持 localStorage 的环境）
  */
 function createMemoryStorage(): Storage {
   const store = new Map<string, string>();
+
+  /**
+   * 维护存储大小限制
+   */
+  const maintainSize = () => {
+    if (store.size > MEMORY_STORAGE_MAX_SIZE) {
+      // 移除最早的 1/4 条目
+      const keysToDelete = Array.from(store.keys()).slice(0, MEMORY_STORAGE_MAX_SIZE / 4);
+      keysToDelete.forEach(key => store.delete(key));
+    }
+  };
 
   return {
     get length() {
@@ -219,6 +233,7 @@ function createMemoryStorage(): Storage {
     },
     setItem(key: string, value: string) {
       store.set(key, value);
+      maintainSize();
     },
     removeItem(key: string) {
       store.delete(key);

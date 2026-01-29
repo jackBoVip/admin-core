@@ -89,18 +89,27 @@ export {
   DRAWER_TABS,
   DRAWER_DEFAULT_PROPS,
   DRAWER_HEADER_ACTIONS,
+  DEFAULT_DRAWER_UI_CONFIG,
   getDrawerTabs,
+  getVisibleDrawerTabs,
   getDrawerHeaderActions,
   getLocaleByPreferences,
   copyPreferencesConfig,
   validatePreferencesConfig,
   importPreferencesConfig,
+  resolveFeatureConfig,
+  getFeatureConfig,
+  getFeatureItemConfig,
+  createTabConfigResolver,
+  isTabVisible,
+  mergeDrawerUIConfig,
   type DrawerTabType,
   type DrawerTabConfig,
   type DrawerHeaderActionType,
   type DrawerHeaderAction,
   type ConfigValidationResult,
   type ImportConfigResult,
+  type UITabConfig,
   // 图标工具
   ICON_SIZE_MAP,
   LAYOUT_ICON_SIZE,
@@ -132,6 +141,11 @@ export {
   DEFAULT_PRIMARY_COLOR,
   getDefaultPreferences,
   clearDefaultPreferencesCache,
+  // 快捷键配置
+  SHORTCUT_KEY_BINDINGS,
+  getShortcutKeys,
+  getShortcutKeyDisplay,
+  type ShortcutKeyBinding,
   // 设计令牌 - 类型
   type DesignTokens,
   type DrawerTokens,
@@ -214,8 +228,11 @@ export type {
   CopyrightPreferences,
   FooterPreferences,
   HeaderPreferences,
+  LockScreenPreferences,
   LogoPreferences,
   NavigationPreferences,
+  PanelPositionType,
+  PanelPreferences,
   Preferences,
   PreferencesKeys,
   ShortcutKeyPreferences,
@@ -231,6 +248,8 @@ export type {
   PlatformType,
   SelectOption,
   StorageAdapter,
+  StorageError,
+  StorageErrorType,
   PreferencesInitOptions,
   DOMSelectors,
   // 组件 Props 类型（Vue/React 共享）
@@ -244,6 +263,20 @@ export type {
   LayoutTabComponentProps,
   ShortcutKeysTabComponentProps,
   GeneralTabComponentProps,
+  LockScreenComponentProps,
+  LockPasswordModalComponentProps,
+  PreferencesProviderComponentProps,
+  // 抽屉 UI 配置类型
+  FeatureItemConfig,
+  FeatureBlockConfig,
+  AppearanceTabConfig,
+  LayoutTabConfig,
+  GeneralTabConfig,
+  ShortcutKeysTabConfig,
+  HeaderActionsConfig,
+  FooterActionsConfig,
+  PreferencesDrawerUIConfig,
+  ResolvedFeatureConfig,
 } from './types';
 
 // ========== 常量配置 ==========
@@ -285,6 +318,14 @@ export {
   FONT_SIZE_STEP,
   RADIUS_OPTIONS,
   type RadiusOption,
+  // 组件交互常量
+  SLIDER_DEBOUNCE_MS,
+  INPUT_DEBOUNCE_MS,
+  INPUT_MAX_LENGTH,
+  COPY_RESET_DELAY_MS,
+  CLEAR_PASSWORD_RESET_DELAY_MS,
+  FOCUS_DELAY_MS,
+  CLOSE_ANIMATION_DELAY_MS,
   // 消息常量
   ERROR_MESSAGES,
   LOG_PREFIX,
@@ -379,9 +420,34 @@ export {
   isEmpty,
   isEqual,
   isObject,
+  // 布局判断工具
+  LAYOUT_CATEGORIES,
+  isHeaderMenuLayout,
+  isSidebarMenuLayout,
+  isFullContentLayout,
+  isMixedLayout,
+  hasSidebar,
+  hasHeaderMenu,
+  getNavigationPosition,
   // 日志工具
   logger,
   type LogLevel,
+  // 锁屏管理
+  createLockScreenManager,
+  type LockScreenManagerOptions,
+  // 快捷键管理
+  createShortcutManager,
+  matchShortcutKey,
+  type ShortcutKeyAction,
+  type ShortcutKeyCallbacks,
+  type ShortcutManagerOptions,
+  type UseShortcutKeysResult,
+  // 密码工具
+  PASSWORD_MIN_LENGTH,
+  hashPassword,
+  hashPasswordSync,
+  verifyPassword,
+  verifyPasswordSync,
 } from './utils';
 
 // ========== 样式 ==========
@@ -389,13 +455,20 @@ export { adminCorePreset, tailwindPreset } from './styles';
 
 // ========== 图标 ==========
 export {
-  // 布局图标
+  // 布局图标（静态）
   getLayoutIcon,
   layoutIcons,
   // 内容宽度图标
   getContentWidthIcon,
   contentWidthIcons,
   type ContentWidthType,
+  // 布局预览图生成器（动态）
+  generateLayoutPreview,
+  generatePreviewFromPreferences,
+  generatePreviewWithOverrides,
+  extractPreviewOptions,
+  DEFAULT_PREVIEW_OPTIONS,
+  type LayoutPreviewOptions,
   // 通用图标
   getIcon,
   hasIcon,
@@ -410,10 +483,16 @@ export {
   enUS,
   getLocaleLabel,
   getLocaleMessages,
+  getLocaleRegistry,
+  getSupportedLocales,
   getTranslation,
   localeMessages,
+  registerLocale,
   supportedLocales,
   translateOptions,
   zhCN,
   type LocaleMessages,
 } from './locales';
+
+// ========== 资源文件 ==========
+export { defaultLockScreenBg } from './assets';

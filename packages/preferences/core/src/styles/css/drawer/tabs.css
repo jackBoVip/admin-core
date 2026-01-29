@@ -1,77 +1,117 @@
 /**
- * Segmented Tabs Styles
- * @description Tab navigation (VbenSegmented style)
- * @note Consistent with Vben Admin
+ * Segmented Tabs Styles - Tailwind CSS v4 优化版
+ * @description Tab navigation
+ *
+ * Tailwind v4 特性利用：
+ * - CSS 原生嵌套
+ * - will-change 性能优化
  */
 
 @layer admin-core {
-  /* ========== Segmented Container ========== */
+  /* ========== 分段标签容器 ========== */
   .preferences-segmented {
+    --_tab-count: var(--pref-tab-columns, 4);
+    --_active-index: var(--pref-active-tab-index, 0);
+    --_gap: 2px;
+    /* 内容区域宽度 = 100% - 左右padding */
+    --_content-width: calc(100% - var(--_gap) * 2);
+    /* 单个 tab 宽度 = 内容区域 / tab数量 */
+    --_tab-width: calc(var(--_content-width) / var(--_tab-count));
+    
     position: relative;
-    display: flex;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: repeat(var(--_tab-count), 1fr);
     width: 100%;
-    padding: 0;
-    background: transparent;
-    transition: all 0.3s ease;
+    padding: var(--_gap);
+    background: var(--muted);
+    border-radius: var(--radius, var(--pref-control-radius));
+    border: 1px solid var(--border);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 
-  /* ========== Tab Item ========== */
+  /* ========== 滑动指示器（水流效果） ========== */
+  .preferences-segmented-indicator {
+    position: absolute;
+    top: var(--_gap);
+    bottom: var(--_gap);
+    /* left = gap + index * tab宽度 */
+    left: calc(var(--_gap) + var(--_active-index) * var(--_tab-width));
+    /* 宽度 = tab宽度 */
+    width: var(--_tab-width);
+    background: var(--background);
+    border-radius: calc(var(--radius, var(--pref-control-radius)) - var(--_gap));
+    box-shadow: 
+      0 1px 2px 0 rgb(0 0 0 / 0.05),
+      0 1px 3px 0 rgb(0 0 0 / 0.1);
+    /* 流动动画 - 使用 cubic-bezier 实现水流般的缓动效果 */
+    transition: left 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* 提前告知浏览器即将变化的属性 */
+    will-change: left;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* 标签项 */
   .preferences-segmented-item {
     z-index: 20;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px;
-    font-size: 13px;
+    padding: var(--pref-tab-padding);
+    font-size: var(--pref-tab-font-size);
     font-weight: 500;
     color: var(--muted-foreground);
     background: transparent;
-    border: 1px solid var(--border);
-    border-radius: var(--radius, 8px);
+    border: none;
+    border-radius: calc(var(--radius, var(--pref-control-radius)) - 2px);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    /* 仅过渡 color 和 opacity，避免 font-weight 触发布局重排 */
+    transition: color 0.2s ease, opacity 0.2s ease;
     white-space: nowrap;
     user-select: none;
   }
 
   .preferences-segmented-item:hover {
     color: var(--foreground);
-    border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    background: var(--accent);
-  }
-
-  .dark .preferences-segmented-item:hover {
-    background: rgba(255, 255, 255, 0.04);
   }
 
   .preferences-segmented-item.active {
-    color: var(--primary);
+    color: var(--foreground);
     font-weight: 600;
-    border-color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 8%, transparent);
+    /* 移除 active 状态的背景，由指示器提供 */
+    background: transparent;
+    box-shadow: none;
   }
 
-  /* ========== Tabs Wrapper ========== */
+  .preferences-segmented-item:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+
+  /* ========== 标签包装器 ========== */
   .preferences-tabs-wrapper {
     position: relative;
-    z-index: 1; /* Low z-index so header tooltips can overlay */
-    padding: 4px 0 16px 0;
-    margin: 0 -24px;
-    padding-left: 24px;
-    padding-right: 24px;
+    z-index: 1;
+    padding: 4px 0 var(--pref-block-gap) 0;
+    margin: 0 calc(-1 * var(--pref-tabs-margin-x));
+    padding-left: var(--pref-tabs-margin-x);
+    padding-right: var(--pref-tabs-margin-x);
     background: var(--background);
     border-bottom: 1px solid transparent;
+    transition: 
+      background-color var(--pref-transition),
+      border-color var(--pref-transition),
+      box-shadow var(--pref-transition);
   }
 
-  /* Sticky mode: activated by pin button */
-  .preferences-drawer-body .preferences-tabs-wrapper.sticky {
+  /* 固定模式：通过固定按钮激活 */
+  .preferences-tabs-wrapper.sticky {
     position: sticky;
     top: -12px;
-    padding-top: 16px;
-    z-index: 5; /* Lower than header (z-index: 10) so tooltips can overlay */
+    padding-top: var(--pref-block-gap);
+    z-index: var(--pref-tabs-z-index);
     background: var(--background);
     border-bottom: 1px solid var(--border);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    box-shadow: 0 4px 6px -1px color-mix(in oklch, var(--foreground) 2%, transparent);
   }
 }

@@ -9,14 +9,16 @@ import {
   BUILT_IN_THEME_PRESETS,
   RADIUS_OPTIONS,
   FONT_SCALE_CONFIG,
-  formatScaleToPercent,
   colorsTokens,
   DEFAULT_PREFERENCES,
   getIcon,
   oklchToHex,
+  getFeatureItemConfig,
   type BuiltinThemeType,
   type ThemeModeType,
   type LocaleMessages,
+  type AppearanceTabConfig,
+  type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
 import Block from './Block.vue';
 import SwitchItem from './SwitchItem.vue';
@@ -25,7 +27,33 @@ import SliderItem from './SliderItem.vue';
 const props = defineProps<{
   /** 当前语言包 */
   locale: LocaleMessages;
+  /** UI 配置 */
+  uiConfig?: AppearanceTabConfig;
 }>();
+
+// ========== UI 配置解析（使用 computed 缓存） ==========
+const getConfig = (blockKey: keyof AppearanceTabConfig, itemKey?: string): ResolvedFeatureConfig =>
+  getFeatureItemConfig(props.uiConfig, blockKey, itemKey);
+
+// 缓存常用配置项
+const configs = computed(() => ({
+  // 主题模式
+  themeMode: getConfig('themeMode'),
+  // 内置主题
+  builtinTheme: getConfig('builtinTheme'),
+  // 圆角
+  radius: getConfig('radius'),
+  // 字体缩放
+  fontSize: getConfig('fontSize'),
+  // 颜色模式
+  colorMode: getConfig('colorMode'),
+  colorFollowPrimaryLight: getConfig('colorMode', 'colorFollowPrimaryLight'),
+  colorFollowPrimaryDark: getConfig('colorMode', 'colorFollowPrimaryDark'),
+  semiDarkSidebar: getConfig('colorMode', 'semiDarkSidebar'),
+  semiDarkHeader: getConfig('colorMode', 'semiDarkHeader'),
+  colorGrayMode: getConfig('colorMode', 'colorGrayMode'),
+  colorWeakMode: getConfig('colorMode', 'colorWeakMode'),
+}));
 
 // 获取主题预设名称（类型安全）
 function getThemePresetName(nameKey: string): string | undefined {
@@ -63,9 +91,10 @@ const radius = computed({
   set: (value: string) => setPreferences({ theme: { radius: value } }),
 });
 
-const fontScale = computed({
-  get: () => preferences.value?.theme.fontScale ?? D.theme.fontScale,
-  set: (value: number) => setPreferences({ theme: { fontScale: value } }),
+// fontScale 存储为小数 (0.8-1.5)，显示为百分比 (80-150)
+const fontScalePercent = computed({
+  get: () => Math.round((preferences.value?.theme.fontScale ?? D.theme.fontScale) * 100),
+  set: (value: number) => setPreferences({ theme: { fontScale: value / 100 } }),
 });
 
 const semiDarkSidebar = computed({
@@ -117,30 +146,57 @@ const openColorPicker = () => {
 
 <template>
   <!-- 主题模式 -->
-  <Block :title="locale.theme.mode">
-    <div class="theme-mode-grid">
-      <div class="theme-mode-item" @click="themeMode = 'light'">
+  <Block v-if="configs.themeMode.visible" :title="locale.theme.mode">
+    <div class="theme-mode-grid" role="radiogroup" :aria-label="locale.theme.mode">
+      <div 
+        class="theme-mode-item" 
+        :class="{ disabled: configs.themeMode.disabled }"
+        role="radio"
+        :tabindex="configs.themeMode.disabled ? -1 : 0"
+        :aria-checked="themeMode === 'light'"
+        :aria-disabled="configs.themeMode.disabled"
+        @click="!configs.themeMode.disabled && (themeMode = 'light')"
+        @keydown.enter.space.prevent="!configs.themeMode.disabled && (themeMode = 'light')"
+      >
         <div
           class="outline-box flex-center theme-mode-box"
-          :class="{ 'outline-box-active': themeMode === 'light' }"
+          :class="{ 'outline-box-active': themeMode === 'light', disabled: configs.themeMode.disabled }"
         >
           <span v-html="sunIcon" class="theme-mode-icon" />
         </div>
         <span class="theme-mode-label">{{ locale.theme.modeLight }}</span>
       </div>
-      <div class="theme-mode-item" @click="themeMode = 'dark'">
+      <div 
+        class="theme-mode-item" 
+        :class="{ disabled: configs.themeMode.disabled }"
+        role="radio"
+        :tabindex="configs.themeMode.disabled ? -1 : 0"
+        :aria-checked="themeMode === 'dark'"
+        :aria-disabled="configs.themeMode.disabled"
+        @click="!configs.themeMode.disabled && (themeMode = 'dark')"
+        @keydown.enter.space.prevent="!configs.themeMode.disabled && (themeMode = 'dark')"
+      >
         <div
           class="outline-box flex-center theme-mode-box"
-          :class="{ 'outline-box-active': themeMode === 'dark' }"
+          :class="{ 'outline-box-active': themeMode === 'dark', disabled: configs.themeMode.disabled }"
         >
           <span v-html="moonIcon" class="theme-mode-icon" />
         </div>
         <span class="theme-mode-label">{{ locale.theme.modeDark }}</span>
       </div>
-      <div class="theme-mode-item" @click="themeMode = 'auto'">
+      <div 
+        class="theme-mode-item" 
+        :class="{ disabled: configs.themeMode.disabled }"
+        role="radio"
+        :tabindex="configs.themeMode.disabled ? -1 : 0"
+        :aria-checked="themeMode === 'auto'"
+        :aria-disabled="configs.themeMode.disabled"
+        @click="!configs.themeMode.disabled && (themeMode = 'auto')"
+        @keydown.enter.space.prevent="!configs.themeMode.disabled && (themeMode = 'auto')"
+      >
         <div
           class="outline-box flex-center theme-mode-box"
-          :class="{ 'outline-box-active': themeMode === 'auto' }"
+          :class="{ 'outline-box-active': themeMode === 'auto', disabled: configs.themeMode.disabled }"
         >
           <span v-html="monitorIcon" class="theme-mode-icon" />
         </div>
@@ -150,17 +206,24 @@ const openColorPicker = () => {
   </Block>
 
   <!-- 内置主题 -->
-  <Block :title="locale.theme.builtinTheme">
-    <div class="theme-presets-grid">
+  <Block v-if="configs.builtinTheme.visible" :title="locale.theme.builtinTheme">
+    <div class="theme-presets-grid" role="radiogroup" :aria-label="locale.theme.builtinTheme">
       <div
         v-for="preset in BUILT_IN_THEME_PRESETS.filter(p => p.type !== 'custom')"
         :key="preset.type"
         class="theme-preset-item"
-        @click="builtinType = preset.type"
+        :class="{ disabled: configs.builtinTheme.disabled }"
+        role="radio"
+        :tabindex="configs.builtinTheme.disabled ? -1 : 0"
+        :aria-checked="builtinType === preset.type"
+        :aria-label="getThemePresetName(preset.nameKey) || preset.type"
+        :aria-disabled="configs.builtinTheme.disabled"
+        @click="!configs.builtinTheme.disabled && (builtinType = preset.type)"
+        @keydown.enter.space.prevent="!configs.builtinTheme.disabled && (builtinType = preset.type)"
       >
         <div
           class="outline-box flex-center theme-preset-box"
-          :class="{ 'outline-box-active': builtinType === preset.type }"
+          :class="{ 'outline-box-active': builtinType === preset.type, disabled: configs.builtinTheme.disabled }"
         >
           <div
             class="theme-preset-color"
@@ -170,12 +233,22 @@ const openColorPicker = () => {
         <span class="theme-preset-label">{{ getThemePresetName(preset.nameKey) || preset.type }}</span>
       </div>
       <!-- 自定义颜色 -->
-      <div class="theme-preset-item" @click="builtinType = 'custom'">
+      <div 
+        class="theme-preset-item" 
+        :class="{ disabled: configs.builtinTheme.disabled }"
+        role="radio"
+        :tabindex="configs.builtinTheme.disabled ? -1 : 0"
+        :aria-checked="builtinType === 'custom'"
+        :aria-label="locale.theme.colorCustom"
+        :aria-disabled="configs.builtinTheme.disabled"
+        @click="!configs.builtinTheme.disabled && (builtinType = 'custom')"
+        @keydown.enter.space.prevent="!configs.builtinTheme.disabled && (builtinType = 'custom')"
+      >
         <div
           class="outline-box flex-center theme-preset-box"
-          :class="{ 'outline-box-active': builtinType === 'custom' }"
+          :class="{ 'outline-box-active': builtinType === 'custom', disabled: configs.builtinTheme.disabled }"
         >
-          <div class="theme-preset-custom" @click.stop="openColorPicker">
+          <div class="theme-preset-custom" @click.stop="!configs.builtinTheme.disabled && openColorPicker()">
             <div class="theme-preset-custom-inner">
               <svg
                 class="theme-preset-custom-icon"
@@ -194,6 +267,7 @@ const openColorPicker = () => {
                 type="color"
                 class="theme-preset-custom-input"
                 :value="colorPrimaryHex"
+                :disabled="configs.builtinTheme.disabled"
                 @input="(e) => colorPrimary = (e.target as HTMLInputElement).value"
               />
             </div>
@@ -205,13 +279,14 @@ const openColorPicker = () => {
   </Block>
 
   <!-- 圆角 -->
-  <Block :title="locale.theme.radius">
-    <div class="radius-options">
+  <Block v-if="configs.radius.visible" :title="locale.theme.radius">
+    <div class="radius-options" :class="{ disabled: configs.radius.disabled }">
       <button
         v-for="r in RADIUS_OPTIONS"
         :key="r"
         class="radius-option"
         :class="{ active: radius === r }"
+        :disabled="configs.radius.disabled"
         @click="radius = r"
       >
         {{ r }}
@@ -220,24 +295,58 @@ const openColorPicker = () => {
   </Block>
 
   <!-- 字体缩放 -->
-  <Block :title="locale.theme.fontSize">
+  <Block v-if="configs.fontSize.visible" :title="locale.theme.fontSize">
     <SliderItem
-      v-model="fontScale"
-      :min="FONT_SCALE_CONFIG.min"
-      :max="FONT_SCALE_CONFIG.max"
-      :step="FONT_SCALE_CONFIG.step"
-      :format-value="formatScaleToPercent"
+      v-model="fontScalePercent"
+      :label="locale.theme.fontSize"
+      :min="FONT_SCALE_CONFIG.min * 100"
+      :max="FONT_SCALE_CONFIG.max * 100"
+      :step="FONT_SCALE_CONFIG.step * 100"
+      unit="%"
+      :disabled="configs.fontSize.disabled"
     />
   </Block>
 
   <!-- 颜色模式 -->
-  <Block :title="locale.theme.colorMode">
-    <SwitchItem v-model="colorFollowPrimaryLight" :label="locale.theme.colorFollowPrimaryLight" />
-    <SwitchItem v-model="colorFollowPrimaryDark" :label="locale.theme.colorFollowPrimaryDark" />
-    <SwitchItem v-if="!isDark" v-model="semiDarkSidebar" :label="locale.theme.semiDarkSidebar" :icon="semiDarkSidebarIcon" />
-    <SwitchItem v-if="!isDark" v-model="semiDarkHeader" :label="locale.theme.semiDarkHeader" :icon="semiDarkHeaderIcon" />
-    <SwitchItem v-model="colorGrayMode" :label="locale.theme.colorGrayMode" />
-    <SwitchItem v-model="colorWeakMode" :label="locale.theme.colorWeakMode" />
+  <Block v-if="configs.colorMode.visible" :title="locale.theme.colorMode">
+    <SwitchItem 
+      v-if="configs.colorFollowPrimaryLight.visible"
+      v-model="colorFollowPrimaryLight" 
+      :label="locale.theme.colorFollowPrimaryLight" 
+      :disabled="configs.colorFollowPrimaryLight.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.colorFollowPrimaryDark.visible"
+      v-model="colorFollowPrimaryDark" 
+      :label="locale.theme.colorFollowPrimaryDark" 
+      :disabled="configs.colorFollowPrimaryDark.disabled"
+    />
+    <SwitchItem 
+      v-if="!isDark && configs.semiDarkSidebar.visible" 
+      v-model="semiDarkSidebar" 
+      :label="locale.theme.semiDarkSidebar" 
+      :icon="semiDarkSidebarIcon" 
+      :disabled="configs.semiDarkSidebar.disabled"
+    />
+    <SwitchItem 
+      v-if="!isDark && configs.semiDarkHeader.visible" 
+      v-model="semiDarkHeader" 
+      :label="locale.theme.semiDarkHeader" 
+      :icon="semiDarkHeaderIcon" 
+      :disabled="configs.semiDarkHeader.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.colorGrayMode.visible"
+      v-model="colorGrayMode" 
+      :label="locale.theme.colorGrayMode" 
+      :disabled="configs.colorGrayMode.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.colorWeakMode.visible"
+      v-model="colorWeakMode" 
+      :label="locale.theme.colorWeakMode" 
+      :disabled="configs.colorWeakMode.disabled"
+    />
   </Block>
 
 </template>

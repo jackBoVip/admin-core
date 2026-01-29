@@ -120,7 +120,9 @@ export function updateThemeCSSVariables(preferences: Preferences): void {
 
     // 添加圆角（使用 px 单位，避免受字体缩放影响）
     // 将 rem 值转换为 px（基于 16px 基准）
-    const radiusPx = parseFloat(theme.radius) * 16;
+    const radiusValue = parseFloat(theme.radius);
+    // 处理 NaN 情况，使用默认值 0.375rem (6px)
+    const radiusPx = (Number.isNaN(radiusValue) ? 0.375 : radiusValue) * 16;
     colorVariables['--radius'] = `${radiusPx}px`;
 
     // 添加字体缩放变量
@@ -161,6 +163,26 @@ export function updateLayoutCSSVariables(preferences: Preferences): void {
 }
 
 /**
+ * 检查元素是否仍在 DOM 中
+ */
+function isElementInDOM(element: HTMLElement | null): boolean {
+  return element !== null && document.body.contains(element);
+}
+
+/**
+ * 获取有效的缓存元素，如果缓存失效则重新查询
+ */
+function getValidElement(
+  cachedElement: HTMLElement | null,
+  selector: string
+): HTMLElement | null {
+  if (isElementInDOM(cachedElement)) {
+    return cachedElement;
+  }
+  return document.querySelector(selector) as HTMLElement | null;
+}
+
+/**
  * 更新特殊模式 CSS 类
  * @param preferences - 偏好设置
  */
@@ -175,18 +197,14 @@ export function updateSpecialModeClasses(preferences: Preferences): void {
   // 色弱模式
   toggleClass('color-weak-mode', app.colorWeakMode);
 
-  // 半深色侧边栏（使用缓存的元素引用）
-  if (!cachedSidebarElement) {
-    cachedSidebarElement = document.querySelector(currentSelectors.sidebar) as HTMLElement | null;
-  }
+  // 半深色侧边栏（使用缓存的元素引用，检查有效性）
+  cachedSidebarElement = getValidElement(cachedSidebarElement, currentSelectors.sidebar);
   if (cachedSidebarElement) {
     toggleClass('semi-dark', theme.semiDarkSidebar && getActualThemeMode(theme.mode) === 'light', cachedSidebarElement);
   }
 
-  // 半深色顶栏（使用缓存的元素引用）
-  if (!cachedHeaderElement) {
-    cachedHeaderElement = document.querySelector(currentSelectors.header) as HTMLElement | null;
-  }
+  // 半深色顶栏（使用缓存的元素引用，检查有效性）
+  cachedHeaderElement = getValidElement(cachedHeaderElement, currentSelectors.header);
   if (cachedHeaderElement) {
     toggleClass('semi-dark', theme.semiDarkHeader && getActualThemeMode(theme.mode) === 'light', cachedHeaderElement);
   }

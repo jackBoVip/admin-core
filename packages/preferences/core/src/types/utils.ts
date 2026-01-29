@@ -4,19 +4,23 @@
 
 /**
  * 深度部分类型
- * @description 递归地将对象所有属性变为可选
+ * @description 递归地将对象所有属性变为可选，正确处理数组类型
  */
-export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-};
+export type DeepPartial<T> = T extends (infer U)[]
+  ? DeepPartial<U>[]
+  : T extends object
+    ? { [P in keyof T]?: DeepPartial<T[P]> }
+    : T;
 
 /**
  * 深度只读类型
- * @description 递归地将对象所有属性变为只读
+ * @description 递归地将对象所有属性变为只读，正确处理数组类型
  */
-export type DeepReadonly<T> = {
-  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
-};
+export type DeepReadonly<T> = T extends (infer U)[]
+  ? readonly DeepReadonly<U>[]
+  : T extends object
+    ? { readonly [P in keyof T]: DeepReadonly<T[P]> }
+    : T;
 
 /**
  * 选择项

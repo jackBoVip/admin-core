@@ -28,20 +28,36 @@ export const hasNavigator = typeof navigator !== 'undefined';
 
 /* ========== 平台检测 ==========*/
 
+// 平台检测缓存（避免重复解析 userAgent）
+let cachedPlatform: PlatformType | null = null;
+let cachedIsMobile: boolean | null = null;
+let cachedIsTouchDevice: boolean | null = null;
+
 /**
- * 检测当前平台
+ * 检测当前平台（带缓存）
  * @returns 平台类型
  */
 export function getPlatform(): PlatformType {
+  if (cachedPlatform !== null) {
+    return cachedPlatform;
+  }
+
   if (!hasNavigator) {
-    return 'windows'; // SSR 默认
+    cachedPlatform = 'windows'; // SSR 默认
+    return cachedPlatform;
   }
 
   const userAgent = navigator.userAgent.toLowerCase();
 
-  if (userAgent.includes('mac')) return 'macOs';
-  if (userAgent.includes('linux')) return 'linux';
-  return 'windows';
+  if (userAgent.includes('mac')) {
+    cachedPlatform = 'macOs';
+  } else if (userAgent.includes('linux')) {
+    cachedPlatform = 'linux';
+  } else {
+    cachedPlatform = 'windows';
+  }
+
+  return cachedPlatform;
 }
 
 /**
@@ -66,27 +82,39 @@ export function isLinux(): boolean {
 }
 
 /**
- * 是否为移动设备
+ * 是否为移动设备（带缓存）
  */
 export function isMobile(): boolean {
-  if (!hasNavigator) {
-    return false;
+  if (cachedIsMobile !== null) {
+    return cachedIsMobile;
   }
 
-  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+  if (!hasNavigator) {
+    cachedIsMobile = false;
+    return cachedIsMobile;
+  }
+
+  cachedIsMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
     navigator.userAgent.toLowerCase()
   );
+  return cachedIsMobile;
 }
 
 /**
- * 是否为触摸设备
+ * 是否为触摸设备（带缓存）
  */
 export function isTouchDevice(): boolean {
-  if (!isBrowser) {
-    return false;
+  if (cachedIsTouchDevice !== null) {
+    return cachedIsTouchDevice;
   }
 
-  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  if (!isBrowser) {
+    cachedIsTouchDevice = false;
+    return cachedIsTouchDevice;
+  }
+
+  cachedIsTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  return cachedIsTouchDevice;
 }
 
 /**

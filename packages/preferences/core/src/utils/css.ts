@@ -3,6 +3,18 @@
  */
 
 /**
+ * 检查是否在浏览器环境
+ */
+const isBrowser = typeof document !== 'undefined';
+
+/**
+ * 获取默认元素（SSR 安全）
+ */
+function getDefaultElement(): HTMLElement | null {
+  return isBrowser ? document.documentElement : null;
+}
+
+/**
  * 设置单个 CSS 变量
  * @param name - 变量名（含 --）
  * @param value - 变量值
@@ -12,10 +24,12 @@
 export function setCSSVariable(
   name: string,
   value: string,
-  element: HTMLElement = document.documentElement,
+  element?: HTMLElement,
   priority: string = ''
 ): void {
-  element.style.setProperty(name, value, priority);
+  const el = element ?? getDefaultElement();
+  if (!el) return;
+  el.style.setProperty(name, value, priority);
 }
 
 /**
@@ -26,9 +40,11 @@ export function setCSSVariable(
  */
 export function getCSSVariable(
   name: string,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): string {
-  return getComputedStyle(element).getPropertyValue(name).trim();
+  const el = element ?? getDefaultElement();
+  if (!el) return '';
+  return getComputedStyle(el).getPropertyValue(name).trim();
 }
 
 /**
@@ -38,10 +54,15 @@ export function getCSSVariable(
  */
 export function removeCSSVariable(
   name: string,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): void {
-  element.style.removeProperty(name);
+  const el = element ?? getDefaultElement();
+  if (!el) return;
+  el.style.removeProperty(name);
 }
+
+/** CSS 变量缓存最大大小（避免内存无限增长） */
+const CSS_CACHE_MAX_SIZE = 500;
 
 /** 上次设置的 CSS 变量缓存（避免重复设置相同值） */
 const lastCSSVariables = new Map<string, string>();
@@ -50,18 +71,33 @@ const lastCSSVariables = new Map<string, string>();
 const FORCE_UPDATE_VARS = new Set(['--radius', '--font-scale', '--font-size-base', '--menu-font-size']);
 
 /**
+ * 维护缓存大小限制
+ * @description 当缓存超过最大大小时，移除最早添加的条目
+ */
+function maintainCacheSize(): void {
+  if (lastCSSVariables.size > CSS_CACHE_MAX_SIZE) {
+    // 移除最早的 1/4 条目
+    const keysToDelete = Array.from(lastCSSVariables.keys()).slice(0, CSS_CACHE_MAX_SIZE / 4);
+    keysToDelete.forEach(key => lastCSSVariables.delete(key));
+  }
+}
+
+/**
  * 批量设置 CSS 变量（带变化检查优化）
  * @param variables - CSS 变量对象
  * @param element - 目标元素（默认 :root）
  */
 export function updateCSSVariables(
   variables: Record<string, string>,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): void {
+  const el = element ?? getDefaultElement();
+  if (!el) return;
+  
   Object.entries(variables).forEach(([name, value]) => {
     // 对于强制更新的变量，跳过缓存检查，直接设置
     if (FORCE_UPDATE_VARS.has(name)) {
-      setCSSVariable(name, value, element);
+      setCSSVariable(name, value, el);
       lastCSSVariables.set(name, value);
       return;
     }
@@ -69,10 +105,13 @@ export function updateCSSVariables(
     // 检查是否与上次设置的值相同
     const lastValue = lastCSSVariables.get(name);
     if (lastValue !== value) {
-      setCSSVariable(name, value, element);
+      setCSSVariable(name, value, el);
       lastCSSVariables.set(name, value);
     }
   });
+  
+  // 维护缓存大小限制
+  maintainCacheSize();
 }
 
 /**
@@ -90,9 +129,11 @@ export function clearCSSVariablesCache(): void {
  */
 export function removeCSSVariables(
   names: string[],
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): void {
-  names.forEach((name) => removeCSSVariable(name, element));
+  const el = element ?? getDefaultElement();
+  if (!el) return;
+  names.forEach((name) => removeCSSVariable(name, el));
 }
 
 /**
@@ -103,9 +144,12 @@ export function removeCSSVariables(
  */
 export function getAllCSSVariables(
   prefix: string,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): Record<string, string> {
-  const styles = getComputedStyle(element);
+  const el = element ?? getDefaultElement();
+  if (!el) return {};
+  
+  const styles = getComputedStyle(el);
   const variables: Record<string, string> = {};
 
   // 获取所有 CSS 属性名
@@ -126,9 +170,11 @@ export function getAllCSSVariables(
  */
 export function addClass(
   className: string,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): void {
-  element.classList.add(className);
+  const el = element ?? getDefaultElement();
+  if (!el) return;
+  el.classList.add(className);
 }
 
 /**
@@ -138,9 +184,11 @@ export function addClass(
  */
 export function removeClass(
   className: string,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): void {
-  element.classList.remove(className);
+  const el = element ?? getDefaultElement();
+  if (!el) return;
+  el.classList.remove(className);
 }
 
 /**
@@ -153,9 +201,11 @@ export function removeClass(
 export function toggleClass(
   className: string,
   force?: boolean,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): boolean {
-  return element.classList.toggle(className, force);
+  const el = element ?? getDefaultElement();
+  if (!el) return false;
+  return el.classList.toggle(className, force);
 }
 
 /**
@@ -166,7 +216,9 @@ export function toggleClass(
  */
 export function hasClass(
   className: string,
-  element: HTMLElement = document.documentElement
+  element?: HTMLElement
 ): boolean {
-  return element.classList.contains(className);
+  const el = element ?? getDefaultElement();
+  if (!el) return false;
+  return el.classList.contains(className);
 }

@@ -29,8 +29,8 @@ export interface PreferencesTriggerProps {
  * Block Props
  */
 export interface BlockProps {
-  /** 标题 */
-  title: string;
+  /** 标题（可选） */
+  title?: string;
   /** 描述（可选） */
   description?: string;
 }
@@ -77,6 +77,20 @@ export interface SliderItemProps {
   disabled?: boolean;
   /** 格式化显示值 */
   formatValue?: (value: number) => string;
+}
+
+/**
+ * InputItem Props
+ */
+export interface InputItemProps {
+  /** 标签文本 */
+  label: string;
+  /** 当前值 */
+  modelValue: string;
+  /** 占位符 */
+  placeholder?: string;
+  /** 是否禁用 */
+  disabled?: boolean;
 }
 
 /**

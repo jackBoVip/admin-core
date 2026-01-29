@@ -8,13 +8,15 @@ import {
   BUILT_IN_THEME_PRESETS,
   RADIUS_OPTIONS,
   FONT_SCALE_CONFIG,
-  formatScaleToPercent,
   colorsTokens,
   getIcon,
   oklchToHex,
+  getFeatureItemConfig,
   type BuiltinThemeType,
   type ThemeModeType,
   type LocaleMessages,
+  type AppearanceTabConfig,
+  type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
 import { Block } from './Block';
 import { SwitchItem } from './SwitchItem';
@@ -32,9 +34,38 @@ const ICONS = {
 export interface AppearanceTabProps {
   /** 当前语言包 */
   locale: LocaleMessages;
+  /** UI 配置（控制功能项显示/禁用） */
+  uiConfig?: AppearanceTabConfig;
 }
 
-export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale }) => {
+export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiConfig }) => {
+  // ========== UI 配置解析（使用 useMemo 缓存） ==========
+  const getConfig = useCallback(
+    (blockKey: keyof AppearanceTabConfig, itemKey?: string): ResolvedFeatureConfig =>
+      getFeatureItemConfig(uiConfig, blockKey, itemKey),
+    [uiConfig]
+  );
+
+  // 缓存常用配置项
+  const configs = useMemo(() => ({
+    // 主题模式
+    themeMode: getConfig('themeMode'),
+    // 内置主题
+    builtinTheme: getConfig('builtinTheme'),
+    // 圆角
+    radius: getConfig('radius'),
+    // 字体缩放
+    fontSize: getConfig('fontSize'),
+    // 颜色模式
+    colorMode: getConfig('colorMode'),
+    colorFollowPrimaryLight: getConfig('colorMode', 'colorFollowPrimaryLight'),
+    colorFollowPrimaryDark: getConfig('colorMode', 'colorFollowPrimaryDark'),
+    semiDarkSidebar: getConfig('colorMode', 'semiDarkSidebar'),
+    semiDarkHeader: getConfig('colorMode', 'semiDarkHeader'),
+    colorGrayMode: getConfig('colorMode', 'colorGrayMode'),
+    colorWeakMode: getConfig('colorMode', 'colorWeakMode'),
+  }), [getConfig]);
+
   const { preferences, setPreferences } = usePreferences();
   const { isDark } = useTheme();
 
@@ -119,163 +150,231 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale }) => 
   return (
     <>
       {/* 主题模式 */}
-      <Block title={locale.theme.mode}>
-        <div className="theme-mode-grid">
-          <div className="theme-mode-item" onClick={handleSetModeLight}>
-            <div
-              className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'light' ? 'outline-box-active' : ''}`}
+      {configs.themeMode.visible && (
+        <Block title={locale.theme.mode}>
+          <div className="theme-mode-grid" role="radiogroup" aria-label={locale.theme.mode}>
+            <div 
+              className={`theme-mode-item${configs.themeMode.disabled ? ' disabled' : ''}`}
+              role="radio"
+              tabIndex={configs.themeMode.disabled ? -1 : 0}
+              aria-checked={preferences.theme.mode === 'light'}
+              aria-disabled={configs.themeMode.disabled}
+              onClick={() => !configs.themeMode.disabled && handleSetModeLight()}
+              onKeyDown={(e) => { if (!configs.themeMode.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetModeLight(); }}}
             >
-              <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.sun }} />
+              <div
+                className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'light' ? 'outline-box-active' : ''}${configs.themeMode.disabled ? ' disabled' : ''}`}
+              >
+                <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.sun }} />
+              </div>
+              <span className="theme-mode-label">{locale.theme.modeLight}</span>
             </div>
-            <span className="theme-mode-label">{locale.theme.modeLight}</span>
-          </div>
-          <div className="theme-mode-item" onClick={handleSetModeDark}>
-            <div
-              className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'dark' ? 'outline-box-active' : ''}`}
+            <div 
+              className={`theme-mode-item${configs.themeMode.disabled ? ' disabled' : ''}`}
+              role="radio"
+              tabIndex={configs.themeMode.disabled ? -1 : 0}
+              aria-checked={preferences.theme.mode === 'dark'}
+              aria-disabled={configs.themeMode.disabled}
+              onClick={() => !configs.themeMode.disabled && handleSetModeDark()}
+              onKeyDown={(e) => { if (!configs.themeMode.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetModeDark(); }}}
             >
-              <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.moon }} />
+              <div
+                className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'dark' ? 'outline-box-active' : ''}${configs.themeMode.disabled ? ' disabled' : ''}`}
+              >
+                <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.moon }} />
+              </div>
+              <span className="theme-mode-label">{locale.theme.modeDark}</span>
             </div>
-            <span className="theme-mode-label">{locale.theme.modeDark}</span>
-          </div>
-          <div className="theme-mode-item" onClick={handleSetModeAuto}>
-            <div
-              className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'auto' ? 'outline-box-active' : ''}`}
+            <div 
+              className={`theme-mode-item${configs.themeMode.disabled ? ' disabled' : ''}`}
+              role="radio"
+              tabIndex={configs.themeMode.disabled ? -1 : 0}
+              aria-checked={preferences.theme.mode === 'auto'}
+              aria-disabled={configs.themeMode.disabled}
+              onClick={() => !configs.themeMode.disabled && handleSetModeAuto()}
+              onKeyDown={(e) => { if (!configs.themeMode.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetModeAuto(); }}}
             >
-              <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.monitor }} />
+              <div
+                className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'auto' ? 'outline-box-active' : ''}${configs.themeMode.disabled ? ' disabled' : ''}`}
+              >
+                <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.monitor }} />
+              </div>
+              <span className="theme-mode-label">{locale.theme.modeAuto}</span>
             </div>
-            <span className="theme-mode-label">{locale.theme.modeAuto}</span>
           </div>
-        </div>
-      </Block>
+        </Block>
+      )}
 
       {/* 内置主题 */}
-      <Block title={locale.theme.builtinTheme}>
-        <div className="theme-presets-grid">
-          {BUILT_IN_THEME_PRESETS.filter((p) => p.type !== 'custom').map((preset) => (
-            <div
-              key={preset.type}
-              className="theme-preset-item"
-              onClick={() => handleSetBuiltinTheme(preset.type as BuiltinThemeType)}
-            >
+      {configs.builtinTheme.visible && (
+        <Block title={locale.theme.builtinTheme}>
+          <div className="theme-presets-grid" role="radiogroup" aria-label={locale.theme.builtinTheme}>
+            {BUILT_IN_THEME_PRESETS.filter((p) => p.type !== 'custom').map((preset) => (
               <div
-                className={`outline-box flex-center theme-preset-box ${preferences.theme.builtinType === preset.type ? 'outline-box-active' : ''}`}
+                key={preset.type}
+                className={`theme-preset-item${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+                role="radio"
+                tabIndex={configs.builtinTheme.disabled ? -1 : 0}
+                aria-checked={preferences.theme.builtinType === preset.type}
+                aria-label={(locale.theme as Record<string, string>)[preset.nameKey] || preset.type}
+                aria-disabled={configs.builtinTheme.disabled}
+                onClick={() => !configs.builtinTheme.disabled && handleSetBuiltinTheme(preset.type as BuiltinThemeType)}
+                onKeyDown={(e) => { if (!configs.builtinTheme.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetBuiltinTheme(preset.type as BuiltinThemeType); }}}
               >
                 <div
-                  className="theme-preset-color"
-                  style={{ backgroundColor: preset.color || colorsTokens.presetFallback }}
-                />
-              </div>
-              <span className="theme-preset-label">
-                {(locale.theme as Record<string, string>)[preset.nameKey] || preset.type}
-              </span>
-            </div>
-          ))}
-          {/* 自定义颜色 */}
-          <div className="theme-preset-item" onClick={handleSetCustomTheme}>
-            <div
-              className={`outline-box flex-center theme-preset-box ${preferences.theme.builtinType === 'custom' ? 'outline-box-active' : ''}`}
-            >
-              <div
-                className="theme-preset-custom"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openColorPicker();
-                }}
-              >
-                <div className="theme-preset-custom-inner">
-                  <svg
-                    className="theme-preset-custom-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                  </svg>
-                  <input
-                    ref={colorInputRef}
-                    type="color"
-                    className="theme-preset-custom-input"
-                    value={currentColorValue}
-                    onChange={handleColorChange}
+                  className={`outline-box flex-center theme-preset-box ${preferences.theme.builtinType === preset.type ? 'outline-box-active' : ''}${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+                >
+                  <div
+                    className="theme-preset-color"
+                    style={{ backgroundColor: preset.color || colorsTokens.presetFallback }}
                   />
                 </div>
+                <span className="theme-preset-label">
+                  {(locale.theme as Record<string, string>)[preset.nameKey] || preset.type}
+                </span>
               </div>
+            ))}
+            {/* 自定义颜色 */}
+            <div 
+              className={`theme-preset-item${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+              role="radio"
+              tabIndex={configs.builtinTheme.disabled ? -1 : 0}
+              aria-checked={preferences.theme.builtinType === 'custom'}
+              aria-label={locale.theme.colorCustom}
+              aria-disabled={configs.builtinTheme.disabled}
+              onClick={() => !configs.builtinTheme.disabled && handleSetCustomTheme()}
+              onKeyDown={(e) => { if (!configs.builtinTheme.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetCustomTheme(); }}}
+            >
+              <div
+                className={`outline-box flex-center theme-preset-box ${preferences.theme.builtinType === 'custom' ? 'outline-box-active' : ''}${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+              >
+                <div
+                  className="theme-preset-custom"
+                  onClick={(e) => {
+                    if (configs.builtinTheme.disabled) return;
+                    e.stopPropagation();
+                    openColorPicker();
+                  }}
+                >
+                  <div className="theme-preset-custom-inner">
+                    <svg
+                      className="theme-preset-custom-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                    </svg>
+                    <input
+                      ref={colorInputRef}
+                      type="color"
+                      className="theme-preset-custom-input"
+                      value={currentColorValue}
+                      onChange={handleColorChange}
+                      disabled={configs.builtinTheme.disabled}
+                    />
+                  </div>
+                </div>
+              </div>
+              <span className="theme-preset-label">{locale.theme.colorCustom}</span>
             </div>
-            <span className="theme-preset-label">{locale.theme.colorCustom}</span>
           </div>
-        </div>
-      </Block>
+        </Block>
+      )}
 
       {/* 圆角 */}
-      <Block title={locale.theme.radius}>
-        <div className="radius-options">
-          {RADIUS_OPTIONS.map((r) => (
-            <button
-              key={r}
-              className={`radius-option ${preferences.theme.radius === r ? 'active' : ''}`}
-              onClick={() => handleSetRadius(r)}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </Block>
+      {configs.radius.visible && (
+        <Block title={locale.theme.radius}>
+          <div className={`radius-options${configs.radius.disabled ? ' disabled' : ''}`}>
+            {RADIUS_OPTIONS.map((r) => (
+              <button
+                key={r}
+                className={`radius-option ${preferences.theme.radius === r ? 'active' : ''}`}
+                disabled={configs.radius.disabled}
+                onClick={() => handleSetRadius(r)}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </Block>
+      )}
 
       {/* 字体缩放 */}
-      <Block title={locale.theme.fontSize}>
-        <SliderItem
-          value={preferences.theme.fontScale}
-          onChange={handleSetFontScale}
-          min={FONT_SCALE_CONFIG.min}
-          max={FONT_SCALE_CONFIG.max}
-          step={FONT_SCALE_CONFIG.step}
-          formatValue={formatScaleToPercent}
-        />
-      </Block>
+      {configs.fontSize.visible && (
+        <Block title={locale.theme.fontSize}>
+          <SliderItem
+            label={locale.theme.fontSize}
+            value={Math.round(preferences.theme.fontScale * 100)}
+            onChange={(v) => handleSetFontScale(v / 100)}
+            min={FONT_SCALE_CONFIG.min * 100}
+            max={FONT_SCALE_CONFIG.max * 100}
+            step={FONT_SCALE_CONFIG.step * 100}
+            unit="%"
+            disabled={configs.fontSize.disabled}
+          />
+        </Block>
+      )}
 
       {/* 颜色模式 */}
-      <Block title={locale.theme.colorMode}>
-        <SwitchItem
-          label={locale.theme.colorFollowPrimaryLight}
-          checked={preferences.app.colorFollowPrimaryLight}
-          onChange={handleSetColorFollowPrimaryLight}
-        />
-        <SwitchItem
-          label={locale.theme.colorFollowPrimaryDark}
-          checked={preferences.app.colorFollowPrimaryDark}
-          onChange={handleSetColorFollowPrimaryDark}
-        />
-        {!isDark && (
-          <>
+      {configs.colorMode.visible && (
+        <Block title={locale.theme.colorMode}>
+          {configs.colorFollowPrimaryLight.visible && (
+            <SwitchItem
+              label={locale.theme.colorFollowPrimaryLight}
+              checked={preferences.app.colorFollowPrimaryLight}
+              onChange={handleSetColorFollowPrimaryLight}
+              disabled={configs.colorFollowPrimaryLight.disabled}
+            />
+          )}
+          {configs.colorFollowPrimaryDark.visible && (
+            <SwitchItem
+              label={locale.theme.colorFollowPrimaryDark}
+              checked={preferences.app.colorFollowPrimaryDark}
+              onChange={handleSetColorFollowPrimaryDark}
+              disabled={configs.colorFollowPrimaryDark.disabled}
+            />
+          )}
+          {!isDark && configs.semiDarkSidebar.visible && (
             <SwitchItem
               label={locale.theme.semiDarkSidebar}
               icon={ICONS.semiDarkSidebar}
               checked={preferences.theme.semiDarkSidebar}
               onChange={handleSetSemiDarkSidebar}
+              disabled={configs.semiDarkSidebar.disabled}
             />
+          )}
+          {!isDark && configs.semiDarkHeader.visible && (
             <SwitchItem
               label={locale.theme.semiDarkHeader}
               icon={ICONS.semiDarkHeader}
               checked={preferences.theme.semiDarkHeader}
               onChange={handleSetSemiDarkHeader}
+              disabled={configs.semiDarkHeader.disabled}
             />
-          </>
-        )}
-        <SwitchItem
-          label={locale.theme.colorGrayMode}
-          checked={preferences.app.colorGrayMode}
-          onChange={handleSetColorGrayMode}
-        />
-        <SwitchItem
-          label={locale.theme.colorWeakMode}
-          checked={preferences.app.colorWeakMode}
-          onChange={handleSetColorWeakMode}
-        />
-      </Block>
+          )}
+          {configs.colorGrayMode.visible && (
+            <SwitchItem
+              label={locale.theme.colorGrayMode}
+              checked={preferences.app.colorGrayMode}
+              onChange={handleSetColorGrayMode}
+              disabled={configs.colorGrayMode.disabled}
+            />
+          )}
+          {configs.colorWeakMode.visible && (
+            <SwitchItem
+              label={locale.theme.colorWeakMode}
+              checked={preferences.app.colorWeakMode}
+              onChange={handleSetColorWeakMode}
+              disabled={configs.colorWeakMode.disabled}
+            />
+          )}
+        </Block>
+      )}
     </>
   );
 });

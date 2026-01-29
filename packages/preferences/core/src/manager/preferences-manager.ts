@@ -13,6 +13,7 @@ import type {
 import { DEFAULT_PREFERENCES, getDefaultPreferences } from '../config/defaults';
 import { deepMerge, safeMerge, deepClone, diff, diffWithKeys, hasChanges, createStorageManager, isBrowser } from '../utils';
 import { updateAllCSSVariables, getActualThemeMode, setDOMSelectors } from './css-updater';
+import { validatePreferencesConfig } from '../helpers/drawer-config';
 
 /**
  * 偏好设置变更监听器
@@ -54,7 +55,8 @@ export class PreferencesManager {
   /** 初始化选项 */
   private options: PreferencesInitOptions;
 
-  /** 变更监听器 */
+  /** 变更监听器（最大数量限制，防止内存泄漏） */
+  private static readonly MAX_LISTENERS = 100;
   private listeners: Set<PreferencesListener> = new Set();
 
   /** 媒体查询监听器 */
@@ -230,6 +232,13 @@ export class PreferencesManager {
    * @returns 取消监听函数
    */
   subscribe(listener: PreferencesListener): () => void {
+    // 检查监听器数量限制
+    if (this.listeners.size >= PreferencesManager.MAX_LISTENERS) {
+      console.warn(
+        `[PreferencesManager] Max listeners (${PreferencesManager.MAX_LISTENERS}) reached. ` +
+        'Consider removing unused listeners to prevent memory leaks.'
+      );
+    }
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
@@ -268,9 +277,36 @@ export class PreferencesManager {
   /**
    * 导入配置
    * @param config - JSON 字符串或对象
+   * @param skipValidation - 是否跳过完整验证（默认 false）
+   * @throws 配置格式错误时抛出异常
    */
-  importConfig(config: string | DeepPartial<Preferences>): void {
-    const parsed = typeof config === 'string' ? JSON.parse(config) : config;
+  importConfig(config: string | DeepPartial<Preferences>, skipValidation = false): void {
+    let parsed: DeepPartial<Preferences>;
+    
+    if (typeof config === 'string') {
+      try {
+        parsed = JSON.parse(config);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`[PreferencesManager] Failed to parse config: ${message}`);
+      }
+    } else {
+      parsed = config;
+    }
+
+    // 基本类型验证
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('[PreferencesManager] Invalid config: must be an object');
+    }
+
+    // 完整配置验证（可选）
+    if (!skipValidation) {
+      const validation = validatePreferencesConfig(parsed);
+      if (!validation.valid) {
+        throw new Error(`[PreferencesManager] Invalid config: ${validation.error}`);
+      }
+    }
+
     this.setPreferences(parsed);
   }
 
@@ -298,8 +334,9 @@ export class PreferencesManager {
    * 保存偏好设置到存储（立即执行）
    */
   private saveToStorage(): void {
-    // 只保存与默认值不同的部分（使用缓存的差异）
-    const diffPrefs = this.getDiff();
+    // 只保存与默认值不同的部分
+    // 注意：这里直接计算 diff 而不使用缓存，确保保存最新状态
+    const diffPrefs = diff(DEFAULT_PREFERENCES, this.state);
     this.storage.setItem(PREFERENCES_STORAGE_KEY, diffPrefs);
   }
 
@@ -312,11 +349,15 @@ export class PreferencesManager {
       clearTimeout(this.saveDebounceTimer);
     }
 
-    // 设置新的定时器
-    this.saveDebounceTimer = setTimeout(() => {
-      this.saveToStorage();
-      this.saveDebounceTimer = null;
+    // 设置新的定时器，保存 timerId 用于验证回调上下文
+    const timerId = setTimeout(() => {
+      // 验证定时器仍然有效（防止 destroy 后执行）
+      if (this.saveDebounceTimer === timerId) {
+        this.saveToStorage();
+        this.saveDebounceTimer = null;
+      }
     }, STORAGE_DEBOUNCE_MS);
+    this.saveDebounceTimer = timerId;
   }
 
   /**
@@ -347,11 +388,16 @@ export class PreferencesManager {
   };
 
   /**
-   * 通知所有监听器
+   * 通知所有监听器（带错误处理）
    */
   private notifyListeners(changedKeys: string[]): void {
     this.listeners.forEach((listener) => {
-      listener(this.state, changedKeys);
+      try {
+        listener(this.state, changedKeys);
+      } catch (error) {
+        // 捕获监听器错误，避免中断其他监听器
+        console.error('[PreferencesManager] Listener error:', error);
+      }
     });
   }
 }

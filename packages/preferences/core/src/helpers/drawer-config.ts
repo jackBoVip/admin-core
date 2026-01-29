@@ -61,6 +61,11 @@ export async function copyPreferencesConfig(
   onError?: (error: unknown) => void
 ): Promise<boolean> {
   try {
+    // SSR 环境检查
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      logger.warn('Clipboard API not available');
+      return false;
+    }
     const config = JSON.stringify(preferences, null, 2);
     await navigator.clipboard.writeText(config);
     onSuccess?.();
@@ -104,6 +109,30 @@ const REQUIRED_TOP_LEVEL_KEYS: (keyof Preferences)[] = [
 ];
 
 /**
+ * 检查对象是否包含原型污染风险的键
+ * @param obj - 待检查对象
+ * @returns 是否安全
+ */
+function isPrototypeSafe(obj: unknown): boolean {
+  if (!obj || typeof obj !== 'object') return true;
+  
+  const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
+  
+  for (const key of Object.keys(obj as object)) {
+    if (dangerousKeys.includes(key)) {
+      return false;
+    }
+    // 递归检查嵌套对象
+    const value = (obj as Record<string, unknown>)[key];
+    if (value && typeof value === 'object' && !isPrototypeSafe(value)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+/**
  * 验证配置数据
  * @param data - 待验证的数据
  * @returns 验证结果
@@ -112,6 +141,11 @@ export function validatePreferencesConfig(data: unknown): ConfigValidationResult
   // 检查是否为对象
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return { valid: false, error: 'INVALID_FORMAT' };
+  }
+
+  // 检查原型污染风险
+  if (!isPrototypeSafe(data)) {
+    return { valid: false, error: 'PROTOTYPE_POLLUTION_RISK' };
   }
 
   const config = data as Record<string, unknown>;
@@ -162,6 +196,11 @@ export interface ImportConfigResult {
  */
 export async function importPreferencesConfig(): Promise<ImportConfigResult> {
   try {
+    // SSR 环境检查
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      return { success: false, errorType: 'CLIPBOARD_ACCESS_DENIED', errorDetail: 'Clipboard API not available' };
+    }
+    
     // 读取剪贴板
     const clipboardText = await navigator.clipboard.readText();
 
@@ -238,7 +277,7 @@ export interface DrawerHeaderAction {
 }
 
 /**
- * 默认头部操作配置（与 Vben Admin 保持一致）
+ * 默认头部操作配置
  */
 export const DRAWER_HEADER_ACTIONS: DrawerHeaderAction[] = [
   {
@@ -350,4 +389,237 @@ function resolveLocaleKey(locale: LocaleMessages, key: string): string {
   }
 
   return typeof result === 'string' ? result : key;
+}
+
+// ========== UI 配置相关 ==========
+
+import type {
+  PreferencesDrawerUIConfig,
+  FeatureItemConfig,
+  ResolvedFeatureConfig,
+} from '../types';
+
+/**
+ * 默认 UI 配置（所有功能都显示且启用）
+ */
+export const DEFAULT_DRAWER_UI_CONFIG: PreferencesDrawerUIConfig = {
+  headerActions: {
+    import: { visible: true, disabled: false },
+    reset: { visible: true, disabled: false },
+    pin: { visible: true, disabled: false },
+    close: { visible: true, disabled: false },
+  },
+  footerActions: {
+    copy: { visible: true, disabled: false },
+  },
+  appearance: { visible: true, disabled: false },
+  layout: { visible: true, disabled: false },
+  general: { visible: true, disabled: false },
+  shortcutKeys: { visible: true, disabled: false },
+};
+
+/**
+ * 解析功能项配置
+ * @param config - 用户配置（可能为 undefined）
+ * @param defaultConfig - 默认配置
+ * @returns 解析后的配置
+ */
+export function resolveFeatureConfig(
+  config?: FeatureItemConfig,
+  defaultConfig: FeatureItemConfig = { visible: true, disabled: false }
+): ResolvedFeatureConfig {
+  return {
+    visible: config?.visible ?? defaultConfig.visible ?? true,
+    disabled: config?.disabled ?? defaultConfig.disabled ?? false,
+  };
+}
+
+/**
+ * 从嵌套路径获取功能项配置
+ * @param uiConfig - UI 配置对象
+ * @param path - 配置路径，如 'appearance.colorMode.items.colorGrayMode'
+ * @returns 解析后的配置
+ */
+export function getFeatureConfig(
+  uiConfig: PreferencesDrawerUIConfig | undefined,
+  path: string
+): ResolvedFeatureConfig {
+  if (!uiConfig) {
+    return { visible: true, disabled: false };
+  }
+
+  const keys = path.split('.');
+  let current: unknown = uiConfig;
+
+  for (const key of keys) {
+    if (current && typeof current === 'object' && key in current) {
+      current = (current as Record<string, unknown>)[key];
+    } else {
+      return { visible: true, disabled: false };
+    }
+  }
+
+  return resolveFeatureConfig(current as FeatureItemConfig | undefined);
+}
+
+/**
+ * 检查 Tab 是否可见
+ * @param uiConfig - UI 配置
+ * @param tabName - Tab 名称
+ * @returns 是否显示该 Tab
+ */
+export function isTabVisible(
+  uiConfig: PreferencesDrawerUIConfig | undefined,
+  tabName: DrawerTabType
+): boolean {
+  return getFeatureConfig(uiConfig, tabName).visible;
+}
+
+/**
+ * 获取可见的 Tab 列表
+ * @param locale - 语言包
+ * @param uiConfig - UI 配置
+ * @returns 过滤后的 Tab 列表
+ */
+export function getVisibleDrawerTabs(
+  locale: LocaleMessages,
+  uiConfig?: PreferencesDrawerUIConfig
+): Array<{ label: string; value: DrawerTabType }> {
+  return getDrawerTabs(locale).filter(tab => isTabVisible(uiConfig, tab.value));
+}
+
+/**
+ * 合并用户配置和默认配置
+ * @param userConfig - 用户配置
+ * @param defaultConfig - 默认配置
+ * @returns 合并后的配置
+ */
+export function mergeDrawerUIConfig(
+  userConfig?: PreferencesDrawerUIConfig,
+  defaultConfig: PreferencesDrawerUIConfig = DEFAULT_DRAWER_UI_CONFIG
+): PreferencesDrawerUIConfig {
+  if (!userConfig) {
+    return defaultConfig;
+  }
+  
+  // 深度合并配置
+  return deepMergeUIConfig(
+    defaultConfig as unknown as Record<string, unknown>,
+    userConfig as unknown as Record<string, unknown>
+  ) as PreferencesDrawerUIConfig;
+}
+
+/**
+ * 深度合并 UI 配置（递归合并对象）
+ */
+function deepMergeUIConfig(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>
+): Record<string, unknown> {
+  const result: Record<string, unknown> = { ...target };
+  
+  for (const key of Object.keys(source)) {
+    const sourceValue = source[key];
+    const targetValue = target[key];
+    
+    if (
+      sourceValue &&
+      typeof sourceValue === 'object' &&
+      !Array.isArray(sourceValue) &&
+      targetValue &&
+      typeof targetValue === 'object' &&
+      !Array.isArray(targetValue)
+    ) {
+      result[key] = deepMergeUIConfig(
+        targetValue as Record<string, unknown>,
+        sourceValue as Record<string, unknown>
+      );
+    } else if (sourceValue !== undefined) {
+      result[key] = sourceValue;
+    }
+  }
+  
+  return result;
+}
+
+// ========== Tab 配置解析辅助函数 ==========
+
+import type {
+  AppearanceTabConfig,
+  LayoutTabConfig,
+  GeneralTabConfig,
+  ShortcutKeysTabConfig,
+  FeatureBlockConfig,
+} from '../types';
+
+/** Tab UI 配置联合类型（用于 getFeatureItemConfig） */
+export type UITabConfig = AppearanceTabConfig | LayoutTabConfig | GeneralTabConfig | ShortcutKeysTabConfig;
+
+/**
+ * 获取功能项配置（支持 Block disabled 继承）
+ * @description 通用辅助函数，用于 Tab 组件中获取功能项的 visible/disabled 配置
+ * 
+ * 特性：
+ * - 如果 Block 设置了 disabled，子项会继承该 disabled 状态
+ * - 如果子项显式设置了 disabled，以子项的设置为准
+ * - visible 不继承，各层级独立控制
+ * 
+ * @param tabConfig - Tab 配置对象
+ * @param blockKey - 区块 key
+ * @param itemKey - 可选的子项 key
+ * @returns 解析后的配置 { visible, disabled }
+ * 
+ * @example
+ * // 获取区块配置
+ * getFeatureItemConfig(uiConfig, 'watermark')
+ * // 获取子项配置（会继承区块的 disabled）
+ * getFeatureItemConfig(uiConfig, 'watermark', 'enable')
+ */
+export function getFeatureItemConfig<T extends UITabConfig>(
+  tabConfig: T | undefined,
+  blockKey: keyof T,
+  itemKey?: string
+): ResolvedFeatureConfig {
+  if (!tabConfig) {
+    return { visible: true, disabled: false };
+  }
+
+  const block = tabConfig[blockKey] as FeatureBlockConfig | undefined;
+  const blockConfig = resolveFeatureConfig(block);
+  
+  // 如果没有指定子项，直接返回区块配置
+  if (!itemKey) {
+    return blockConfig;
+  }
+  
+  // 获取子项配置
+  const items = block?.items;
+  const itemConfig = items?.[itemKey];
+  const resolvedItem = resolveFeatureConfig(itemConfig);
+  
+  // 子项的 disabled 继承 Block 的 disabled（除非子项显式设置）
+  // 逻辑：Block disabled 或 子项 disabled -> 最终 disabled
+  return {
+    visible: resolvedItem.visible,
+    disabled: blockConfig.disabled || resolvedItem.disabled,
+  };
+}
+
+/**
+ * 创建 Tab 配置解析器（工厂函数）
+ * @description 为特定 Tab 创建配置解析函数，减少重复代码
+ * 
+ * @param tabConfig - Tab 配置对象
+ * @returns 配置解析函数
+ * 
+ * @example
+ * const getConfig = createTabConfigResolver(uiConfig);
+ * getConfig('watermark') // 获取区块配置
+ * getConfig('watermark', 'enable') // 获取子项配置
+ */
+export function createTabConfigResolver<T extends UITabConfig>(
+  tabConfig: T | undefined
+): (blockKey: keyof T, itemKey?: string) => ResolvedFeatureConfig {
+  return (blockKey: keyof T, itemKey?: string) => 
+    getFeatureItemConfig(tabConfig, blockKey, itemKey);
 }

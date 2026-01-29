@@ -5,7 +5,10 @@
 export { Icon, default as AdminIcon, type IconProps } from './Icon';
 export { LayoutIcon, default as AdminLayoutIcon, type LayoutIconProps } from './LayoutIcon';
 
-// 偏好设置抽屉组件
+// 偏好设置提供者（推荐使用，自动集成锁屏和快捷键）
+export { default as PreferencesProvider } from './PreferencesProvider.vue';
+
+// 偏好设置抽屉组件（高级场景单独使用）
 export {
   // 主组件
   PreferencesDrawer,
@@ -20,6 +23,7 @@ export {
   SwitchItem as PreferencesSwitchItem,
   SelectItem as PreferencesSelectItem,
   SliderItem as PreferencesSliderItem,
+  InputItem as PreferencesInputItem,
   // 类型
   type PreferencesDrawerProps,
   type PreferencesTriggerProps,
@@ -31,4 +35,8 @@ export {
   type SwitchItemProps as PreferencesSwitchItemProps,
   type SelectItemProps as PreferencesSelectItemProps,
   type SliderItemProps as PreferencesSliderItemProps,
+  type InputItemProps as PreferencesInputItemProps,
 } from './drawer';
+
+// 内部组件（被 PreferencesProvider 使用）
+export { LockScreen } from './lock-screen';

@@ -1,21 +1,25 @@
 <script setup lang="ts">
 /**
  * 偏好设置抽屉组件
- * @description 完整的偏好设置面板，与 Vben Admin 保持一致的样式
+ * @description 完整的偏好设置面板
  */
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { usePreferences } from '../../composables';
 import {
   getIcon,
   getLocaleByPreferences,
-  getDrawerTabs,
+  getVisibleDrawerTabs,
   getDrawerHeaderActions,
   copyPreferencesConfig,
   importPreferencesConfig,
   getIconStyleString,
   createCopyButtonController,
   getCopyButtonA11yProps,
+  getFeatureConfig,
+  mergeDrawerUIConfig,
   type DrawerHeaderActionType,
+  type DrawerTabType,
+  type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences';
 import AppearanceTab from './AppearanceTab.vue';
 import LayoutTab from './LayoutTab.vue';
@@ -31,6 +35,8 @@ const props = withDefaults(defineProps<{
   closeOnOverlay?: boolean;
   /** 是否显示固定按钮 */
   showPinButton?: boolean;
+  /** UI 配置（控制功能项显示/禁用） */
+  uiConfig?: PreferencesDrawerUIConfig;
 }>(), {
   open: false,
   showOverlay: true,
@@ -51,6 +57,18 @@ const activeTab = ref('appearance');
 
 // 内容容器引用
 const bodyRef = ref<HTMLElement | null>(null);
+
+// 计算当前激活 tab 的索引（用于滑动指示器动画）
+const activeTabIndex = computed(() => {
+  const index = tabs.value.findIndex((tab: { label: string; value: DrawerTabType }) => tab.value === activeTab.value);
+  return index >= 0 ? index : 0;
+});
+
+// 缓存 tabs 样式对象，避免每次渲染创建新对象
+const tabsStyle = computed(() => ({
+  '--pref-tab-columns': tabs.value.length,
+  '--pref-active-tab-index': activeTabIndex.value,
+}));
 
 // 切换标签时回到顶部
 const handleTabChange = (tab: string) => {
@@ -80,15 +98,15 @@ const resetCopyStatus = () => {
   copyState.value = copyController.reset();
 };
 
-// 监听偏好设置变化，自动重置复制状态（使用 deep watch 替代 JSON.stringify）
+// 监听偏好设置变化，自动重置复制状态（浅层监听引用变化即可）
 watch(
   () => preferences.value,
-  () => {
-    if (copyController.shouldResetOnChange(copyState.value, preferences.value)) {
+  (newVal, oldVal) => {
+    // 只在引用变化且复制状态需要重置时处理
+    if (newVal !== oldVal && copyController.shouldResetOnChange(copyState.value, newVal)) {
       resetCopyStatus();
     }
-  },
-  { deep: true }
+  }
 );
 
 // 清理
@@ -99,18 +117,60 @@ onUnmounted(() => {
 // 国际化文本
 const locale = computed(() => getLocaleByPreferences(preferences.value));
 
-// 标签配置
-const tabs = computed(() => getDrawerTabs(locale.value));
+// 合并后的 UI 配置
+const mergedUIConfig = computed(() => mergeDrawerUIConfig(props.uiConfig));
+
+// 标签配置（根据 uiConfig 过滤）
+const tabs = computed(() => getVisibleDrawerTabs(locale.value, mergedUIConfig.value));
+
+// 确保 activeTab 在可见 Tab 中
+watch(tabs, (newTabs: Array<{ label: string; value: DrawerTabType }>) => {
+  if (newTabs.length > 0 && !newTabs.some((t: { label: string; value: DrawerTabType }) => t.value === activeTab.value)) {
+    activeTab.value = newTabs[0].value;
+  }
+}, { immediate: true });
 
 // 头部操作按钮配置
 const headerActions = computed(() => {
-  const excludeActions: DrawerHeaderActionType[] = props.showPinButton ? [] : ['pin'];
-  return getDrawerHeaderActions(locale.value, {
+  const excludeActions: DrawerHeaderActionType[] = [];
+  
+  // 根据 showPinButton prop 和 uiConfig 过滤
+  if (!props.showPinButton || !getFeatureConfig(mergedUIConfig.value, 'headerActions.pin').visible) {
+    excludeActions.push('pin');
+  }
+  if (!getFeatureConfig(mergedUIConfig.value, 'headerActions.import').visible) {
+    excludeActions.push('import');
+  }
+  if (!getFeatureConfig(mergedUIConfig.value, 'headerActions.reset').visible) {
+    excludeActions.push('reset');
+  }
+  if (!getFeatureConfig(mergedUIConfig.value, 'headerActions.close').visible) {
+    excludeActions.push('close');
+  }
+  
+  const actions = getDrawerHeaderActions(locale.value, {
     hasChanges: hasChanges.value,
     isPinned: isPinned.value,
     exclude: excludeActions,
   });
+
+  // 应用 uiConfig 的 disabled 状态
+  return actions.map((action) => ({
+    ...action,
+    disabled: action.disabled || getFeatureConfig(mergedUIConfig.value, `headerActions.${action.type}`).disabled,
+  }));
 });
+
+// 复制按钮配置
+const copyButtonConfig = computed(() => getFeatureConfig(mergedUIConfig.value, 'footerActions.copy'));
+
+// 复制按钮是否可见
+const showCopyButton = computed(() => copyButtonConfig.value.visible);
+
+// 复制按钮是否禁用（结合 hasChanges 和 uiConfig）
+const copyButtonDisabled = computed(() => 
+  !hasChanges.value || copyState.value.isCopied || copyButtonConfig.value.disabled
+);
 
 // 关闭抽屉
 const closeDrawer = () => {
@@ -174,16 +234,21 @@ const handleImportConfig = async () => {
   }
 };
 
-// 复制配置
+// 复制配置（带错误处理）
 const handleCopyConfig = async () => {
   if (preferences.value && !copyState.value.isCopied) {
-    const success = await copyPreferencesConfig(preferences.value);
-    if (success) {
-      copyState.value = copyController.handleCopySuccess(preferences.value);
-      // 设置自动恢复定时器
-      copyController.scheduleAutoReset(() => {
-        copyState.value = copyController.getInitialState();
-      });
+    try {
+      const success = await copyPreferencesConfig(preferences.value);
+      if (success) {
+        copyState.value = copyController.handleCopySuccess(preferences.value);
+        // 设置自动恢复定时器
+        copyController.scheduleAutoReset(() => {
+          copyState.value = copyController.getInitialState();
+        });
+      }
+    } catch (error) {
+      console.error('[PreferencesDrawer] Failed to copy config:', error);
+      // 可以在这里添加用户提示
     }
   }
 };
@@ -223,11 +288,12 @@ const iconStyleSm = getIconStyleString('sm');
           class="preferences-btn-icon"
           :class="{ relative: action.showIndicator }"
           :disabled="action.disabled"
+          :aria-label="action.tooltip"
           :data-preference-tooltip="action.tooltip || undefined"
           @click="handleHeaderAction(action.type)"
         >
           <span v-if="action.showIndicator" class="dot" />
-          <span v-html="action.icon" :style="iconStyleMd" />
+          <span v-html="action.icon" :style="iconStyleMd" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -236,12 +302,23 @@ const iconStyleSm = getIconStyleString('sm');
     <div ref="bodyRef" class="preferences-drawer-body">
       <!-- 分段标签导航 -->
       <div class="preferences-tabs-wrapper" :class="{ sticky: isPinned }">
-        <div class="preferences-segmented">
+        <div 
+          class="preferences-segmented" 
+          role="tablist" 
+          aria-label="设置分类"
+          :style="tabsStyle"
+        >
+          <!-- 滑动指示器（水流动画） -->
+          <div class="preferences-segmented-indicator" aria-hidden="true" />
           <button
             v-for="tab in tabs"
             :key="tab.value"
+            role="tab"
+            :id="`pref-tab-${tab.value}`"
             class="preferences-segmented-item"
             :class="{ active: activeTab === tab.value }"
+            :aria-selected="activeTab === tab.value"
+            :aria-controls="`pref-tabpanel-${tab.value}`"
             @click="handleTabChange(tab.value)"
           >
             {{ tab.label }}
@@ -249,19 +326,25 @@ const iconStyleSm = getIconStyleString('sm');
         </div>
       </div>
 
-      <!-- 标签内容 -->
-      <AppearanceTab v-if="activeTab === 'appearance'" :locale="locale" />
-      <LayoutTab v-if="activeTab === 'layout'" :locale="locale" />
-      <ShortcutKeysTab v-if="activeTab === 'shortcutKeys'" :locale="locale" />
-      <GeneralTab v-if="activeTab === 'general'" :locale="locale" />
+      <!-- 标签内容（使用 v-if 按需渲染，避免所有 Tab 同时显示） -->
+      <div
+        :id="`pref-tabpanel-${activeTab}`"
+        role="tabpanel"
+        :aria-labelledby="`pref-tab-${activeTab}`"
+      >
+        <AppearanceTab v-if="activeTab === 'appearance'" :locale="locale" :ui-config="mergedUIConfig.appearance" />
+        <LayoutTab v-if="activeTab === 'layout'" :locale="locale" :ui-config="mergedUIConfig.layout" />
+        <ShortcutKeysTab v-if="activeTab === 'shortcutKeys'" :locale="locale" :ui-config="mergedUIConfig.shortcutKeys" />
+        <GeneralTab v-if="activeTab === 'general'" :locale="locale" :ui-config="mergedUIConfig.general" />
+      </div>
     </div>
 
     <!-- 底部 -->
-    <div class="preferences-drawer-footer">
+    <div v-if="showCopyButton" class="preferences-drawer-footer">
       <button
         class="preferences-btn preferences-btn-primary"
         :class="{ 'is-copied': copyState.isCopied }"
-        :disabled="!hasChanges || copyState.isCopied"
+        :disabled="copyButtonDisabled"
         v-bind="copyButtonA11y"
         @click="handleCopyConfig"
       >

@@ -19,6 +19,7 @@ export const enUS = {
     search: 'Search',
     all: 'All',
     clear: 'Clear',
+    back: 'Back',
   },
 
   // ========== Preferences ==========
@@ -105,6 +106,19 @@ export const enUS = {
     contentCompact: 'Compact',
   },
 
+  // ========== Panel ==========
+  panel: {
+    title: 'Panel',
+    enable: 'Enable Panel',
+    position: 'Position',
+    positionLeft: 'Left',
+    positionRight: 'Right',
+    collapsed: 'Collapsed',
+    collapsedButton: 'Show Collapse Button',
+    width: 'Width',
+    collapsedWidth: 'Collapsed Width',
+  },
+
   // ========== Sidebar ==========
   sidebar: {
     title: 'Sidebar',
@@ -132,6 +146,8 @@ export const enUS = {
     menuAlignStart: 'Start',
     menuAlignCenter: 'Center',
     menuAlignEnd: 'End',
+    menuLauncher: 'Menu Launcher',
+    menuLauncherTip: 'Collapse header menu into a button, click to open menu panel',
   },
 
   // ========== Tabbar ==========
@@ -224,14 +240,45 @@ export const enUS = {
     globalLockScreen: 'Lock Screen',
   },
 
+  // ========== Lock Screen ==========
+  lockScreen: {
+    title: 'Lock Screen',
+    unlock: 'Unlock',
+    entry: 'Enter System',
+    screenButton: 'Lock Screen',
+    backToLogin: 'Back to Login',
+    logoutConfirm: 'Are you sure you want to logout?',
+    setPassword: 'Set Lock Screen Password',
+    enterPassword: 'Enter lock screen password',
+    passwordError: 'Incorrect password',
+    passwordPlaceholder: 'Please enter password',
+    confirmPassword: 'Confirm Password',
+    confirmPasswordPlaceholder: 'Please enter password again',
+    passwordMismatch: 'Passwords do not match',
+    passwordMinLength: 'Password must be at least {0} characters',
+    setPasswordTip: 'Set a password for the first lock',
+    confirmAndLock: 'Confirm & Lock',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
+    clearPassword: 'Clear Lock Screen Password',
+    cleared: 'Cleared',
+    autoLockTime: 'Auto Lock Time',
+    autoLockTimeTip: 'Time to auto lock after inactivity (minutes)',
+    minute: 'minute',
+  },
+
   // ========== General ==========
   general: {
     title: 'General',
     language: 'Language',
     dynamicTitle: 'Dynamic Title',
     watermark: 'Watermark',
-    colorWeakMode: 'Color Weak Mode',
-    colorGrayMode: 'Gray Mode',
+    watermarkEnable: 'Enable Watermark',
+    watermarkContent: 'Watermark Content',
+    watermarkContentPlaceholder: 'Enter watermark text',
+    watermarkAngle: 'Angle',
+    watermarkAppendDate: 'Append Date',
+    watermarkFontSize: 'Font Size',
     checkUpdates: 'Check Updates',
   },
 };

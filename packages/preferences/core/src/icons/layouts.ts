@@ -1,14 +1,14 @@
 /**
  * 布局图标
  * @description SVG 图标字符串，供 Vue/React 包装使用
- * @reference Vben Admin 风格的布局预览图标
+ * @reference  Admin 风格的布局预览图标
  */
 
 import type { LayoutType } from '../types';
 
 /**
  * 布局图标 SVG
- * @description 用于布局选择器显示，与 Vben Admin 保持一致
+ * @description 用于布局选择器显示
  * viewBox: 80x50 (紧凑尺寸)
  */
 export const layoutIcons: Record<LayoutType, string> = {

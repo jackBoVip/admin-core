@@ -109,6 +109,12 @@ export const icons = {
   /** 解锁 */
   unlock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`,
 
+  /** 眼睛（显示密码） */
+  eye: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>`,
+
+  /** 眼睛关闭（隐藏密码） */
+  eyeOff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.749 10.749 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>`,
+
   /** 通知/铃铛 */
   bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>`,
 
@@ -117,6 +123,8 @@ export const icons = {
 
   /** 登出 */
   logOut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
+  /** 登出（别名） */
+  logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
 
   /** 语言 */
   globe: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
@@ -168,13 +176,21 @@ export const icons = {
  */
 export type IconName = keyof typeof icons;
 
+/** 空 SVG 占位符（安全的默认值） */
+const EMPTY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>';
+
 /**
- * 获取图标
+ * 获取图标（带安全验证）
  * @param name - 图标名称
- * @returns SVG 字符串
+ * @returns SVG 字符串，无效名称返回空 SVG
+ * @security 仅返回预定义的 SVG，防止 XSS
  */
-export function getIcon(name: IconName): string {
-  return icons[name];
+export function getIcon(name: IconName | string): string {
+  // 类型守卫：确保只返回预定义的图标
+  if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(icons, name)) {
+    return EMPTY_SVG;
+  }
+  return icons[name as IconName] || EMPTY_SVG;
 }
 
 /**
@@ -183,5 +199,5 @@ export function getIcon(name: IconName): string {
  * @returns 是否存在
  */
 export function hasIcon(name: string): name is IconName {
-  return name in icons;
+  return typeof name === 'string' && Object.prototype.hasOwnProperty.call(icons, name);
 }
