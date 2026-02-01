@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted } from 'vue';
 import { usePreferences } from './use-preferences';
-import { createLockScreenManager, logger } from '@admin-core/preferences';
+import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
 
 /**
  * 锁屏 Composable
@@ -29,7 +29,7 @@ export function useLockScreen() {
       // 自动锁屏回调 - 使用闭包确保始终读取最新的 preferences.value
       onLock: () => {
         // 只有在开启了锁屏功能且已设置密码的情况下才自动锁定
-        if (preferences.value?.widget.lockScreen && preferences.value?.lockScreen.password) {
+        if (preferences.value && canLockScreen(preferences.value)) {
           setPreferences({ lockScreen: { isLocked: true } });
         }
       },
@@ -48,13 +48,13 @@ export function useLockScreen() {
    */
   const lock = () => {
     // 检查锁屏功能是否启用
-    if (!preferences.value?.widget.lockScreen) {
+    if (!preferences.value || !isLockScreenEnabled(preferences.value)) {
       logger.warn('[LockScreen] Lock screen widget is disabled');
       return false;
     }
 
     // 如果没有设置密码，不能锁屏
-    if (!preferences.value?.lockScreen.password) {
+    if (!preferences.value || !hasLockScreenPassword(preferences.value)) {
       logger.warn('[LockScreen] Password not set, please set password first');
       return false;
     }
@@ -74,14 +74,11 @@ export function useLockScreen() {
     /** 是否已锁定 */
     isLocked: computed(() => preferences.value?.lockScreen.isLocked ?? false),
     /** 是否启用锁屏功能 */
-    isEnabled: computed(() => preferences.value?.widget.lockScreen ?? false),
+    isEnabled: computed(() => preferences.value ? isLockScreenEnabled(preferences.value) : false),
     /** 是否已设置密码 */
-    hasPassword: computed(() => !!preferences.value?.lockScreen.password),
+    hasPassword: computed(() => preferences.value ? hasLockScreenPassword(preferences.value) : false),
     /** 是否可以锁屏（启用且有密码） */
-    canLock: computed(() => 
-      (preferences.value?.widget.lockScreen ?? false) && 
-      !!preferences.value?.lockScreen.password
-    ),
+    canLock: computed(() => preferences.value ? canLockScreen(preferences.value) : false),
     /** 锁屏 */
     lock,
     /** 解锁 */

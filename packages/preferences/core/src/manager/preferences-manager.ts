@@ -301,7 +301,8 @@ export class PreferencesManager {
 
     // 完整配置验证（可选）
     if (!skipValidation) {
-      const validation = validatePreferencesConfig(parsed);
+      const fullConfig = deepMerge(getDefaultPreferences(), parsed);
+      const validation = validatePreferencesConfig(fullConfig);
       if (!validation.valid) {
         throw new Error(`[PreferencesManager] Invalid config: ${validation.error}`);
       }
@@ -335,8 +336,8 @@ export class PreferencesManager {
    */
   private saveToStorage(): void {
     // 只保存与默认值不同的部分
-    // 注意：这里直接计算 diff 而不使用缓存，确保保存最新状态
-    const diffPrefs = diff(DEFAULT_PREFERENCES, this.state);
+    // 使用缓存的 diff（若缓存为空则即时计算）
+    const diffPrefs = this.getDiff();
     this.storage.setItem(PREFERENCES_STORAGE_KEY, diffPrefs);
   }
 
@@ -369,9 +370,15 @@ export class PreferencesManager {
 
   /**
    * 监听系统主题变化
+   * @description 避免重复添加监听器
    */
   private watchSystemTheme(): void {
     if (!isBrowser || !window.matchMedia) return;
+
+    // 如果已有监听器，先移除旧的（避免重复添加）
+    if (this.mediaQueryListener) {
+      this.mediaQueryListener.removeEventListener('change', this.handleSystemThemeChange);
+    }
 
     this.mediaQueryListener = window.matchMedia('(prefers-color-scheme: dark)');
     this.mediaQueryListener.addEventListener('change', this.handleSystemThemeChange);

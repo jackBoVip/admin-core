@@ -3,12 +3,13 @@
  * @description 根据偏好设置更新 CSS 变量
  */
 
-import type { Preferences, ThemeModeType, DOMSelectors } from '../types';
+import type { Preferences, DOMSelectors } from '../types';
 import { getThemePrimaryColor } from '../constants';
 import { generateThemeColorVariables } from '../color';
-import { updateCSSVariables, toggleClass, isBrowser, hasDocument } from '../utils';
+import { updateCSSVariables, toggleClass, hasDocument } from '../utils';
 import { CSS_VAR_LAYOUT } from '../constants/css-variables';
 import { generateFontScaleVariables, clampFontScale } from '../helpers/font-scale';
+import { getActualThemeMode, clearThemeModeCache } from '../helpers/theme';
 
 /* ========== 默认选择器 ========== */
 
@@ -18,9 +19,6 @@ const DEFAULT_SELECTORS: Required<DOMSelectors> = {
 };
 
 /* ========== 缓存 ========== */
-
-/** 缓存的 MediaQueryList 实例 */
-let cachedDarkModeQuery: MediaQueryList | null = null;
 
 /** 缓存的颜色变量（基于 primaryColor + isDark） */
 let colorVariablesCache: {
@@ -49,29 +47,7 @@ export function setDOMSelectors(selectors?: DOMSelectors): void {
   cachedHeaderElement = null;
 }
 
-/**
- * 获取缓存的 MediaQueryList
- */
-function getDarkModeQuery(): MediaQueryList | null {
-  if (!isBrowser || !window.matchMedia) return null;
-  if (!cachedDarkModeQuery) {
-    cachedDarkModeQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  }
-  return cachedDarkModeQuery;
-}
-
-/**
- * 获取当前实际主题模式
- * @param mode - 配置的模式
- * @returns 实际模式（light 或 dark）
- */
-export function getActualThemeMode(mode: ThemeModeType): 'light' | 'dark' {
-  if (mode === 'auto') {
-    const query = getDarkModeQuery();
-    return query?.matches ? 'dark' : 'light';
-  }
-  return mode;
-}
+export { getActualThemeMode } from '../helpers/theme';
 
 /**
  * 更新主题 CSS 变量
@@ -215,7 +191,7 @@ export function updateSpecialModeClasses(preferences: Preferences): void {
  * @description 在需要刷新缓存时调用（如 DOM 结构变化后）
  */
 export function clearCSSUpdaterCache(): void {
-  cachedDarkModeQuery = null;
+  clearThemeModeCache();
   colorVariablesCache = null;
   cachedSidebarElement = null;
   cachedHeaderElement = null;

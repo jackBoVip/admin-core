@@ -288,8 +288,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
     collapseWidth: 60,
     /** 启用侧边栏 */
     enable: true,
-    /** 悬停时展开 */
-    expandOnHover: true,
+    /** 悬停时展开（false 时使用弹出子菜单） */
+    expandOnHover: false,
     /** 扩展区域折叠 */
     extraCollapse: false,
     /** 扩展区域折叠宽度 (px) */

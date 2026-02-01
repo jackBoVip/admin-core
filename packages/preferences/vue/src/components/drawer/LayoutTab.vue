@@ -6,14 +6,14 @@
 import { computed, type WritableComputedRef } from 'vue';
 import { usePreferences } from '../../composables';
 import {
-  LAYOUT_OPTIONS,
-  TABS_STYLE_OPTIONS,
   DEFAULT_PREFERENCES,
-  generateLayoutPreview,
   getContentWidthIcon,
-  translateOptions,
   isHeaderMenuLayout,
-  getFeatureItemConfig,
+  createLayoutPreviewCache,
+  getLayoutTabConfigs,
+  getLayoutTabOptions,
+  getLayoutPreviewOptions,
+  createLayoutTabUpdater,
   type LayoutType,
   type LocaleMessages,
   type LayoutHeaderModeType,
@@ -23,7 +23,6 @@ import {
   type Preferences,
   type DeepPartial,
   type LayoutTabConfig,
-  type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
 import Block from './Block.vue';
 import SwitchItem from './SwitchItem.vue';
@@ -37,52 +36,10 @@ const props = defineProps<{
 }>();
 
 // ========== UI 配置解析（使用 computed 缓存） ==========
-const getConfig = (blockKey: keyof LayoutTabConfig, itemKey?: string): ResolvedFeatureConfig =>
-  getFeatureItemConfig(props.uiConfig, blockKey, itemKey);
-
-// 缓存常用配置项
-const configs = computed(() => ({
-  // 布局类型
-  layoutType: getConfig('layoutType'),
-  // 内容宽度
-  contentWidth: getConfig('contentWidth'),
-  // 侧边栏
-  sidebar: getConfig('sidebar'),
-  sidebarCollapsed: getConfig('sidebar', 'collapsed'),
-  sidebarCollapsedButton: getConfig('sidebar', 'collapsedButton'),
-  sidebarExpandOnHover: getConfig('sidebar', 'expandOnHover'),
-  // 功能区
-  panel: getConfig('panel'),
-  panelEnable: getConfig('panel', 'enable'),
-  panelPosition: getConfig('panel', 'position'),
-  panelCollapsed: getConfig('panel', 'collapsed'),
-  // 顶栏
-  header: getConfig('header'),
-  headerEnable: getConfig('header', 'enable'),
-  headerMode: getConfig('header', 'mode'),
-  headerMenuLauncher: getConfig('header', 'menuLauncher'),
-  // 标签栏
-  tabbar: getConfig('tabbar'),
-  tabbarEnable: getConfig('tabbar', 'enable'),
-  tabbarShowIcon: getConfig('tabbar', 'showIcon'),
-  tabbarDraggable: getConfig('tabbar', 'draggable'),
-  tabbarStyleType: getConfig('tabbar', 'styleType'),
-  // 面包屑
-  breadcrumb: getConfig('breadcrumb'),
-  breadcrumbEnable: getConfig('breadcrumb', 'enable'),
-  breadcrumbShowIcon: getConfig('breadcrumb', 'showIcon'),
-  // 页脚
-  footer: getConfig('footer'),
-  footerEnable: getConfig('footer', 'enable'),
-  footerFixed: getConfig('footer', 'fixed'),
-  // 小部件
-  widget: getConfig('widget'),
-  widgetFullscreen: getConfig('widget', 'fullscreen'),
-  widgetThemeToggle: getConfig('widget', 'themeToggle'),
-  widgetLanguageToggle: getConfig('widget', 'languageToggle'),
-}));
+const configs = computed(() => getLayoutTabConfigs(props.uiConfig));
 
 const { preferences, setPreferences } = usePreferences();
+const updater = createLayoutTabUpdater(setPreferences);
 
 // 默认值简写
 const D = DEFAULT_PREFERENCES;
@@ -118,14 +75,9 @@ function createPreferenceComputed<T>(
   });
 }
 
-// 翻译后的选项
-const layoutOptions = computed(() =>
-  translateOptions(LAYOUT_OPTIONS, props.locale)
-);
-
-const tabsStyleOptions = computed(() =>
-  translateOptions(TABS_STYLE_OPTIONS, props.locale)
-);
+const layoutTabOptions = computed(() => getLayoutTabOptions(props.locale));
+const layoutOptions = computed(() => layoutTabOptions.value.layoutOptions);
+const tabsStyleOptions = computed(() => layoutTabOptions.value.tabsStyleOptions);
 
 // ========== 使用工厂函数简化 computed 定义 ==========
 
@@ -133,9 +85,35 @@ const tabsStyleOptions = computed(() =>
 const layout = createPreferenceComputed<LayoutType>('app.layout', D.app.layout);
 const contentCompact = createPreferenceComputed<'wide' | 'compact'>('app.contentCompact', D.app.contentCompact);
 
+const handleSetLayout = (value: LayoutType) => {
+  updater.setLayout(value);
+};
+
+const handleSetContentWide = () => {
+  updater.setContentWide();
+};
+
+const handleSetContentCompact = () => {
+  updater.setContentCompactMode();
+};
+
+// 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+const isCollapseButtonAllowedLayout = computed(() => {
+  return layout.value === 'sidebar-nav' || layout.value === 'header-mixed-nav';
+});
+
 // 侧边栏设置
 const sidebarCollapsed = createPreferenceComputed<boolean>('sidebar.collapsed', D.sidebar.collapsed);
-const sidebarCollapsedButton = createPreferenceComputed<boolean>('sidebar.collapsedButton', D.sidebar.collapsedButton);
+const sidebarCollapsedButtonRaw = createPreferenceComputed<boolean>('sidebar.collapsedButton', D.sidebar.collapsedButton);
+// 折叠按钮：在非允许布局下强制返回 false
+const sidebarCollapsedButton = computed({
+  get: () => isCollapseButtonAllowedLayout.value ? sidebarCollapsedButtonRaw.value : false,
+  set: (value: boolean) => {
+    if (isCollapseButtonAllowedLayout.value) {
+      sidebarCollapsedButtonRaw.value = value;
+    }
+  },
+});
 const sidebarExpandOnHover = createPreferenceComputed<boolean>('sidebar.expandOnHover', D.sidebar.expandOnHover);
 
 // 顶栏设置
@@ -173,27 +151,14 @@ const panelPosition = createPreferenceComputed<PanelPositionType>('panel.positio
 const panelCollapsed = createPreferenceComputed<boolean>('panel.collapsed', D.panel.collapsed);
 
 // 动态预览图选项（根据当前偏好设置）
-const previewOptions = computed(() => ({
-  showSidebar: true, // 侧边栏始终显示在预览中
-  sidebarCollapsed: sidebarCollapsed.value,
-  showHeader: headerEnable.value,
-  showTabbar: tabbarEnable.value,
-  showFooter: footerEnable.value,
-  // 功能区配置
-  showLeftPanel: panelEnable.value && panelPosition.value === 'left',
-  leftPanelCollapsed: panelCollapsed.value,
-  showRightPanel: panelEnable.value && panelPosition.value === 'right',
-  rightPanelCollapsed: panelCollapsed.value,
-}));
+const previewOptions = computed(() =>
+  getLayoutPreviewOptions(preferences.value ?? D)
+);
 
 // 缓存预览图（避免每次渲染重新生成）
 const previewSvgCache = computed(() => {
   const options = previewOptions.value;
-  const cache: Record<string, string> = {};
-  for (const opt of LAYOUT_OPTIONS) {
-    cache[opt.value] = generateLayoutPreview(opt.value as LayoutType, options);
-  }
-  return cache;
+  return createLayoutPreviewCache(layoutOptions.value, options);
 });
 
 // 生成布局预览图（从缓存获取）
@@ -215,8 +180,8 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
         :aria-checked="layout === opt.value"
         :aria-label="opt.label"
         :aria-disabled="configs.layoutType.disabled"
-        @click="!configs.layoutType.disabled && (layout = opt.value as LayoutType)"
-        @keydown.enter.space.prevent="!configs.layoutType.disabled && (layout = opt.value as LayoutType)"
+        @click="!configs.layoutType.disabled && handleSetLayout(opt.value as LayoutType)"
+        @keydown.enter.space.prevent="!configs.layoutType.disabled && handleSetLayout(opt.value as LayoutType)"
       >
         <div
           class="outline-box flex-center layout-preset-box"
@@ -240,8 +205,8 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
         :aria-checked="contentCompact === 'wide'"
         :aria-label="locale.layout.contentWide"
         :aria-disabled="configs.contentWidth.disabled"
-        @click="!configs.contentWidth.disabled && (contentCompact = 'wide')"
-        @keydown.enter.space.prevent="!configs.contentWidth.disabled && (contentCompact = 'wide')"
+        @click="!configs.contentWidth.disabled && handleSetContentWide()"
+        @keydown.enter.space.prevent="!configs.contentWidth.disabled && handleSetContentWide()"
       >
         <div
           class="outline-box flex-center content-width-box"
@@ -259,8 +224,8 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
         :aria-checked="contentCompact === 'compact'"
         :aria-label="locale.layout.contentCompact"
         :aria-disabled="configs.contentWidth.disabled"
-        @click="!configs.contentWidth.disabled && (contentCompact = 'compact')"
-        @keydown.enter.space.prevent="!configs.contentWidth.disabled && (contentCompact = 'compact')"
+        @click="!configs.contentWidth.disabled && handleSetContentCompact()"
+        @keydown.enter.space.prevent="!configs.contentWidth.disabled && handleSetContentCompact()"
       >
         <div
           class="outline-box flex-center content-width-box"
@@ -277,19 +242,22 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.sidebar.visible" :title="locale.sidebar.title">
     <SwitchItem 
       v-if="configs.sidebarCollapsed.visible"
-      v-model="sidebarCollapsed" 
+      :model-value="sidebarCollapsed"
+      @update:modelValue="updater.setSidebarCollapsed"
       :label="locale.sidebar.collapsed" 
       :disabled="configs.sidebarCollapsed.disabled"
     />
     <SwitchItem 
       v-if="configs.sidebarCollapsedButton.visible"
-      v-model="sidebarCollapsedButton" 
+      :model-value="sidebarCollapsedButton"
+      @update:modelValue="updater.setSidebarCollapsedButton"
       :label="locale.sidebar.collapsedButton" 
-      :disabled="configs.sidebarCollapsedButton.disabled"
+      :disabled="configs.sidebarCollapsedButton.disabled || !isCollapseButtonAllowedLayout"
     />
     <SwitchItem 
       v-if="configs.sidebarExpandOnHover.visible"
-      v-model="sidebarExpandOnHover" 
+      :model-value="sidebarExpandOnHover"
+      @update:modelValue="updater.setSidebarExpandOnHover"
       :label="locale.sidebar.expandOnHover" 
       :disabled="configs.sidebarExpandOnHover.disabled"
     />
@@ -299,13 +267,15 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.panel.visible" :title="locale.panel.title">
     <SwitchItem 
       v-if="configs.panelEnable.visible"
-      v-model="panelEnable" 
+      :model-value="panelEnable"
+      @update:modelValue="updater.setPanelEnable"
       :label="locale.panel.enable" 
       :disabled="configs.panelEnable.disabled"
     />
     <SelectItem
       v-if="configs.panelPosition.visible"
-      v-model="panelPosition"
+      :model-value="panelPosition"
+      @update:modelValue="updater.setPanelPosition"
       :label="locale.panel.position"
       :options="[
         { label: locale.panel.positionLeft, value: 'left' },
@@ -315,7 +285,8 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
     />
     <SwitchItem 
       v-if="configs.panelCollapsed.visible"
-      v-model="panelCollapsed" 
+      :model-value="panelCollapsed"
+      @update:modelValue="updater.setPanelCollapsed"
       :label="locale.panel.collapsed" 
       :disabled="!panelEnable || configs.panelCollapsed.disabled" 
     />
@@ -325,13 +296,15 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.header.visible" :title="locale.header.title">
     <SwitchItem 
       v-if="configs.headerEnable.visible"
-      v-model="headerEnable" 
+      :model-value="headerEnable"
+      @update:modelValue="updater.setHeaderEnable"
       :label="locale.header.enable" 
       :disabled="configs.headerEnable.disabled"
     />
     <SelectItem
       v-if="configs.headerMode.visible"
-      v-model="headerMode"
+      :model-value="headerMode"
+      @update:modelValue="updater.setHeaderMode"
       :label="locale.header.mode"
       :options="[
         { label: locale.header.modeFixed, value: 'fixed' },
@@ -343,7 +316,8 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
     />
     <SwitchItem
       v-if="configs.headerMenuLauncher.visible"
-      v-model="headerMenuLauncher"
+      :model-value="headerMenuLauncher"
+      @update:modelValue="updater.setHeaderMenuLauncher"
       :label="locale.header.menuLauncher"
       :tip="locale.header.menuLauncherTip"
       :disabled="!menuLauncherEnabled || configs.headerMenuLauncher.disabled"
@@ -354,25 +328,29 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.tabbar.visible" :title="locale.tabbar.title">
     <SwitchItem 
       v-if="configs.tabbarEnable.visible"
-      v-model="tabbarEnable" 
+      :model-value="tabbarEnable"
+      @update:modelValue="updater.setTabbarEnable"
       :label="locale.tabbar.enable" 
       :disabled="configs.tabbarEnable.disabled"
     />
     <SwitchItem 
       v-if="configs.tabbarShowIcon.visible"
-      v-model="tabbarShowIcon" 
+      :model-value="tabbarShowIcon"
+      @update:modelValue="updater.setTabbarShowIcon"
       :label="locale.tabbar.showIcon" 
       :disabled="!tabbarEnable || configs.tabbarShowIcon.disabled" 
     />
     <SwitchItem 
       v-if="configs.tabbarDraggable.visible"
-      v-model="tabbarDraggable" 
+      :model-value="tabbarDraggable"
+      @update:modelValue="updater.setTabbarDraggable"
       :label="locale.tabbar.draggable" 
       :disabled="!tabbarEnable || configs.tabbarDraggable.disabled" 
     />
     <SelectItem 
       v-if="configs.tabbarStyleType.visible"
-      v-model="tabbarStyleType" 
+      :model-value="tabbarStyleType"
+      @update:modelValue="updater.setTabbarStyleType"
       :label="locale.tabbar.styleType" 
       :options="tabsStyleOptions" 
       :disabled="!tabbarEnable || configs.tabbarStyleType.disabled" 
@@ -383,13 +361,15 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.breadcrumb.visible" :title="locale.breadcrumb.title">
     <SwitchItem 
       v-if="configs.breadcrumbEnable.visible"
-      v-model="breadcrumbEnable" 
+      :model-value="breadcrumbEnable"
+      @update:modelValue="updater.setBreadcrumbEnable"
       :label="locale.breadcrumb.enable" 
       :disabled="configs.breadcrumbEnable.disabled"
     />
     <SwitchItem 
       v-if="configs.breadcrumbShowIcon.visible"
-      v-model="breadcrumbShowIcon" 
+      :model-value="breadcrumbShowIcon"
+      @update:modelValue="updater.setBreadcrumbShowIcon"
       :label="locale.breadcrumb.showIcon" 
       :disabled="!breadcrumbEnable || configs.breadcrumbShowIcon.disabled" 
     />
@@ -399,13 +379,15 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.footer.visible" :title="locale.footer.title">
     <SwitchItem 
       v-if="configs.footerEnable.visible"
-      v-model="footerEnable" 
+      :model-value="footerEnable"
+      @update:modelValue="updater.setFooterEnable"
       :label="locale.footer.enable" 
       :disabled="configs.footerEnable.disabled"
     />
     <SwitchItem 
       v-if="configs.footerFixed.visible"
-      v-model="footerFixed" 
+      :model-value="footerFixed"
+      @update:modelValue="updater.setFooterFixed"
       :label="locale.footer.fixed" 
       :disabled="!footerEnable || configs.footerFixed.disabled" 
     />
@@ -415,19 +397,22 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.widget.visible" :title="locale.widget.title">
     <SwitchItem 
       v-if="configs.widgetFullscreen.visible"
-      v-model="widgetFullscreen" 
+      :model-value="widgetFullscreen"
+      @update:modelValue="updater.setWidgetFullscreen"
       :label="locale.widget.fullscreen" 
       :disabled="configs.widgetFullscreen.disabled"
     />
     <SwitchItem 
       v-if="configs.widgetThemeToggle.visible"
-      v-model="widgetThemeToggle" 
+      :model-value="widgetThemeToggle"
+      @update:modelValue="updater.setWidgetThemeToggle"
       :label="locale.widget.themeToggle" 
       :disabled="configs.widgetThemeToggle.disabled"
     />
     <SwitchItem 
       v-if="configs.widgetLanguageToggle.visible"
-      v-model="widgetLanguageToggle" 
+      :model-value="widgetLanguageToggle"
+      @update:modelValue="updater.setWidgetLanguageToggle"
       :label="locale.widget.languageToggle" 
       :disabled="configs.widgetLanguageToggle.disabled"
     />

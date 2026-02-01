@@ -5,21 +5,18 @@
 import React, { memo, useMemo, useCallback } from 'react';
 import { usePreferences } from '../../hooks';
 import {
-  LAYOUT_OPTIONS,
-  TABS_STYLE_OPTIONS,
-  generateLayoutPreview,
   getContentWidthIcon,
-  translateOptions,
   isHeaderMenuLayout,
-  getFeatureItemConfig,
+  createLayoutPreviewCache,
+  getLayoutTabConfigs,
+  getLayoutTabOptions,
+  getLayoutPreviewOptions,
+  createLayoutTabUpdater,
   type LayoutType,
   type LocaleMessages,
   type ContentWidthType,
   type LayoutPreviewOptions,
-  type DeepPartial,
-  type Preferences,
   type LayoutTabConfig,
-  type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
 import { Block } from './Block';
 import { SwitchItem } from './SwitchItem';
@@ -32,94 +29,16 @@ export interface LayoutTabProps {
   uiConfig?: LayoutTabConfig;
 }
 
-/**
- * 创建偏好设置更新器工厂函数
- * @description 减少重复的 useCallback，通过工厂模式生成更新函数
- */
-function usePreferenceUpdater(setPreferences: (updates: DeepPartial<Preferences>) => void) {
-  // 通用布尔值更新器
-  const createBoolUpdater = useCallback(
-    <K extends keyof Preferences>(category: K, key: keyof Preferences[K]) =>
-      (value: boolean) => {
-        setPreferences({ [category]: { [key]: value } } as DeepPartial<Preferences>);
-      },
-    [setPreferences]
-  );
-
-  // 通用字符串值更新器
-  const createStringUpdater = useCallback(
-    <K extends keyof Preferences>(category: K, key: keyof Preferences[K]) =>
-      (value: string | number) => {
-        setPreferences({ [category]: { [key]: String(value) } } as DeepPartial<Preferences>);
-      },
-    [setPreferences]
-  );
-
-  return { createBoolUpdater, createStringUpdater };
-}
-
 export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) => {
   const { preferences, setPreferences } = usePreferences();
-  const { createBoolUpdater, createStringUpdater } = usePreferenceUpdater(setPreferences);
+  const updater = useMemo(() => createLayoutTabUpdater(setPreferences), [setPreferences]);
 
   // ========== UI 配置解析（使用 useMemo 缓存） ==========
-  const getConfig = useCallback(
-    (blockKey: keyof LayoutTabConfig, itemKey?: string): ResolvedFeatureConfig =>
-      getFeatureItemConfig(uiConfig, blockKey, itemKey),
-    [uiConfig]
-  );
-
-  // 缓存常用配置项
-  const configs = useMemo(() => ({
-    // 布局类型
-    layoutType: getConfig('layoutType'),
-    // 内容宽度
-    contentWidth: getConfig('contentWidth'),
-    // 侧边栏
-    sidebar: getConfig('sidebar'),
-    sidebarCollapsed: getConfig('sidebar', 'collapsed'),
-    sidebarCollapsedButton: getConfig('sidebar', 'collapsedButton'),
-    sidebarExpandOnHover: getConfig('sidebar', 'expandOnHover'),
-    // 功能区
-    panel: getConfig('panel'),
-    panelEnable: getConfig('panel', 'enable'),
-    panelPosition: getConfig('panel', 'position'),
-    panelCollapsed: getConfig('panel', 'collapsed'),
-    // 顶栏
-    header: getConfig('header'),
-    headerEnable: getConfig('header', 'enable'),
-    headerMode: getConfig('header', 'mode'),
-    headerMenuLauncher: getConfig('header', 'menuLauncher'),
-    // 标签栏
-    tabbar: getConfig('tabbar'),
-    tabbarEnable: getConfig('tabbar', 'enable'),
-    tabbarShowIcon: getConfig('tabbar', 'showIcon'),
-    tabbarDraggable: getConfig('tabbar', 'draggable'),
-    tabbarStyleType: getConfig('tabbar', 'styleType'),
-    // 面包屑
-    breadcrumb: getConfig('breadcrumb'),
-    breadcrumbEnable: getConfig('breadcrumb', 'enable'),
-    breadcrumbShowIcon: getConfig('breadcrumb', 'showIcon'),
-    // 页脚
-    footer: getConfig('footer'),
-    footerEnable: getConfig('footer', 'enable'),
-    footerFixed: getConfig('footer', 'fixed'),
-    // 小部件
-    widget: getConfig('widget'),
-    widgetFullscreen: getConfig('widget', 'fullscreen'),
-    widgetThemeToggle: getConfig('widget', 'themeToggle'),
-    widgetLanguageToggle: getConfig('widget', 'languageToggle'),
-  }), [getConfig]);
+  const configs = useMemo(() => getLayoutTabConfigs(uiConfig), [uiConfig]);
 
   // 布局选项（翻译后）
-  const layoutOptions = useMemo(
-    () => translateOptions(LAYOUT_OPTIONS, locale),
-    [locale]
-  );
-
-  // 标签栏样式选项（翻译后）
-  const tabsStyleOptions = useMemo(
-    () => translateOptions(TABS_STYLE_OPTIONS, locale),
+  const { layoutOptions, tabsStyleOptions, headerModeOptions } = useMemo(
+    () => getLayoutTabOptions(locale),
     [locale]
   );
 
@@ -127,75 +46,74 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
   
   // 布局类型处理器
   const handleSetLayout = useCallback((layout: LayoutType) => {
-    setPreferences({ app: { layout } });
-  }, [setPreferences]);
+    updater.setLayout(layout);
+  }, [updater]);
 
   // 内容宽度处理器
   const handleSetContentWide = useCallback(() => {
-    setPreferences({ app: { contentCompact: 'wide' } });
-  }, [setPreferences]);
+    updater.setContentWide();
+  }, [updater]);
 
   const handleSetContentCompact = useCallback(() => {
-    setPreferences({ app: { contentCompact: 'compact' } });
-  }, [setPreferences]);
+    updater.setContentCompactMode();
+  }, [updater]);
 
   // 使用工厂创建的处理器
   const handlers = useMemo(() => ({
     // 侧边栏
     sidebar: {
-      collapsed: createBoolUpdater('sidebar', 'collapsed'),
-      collapsedButton: createBoolUpdater('sidebar', 'collapsedButton'),
-      expandOnHover: createBoolUpdater('sidebar', 'expandOnHover'),
+      collapsed: updater.setSidebarCollapsed,
+      collapsedButton: updater.setSidebarCollapsedButton,
+      expandOnHover: updater.setSidebarExpandOnHover,
     },
     // 顶栏
     header: {
-      enable: createBoolUpdater('header', 'enable'),
-      mode: createStringUpdater('header', 'mode') as (v: string | number) => void,
-      menuLauncher: createBoolUpdater('header', 'menuLauncher'),
+      enable: updater.setHeaderEnable,
+      mode: updater.setHeaderMode,
+      menuLauncher: updater.setHeaderMenuLauncher,
     },
     // 标签栏
     tabbar: {
-      enable: createBoolUpdater('tabbar', 'enable'),
-      showIcon: createBoolUpdater('tabbar', 'showIcon'),
-      draggable: createBoolUpdater('tabbar', 'draggable'),
-      styleType: createStringUpdater('tabbar', 'styleType') as (v: string | number) => void,
+      enable: updater.setTabbarEnable,
+      showIcon: updater.setTabbarShowIcon,
+      draggable: updater.setTabbarDraggable,
+      styleType: updater.setTabbarStyleType,
     },
     // 面包屑
     breadcrumb: {
-      enable: createBoolUpdater('breadcrumb', 'enable'),
-      showIcon: createBoolUpdater('breadcrumb', 'showIcon'),
+      enable: updater.setBreadcrumbEnable,
+      showIcon: updater.setBreadcrumbShowIcon,
     },
     // 页脚
     footer: {
-      enable: createBoolUpdater('footer', 'enable'),
-      fixed: createBoolUpdater('footer', 'fixed'),
+      enable: updater.setFooterEnable,
+      fixed: updater.setFooterFixed,
     },
     // 功能区
     panel: {
-      enable: createBoolUpdater('panel', 'enable'),
-      position: createStringUpdater('panel', 'position') as (v: string | number) => void,
-      collapsed: createBoolUpdater('panel', 'collapsed'),
+      enable: updater.setPanelEnable,
+      position: updater.setPanelPosition,
+      collapsed: updater.setPanelCollapsed,
     },
     // 小部件
     widget: {
-      fullscreen: createBoolUpdater('widget', 'fullscreen'),
-      themeToggle: createBoolUpdater('widget', 'themeToggle'),
-      languageToggle: createBoolUpdater('widget', 'languageToggle'),
+      fullscreen: updater.setWidgetFullscreen,
+      themeToggle: updater.setWidgetThemeToggle,
+      languageToggle: updater.setWidgetLanguageToggle,
     },
-  }), [createBoolUpdater, createStringUpdater]);
+  }), [updater]);
 
   // 顶栏模式选项（memoized）
-  const headerModeOptions = useMemo(() => [
-    { label: locale.header.modeFixed, value: 'fixed' },
-    { label: locale.header.modeStatic, value: 'static' },
-    { label: locale.header.modeAuto, value: 'auto' },
-    { label: locale.header.modeAutoScroll, value: 'auto-scroll' },
-  ], [locale.header]);
 
   // 菜单启动器是否可用（顶栏启用 + 顶部菜单布局）
   const menuLauncherEnabled = useMemo(() => {
     return preferences.header.enable && isHeaderMenuLayout(preferences.app.layout);
   }, [preferences.header.enable, preferences.app.layout]);
+
+  // 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+  const isCollapseButtonAllowedLayout = useMemo(() => {
+    return preferences.app.layout === 'sidebar-nav' || preferences.app.layout === 'header-mixed-nav';
+  }, [preferences.app.layout]);
 
   // 功能区位置选项
   const panelPositionOptions = useMemo(() => [
@@ -204,37 +122,20 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
   ], [locale.panel]);
 
   // 动态预览图选项（根据当前偏好设置）
-  const previewOptions: LayoutPreviewOptions = useMemo(() => {
-    const panelEnabled = preferences.panel.enable;
-    const panelPosition = preferences.panel.position;
-    const panelCollapsed = preferences.panel.collapsed;
-
-    return {
-      showSidebar: true, // 侧边栏始终显示在预览中
-      sidebarCollapsed: preferences.sidebar.collapsed,
-      showHeader: preferences.header.enable,
-      showTabbar: preferences.tabbar.enable,
-      showFooter: preferences.footer.enable,
-      // 功能区配置
-      showLeftPanel: panelEnabled && panelPosition === 'left',
-      leftPanelCollapsed: panelCollapsed,
-      showRightPanel: panelEnabled && panelPosition === 'right',
-      rightPanelCollapsed: panelCollapsed,
-    };
-  }, [
-    preferences.sidebar.collapsed,
-    preferences.header.enable,
-    preferences.tabbar.enable,
-    preferences.footer.enable,
-    preferences.panel.enable,
-    preferences.panel.position,
-    preferences.panel.collapsed,
-  ]);
+  const previewOptions: LayoutPreviewOptions = useMemo(
+    () => getLayoutPreviewOptions(preferences),
+    [preferences]
+  );
 
   // 生成布局预览图
-  const getPreviewSvg = useCallback((layout: LayoutType) => {
-    return generateLayoutPreview(layout, previewOptions);
-  }, [previewOptions]);
+  const previewCache = useMemo(
+    () => createLayoutPreviewCache(layoutOptions, previewOptions),
+    [layoutOptions, previewOptions]
+  );
+  const getPreviewSvg = useCallback(
+    (layout: LayoutType) => previewCache[layout],
+    [previewCache]
+  );
 
   return (
     <>
@@ -331,9 +232,9 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
           {configs.sidebarCollapsedButton.visible && (
             <SwitchItem
               label={locale.sidebar.collapsedButton}
-              checked={preferences.sidebar.collapsedButton}
+              checked={isCollapseButtonAllowedLayout ? preferences.sidebar.collapsedButton : false}
               onChange={handlers.sidebar.collapsedButton}
-              disabled={configs.sidebarCollapsedButton.disabled}
+              disabled={configs.sidebarCollapsedButton.disabled || !isCollapseButtonAllowedLayout}
             />
           )}
           {configs.sidebarExpandOnHover.visible && (

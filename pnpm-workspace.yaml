@@ -2,6 +2,7 @@ packages:
   - examples/*
   - '!examples/vue-vben-admin-main'
   - packages/preferences/*
+  - packages/layout/*
   - internal/*
 
 # 包名映射
@@ -57,4 +58,5 @@ catalog:
   vite-plugin-dts: ^4.5.4
   vitest: ^4.0.17
   vue: ^3.5.27
+  vue-router: ^4.5.0
   vue-tsc: ^3.2.3

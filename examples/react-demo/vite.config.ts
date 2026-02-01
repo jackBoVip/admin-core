@@ -20,8 +20,9 @@ export default defineConfig({
   optimizeDeps: {
     // @admin-core/preferences 需要预构建，让图片资源被正确内联为 base64
     // @admin-core/preferences-react 排除预构建，以便 HMR 正常工作
-    include: ['react', 'react-dom', '@admin-core/preferences'],
+    include: ['react', 'react-dom'],
     exclude: [
+      '@admin-core/preferences',
       '@admin-core/preferences-react',
     ],
   },
@@ -36,5 +37,8 @@ export default defineConfig({
   // CSS 配置
   css: {
     devSourcemap: true,
+  },
+  build: {
+    chunkSizeWarningLimit: 2000,
   },
 });

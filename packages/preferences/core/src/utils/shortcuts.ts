@@ -47,6 +47,10 @@ export interface ShortcutManagerOptions {
   getPreferences: () => Preferences;
   /** 回调函数 */
   callbacks: ShortcutKeyCallbacks;
+  /** 是否启用快捷键监听（默认 true） */
+  enabled?: boolean;
+  /** 可选的事件目标（默认 window） */
+  target?: Window | Document;
 }
 
 /**
@@ -119,10 +123,11 @@ export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction
  * @returns 销毁函数
  */
 export function createShortcutManager(options: ShortcutManagerOptions): () => void {
-  const { getPreferences, callbacks } = options;
+  const { getPreferences, callbacks, enabled = true, target = window } = options;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     // 防御性检查
+    if (!enabled) return;
     let preferences: Preferences;
     try {
       preferences = getPreferences();
@@ -188,11 +193,11 @@ export function createShortcutManager(options: ShortcutManagerOptions): () => vo
   };
 
   // 注册事件监听
-  window.addEventListener('keydown', handleKeyDown);
+  target.addEventListener('keydown', handleKeyDown as EventListener);
 
   // 返回销毁函数
   return () => {
-    window.removeEventListener('keydown', handleKeyDown);
+    target.removeEventListener('keydown', handleKeyDown as EventListener);
   };
 }
 

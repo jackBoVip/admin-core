@@ -72,6 +72,14 @@ export function generateDarkNeutralColors(primaryColor?: string): Record<string,
     '--input': createOklch(0.25, chroma, hue),
     '--card': createOklch(0.16, chroma, hue),
     '--card-foreground': 'oklch(0.98 0 0)',
+    // 侧边栏颜色（深色模式）- 跟随主题色
+    '--sidebar-dark': createOklch(0.12, chroma, hue),
+    '--sidebar-dark-foreground': 'oklch(0.98 0 0)',
+    '--sidebar-dark-muted': createOklch(0.7, chroma, hue),
+    '--sidebar-dark-border': createOklch(0.2, chroma, hue),
+    '--sidebar-dark-hover': createOklch(0.18, chroma, hue),
+    // 侧边栏子菜单区域背景
+    '--sidebar-extra': createOklch(0.15, chroma, hue),
   };
 }
 

@@ -35,6 +35,11 @@ const preferencesState = ref<Preferences | null>(null);
 let globalSubscribed = false;
 
 /**
+ * 取消订阅函数（用于清理）
+ */
+let globalUnsubscribe: (() => void) | null = null;
+
+/**
  * 缓存的 actions 对象（避免重复创建）
  */
 let cachedPreferencesActions: ReturnType<typeof createPreferencesActions> | null = null;
@@ -47,7 +52,8 @@ let cachedLayoutActions: ReturnType<typeof createLayoutActions> | null = null;
 function ensureGlobalSubscription(): void {
   if (globalSubscribed) return;
   
-  lifecycle.subscribe((prefs) => {
+  // 保存取消订阅函数以便后续清理
+  globalUnsubscribe = lifecycle.subscribe((prefs) => {
     preferencesState.value = prefs;
   });
   
@@ -102,6 +108,12 @@ export function getPreferencesManager(): PreferencesManager {
  * 销毁全局偏好设置管理器
  */
 export function destroyPreferences(): void {
+  // 先取消订阅
+  if (globalUnsubscribe) {
+    globalUnsubscribe();
+    globalUnsubscribe = null;
+  }
+  
   lifecycle.destroy();
   preferencesState.value = null;
   globalSubscribed = false;

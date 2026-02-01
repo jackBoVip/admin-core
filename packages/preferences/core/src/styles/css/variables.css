@@ -150,6 +150,45 @@ html {
     --secondary: var(--muted);
     --secondary-foreground: var(--foreground);
 
+    /* ========== 布局区域颜色 ========== */
+    /* 侧边栏 - 浅色模式 */
+    --sidebar-light: oklch(1 0 0);
+    --sidebar-light-foreground: oklch(0.15 0.02 250);
+    --sidebar-light-muted: oklch(0.45 0.02 250);
+    --sidebar-light-border: oklch(0.9 0.01 250);
+    --sidebar-light-hover: oklch(0.96 0.01 250);
+    --sidebar-light-active: var(--primary);
+    
+    /* 侧边栏 - 深色模式 */
+    --sidebar-dark: oklch(0.12 0.02 250);
+    --sidebar-dark-foreground: oklch(0.98 0 0);
+    --sidebar-dark-muted: oklch(0.7 0.02 250);
+    --sidebar-dark-border: oklch(0.2 0.02 250);
+    --sidebar-dark-hover: oklch(0.18 0.02 250);
+    --sidebar-dark-active: var(--primary);
+    
+    /* 侧边栏混合模式 - 更深 */
+    --sidebar-mixed: oklch(0.08 0.02 250);
+    --sidebar-mixed-light: oklch(0.97 0.01 250);
+    --sidebar-extra: oklch(0.16 0.02 250);
+    --sidebar-extra-light: var(--background);
+    
+    /* 顶栏颜色 */
+    --header-light: oklch(1 0 0);
+    --header-light-foreground: oklch(0.15 0.02 250);
+    --header-dark: oklch(0.12 0.02 250);
+    --header-dark-foreground: oklch(0.98 0 0);
+    --header-dark-border: oklch(0.2 0.02 250);
+    
+    /* 标签栏颜色 */
+    --tabbar-light: oklch(1 0 0);
+    --tabbar-dark: oklch(0.15 0.02 250);
+    
+    /* 菜单颜色 */
+    --menu-item-hover: light-dark(oklch(0.96 0.01 250), oklch(0.2 0.02 250));
+    --menu-item-active: var(--primary);
+    --menu-item-active-foreground: var(--primary-foreground);
+
     /* ========== 布局尺寸 ========== */
     --admin-header-height: 50px;
     --admin-footer-height: 32px;

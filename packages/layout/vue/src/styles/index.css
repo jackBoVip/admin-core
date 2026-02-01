@@ -1,0 +1,18 @@
+/**
+ * @admin-core/layout-vue 样式
+ * @description 引用核心包公共样式 + 偏好设置样式 + Vue 特定样式
+ */
+
+/* Tailwind CSS v4 基础 */
+@import "tailwindcss";
+
+/* 引入核心包公共样式 */
+@import '@admin-core/layout/styles/layout.css';
+
+/* 引入偏好设置核心样式（抽屉、主题等） */
+@import '@admin-core/preferences/styles';
+
+/* 引入偏好设置 Vue 特定样式（过渡动画等） */
+@import '@admin-core/preferences-vue/styles';
+
+/* Vue 特定样式（如有需要可在此扩展） */

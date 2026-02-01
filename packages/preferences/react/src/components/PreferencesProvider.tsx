@@ -1,15 +1,29 @@
 /**
  * 偏好设置提供者组件
  * @description 自动集成锁屏、快捷键等功能，用户无需手动添加
+ * 自动初始化偏好设置管理器，用户无需手动调用 initPreferences
  */
 import React, { memo, useCallback, useState, createContext, useContext, useMemo, useRef, useEffect } from 'react';
 import { logger, type PreferencesDrawerUIConfig } from '@admin-core/preferences';
-import { usePreferences, useLockScreen, useShortcutKeys } from '../hooks';
+import { usePreferences, useLockScreen, useShortcutKeys, initPreferences, getPreferencesManager } from '../hooks';
 import { LockScreen } from './lock-screen';
 import { LockPasswordModal } from './lock-screen/LockPasswordModal';
 import { PreferencesDrawer, type PreferencesDrawerProps } from './drawer';
 import { PreferencesTrigger, type PreferencesTriggerProps } from './drawer/PreferencesTrigger';
 import { Watermark } from './Watermark';
+
+// 自动初始化偏好设置管理器（确保在 usePreferences 调用前初始化）
+try {
+  getPreferencesManager();
+} catch (error) {
+  logger.warn('Preferences manager not initialized, initializing...', error);
+  try {
+    initPreferences({ namespace: 'admin-core' });
+  } catch (initError) {
+    logger.error('Failed to initialize preferences manager', initError);
+    throw initError;
+  }
+}
 
 /**
  * Preferences Context 类型

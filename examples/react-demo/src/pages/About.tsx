@@ -1,77 +1,44 @@
-function About() {
+export default function About() {
   return (
-    <div>
-      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 24, color: 'var(--foreground)' }}>
-        关于
-      </h1>
-
-      <div className="card" style={{ marginBottom: 24 }}>
-        <h2 className="card-title">Admin Core Preferences</h2>
-        <div className="card-content">
-          <p style={{ marginBottom: 16 }}>
-            这是一个与框架无关的偏好设置管理包，提供完整的主题、布局、国际化等配置功能。
-          </p>
-
-          <h3 style={{ fontWeight: 600, marginBottom: 8, color: 'var(--foreground)' }}>包结构</h3>
-          <ul style={{ listStyle: 'disc', paddingLeft: 20, lineHeight: 2, marginBottom: 16 }}>
-            <li><code>@admin-core/preferences</code> - 核心包（框架无关）</li>
-            <li><code>@admin-core/preferences-vue</code> - Vue 3 集成</li>
-            <li><code>@admin-core/preferences-react</code> - React 18 集成</li>
-          </ul>
-
-          <h3 style={{ fontWeight: 600, marginBottom: 8, color: 'var(--foreground)' }}>技术特点</h3>
-          <ul style={{ listStyle: 'disc', paddingLeft: 20, lineHeight: 2, marginBottom: 16 }}>
-            <li>基于 OKLCH 色彩空间的智能配色系统</li>
-            <li>仅需配置主色，自动派生语义色</li>
-            <li>支持 Tailwind CSS v4 预设</li>
-            <li>适配多种 UI 库（Ant Design, Element Plus, Naive UI, shadcn/ui）</li>
-            <li>完整的 TypeScript 类型定义</li>
-            <li>自动持久化与系统主题监听</li>
-          </ul>
-
-          <h3 style={{ fontWeight: 600, marginBottom: 8, color: 'var(--foreground)' }}>使用方式</h3>
-          <pre
-            style={{
-              background: 'var(--muted)',
-              padding: 16,
-              borderRadius: 'var(--radius)',
-              overflow: 'auto',
-              fontSize: 12,
-              lineHeight: 1.6,
-            }}
-          >
-{`// React 18
-import { initPreferences, usePreferences, PreferencesDrawer } from '@admin-core/preferences-react';
-
-// 初始化
-initPreferences({ namespace: 'my-app' });
-
-// 使用 Hook
-const { preferences, setPreferences } = usePreferences();
-
-// 使用抽屉组件
-<PreferencesDrawer open={open} onClose={() => setOpen(false)} />`}
-          </pre>
-        </div>
-      </div>
+    <div className="page-container">
+      <h1 className="page-title">关于</h1>
+      <p className="page-description">关于 Admin Core 布局包</p>
 
       <div className="card">
-        <h2 className="card-title">链接</h2>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <a
-            href="https://github.com"
-            target="_blank"
-            className="btn btn-secondary"
-          >
-            GitHub
-          </a>
-          <a href="#" className="btn btn-secondary">
-            文档
-          </a>
-        </div>
+        <h2 className="card-title">项目信息</h2>
+        <table className="data-table">
+          <tbody>
+            <tr>
+              <td style={{ width: 200, fontWeight: 500 }}>项目名称</td>
+              <td>@admin-core/layout-react</td>
+            </tr>
+            <tr>
+              <td style={{ fontWeight: 500 }}>版本</td>
+              <td>0.0.1</td>
+            </tr>
+            <tr>
+              <td style={{ fontWeight: 500 }}>框架</td>
+              <td>React 18 + TypeScript</td>
+            </tr>
+            <tr>
+              <td style={{ fontWeight: 500 }}>样式</td>
+              <td>Tailwind CSS v4</td>
+            </tr>
+            <tr>
+              <td style={{ fontWeight: 500 }}>特性</td>
+              <td>
+                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  <li>开箱即用</li>
+                  <li>深度集成 @preferences</li>
+                  <li>自动标签页/面包屑</li>
+                  <li>内置路由处理</li>
+                  <li>响应式设计</li>
+                </ul>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
-
-export default About;

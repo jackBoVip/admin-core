@@ -10,7 +10,8 @@ const npmConfig = defineConfig({
     dts({
       include: ['src/**/*.ts', 'src/**/*.vue'],
       outDir: 'dist',
-      rollupTypes: true,
+      rollupTypes: false,
+      insertTypesEntry: true,
     }),
   ],
   resolve: {

@@ -63,11 +63,10 @@ export function useShortcutKeys(options: UseShortcutKeysOptions = {}) {
   }, [preferences]);
 
   useEffect(() => {
-    if (!enabled) return;
-
     // 创建快捷键管理器
     const destroy = createShortcutManager({
       getPreferences: () => preferencesRef.current,
+      enabled,
       callbacks: {
         onPreferences: () => callbacksRef.current.onPreferences?.(),
         onSearch: () => callbacksRef.current.onSearch?.(),

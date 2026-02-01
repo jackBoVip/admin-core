@@ -12,7 +12,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-
     },
     // 确保只有一个模块实例
     dedupe: ['@admin-core/preferences'],
@@ -29,9 +28,13 @@ export default defineConfig({
   // 优化依赖处理 - 使用 alias 指向 dist 后，不再需要特殊处理
   optimizeDeps: {
     include: ['vue', 'vue-router'],
+    exclude: ['@admin-core/preferences'],
   },
   // CSS 配置
   css: {
     devSourcemap: true,
+  },
+  build: {
+    chunkSizeWarningLimit: 2000,
   },
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { usePreferences } from './use-preferences';
-import { createLockScreenManager, logger } from '@admin-core/preferences';
+import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
 
 /**
  * 锁屏 Hook
@@ -25,7 +25,7 @@ export function useLockScreen() {
   const handleAutoLock = useCallback(() => {
     const current = preferencesRef.current;
     // 只有在开启了锁屏功能且已设置密码的情况下才自动锁定
-    if (current.widget.lockScreen && current.lockScreen.password) {
+    if (canLockScreen(current)) {
       setPreferencesRef.current({ lockScreen: { isLocked: true } });
     }
   }, []); // 空依赖，确保稳定
@@ -47,13 +47,13 @@ export function useLockScreen() {
     const current = preferencesRef.current;
 
     // 检查锁屏功能是否启用
-    if (!current.widget.lockScreen) {
+    if (!isLockScreenEnabled(current)) {
       logger.warn('[LockScreen] Lock screen widget is disabled');
       return false;
     }
 
     // 如果没有设置密码，不能锁屏（需要先在设置中设置密码）
-    if (!current.lockScreen.password) {
+    if (!hasLockScreenPassword(current)) {
       logger.warn('[LockScreen] Password not set, please set password first');
       return false;
     }
@@ -73,11 +73,11 @@ export function useLockScreen() {
     /** 是否已锁定 */
     isLocked: preferences.lockScreen.isLocked,
     /** 是否启用锁屏功能 */
-    isEnabled: preferences.widget.lockScreen,
+    isEnabled: isLockScreenEnabled(preferences),
     /** 是否已设置密码 */
-    hasPassword: !!preferences.lockScreen.password,
+    hasPassword: hasLockScreenPassword(preferences),
     /** 是否可以锁屏（启用且有密码） */
-    canLock: preferences.widget.lockScreen && !!preferences.lockScreen.password,
+    canLock: canLockScreen(preferences),
     /** 锁屏（需要启用且有密码） */
     lock,
     /** 解锁 */

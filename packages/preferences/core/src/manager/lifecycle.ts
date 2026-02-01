@@ -14,7 +14,7 @@ import { logger } from '../utils/logger';
  */
 export class ManagerLifecycle {
   private manager: PreferencesManager | null = null;
-  private subscribers: Set<(prefs: Preferences) => void> = new Set();
+  private subscribers: Set<(prefs: Preferences, changedKeys: string[]) => void> = new Set();
 
   /**
    * 初始化 Manager
@@ -30,8 +30,8 @@ export class ManagerLifecycle {
     this.manager = createPreferencesManager(options);
 
     // 订阅变更并转发给所有订阅者
-    this.manager.subscribe((prefs) => {
-      this.subscribers.forEach((callback) => callback(prefs as Preferences));
+    this.manager.subscribe((prefs, changedKeys) => {
+      this.subscribers.forEach((callback) => callback(prefs as Preferences, changedKeys));
     });
 
     this.manager.init();
@@ -80,10 +80,12 @@ export class ManagerLifecycle {
    * @param callback - 变更回调
    * @returns 取消订阅函数
    */
-  subscribe(callback: (prefs: Preferences) => void): () => void {
-    this.subscribers.add(callback);
+  subscribe(callback: (prefs: Preferences, changedKeys: string[]) => void): () => void;
+  subscribe(callback: () => void): () => void;
+  subscribe(callback: ((prefs: Preferences, changedKeys: string[]) => void) | (() => void)): () => void {
+    this.subscribers.add(callback as (prefs: Preferences, changedKeys: string[]) => void);
     return () => {
-      this.subscribers.delete(callback);
+      this.subscribers.delete(callback as (prefs: Preferences, changedKeys: string[]) => void);
     };
   }
 

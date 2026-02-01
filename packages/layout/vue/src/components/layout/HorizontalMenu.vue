@@ -1,0 +1,108 @@
+<script setup lang="ts">
+/**
+ * 水平菜单组件
+ * @description 封装 Menu 组件，用于顶栏水平导航
+ */
+import { computed } from 'vue';
+import { Menu } from '../menu';
+import { useLayoutContext } from '../../composables';
+import type { MenuItem } from '@admin-core/layout';
+
+interface Props {
+  /** 菜单数据 */
+  menus?: MenuItem[];
+  /** 当前激活的菜单 key */
+  activeKey?: string;
+  /** 菜单对齐方式 */
+  align?: 'start' | 'center' | 'end';
+  /** 主题 */
+  theme?: 'light' | 'dark';
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  menus: () => [],
+  activeKey: '',
+  align: 'start',
+  theme: 'light',
+});
+
+const emit = defineEmits<{
+  select: [item: MenuItem, key: string];
+}>();
+
+const context = useLayoutContext();
+
+// 处理菜单选择
+const handleSelect = (path: string, _parentPaths: string[]) => {
+  // 查找菜单项
+  const findItem = (items: MenuItem[]): MenuItem | null => {
+    for (const item of items) {
+      if (item.key === path || item.path === path) {
+        return item;
+      }
+      if (item.children?.length) {
+        const found = findItem(item.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  
+  const item = findItem(props.menus);
+  if (item) {
+    emit('select', item, path);
+    context.events?.onMenuSelect?.(item, path);
+    
+    // 路由导航
+    if (context.props.router && item.path) {
+      context.props.router.navigate(item.path, {
+        params: item.params,
+        query: item.query,
+      });
+    }
+  }
+};
+
+// 容器类名
+const containerClass = computed(() => [
+  'header-menu-container',
+  `header-menu-container--align-${props.align}`,
+]);
+</script>
+
+<template>
+  <div :class="containerClass">
+    <Menu
+      :menus="menus"
+      :default-active="activeKey"
+      :theme="theme"
+      mode="horizontal"
+      :rounded="true"
+      @select="handleSelect"
+    />
+  </div>
+</template>
+
+<style>
+/* 容器样式 */
+.header-menu-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.header-menu-container--align-start {
+  justify-content: flex-start;
+}
+
+.header-menu-container--align-center {
+  justify-content: center;
+}
+
+.header-menu-container--align-end {
+  justify-content: flex-end;
+}
+</style>

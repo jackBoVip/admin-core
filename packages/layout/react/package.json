@@ -1,0 +1,84 @@
+{
+  "name": "@admin-core/layout-react",
+  "version": "0.0.1",
+  "description": "React 基础布局组件，开箱即用，高度集成偏好设置",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./styles": "./dist/layout-react.css",
+    "./style.css": "./dist/layout-react.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@admin-core/layout": "workspace:*",
+    "@admin-core/preferences": "workspace:*",
+    "@admin-core/preferences-react": "workspace:*",
+    "@floating-ui/react": "^0.27.17"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@iconify-json/lucide": "catalog:",
+    "@tailwindcss/vite": "^4.1.10",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "eslint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "tailwindcss": ">=4.0.0"
+  },
+  "keywords": [
+    "admin",
+    "layout",
+    "react",
+    "sidebar",
+    "header",
+    "tabbar",
+    "tailwindcss"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/layout/react"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

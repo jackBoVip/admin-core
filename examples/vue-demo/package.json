@@ -9,8 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@admin-core/layout-vue": "workspace:*",
+
     "@admin-core/preferences": "workspace:*",
-    "@admin-core/preferences-vue": "workspace:*",
     "vue": "catalog:",
     "vue-router": "^4.5.1"
   },

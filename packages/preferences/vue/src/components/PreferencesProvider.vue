@@ -2,15 +2,36 @@
 /**
  * 偏好设置提供者组件
  * @description 自动集成锁屏、快捷键等功能，用户无需手动添加
+ * 自动初始化偏好设置管理器，用户无需手动调用 initPreferences
  */
 import { ref, provide, readonly } from 'vue';
-import { usePreferences, useLockScreen, useShortcutKeys } from '../composables';
+import { 
+  usePreferences, 
+  useLockScreen, 
+  useShortcutKeys,
+  initPreferences,
+  getPreferencesManager,
+} from '../composables';
 import LockScreen from './lock-screen/LockScreen.vue';
 import LockPasswordModal from './lock-screen/LockPasswordModal.vue';
 import PreferencesDrawer from './drawer/PreferencesDrawer.vue';
 import PreferencesTrigger from './drawer/PreferencesTrigger.vue';
 import Watermark from './Watermark.vue';
 import type { PreferencesDrawerUIConfig } from '@admin-core/preferences';
+import { logger } from '@admin-core/preferences';
+
+// 自动初始化偏好设置管理器（确保在 usePreferences 调用前初始化）
+try {
+  getPreferencesManager();
+} catch (error) {
+  logger.warn('Preferences manager not initialized, initializing...', error);
+  try {
+    initPreferences({ namespace: 'admin-core' });
+  } catch (initError) {
+    logger.error('Failed to initialize preferences manager', initError);
+    throw initError;
+  }
+}
 
 withDefaults(defineProps<{
   /** 是否显示触发按钮 */

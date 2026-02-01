@@ -68,3 +68,33 @@ export {
   roundToStep,
   type FontScaleConfig,
 } from './font-scale';
+
+// 布局偏好映射
+export { mapPreferencesToLayoutProps } from './layout-mapping';
+
+// 布局设置页辅助
+export {
+  getLayoutTabConfigs,
+  getLayoutTabOptions,
+  createLayoutPreviewCache,
+  getLayoutPreviewOptions,
+  createLayoutTabUpdater,
+  type LayoutTabConfigs,
+  type LayoutTabUpdater,
+} from './layout-tab';
+
+// 主题工具
+export {
+  getActualThemeMode,
+  clearThemeModeCache,
+  generateThemeCSSVariables,
+  generateThemeClasses,
+  type ThemeRuntimeConfig,
+} from './theme';
+
+// 锁屏辅助
+export {
+  isLockScreenEnabled,
+  hasLockScreenPassword,
+  canLockScreen,
+} from './lock-screen';

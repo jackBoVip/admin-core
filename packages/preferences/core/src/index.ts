@@ -132,6 +132,25 @@ export {
   clampFontScale,
   roundToStep,
   type FontScaleConfig,
+  // 布局偏好映射
+  mapPreferencesToLayoutProps,
+  // 布局设置页辅助
+  getLayoutTabConfigs,
+  getLayoutTabOptions,
+  createLayoutPreviewCache,
+  getLayoutPreviewOptions,
+  createLayoutTabUpdater,
+  type LayoutTabConfigs,
+  type LayoutTabUpdater,
+  // 主题工具
+  clearThemeModeCache,
+  generateThemeCSSVariables,
+  generateThemeClasses,
+  type ThemeRuntimeConfig,
+  // 锁屏辅助
+  isLockScreenEnabled,
+  hasLockScreenPassword,
+  canLockScreen,
 } from './helpers';
 
 // ========== 配置 ==========

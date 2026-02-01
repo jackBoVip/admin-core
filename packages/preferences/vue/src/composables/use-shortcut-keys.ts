@@ -67,12 +67,9 @@ export function useShortcutKeys(options: UseShortcutKeysOptions = {}) {
   const initManager = () => {
     // 先销毁已有的管理器
     disposeManager();
-    
-    if (!enabledRef.value) {
-      return;
-    }
 
     destroyManager = createShortcutManager({
+      enabled: enabledRef.value,
       getPreferences: () => {
         if (!preferences.value) {
           throw new Error('[ShortcutKeys] Preferences not initialized');
@@ -97,13 +94,9 @@ export function useShortcutKeys(options: UseShortcutKeysOptions = {}) {
     }
   };
 
-  // 监听 enabled 状态变化，动态创建/销毁管理器
-  watch(enabledRef, (newEnabled) => {
-    if (newEnabled) {
-      initManager();
-    } else {
-      disposeManager();
-    }
+  // 监听 enabled 状态变化，重建管理器
+  watch(enabledRef, () => {
+    initManager();
   });
 
   onMounted(() => {

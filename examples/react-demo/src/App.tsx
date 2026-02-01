@@ -1,325 +1,406 @@
-import { useState, useMemo, createContext, useContext } from 'react';
-import { Routes, Route, NavLink } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import {
-  initPreferences,
-  usePreferences,
-  useTheme,
-  useLayout,
-  PreferencesProvider,
-  usePreferencesContext,
-  AdminIcon,
-} from '@admin-core/preferences-react';
-import type { PreferencesDrawerUIConfig } from '@admin-core/preferences';
+  BasicLayout,
+  useReactRouterAdapter,
+  type MenuItem,
+} from '@admin-core/layout-react';
 
 // 页面组件
 import Home from './pages/Home';
-import Dashboard from './pages/Dashboard';
-import Settings from './pages/Settings';
+import DashboardAnalysis from './pages/dashboard/Analysis';
+import DashboardMonitor from './pages/dashboard/Monitor';
+import DashboardWorkplace from './pages/dashboard/Workplace';
+import SystemUser from './pages/system/User';
+import SystemRole from './pages/system/Role';
+import SystemMenu from './pages/system/Menu';
+import SystemDept from './pages/system/Dept';
+import ComponentsButton from './pages/components/Button';
+import ComponentsForm from './pages/components/Form';
+import ComponentsTable from './pages/components/Table';
 import About from './pages/About';
 
-// 初始化偏好设置
-initPreferences({
-  namespace: 'react-demo',
-  overrides: {
-    app: {
-      name: 'React Demo',
-    },
+// 菜单数据 - 更丰富的测试菜单
+const menus: MenuItem[] = [
+  {
+    key: 'home',
+    name: '首页',
+    path: '/',
+    icon: '🏠',
+    affix: true,
   },
-});
-
-// UI 配置状态 Context
-interface UIConfigState {
-  // Tab 级别
-  hideShortcutKeys: boolean;
-  setHideShortcutKeys: (v: boolean) => void;
-  hideAppearanceTab: boolean;
-  setHideAppearanceTab: (v: boolean) => void;
-  disableLayoutTab: boolean;
-  setDisableLayoutTab: (v: boolean) => void;
-  
-  // 头部按钮
-  hideImportButton: boolean;
-  setHideImportButton: (v: boolean) => void;
-  disableReset: boolean;
-  setDisableReset: (v: boolean) => void;
-  hidePinButton: boolean;
-  setHidePinButton: (v: boolean) => void;
-  
-  // 底部按钮
-  hideCopyButton: boolean;
-  setHideCopyButton: (v: boolean) => void;
-  
-  // 外观设置
-  disableThemeMode: boolean;
-  setDisableThemeMode: (v: boolean) => void;
-  hideBuiltinTheme: boolean;
-  setHideBuiltinTheme: (v: boolean) => void;
-  disableRadius: boolean;
-  setDisableRadius: (v: boolean) => void;
-  hideFontSize: boolean;
-  setHideFontSize: (v: boolean) => void;
-  disableColorMode: boolean;
-  setDisableColorMode: (v: boolean) => void;
-  
-  // 布局设置
-  hideLayoutType: boolean;
-  setHideLayoutType: (v: boolean) => void;
-  disableContentWidth: boolean;
-  setDisableContentWidth: (v: boolean) => void;
-  hideSidebar: boolean;
-  setHideSidebar: (v: boolean) => void;
-  disablePanel: boolean;
-  setDisablePanel: (v: boolean) => void;
-  hideHeader: boolean;
-  setHideHeader: (v: boolean) => void;
-  disableTabbar: boolean;
-  setDisableTabbar: (v: boolean) => void;
-  hideBreadcrumb: boolean;
-  setHideBreadcrumb: (v: boolean) => void;
-  disableFooterBlock: boolean;
-  setDisableFooterBlock: (v: boolean) => void;
-  
-  // 通用设置
-  hideLanguage: boolean;
-  setHideLanguage: (v: boolean) => void;
-  disableDynamicTitle: boolean;
-  setDisableDynamicTitle: (v: boolean) => void;
-  hideLockScreen: boolean;
-  setHideLockScreen: (v: boolean) => void;
-  disableWatermark: boolean;
-  setDisableWatermark: (v: boolean) => void;
-}
-
-const UIConfigContext = createContext<UIConfigState | null>(null);
-
-export function useUIConfigState() {
-  const ctx = useContext(UIConfigContext);
-  if (!ctx) throw new Error('useUIConfigState must be used within App');
-  return ctx;
-}
-
-// 导航菜单配置
-const menuItems = [
-  { path: '/', name: '首页', icon: 'home' as const },
-  { path: '/dashboard', name: '仪表盘', icon: 'dashboard' as const },
-  { path: '/settings', name: '设置演示', icon: 'settings' as const },
-  { path: '/about', name: '关于', icon: 'info' as const },
+  {
+    key: 'dashboard',
+    name: '仪表盘',
+    path: '/dashboard',
+    icon: '📊',
+    children: [
+      {
+        key: 'dashboard-analysis',
+        name: '分析页',
+        path: '/dashboard/analysis',
+        icon: '📈',
+      },
+      {
+        key: 'dashboard-monitor',
+        name: '监控页',
+        path: '/dashboard/monitor',
+        icon: '🖥️',
+      },
+      {
+        key: 'dashboard-workplace',
+        name: '工作台',
+        path: '/dashboard/workplace',
+        icon: '💼',
+      },
+    ],
+  },
+  {
+    key: 'system',
+    name: '系统管理',
+    path: '/system',
+    icon: '⚙️',
+    children: [
+      {
+        key: 'system-user',
+        name: '用户管理',
+        path: '/system/user',
+        icon: '👤',
+      },
+      {
+        key: 'system-role',
+        name: '角色管理',
+        path: '/system/role',
+        icon: '👥',
+      },
+      {
+        key: 'system-menu',
+        name: '菜单管理',
+        path: '/system/menu',
+        icon: '📋',
+      },
+      {
+        key: 'system-dept',
+        name: '部门管理',
+        path: '/system/dept',
+        icon: '🏢',
+      },
+      {
+        key: 'system-dict',
+        name: '字典管理',
+        path: '/system/dict',
+        icon: '📖',
+      },
+      {
+        key: 'system-config',
+        name: '参数配置',
+        path: '/system/config',
+        icon: '🔧',
+      },
+    ],
+  },
+  {
+    key: 'permission',
+    name: '权限管理',
+    icon: '🔐',
+    children: [
+      {
+        key: 'permission-page',
+        name: '页面权限',
+        path: '/permission/page',
+        icon: '📄',
+      },
+      {
+        key: 'permission-btn',
+        name: '按钮权限',
+        path: '/permission/button',
+        icon: '🔘',
+      },
+      {
+        key: 'permission-api',
+        name: '接口权限',
+        path: '/permission/api',
+        icon: '🔗',
+      },
+    ],
+  },
+  {
+    key: 'components',
+    name: '组件示例',
+    path: '/components',
+    icon: '🧩',
+    children: [
+      {
+        key: 'components-basic',
+        name: '基础组件',
+        icon: '📦',
+        children: [
+          {
+            key: 'components-button',
+            name: '按钮',
+            path: '/components/button',
+          },
+          {
+            key: 'components-icon',
+            name: '图标',
+            path: '/components/icon',
+          },
+          {
+            key: 'components-typography',
+            name: '排版',
+            path: '/components/typography',
+          },
+        ],
+      },
+      {
+        key: 'components-form',
+        name: '表单组件',
+        icon: '📝',
+        children: [
+          {
+            key: 'components-input',
+            name: '输入框',
+            path: '/components/form/input',
+          },
+          {
+            key: 'components-select',
+            name: '选择器',
+            path: '/components/form/select',
+          },
+          {
+            key: 'components-date',
+            name: '日期选择',
+            path: '/components/form/date',
+          },
+          {
+            key: 'components-upload',
+            name: '上传',
+            path: '/components/form/upload',
+          },
+        ],
+      },
+      {
+        key: 'components-table',
+        name: '表格',
+        path: '/components/table',
+        icon: '📊',
+      },
+      {
+        key: 'components-modal',
+        name: '弹窗',
+        path: '/components/modal',
+        icon: '🪟',
+      },
+    ],
+  },
+  {
+    key: 'feature',
+    name: '功能示例',
+    icon: '✨',
+    children: [
+      {
+        key: 'feature-clipboard',
+        name: '剪贴板',
+        path: '/feature/clipboard',
+        icon: '📋',
+      },
+      {
+        key: 'feature-print',
+        name: '打印',
+        path: '/feature/print',
+        icon: '🖨️',
+      },
+      {
+        key: 'feature-watermark',
+        name: '水印',
+        path: '/feature/watermark',
+        icon: '💧',
+      },
+      {
+        key: 'feature-fullscreen',
+        name: '全屏',
+        path: '/feature/fullscreen',
+        icon: '⛶',
+      },
+    ],
+  },
+  {
+    key: 'chart',
+    name: '图表',
+    icon: '📉',
+    children: [
+      {
+        key: 'chart-echarts',
+        name: 'ECharts',
+        icon: '📈',
+        children: [
+          {
+            key: 'chart-echarts-line',
+            name: '折线图',
+            path: '/chart/echarts/line',
+          },
+          {
+            key: 'chart-echarts-bar',
+            name: '柱状图',
+            path: '/chart/echarts/bar',
+          },
+          {
+            key: 'chart-echarts-pie',
+            name: '饼图',
+            path: '/chart/echarts/pie',
+          },
+        ],
+      },
+      {
+        key: 'chart-map',
+        name: '地图',
+        path: '/chart/map',
+        icon: '🗺️',
+      },
+    ],
+  },
+  {
+    key: 'nested',
+    name: '多级嵌套',
+    icon: '📂',
+    children: [
+      {
+        key: 'nested-menu1',
+        name: '菜单1',
+        icon: '📁',
+        children: [
+          {
+            key: 'nested-menu1-1',
+            name: '菜单1-1',
+            path: '/nested/menu1/menu1-1',
+          },
+          {
+            key: 'nested-menu1-2',
+            name: '菜单1-2',
+            icon: '📁',
+            children: [
+              {
+                key: 'nested-menu1-2-1',
+                name: '菜单1-2-1',
+                path: '/nested/menu1/menu1-2/menu1-2-1',
+              },
+              {
+                key: 'nested-menu1-2-2',
+                name: '菜单1-2-2',
+                path: '/nested/menu1/menu1-2/menu1-2-2',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        key: 'nested-menu2',
+        name: '菜单2',
+        path: '/nested/menu2',
+      },
+    ],
+  },
+  {
+    key: 'external',
+    name: '外部链接',
+    icon: '🔗',
+    children: [
+      {
+        key: 'external-github',
+        name: 'GitHub',
+        externalLink: 'https://github.com',
+        openInNewWindow: true,
+        icon: '📦',
+      },
+      {
+        key: 'external-docs',
+        name: 'React文档',
+        externalLink: 'https://react.dev',
+        openInNewWindow: true,
+        icon: '📚',
+      },
+    ],
+  },
+  {
+    key: 'about',
+    name: '关于',
+    path: '/about',
+    icon: 'ℹ️',
+  },
 ];
 
-// 主布局组件
+// 用户信息
+const userInfo = {
+  id: '1',
+  username: 'admin',
+  displayName: 'Admin User',
+  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin',
+  roles: ['admin'],
+};
+
 function AppLayout() {
-  const { preferences, setPreferences } = usePreferences();
-  const { isDark, toggleTheme } = useTheme();
-  const { toggleSidebar } = useLayout();
-  const { lock, isLockEnabled } = usePreferencesContext();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // 侧边栏折叠状态
-  const sidebarCollapsed = preferences.sidebar.collapsed;
+  // 路由适配器
+  const routerConfig = useReactRouterAdapter(navigate, location);
 
-  return (
-    <div className="app-layout">
-      {/* 顶栏 */}
-      <header className="app-header admin-header">
-        <div className="toolbar">
-          {/* 侧边栏折叠按钮 */}
-          <button
-            className="sidebar-toggle"
-            onClick={toggleSidebar}
-            title={sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'}
-          >
-            <AdminIcon name={sidebarCollapsed ? 'menu' : 'close'} size="sm" />
-          </button>
-          <div className="logo">
-            <AdminIcon name="dashboard" size="md" />
-            {!sidebarCollapsed && <span>{preferences.app.name}</span>}
-          </div>
-        </div>
-
-        <div className="toolbar-spacer" />
-
-        <div className="toolbar">
-          {/* 锁屏按钮 - 功能启用时显示 */}
-          {isLockEnabled && (
-            <button
-              className="lock-toggle"
-              onClick={lock}
-              title="锁屏 (Ctrl+Shift+L)"
-            >
-              <AdminIcon name="lock" size="sm" />
-            </button>
-          )}
-          {/* 语言切换 */}
-          <button
-            className="lang-toggle"
-            onClick={() => setPreferences({
-              app: { locale: preferences.app.locale === 'zh-CN' ? 'en-US' : 'zh-CN' }
-            })}
-            title="切换语言"
-          >
-            {preferences.app.locale === 'zh-CN' ? '中' : 'En'}
-          </button>
-          {/* 主题切换 */}
-          <button
-            className="theme-toggle"
-            onClick={toggleTheme}
-            title={isDark ? '切换到亮色' : '切换到暗色'}
-          >
-            <AdminIcon name={isDark ? 'sun' : 'moon'} size="sm" />
-          </button>
-        </div>
-      </header>
-
-      {/* 侧边栏 */}
-      <aside className={`app-sidebar admin-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-        <nav>
-          <ul className="nav-menu">
-            {menuItems.map((item) => (
-              <li key={item.path} className="nav-item">
-                <NavLink
-                  to={item.path}
-                  className={({ isActive }) =>
-                    `nav-link ${isActive ? 'active' : ''}`
-                  }
-                >
-                  <AdminIcon name={item.icon} size="sm" className="nav-icon" />
-                  {!sidebarCollapsed && (
-                    <span className="nav-text">{item.name}</span>
-                  )}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-
-      {/* 主内容区 */}
-      <main className={`app-main ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/about" element={<About />} />
-        </Routes>
-      </main>
-    </div>
-  );
-}
-
-function App() {
-  // UI 配置状态
-  const [hideShortcutKeys, setHideShortcutKeys] = useState(false);
-  const [hideAppearanceTab, setHideAppearanceTab] = useState(false);
-  const [disableLayoutTab, setDisableLayoutTab] = useState(false);
-  const [hideImportButton, setHideImportButton] = useState(false);
-  const [disableReset, setDisableReset] = useState(false);
-  const [hidePinButton, setHidePinButton] = useState(false);
-  const [hideCopyButton, setHideCopyButton] = useState(false);
-  const [disableThemeMode, setDisableThemeMode] = useState(false);
-  const [hideBuiltinTheme, setHideBuiltinTheme] = useState(false);
-  const [disableRadius, setDisableRadius] = useState(false);
-  const [hideFontSize, setHideFontSize] = useState(false);
-  const [disableColorMode, setDisableColorMode] = useState(false);
-  const [hideLayoutType, setHideLayoutType] = useState(false);
-  const [disableContentWidth, setDisableContentWidth] = useState(false);
-  const [hideSidebar, setHideSidebar] = useState(false);
-  const [disablePanel, setDisablePanel] = useState(false);
-  const [hideHeader, setHideHeader] = useState(false);
-  const [disableTabbar, setDisableTabbar] = useState(false);
-  const [hideBreadcrumb, setHideBreadcrumb] = useState(false);
-  const [disableFooterBlock, setDisableFooterBlock] = useState(false);
-  const [hideLanguage, setHideLanguage] = useState(false);
-  const [disableDynamicTitle, setDisableDynamicTitle] = useState(false);
-  const [hideLockScreen, setHideLockScreen] = useState(false);
-  const [disableWatermark, setDisableWatermark] = useState(false);
-
-  // 动态生成 UI 配置
-  const drawerUIConfig = useMemo<PreferencesDrawerUIConfig>(() => ({
-    shortcutKeys: { visible: !hideShortcutKeys },
-    appearance: {
-      visible: !hideAppearanceTab,
-      themeMode: { disabled: disableThemeMode },
-      builtinTheme: { visible: !hideBuiltinTheme },
-      radius: { disabled: disableRadius },
-      fontSize: { visible: !hideFontSize },
-      colorMode: { disabled: disableColorMode },
-    },
-    layout: {
-      disabled: disableLayoutTab,
-      layoutType: { visible: !hideLayoutType },
-      contentWidth: { disabled: disableContentWidth },
-      sidebar: { visible: !hideSidebar },
-      panel: { disabled: disablePanel },
-      header: { visible: !hideHeader },
-      tabbar: { disabled: disableTabbar },
-      breadcrumb: { visible: !hideBreadcrumb },
-      footer: { disabled: disableFooterBlock },
-    },
-    general: {
-      language: { visible: !hideLanguage },
-      dynamicTitle: { disabled: disableDynamicTitle },
-      lockScreen: { visible: !hideLockScreen },
-      watermark: { disabled: disableWatermark },
-    },
-    headerActions: {
-      import: { visible: !hideImportButton },
-      reset: { disabled: disableReset },
-      pin: { visible: !hidePinButton },
-    },
-    footerActions: {
-      copy: { visible: !hideCopyButton },
-    },
-  }), [
-    hideShortcutKeys, hideAppearanceTab, disableLayoutTab,
-    hideImportButton, disableReset, hidePinButton, hideCopyButton,
-    disableThemeMode, hideBuiltinTheme, disableRadius, hideFontSize, disableColorMode,
-    hideLayoutType, disableContentWidth, hideSidebar, disablePanel,
-    hideHeader, disableTabbar, hideBreadcrumb, disableFooterBlock,
-    hideLanguage, disableDynamicTitle, hideLockScreen, disableWatermark,
-  ]);
-
-  const uiConfigState: UIConfigState = {
-    hideShortcutKeys, setHideShortcutKeys,
-    hideAppearanceTab, setHideAppearanceTab,
-    disableLayoutTab, setDisableLayoutTab,
-    hideImportButton, setHideImportButton,
-    disableReset, setDisableReset,
-    hidePinButton, setHidePinButton,
-    hideCopyButton, setHideCopyButton,
-    disableThemeMode, setDisableThemeMode,
-    hideBuiltinTheme, setHideBuiltinTheme,
-    disableRadius, setDisableRadius,
-    hideFontSize, setHideFontSize,
-    disableColorMode, setDisableColorMode,
-    hideLayoutType, setHideLayoutType,
-    disableContentWidth, setDisableContentWidth,
-    hideSidebar, setHideSidebar,
-    disablePanel, setDisablePanel,
-    hideHeader, setHideHeader,
-    disableTabbar, setDisableTabbar,
-    hideBreadcrumb, setHideBreadcrumb,
-    disableFooterBlock, setDisableFooterBlock,
-    hideLanguage, setHideLanguage,
-    disableDynamicTitle, setDisableDynamicTitle,
-    hideLockScreen, setHideLockScreen,
-    disableWatermark, setDisableWatermark,
+  // 事件处理
+  const handleLogout = () => {
+    if (confirm('确定要退出登录吗？')) {
+      console.log('Logout');
+      navigate('/login');
+    }
   };
 
+  const handleSearch = (keyword: string) => {
+    console.log('Search:', keyword);
+  };
+
+  const handleRefresh = () => {
+    console.log('Refresh page');
+    window.location.reload();
+  };
+
+  const handleLockScreen = () => {
+    console.log('Lock screen');
+  };
+
+  // 不传递 layout 属性，让布局响应偏好设置的变化
+  // 用户可以通过偏好设置面板切换布局类型
   return (
-    <UIConfigContext.Provider value={uiConfigState}>
-      <PreferencesProvider
-        username="Admin"
-        uiConfig={drawerUIConfig}
-        onLogout={() => {
-          if (confirm('确定要退出登录吗？')) {
-            console.log('Logout');
-          }
-        }}
-        onSearch={() => console.log('Open search dialog')}
-      >
-        <AppLayout />
-      </PreferencesProvider>
-    </UIConfigContext.Provider>
+    <BasicLayout
+      menus={menus}
+      router={routerConfig}
+      userInfo={userInfo}
+      logo={{ source: 'https://vitejs.dev/logo.svg' }}
+      appName="Admin"
+      locale="zh-CN"
+      onLogout={handleLogout}
+      onGlobalSearch={handleSearch}
+      onRefresh={handleRefresh}
+      onLockScreen={handleLockScreen}
+      footerCenter={
+        <div className="text-center text-sm text-gray-500 py-4">
+          Copyright © 2024 Admin Core. All rights reserved.
+        </div>
+      }
+    >
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard/analysis" element={<DashboardAnalysis />} />
+        <Route path="/dashboard/monitor" element={<DashboardMonitor />} />
+        <Route path="/dashboard/workplace" element={<DashboardWorkplace />} />
+        <Route path="/system/user" element={<SystemUser />} />
+        <Route path="/system/role" element={<SystemRole />} />
+        <Route path="/system/menu" element={<SystemMenu />} />
+        <Route path="/system/dept" element={<SystemDept />} />
+        <Route path="/components/button" element={<ComponentsButton />} />
+        <Route path="/components/form" element={<ComponentsForm />} />
+        <Route path="/components/table" element={<ComponentsTable />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </BasicLayout>
   );
 }
 
-export default App;
+export default AppLayout;

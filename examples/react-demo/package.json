@@ -9,8 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@admin-core/layout-react": "workspace:*",
     "@admin-core/preferences": "workspace:*",
-    "@admin-core/preferences-react": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router-dom": "^7.6.1"

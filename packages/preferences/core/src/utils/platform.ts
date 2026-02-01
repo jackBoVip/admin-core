@@ -26,6 +26,11 @@ export const hasDocument = typeof document !== 'undefined';
  */
 export const hasNavigator = typeof navigator !== 'undefined';
 
+/* ========== 缓存的正则表达式 ========== */
+
+/** 移动设备检测正则（缓存避免重复创建） */
+const MOBILE_DEVICE_REGEX = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+
 /* ========== 平台检测 ==========*/
 
 // 平台检测缓存（避免重复解析 userAgent）
@@ -94,9 +99,7 @@ export function isMobile(): boolean {
     return cachedIsMobile;
   }
 
-  cachedIsMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-    navigator.userAgent.toLowerCase()
-  );
+  cachedIsMobile = MOBILE_DEVICE_REGEX.test(navigator.userAgent.toLowerCase());
   return cachedIsMobile;
 }
 
