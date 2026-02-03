@@ -384,7 +384,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     /** 主题切换按钮 */
     themeToggle: true,
     /** 时区选择 */
-    timezone: true,
+    timezone: false,
   },
 };
 

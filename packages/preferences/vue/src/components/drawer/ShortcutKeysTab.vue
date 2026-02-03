@@ -90,18 +90,25 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 启用快捷键 - 主开关 -->
     <div
       v-if="configs.enable.visible"
-      class="shortcut-item"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
       :class="{ disabled: configs.enable.disabled }"
       role="switch"
       :aria-checked="shortcutKeysEnable"
       :aria-disabled="configs.enable.disabled"
+      :data-state="shortcutKeysEnable ? 'active' : 'inactive'"
+      :data-disabled="configs.enable.disabled ? 'true' : undefined"
       :tabindex="configs.enable.disabled ? -1 : 0"
       @click="!configs.enable.disabled && toggleEnable()"
       @keydown.enter.space.prevent="!configs.enable.disabled && toggleEnable()"
     >
       <span class="shortcut-item-label">{{ locale.shortcutKeys.enable }}</span>
       <div class="shortcut-item-right">
-        <div class="preferences-switch" :class="{ checked: shortcutKeysEnable }">
+        <div
+          class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
+          :class="{ checked: shortcutKeysEnable }"
+          :data-state="shortcutKeysEnable ? 'checked' : 'unchecked'"
+          :data-disabled="configs.enable.disabled ? 'true' : undefined"
+        >
           <span class="preferences-switch-thumb" />
         </div>
       </div>
@@ -110,11 +117,13 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 打开设置 -->
     <div
       v-if="configs.globalPreferences.visible"
-      class="shortcut-item"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalPreferences.disabled }"
       role="switch"
       :aria-checked="globalPreferences"
       :aria-disabled="!shortcutKeysEnable || configs.globalPreferences.disabled"
+      :data-state="globalPreferences ? 'active' : 'inactive'"
+      :data-disabled="(!shortcutKeysEnable || configs.globalPreferences.disabled) ? 'true' : undefined"
       :tabindex="shortcutKeysEnable && !configs.globalPreferences.disabled ? 0 : -1"
       @click="shortcutKeysEnable && !configs.globalPreferences.disabled && togglePreferences()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalPreferences.disabled && togglePreferences()"
@@ -124,7 +133,12 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalPreferences')" :key="k" class="shortcut-key">{{ k }}</kbd>
         </div>
-        <div class="preferences-switch" :class="{ checked: globalPreferences }">
+        <div
+          class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
+          :class="{ checked: globalPreferences }"
+          :data-state="globalPreferences ? 'checked' : 'unchecked'"
+          :data-disabled="(!shortcutKeysEnable || configs.globalPreferences.disabled) ? 'true' : undefined"
+        >
           <span class="preferences-switch-thumb" />
         </div>
       </div>
@@ -133,11 +147,13 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 全局搜索 -->
     <div
       v-if="configs.globalSearch.visible"
-      class="shortcut-item"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalSearch.disabled }"
       role="switch"
       :aria-checked="globalSearch"
       :aria-disabled="!shortcutKeysEnable || configs.globalSearch.disabled"
+      :data-state="globalSearch ? 'active' : 'inactive'"
+      :data-disabled="(!shortcutKeysEnable || configs.globalSearch.disabled) ? 'true' : undefined"
       :tabindex="shortcutKeysEnable && !configs.globalSearch.disabled ? 0 : -1"
       @click="shortcutKeysEnable && !configs.globalSearch.disabled && toggleSearch()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalSearch.disabled && toggleSearch()"
@@ -147,7 +163,12 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalSearch')" :key="k" class="shortcut-key">{{ k }}</kbd>
         </div>
-        <div class="preferences-switch" :class="{ checked: globalSearch }">
+        <div
+          class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
+          :class="{ checked: globalSearch }"
+          :data-state="globalSearch ? 'checked' : 'unchecked'"
+          :data-disabled="(!shortcutKeysEnable || configs.globalSearch.disabled) ? 'true' : undefined"
+        >
           <span class="preferences-switch-thumb" />
         </div>
       </div>
@@ -156,11 +177,13 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 锁屏 -->
     <div
       v-if="configs.globalLockScreen.visible"
-      class="shortcut-item"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalLockScreen.disabled }"
       role="switch"
       :aria-checked="globalLockScreen"
       :aria-disabled="!shortcutKeysEnable || configs.globalLockScreen.disabled"
+      :data-state="globalLockScreen ? 'active' : 'inactive'"
+      :data-disabled="(!shortcutKeysEnable || configs.globalLockScreen.disabled) ? 'true' : undefined"
       :tabindex="shortcutKeysEnable && !configs.globalLockScreen.disabled ? 0 : -1"
       @click="shortcutKeysEnable && !configs.globalLockScreen.disabled && toggleLockScreen()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalLockScreen.disabled && toggleLockScreen()"
@@ -170,7 +193,12 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalLockScreen')" :key="k" class="shortcut-key">{{ k }}</kbd>
         </div>
-        <div class="preferences-switch" :class="{ checked: globalLockScreen }">
+        <div
+          class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
+          :class="{ checked: globalLockScreen }"
+          :data-state="globalLockScreen ? 'checked' : 'unchecked'"
+          :data-disabled="(!shortcutKeysEnable || configs.globalLockScreen.disabled) ? 'true' : undefined"
+        >
           <span class="preferences-switch-thumb" />
         </div>
       </div>
@@ -179,11 +207,13 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 登出 -->
     <div
       v-if="configs.globalLogout.visible"
-      class="shortcut-item"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalLogout.disabled }"
       role="switch"
       :aria-checked="globalLogout"
       :aria-disabled="!shortcutKeysEnable || configs.globalLogout.disabled"
+      :data-state="globalLogout ? 'active' : 'inactive'"
+      :data-disabled="(!shortcutKeysEnable || configs.globalLogout.disabled) ? 'true' : undefined"
       :tabindex="shortcutKeysEnable && !configs.globalLogout.disabled ? 0 : -1"
       @click="shortcutKeysEnable && !configs.globalLogout.disabled && toggleLogout()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalLogout.disabled && toggleLogout()"
@@ -193,7 +223,12 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalLogout')" :key="k" class="shortcut-key">{{ k }}</kbd>
         </div>
-        <div class="preferences-switch" :class="{ checked: globalLogout }">
+        <div
+          class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
+          :class="{ checked: globalLogout }"
+          :data-state="globalLogout ? 'checked' : 'unchecked'"
+          :data-disabled="(!shortcutKeysEnable || configs.globalLogout.disabled) ? 'true' : undefined"
+        >
           <span class="preferences-switch-thumb" />
         </div>
       </div>

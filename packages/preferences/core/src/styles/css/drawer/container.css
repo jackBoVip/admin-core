@@ -41,7 +41,8 @@
     transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
 
     /* 打开状态 */
-    &.open {
+    &.open,
+    &[data-state="open"] {
       transform: translate3d(0, 0, 0);
     }
 
@@ -77,7 +78,8 @@
     /* 移除 backdrop-filter 以提升性能，改用更高的不透明度 */
     /* backdrop-filter: blur(2px); */
 
-    &.open {
+    &.open,
+    &[data-state="open"] {
       opacity: 1;
       visibility: visible;
     }
@@ -91,6 +93,8 @@
     padding: 12px 24px;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+    content-visibility: auto;
+    contain-intrinsic-size: 360px 800px;
 
     /* Webkit 滚动条样式（使用嵌套） */
     &::-webkit-scrollbar {

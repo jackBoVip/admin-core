@@ -119,6 +119,9 @@ watch(showUnlockForm, (show) => {
       if (focusTimerRef.value) clearTimeout(focusTimerRef.value);
       focusTimerRef.value = setTimeout(() => inputRef.value?.focus(), 100);
     });
+  } else if (focusTimerRef.value) {
+    clearTimeout(focusTimerRef.value);
+    focusTimerRef.value = null;
   }
 });
 
@@ -150,31 +153,46 @@ onUnmounted(() => {
     <div v-if="isLocked" class="preferences-lock-screen" role="dialog" aria-modal="true" :aria-label="locale.lockScreen?.title || '锁屏'">
       <div class="preferences-lock-backdrop" aria-hidden="true">
         <div v-if="actualBgImage" class="preferences-lock-backdrop-image" :style="bgImageStyle" />
-        <div class="preferences-lock-orb orb-1" />
-        <div class="preferences-lock-orb orb-2" />
-        <div class="preferences-lock-orb orb-3" />
+        <div class="preferences-lock-orb orb-1" data-orb="1" />
+        <div class="preferences-lock-orb orb-2" data-orb="2" />
+        <div class="preferences-lock-orb orb-3" data-orb="3" />
         <div class="preferences-lock-grid" />
       </div>
 
-      <div class="preferences-lock-content minimal">
-        <section class="preferences-lock-time-center" :class="{ compact: showUnlockForm }">
+      <div class="preferences-lock-content minimal" data-variant="minimal">
+        <section
+          class="preferences-lock-time-center"
+          :class="{ compact: showUnlockForm }"
+          :data-compact="showUnlockForm ? 'true' : undefined"
+        >
           <LockScreenTime :locale="currentLocale" />
           <button 
             v-show="!showUnlockForm" 
             class="preferences-lock-cta minimal" 
+            data-variant="minimal"
             @click="toggleUnlockForm"
           >
             {{ locale.lockScreen?.unlock }}
           </button>
         </section>
 
-        <section class="preferences-lock-unlock" :class="{ visible: showUnlockForm }" role="form">
-          <div class="preferences-lock-unlock-box" :class="{ 'has-error': error }">
+        <section
+          class="preferences-lock-unlock"
+          :class="{ visible: showUnlockForm }"
+          :data-visible="showUnlockForm ? 'true' : undefined"
+          role="form"
+        >
+          <div
+            class="preferences-lock-unlock-box"
+            :class="{ 'has-error': error }"
+            :data-error="error ? 'true' : undefined"
+          >
             <input
               ref="inputRef"
               type="password"
               class="preferences-lock-unlock-input"
               :class="{ 'has-error': error }"
+              :data-error="error ? 'true' : undefined"
               v-model="password"
               :placeholder="error || locale.lockScreen?.passwordPlaceholder"
               :aria-label="locale.lockScreen?.passwordPlaceholder"

@@ -74,6 +74,11 @@ export const TransitionPreview: React.FC<TransitionPreviewProps> = memo(({
     isAnimatingRef.current = false;
   }, []);
 
+  const resetAnimationState = useCallback(() => {
+    setShowContent(true);
+    setCurrentClass('');
+  }, []);
+
   const playAnimation = useCallback(() => {
     if (!shouldAnimate || isAnimatingRef.current) return;
     
@@ -109,33 +114,59 @@ export const TransitionPreview: React.FC<TransitionPreviewProps> = memo(({
     });
   }, [shouldAnimate, transition]);
 
-  // 自动循环播放
-  useEffect(() => {
-    if (!shouldAnimate) {
-      clearTimers();
-      setShowContent(true);
-      setCurrentClass('');
-      return;
-    }
-
-    // 延迟启动，避免同时触发多个动画
+  const startLoop = useCallback(() => {
+    if (!shouldAnimate) return;
+    clearTimers();
+    resetAnimationState();
     const initialTimer = setTimeout(() => {
       playAnimation();
       loopIntervalRef.current = setInterval(playAnimation, LOOP_INTERVAL);
     }, 300);
     timersRef.current.push(initialTimer);
+  }, [shouldAnimate, playAnimation, clearTimers, resetAnimationState]);
 
+  const stopLoop = useCallback(() => {
+    clearTimers();
+    resetAnimationState();
+  }, [clearTimers, resetAnimationState]);
+
+  // 自动循环播放
+  useEffect(() => {
+    if (!shouldAnimate) {
+      stopLoop();
+      return;
+    }
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      stopLoop();
+      return;
+    }
+    startLoop();
     return clearTimers;
-  }, [shouldAnimate, playAnimation, clearTimers]);
+  }, [shouldAnimate, startLoop, stopLoop, clearTimers]);
 
-  const classNames = [
-    'transition-preview',
-    !enabled && 'disabled',
-    compact && 'compact',
-  ].filter(Boolean).join(' ');
+  // 页面不可见时暂停动画
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        stopLoop();
+      } else if (shouldAnimate) {
+        startLoop();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [shouldAnimate, startLoop, stopLoop]);
+
+  const classNames = (() => {
+    const classes = ['transition-preview'];
+    if (!enabled) classes.push('disabled');
+    if (compact) classes.push('compact');
+    return classes.join(' ');
+  })();
 
   return (
-    <div className={classNames}>
+    <div className={classNames} data-disabled={!enabled ? 'true' : undefined}>
       <div className="transition-preview-screen">
         {/* 模拟页面头部 */}
         <div className="transition-preview-header">
@@ -145,7 +176,7 @@ export const TransitionPreview: React.FC<TransitionPreviewProps> = memo(({
         </div>
         {/* 模拟侧边栏 */}
         <div className="transition-preview-sidebar">
-          <div className="transition-preview-menu-item active" />
+          <div className="transition-preview-menu-item active" data-state="active" />
           <div className="transition-preview-menu-item" />
           <div className="transition-preview-menu-item" />
         </div>

@@ -54,6 +54,11 @@ export function useDebouncedValue<T>({
     // 清除之前的定时器
     clearTimer();
 
+    if (delay <= 0) {
+      modelValue.value = value;
+      return;
+    }
+
     // 防抖更新
     debounceTimerRef.value = setTimeout(() => {
       modelValue.value = value;

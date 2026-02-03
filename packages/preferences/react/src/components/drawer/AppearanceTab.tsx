@@ -2,7 +2,7 @@
  * 外观设置标签页
  * @description 主题模式、内置主题、圆角、字体大小等设置
  */
-import React, { memo, useRef, useCallback, useMemo } from 'react';
+import React, { memo, useRef, useCallback, useMemo, useEffect, useState } from 'react';
 import { usePreferences, useTheme } from '../../hooks';
 import {
   BUILT_IN_THEME_PRESETS,
@@ -141,10 +141,75 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
     setPreferences({ theme: { builtinType: 'custom' } });
   }, [setPreferences]);
 
+  const handleThemeModeClick = useCallback((e: React.MouseEvent) => {
+    if (configs.themeMode.disabled) return;
+    const value = (e.currentTarget as HTMLElement).dataset.value as ThemeModeType | undefined;
+    if (!value) return;
+    if (value === 'light') {
+      handleSetModeLight();
+    } else if (value === 'dark') {
+      handleSetModeDark();
+    } else {
+      handleSetModeAuto();
+    }
+  }, [configs.themeMode.disabled, handleSetModeLight, handleSetModeDark, handleSetModeAuto]);
+
+  const handlePresetClick = useCallback((e: React.MouseEvent) => {
+    if (configs.builtinTheme.disabled) return;
+    const value = (e.currentTarget as HTMLElement).dataset.value as BuiltinThemeType | undefined;
+    if (!value) return;
+    if (value === 'custom') {
+      handleSetCustomTheme();
+    } else {
+      handleSetBuiltinTheme(value);
+    }
+  }, [configs.builtinTheme.disabled, handleSetBuiltinTheme, handleSetCustomTheme]);
+
+  const handleRadiusClick = useCallback((e: React.MouseEvent) => {
+    if (configs.radius.disabled) return;
+    const value = (e.currentTarget as HTMLElement).dataset.value;
+    if (value) {
+      handleSetRadius(value);
+    }
+  }, [configs.radius.disabled, handleSetRadius]);
+
   // 当前自定义颜色值（memoized）
   const currentColorValue = useMemo(
     () => oklchToHex(preferences.theme.colorPrimary || colorsTokens.primary),
     [preferences.theme.colorPrimary]
+  );
+  const builtinPresets = useMemo(
+    () => BUILT_IN_THEME_PRESETS.filter((preset) => preset.type !== 'custom'),
+    []
+  );
+  const presetStyleMap = useMemo(() => {
+    const map = new Map<string, React.CSSProperties>();
+    builtinPresets.forEach((preset) => {
+      map.set(preset.type, {
+        backgroundColor: preset.color || colorsTokens.presetFallback,
+      });
+    });
+    return map;
+  }, [builtinPresets]);
+
+  const PRESET_RENDER_CHUNK = 12;
+  const [presetRenderCount, setPresetRenderCount] = useState(PRESET_RENDER_CHUNK);
+
+  useEffect(() => {
+    setPresetRenderCount(Math.min(PRESET_RENDER_CHUNK, builtinPresets.length));
+  }, [builtinPresets.length]);
+
+  useEffect(() => {
+    if (presetRenderCount >= builtinPresets.length) return;
+    const frame = requestAnimationFrame(() => {
+      setPresetRenderCount((prev) => Math.min(prev + PRESET_RENDER_CHUNK, builtinPresets.length));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [presetRenderCount, builtinPresets.length]);
+
+  const visiblePresets = useMemo(
+    () => builtinPresets.slice(0, presetRenderCount),
+    [builtinPresets, presetRenderCount]
   );
 
   return (
@@ -154,48 +219,63 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
         <Block title={locale.theme.mode}>
           <div className="theme-mode-grid" role="radiogroup" aria-label={locale.theme.mode}>
             <div 
-              className={`theme-mode-item${configs.themeMode.disabled ? ' disabled' : ''}`}
+              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.themeMode.disabled ? -1 : 0}
               aria-checked={preferences.theme.mode === 'light'}
               aria-disabled={configs.themeMode.disabled}
-              onClick={() => !configs.themeMode.disabled && handleSetModeLight()}
+              data-state={preferences.theme.mode === 'light' ? 'active' : 'inactive'}
+              data-disabled={configs.themeMode.disabled ? 'true' : undefined}
+              data-value="light"
+              onClick={handleThemeModeClick}
               onKeyDown={(e) => { if (!configs.themeMode.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetModeLight(); }}}
             >
               <div
                 className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'light' ? 'outline-box-active' : ''}${configs.themeMode.disabled ? ' disabled' : ''}`}
+                  data-disabled={configs.themeMode.disabled ? 'true' : undefined}
+                  data-state={preferences.theme.mode === 'light' ? 'active' : 'inactive'}
               >
                 <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.sun }} />
               </div>
               <span className="theme-mode-label">{locale.theme.modeLight}</span>
             </div>
             <div 
-              className={`theme-mode-item${configs.themeMode.disabled ? ' disabled' : ''}`}
+              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.themeMode.disabled ? -1 : 0}
               aria-checked={preferences.theme.mode === 'dark'}
               aria-disabled={configs.themeMode.disabled}
-              onClick={() => !configs.themeMode.disabled && handleSetModeDark()}
+              data-state={preferences.theme.mode === 'dark' ? 'active' : 'inactive'}
+              data-disabled={configs.themeMode.disabled ? 'true' : undefined}
+              data-value="dark"
+              onClick={handleThemeModeClick}
               onKeyDown={(e) => { if (!configs.themeMode.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetModeDark(); }}}
             >
               <div
                 className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'dark' ? 'outline-box-active' : ''}${configs.themeMode.disabled ? ' disabled' : ''}`}
+                  data-disabled={configs.themeMode.disabled ? 'true' : undefined}
+                  data-state={preferences.theme.mode === 'dark' ? 'active' : 'inactive'}
               >
                 <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.moon }} />
               </div>
               <span className="theme-mode-label">{locale.theme.modeDark}</span>
             </div>
             <div 
-              className={`theme-mode-item${configs.themeMode.disabled ? ' disabled' : ''}`}
+              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.themeMode.disabled ? -1 : 0}
               aria-checked={preferences.theme.mode === 'auto'}
               aria-disabled={configs.themeMode.disabled}
-              onClick={() => !configs.themeMode.disabled && handleSetModeAuto()}
+              data-state={preferences.theme.mode === 'auto' ? 'active' : 'inactive'}
+              data-disabled={configs.themeMode.disabled ? 'true' : undefined}
+              data-value="auto"
+              onClick={handleThemeModeClick}
               onKeyDown={(e) => { if (!configs.themeMode.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetModeAuto(); }}}
             >
               <div
                 className={`outline-box flex-center theme-mode-box ${preferences.theme.mode === 'auto' ? 'outline-box-active' : ''}${configs.themeMode.disabled ? ' disabled' : ''}`}
+                  data-disabled={configs.themeMode.disabled ? 'true' : undefined}
+                  data-state={preferences.theme.mode === 'auto' ? 'active' : 'inactive'}
               >
                 <span className="theme-mode-icon" dangerouslySetInnerHTML={{ __html: ICONS.monitor }} />
               </div>
@@ -209,24 +289,29 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
       {configs.builtinTheme.visible && (
         <Block title={locale.theme.builtinTheme}>
           <div className="theme-presets-grid" role="radiogroup" aria-label={locale.theme.builtinTheme}>
-            {BUILT_IN_THEME_PRESETS.filter((p) => p.type !== 'custom').map((preset) => (
+            {visiblePresets.map((preset) => (
               <div
                 key={preset.type}
-                className={`theme-preset-item${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+                className={`theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.builtinTheme.disabled ? ' disabled' : ''}`}
                 role="radio"
                 tabIndex={configs.builtinTheme.disabled ? -1 : 0}
                 aria-checked={preferences.theme.builtinType === preset.type}
                 aria-label={(locale.theme as Record<string, string>)[preset.nameKey] || preset.type}
                 aria-disabled={configs.builtinTheme.disabled}
-                onClick={() => !configs.builtinTheme.disabled && handleSetBuiltinTheme(preset.type as BuiltinThemeType)}
+                data-state={preferences.theme.builtinType === preset.type ? 'active' : 'inactive'}
+                data-disabled={configs.builtinTheme.disabled ? 'true' : undefined}
+                data-value={preset.type}
+                onClick={handlePresetClick}
                 onKeyDown={(e) => { if (!configs.builtinTheme.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetBuiltinTheme(preset.type as BuiltinThemeType); }}}
               >
                 <div
                   className={`outline-box flex-center theme-preset-box ${preferences.theme.builtinType === preset.type ? 'outline-box-active' : ''}${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+                  data-disabled={configs.builtinTheme.disabled ? 'true' : undefined}
+                  data-state={preferences.theme.builtinType === preset.type ? 'active' : 'inactive'}
                 >
                   <div
                     className="theme-preset-color"
-                    style={{ backgroundColor: preset.color || colorsTokens.presetFallback }}
+                    style={presetStyleMap.get(preset.type)}
                   />
                 </div>
                 <span className="theme-preset-label">
@@ -236,17 +321,22 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
             ))}
             {/* 自定义颜色 */}
             <div 
-              className={`theme-preset-item${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+              className={`theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.builtinTheme.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.builtinTheme.disabled ? -1 : 0}
               aria-checked={preferences.theme.builtinType === 'custom'}
               aria-label={locale.theme.colorCustom}
               aria-disabled={configs.builtinTheme.disabled}
-              onClick={() => !configs.builtinTheme.disabled && handleSetCustomTheme()}
+              data-state={preferences.theme.builtinType === 'custom' ? 'active' : 'inactive'}
+              data-disabled={configs.builtinTheme.disabled ? 'true' : undefined}
+              data-value="custom"
+              onClick={handlePresetClick}
               onKeyDown={(e) => { if (!configs.builtinTheme.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetCustomTheme(); }}}
             >
               <div
                 className={`outline-box flex-center theme-preset-box ${preferences.theme.builtinType === 'custom' ? 'outline-box-active' : ''}${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+                data-disabled={configs.builtinTheme.disabled ? 'true' : undefined}
+                data-state={preferences.theme.builtinType === 'custom' ? 'active' : 'inactive'}
               >
                 <div
                   className="theme-preset-custom"
@@ -289,13 +379,19 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
       {/* 圆角 */}
       {configs.radius.visible && (
         <Block title={locale.theme.radius}>
-          <div className={`radius-options${configs.radius.disabled ? ' disabled' : ''}`}>
+          <div
+            className={`radius-options${configs.radius.disabled ? ' disabled' : ''}`}
+            data-disabled={configs.radius.disabled ? 'true' : undefined}
+          >
             {RADIUS_OPTIONS.map((r) => (
               <button
                 key={r}
-                className={`radius-option ${preferences.theme.radius === r ? 'active' : ''}`}
+                className={`radius-option data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 ${preferences.theme.radius === r ? 'active' : ''}`}
                 disabled={configs.radius.disabled}
-                onClick={() => handleSetRadius(r)}
+                data-state={preferences.theme.radius === r ? 'active' : 'inactive'}
+                data-disabled={configs.radius.disabled ? 'true' : undefined}
+                data-value={r}
+                onClick={handleRadiusClick}
               >
                 {r}
               </button>

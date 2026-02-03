@@ -2,7 +2,7 @@
  * 滑动条设置项组件
  * @description 用于数值范围选择，性能优化：使用 debounce 避免频繁更新
  */
-import React, { memo, useState, useCallback, useRef, useEffect, useId } from 'react';
+import React, { memo, useState, useCallback, useRef, useEffect, useId, useMemo } from 'react';
 import { SLIDER_DEBOUNCE_MS } from '@admin-core/preferences';
 
 export interface SliderItemProps {
@@ -50,6 +50,10 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
   // 计算已滑动百分比（防止除零）
   const range = max - min;
   const progressPercent = range === 0 ? 0 : ((localValue - min) / range) * 100;
+  const sliderStyle = useMemo(
+    () => ({ '--slider-progress': `${progressPercent}%` }) as React.CSSProperties,
+    [progressPercent]
+  );
 
   // 处理滑动变化（防抖）
   const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,6 +63,11 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
     // 清除之前的定时器
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
+    }
+
+    if (debounce <= 0) {
+      onChange(newValue);
+      return;
     }
     
     // 防抖更新
@@ -77,24 +86,28 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
   }, []);
 
   return (
-    <div className={`slider-item ${disabled ? 'disabled' : ''}`}>
+    <div
+      className={`slider-item ${disabled ? 'disabled' : ''}`}
+      data-disabled={disabled ? 'true' : undefined}
+    >
       <div className="slider-item-header">
         <label id={`${sliderId}-label`} className="slider-item-label">{label}</label>
         <span className="slider-item-value">{localValue}{unit}</span>
       </div>
       <input
         type="range"
-        className="preferences-slider"
+        className="preferences-slider data-disabled:cursor-not-allowed data-disabled:opacity-60"
         min={min}
         max={max}
         step={step}
         value={localValue}
         disabled={disabled}
+        data-disabled={disabled ? 'true' : undefined}
         aria-labelledby={`${sliderId}-label`}
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={localValue}
-        style={{ '--slider-progress': `${progressPercent}%` } as React.CSSProperties}
+        style={sliderStyle}
         onChange={handleInput}
       />
     </div>

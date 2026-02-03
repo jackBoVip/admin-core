@@ -138,6 +138,14 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
     setPreferences({ transition: { name: String(v) } });
   }, [setPreferences]);
 
+  const handleTransitionOptionClick = useCallback((e: React.MouseEvent) => {
+    if (!preferences.transition.enable || configs.transitionName.disabled) return;
+    const value = (e.currentTarget as HTMLElement).dataset.value;
+    if (value) {
+      handleSetTransitionName(value);
+    }
+  }, [preferences.transition.enable, configs.transitionName.disabled, handleSetTransitionName]);
+
   // 锁屏处理器
   const handleSetWidgetLockScreen = useCallback((v: boolean) => {
     setPreferences({ widget: { lockScreen: v } });
@@ -166,6 +174,26 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
       return true;
     });
   }, [setPreferences]);
+
+  const TRANSITION_RENDER_CHUNK = 12;
+  const [transitionRenderCount, setTransitionRenderCount] = useState(TRANSITION_RENDER_CHUNK);
+
+  useEffect(() => {
+    setTransitionRenderCount(Math.min(TRANSITION_RENDER_CHUNK, animationOptions.length));
+  }, [animationOptions.length]);
+
+  useEffect(() => {
+    if (transitionRenderCount >= animationOptions.length) return;
+    const frame = requestAnimationFrame(() => {
+      setTransitionRenderCount((prev) => Math.min(prev + TRANSITION_RENDER_CHUNK, animationOptions.length));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [transitionRenderCount, animationOptions.length]);
+
+  const visibleAnimationOptions = useMemo(
+    () => animationOptions.slice(0, transitionRenderCount),
+    [animationOptions, transitionRenderCount]
+  );
 
   return (
     <>
@@ -215,8 +243,10 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               <span className="select-item-label">{locale.lockScreen.clearPassword}</span>
               <div className="select-item-control">
                 <button
-                  className="preferences-btn preferences-btn-primary"
+                  className="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50"
                   disabled={isClearing || configs.lockScreenClearPassword.disabled}
+                  aria-disabled={(isClearing || configs.lockScreenClearPassword.disabled) || undefined}
+                  data-disabled={(isClearing || configs.lockScreenClearPassword.disabled) ? 'true' : undefined}
                   onClick={handleClearPassword}
                 >
                   {isClearing ? locale.lockScreen.cleared : locale.common.clear}
@@ -307,18 +337,21 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
           )}
           {configs.transitionName.visible && (
             <div className="transition-presets-grid" role="radiogroup" aria-label={locale.transition.name}>
-              {animationOptions.map((opt) => {
+              {visibleAnimationOptions.map((opt) => {
                 const isDisabled = !preferences.transition.enable || configs.transitionName.disabled;
                 return (
                   <div
                     key={opt.value}
-                    className={`transition-preset-item${isDisabled ? ' disabled' : ''}`}
+                    className={`transition-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${isDisabled ? ' disabled' : ''}`}
                     role="radio"
                     tabIndex={isDisabled ? -1 : 0}
                     aria-checked={preferences.transition.name === opt.value}
                     aria-label={opt.label}
                     aria-disabled={isDisabled}
-                    onClick={() => !isDisabled && handleSetTransitionName(opt.value)}
+                    data-state={preferences.transition.name === opt.value ? 'active' : 'inactive'}
+                    data-disabled={isDisabled ? 'true' : undefined}
+                    data-value={opt.value}
+                    onClick={handleTransitionOptionClick}
                     onKeyDown={(e) => {
                       if (!isDisabled && (e.key === 'Enter' || e.key === ' ')) {
                         e.preventDefault();
@@ -330,6 +363,8 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
                       className={`outline-box flex-center transition-preset-box ${
                         preferences.transition.name === opt.value ? 'outline-box-active' : ''
                       } ${isDisabled ? 'disabled' : ''}`}
+                      data-disabled={isDisabled ? 'true' : undefined}
+                      data-state={preferences.transition.name === opt.value ? 'active' : 'inactive'}
                     >
                       <TransitionPreview
                         transition={opt.value as PageTransitionType}

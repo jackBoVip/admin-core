@@ -71,13 +71,13 @@ export const LayoutIcon = defineComponent({
       h(
         'div',
         {
-          class: [
-            'admin-layout-icon',
-            { 'admin-layout-icon--active': props.active },
-            props.class,
-          ]
-            .filter(Boolean)
-            .join(' '),
+          class: (() => {
+            const classes: string[] = ['admin-layout-icon'];
+            if (props.active) classes.push('admin-layout-icon--active');
+            if (props.class) classes.push(props.class as string);
+            return classes.join(' ');
+          })(),
+          'data-state': props.active ? 'active' : 'inactive',
           style: {
             display: 'inline-flex',
             width: widthValue.value,

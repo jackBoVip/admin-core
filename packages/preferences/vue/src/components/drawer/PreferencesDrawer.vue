@@ -17,6 +17,7 @@ import {
   getCopyButtonA11yProps,
   getFeatureConfig,
   mergeDrawerUIConfig,
+  logger,
   type DrawerHeaderActionType,
   type DrawerTabType,
   type PreferencesDrawerUIConfig,
@@ -53,15 +54,21 @@ const emit = defineEmits<{
 const { preferences, resetPreferences, setPreferences, hasChanges } = usePreferences();
 
 // 当前激活的标签
-const activeTab = ref('appearance');
+const activeTab = ref<DrawerTabType>('appearance');
 
 // 内容容器引用
 const bodyRef = ref<HTMLElement | null>(null);
 
+const tabsIndexMap = computed(() => {
+  const map = new Map<DrawerTabType, number>();
+  tabs.value.forEach((tab, index) => map.set(tab.value, index));
+  return map;
+});
+
 // 计算当前激活 tab 的索引（用于滑动指示器动画）
 const activeTabIndex = computed(() => {
-  const index = tabs.value.findIndex((tab: { label: string; value: DrawerTabType }) => tab.value === activeTab.value);
-  return index >= 0 ? index : 0;
+  const index = tabsIndexMap.value.get(activeTab.value);
+  return index !== undefined ? index : 0;
 });
 
 // 缓存 tabs 样式对象，避免每次渲染创建新对象
@@ -71,10 +78,17 @@ const tabsStyle = computed(() => ({
 }));
 
 // 切换标签时回到顶部
-const handleTabChange = (tab: string) => {
+const handleTabChange = (tab: DrawerTabType) => {
   activeTab.value = tab;
   if (bodyRef.value) {
     bodyRef.value.scrollTop = 0;
+  }
+};
+
+const handleTabClick = (e: MouseEvent) => {
+  const tab = (e.currentTarget as HTMLElement | null)?.dataset?.value as DrawerTabType | undefined;
+  if (tab) {
+    handleTabChange(tab);
   }
 };
 
@@ -204,6 +218,13 @@ const handleHeaderAction = async (type: string) => {
   }
 };
 
+const handleHeaderActionClick = (e: MouseEvent) => {
+  const type = (e.currentTarget as HTMLElement | null)?.dataset?.value;
+  if (type) {
+    handleHeaderAction(type);
+  }
+};
+
 // 导入配置
 const handleImportConfig = async () => {
   const result = await importPreferencesConfig();
@@ -247,7 +268,7 @@ const handleCopyConfig = async () => {
         });
       }
     } catch (error) {
-      console.error('[PreferencesDrawer] Failed to copy config:', error);
+      logger.error('[PreferencesDrawer] Failed to copy config:', error);
       // 可以在这里添加用户提示
     }
   }
@@ -270,11 +291,12 @@ const iconStyleSm = getIconStyleString('sm');
     v-if="showOverlay"
     class="preferences-drawer-overlay"
     :class="{ open }"
+    :data-state="open ? 'open' : 'closed'"
     @click="handleOverlayClick"
   />
 
   <!-- 抽屉 -->
-  <div class="preferences-drawer" :class="{ open }">
+  <div class="preferences-drawer" :class="{ open }" :data-state="open ? 'open' : 'closed'">
     <!-- 头部 -->
     <div class="preferences-drawer-header">
       <div class="preferences-drawer-title-wrapper">
@@ -285,12 +307,15 @@ const iconStyleSm = getIconStyleString('sm');
         <button
           v-for="action in headerActions"
           :key="action.type"
-          class="preferences-btn-icon"
+          class="preferences-btn-icon data-disabled:opacity-50 aria-disabled:opacity-50"
           :class="{ relative: action.showIndicator }"
           :disabled="action.disabled"
+          :aria-disabled="action.disabled || undefined"
+          :data-disabled="action.disabled ? 'true' : undefined"
           :aria-label="action.tooltip"
           :data-preference-tooltip="action.tooltip || undefined"
-          @click="handleHeaderAction(action.type)"
+          :data-value="action.type"
+          @click="handleHeaderActionClick"
         >
           <span v-if="action.showIndicator" class="dot" />
           <span v-html="action.icon" :style="iconStyleMd" aria-hidden="true" />
@@ -301,7 +326,11 @@ const iconStyleSm = getIconStyleString('sm');
     <!-- 内容区 -->
     <div ref="bodyRef" class="preferences-drawer-body">
       <!-- 分段标签导航 -->
-      <div class="preferences-tabs-wrapper" :class="{ sticky: isPinned }">
+      <div
+        class="preferences-tabs-wrapper"
+        :class="{ sticky: isPinned }"
+        :data-sticky="isPinned ? 'true' : undefined"
+      >
         <div 
           class="preferences-segmented" 
           role="tablist" 
@@ -315,11 +344,13 @@ const iconStyleSm = getIconStyleString('sm');
             :key="tab.value"
             role="tab"
             :id="`pref-tab-${tab.value}`"
-            class="preferences-segmented-item"
+            class="preferences-segmented-item data-active:text-foreground data-active:font-semibold aria-selected:text-foreground"
             :class="{ active: activeTab === tab.value }"
             :aria-selected="activeTab === tab.value"
             :aria-controls="`pref-tabpanel-${tab.value}`"
-            @click="handleTabChange(tab.value)"
+            :data-state="activeTab === tab.value ? 'active' : 'inactive'"
+            :data-value="tab.value"
+            @click="handleTabClick"
           >
             {{ tab.label }}
           </button>
@@ -342,9 +373,12 @@ const iconStyleSm = getIconStyleString('sm');
     <!-- 底部 -->
     <div v-if="showCopyButton" class="preferences-drawer-footer">
       <button
-        class="preferences-btn preferences-btn-primary"
+        class="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50"
         :class="{ 'is-copied': copyState.isCopied }"
         :disabled="copyButtonDisabled"
+        :aria-disabled="copyButtonDisabled || undefined"
+        :data-disabled="copyButtonDisabled ? 'true' : undefined"
+        :data-state="copyState.isCopied ? 'copied' : 'idle'"
         v-bind="copyButtonA11y"
         @click="handleCopyConfig"
       >
@@ -359,7 +393,7 @@ const iconStyleSm = getIconStyleString('sm');
     <div v-if="importError.show" class="preferences-modal-overlay" @click.self="closeImportError">
       <div class="preferences-modal">
         <div class="preferences-modal-header">
-          <span class="preferences-modal-icon error" v-html="alertIcon" />
+          <span class="preferences-modal-icon error" data-status="error" v-html="alertIcon" />
           <span class="preferences-modal-title">{{ locale.preferences.importErrorTitle }}</span>
         </div>
         <div class="preferences-modal-body">

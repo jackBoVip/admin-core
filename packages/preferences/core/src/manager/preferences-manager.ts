@@ -11,7 +11,7 @@ import type {
   StorageAdapter,
 } from '../types';
 import { DEFAULT_PREFERENCES, getDefaultPreferences } from '../config/defaults';
-import { deepMerge, safeMerge, deepClone, diff, diffWithKeys, hasChanges, createStorageManager, isBrowser } from '../utils';
+import { deepMerge, safeMerge, deepClone, diff, diffWithKeys, hasChanges, createStorageManager, isBrowser, logger } from '../utils';
 import { updateAllCSSVariables, getActualThemeMode, setDOMSelectors } from './css-updater';
 import { validatePreferencesConfig } from '../helpers/drawer-config';
 
@@ -234,7 +234,7 @@ export class PreferencesManager {
   subscribe(listener: PreferencesListener): () => void {
     // 检查监听器数量限制
     if (this.listeners.size >= PreferencesManager.MAX_LISTENERS) {
-      console.warn(
+      logger.warn(
         `[PreferencesManager] Max listeners (${PreferencesManager.MAX_LISTENERS}) reached. ` +
         'Consider removing unused listeners to prevent memory leaks.'
       );
@@ -403,7 +403,7 @@ export class PreferencesManager {
         listener(this.state, changedKeys);
       } catch (error) {
         // 捕获监听器错误，避免中断其他监听器
-        console.error('[PreferencesManager] Listener error:', error);
+        logger.error('[PreferencesManager] Listener error:', error);
       }
     });
   }

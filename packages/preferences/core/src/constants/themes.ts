@@ -57,13 +57,17 @@ export const BUILT_IN_THEME_PRESETS: BuiltinThemePreset[] = [
  */
 export const COLOR_PRESETS = BUILT_IN_THEME_PRESETS.slice(0, 10);
 
+const BUILT_IN_THEME_MAP = new Map<BuiltinThemeType, BuiltinThemePreset>(
+  BUILT_IN_THEME_PRESETS.map((preset) => [preset.type, preset])
+);
+
 /**
  * 获取内置主题配置
  * @param type - 主题类型
  * @returns 主题配置，不存在返回 undefined
  */
 export function getBuiltinTheme(type: BuiltinThemeType): BuiltinThemePreset | undefined {
-  return BUILT_IN_THEME_PRESETS.find((preset) => preset.type === type);
+  return BUILT_IN_THEME_MAP.get(type);
 }
 
 /**

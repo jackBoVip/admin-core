@@ -50,6 +50,10 @@ const progressPercent = computed(() => {
   return ((localValue.value - props.min) / range) * 100;
 });
 
+const sliderStyle = computed(() => ({
+  '--slider-progress': `${progressPercent.value}%`,
+}));
+
 // 处理滑动变化（防抖）
 const handleInput = (e: Event) => {
   const target = e.target as HTMLInputElement;
@@ -59,6 +63,11 @@ const handleInput = (e: Event) => {
   // 清除之前的定时器
   if (debounceTimerRef.value) {
     clearTimeout(debounceTimerRef.value);
+  }
+
+  if (props.debounce <= 0) {
+    modelValue.value = value;
+    return;
   }
   
   // 防抖更新
@@ -81,24 +90,25 @@ const sliderId = `slider-${instance?.uid ?? Math.random().toString(36).slice(2, 
 </script>
 
 <template>
-  <div class="slider-item" :class="{ disabled }">
+  <div class="slider-item" :class="{ disabled }" :data-disabled="disabled ? 'true' : undefined">
     <div class="slider-item-header">
       <label :id="`${sliderId}-label`" class="slider-item-label">{{ label }}</label>
       <span class="slider-item-value">{{ localValue }}{{ unit }}</span>
     </div>
     <input
       type="range"
-      class="preferences-slider"
+      class="preferences-slider data-disabled:cursor-not-allowed data-disabled:opacity-60"
       :min="min"
       :max="max"
       :step="step"
       :value="localValue"
       :disabled="disabled"
+      :data-disabled="disabled ? 'true' : undefined"
       :aria-labelledby="`${sliderId}-label`"
       :aria-valuemin="min"
       :aria-valuemax="max"
       :aria-valuenow="localValue"
-      :style="{ '--slider-progress': `${progressPercent}%` }"
+      :style="sliderStyle"
       @input="handleInput"
     />
   </div>

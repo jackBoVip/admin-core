@@ -50,6 +50,11 @@ export const InputItem: React.FC<InputItemProps> = memo(({
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
+
+    if (debounce <= 0) {
+      onChange(newValue);
+      return;
+    }
     
     // 防抖更新
     debounceTimerRef.current = setTimeout(() => {
@@ -67,7 +72,7 @@ export const InputItem: React.FC<InputItemProps> = memo(({
   }, []);
 
   return (
-    <div className={`input-item ${disabled ? 'disabled' : ''}`}>
+    <div className={`input-item ${disabled ? 'disabled' : ''}`} data-disabled={disabled ? 'true' : undefined}>
       <label id={`${inputId}-label`} className="input-item-label">{label}</label>
       <input
         type="text"

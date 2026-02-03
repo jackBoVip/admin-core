@@ -139,28 +139,43 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
     <div className="preferences-lock-screen" role="dialog" aria-modal="true" aria-label={locale.lockScreen.title || '锁屏'}>
       <div className="preferences-lock-backdrop" aria-hidden="true">
         {actualBgImage && <div className="preferences-lock-backdrop-image" style={bgImageStyle} />}
-        <div className="preferences-lock-orb orb-1" />
-        <div className="preferences-lock-orb orb-2" />
-        <div className="preferences-lock-orb orb-3" />
+        <div className="preferences-lock-orb orb-1" data-orb="1" />
+        <div className="preferences-lock-orb orb-2" data-orb="2" />
+        <div className="preferences-lock-orb orb-3" data-orb="3" />
         <div className="preferences-lock-grid" />
       </div>
 
-      <div className="preferences-lock-content minimal">
-        <section className={`preferences-lock-time-center ${showUnlockForm ? 'compact' : ''}`}>
+      <div className="preferences-lock-content minimal" data-variant="minimal">
+        <section
+          className={`preferences-lock-time-center ${showUnlockForm ? 'compact' : ''}`}
+          data-compact={showUnlockForm ? 'true' : undefined}
+        >
           <LockScreenTime locale={currentLocale} />
           {!showUnlockForm && (
-            <button className="preferences-lock-cta minimal" onClick={toggleUnlockForm}>
+            <button
+              className="preferences-lock-cta minimal"
+              data-variant="minimal"
+              onClick={toggleUnlockForm}
+            >
               {locale.lockScreen.unlock}
             </button>
           )}
         </section>
 
-        <section className={`preferences-lock-unlock ${showUnlockForm ? 'visible' : ''}`} role="form">
-          <div className={`preferences-lock-unlock-box ${error ? 'has-error' : ''}`}>
+        <section
+          className={`preferences-lock-unlock ${showUnlockForm ? 'visible' : ''}`}
+          data-visible={showUnlockForm ? 'true' : undefined}
+          role="form"
+        >
+          <div
+            className={`preferences-lock-unlock-box ${error ? 'has-error' : ''}`}
+            data-error={error ? 'true' : undefined}
+          >
             <input
               ref={inputRef}
               type="password"
               className={`preferences-lock-unlock-input ${error ? 'has-error' : ''}`}
+              data-error={error ? 'true' : undefined}
               value={password}
               onChange={(e) => { setPassword(e.target.value); setError(''); }}
               placeholder={error || locale.lockScreen.passwordPlaceholder}

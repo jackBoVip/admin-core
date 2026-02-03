@@ -48,7 +48,7 @@ export const Icon = memo<IconProps>(function Icon({
 
   return (
     <span
-      className={['admin-icon', className].filter(Boolean).join(' ')}
+      className={className ? `admin-icon ${className}` : 'admin-icon'}
       style={combinedStyle}
       dangerouslySetInnerHTML={{ __html: svgContent }}
     />

@@ -49,7 +49,7 @@ export const Icon = defineComponent({
 
     return () =>
       h('span', {
-        class: ['admin-icon', props.class].filter(Boolean).join(' '),
+        class: props.class ? `admin-icon ${props.class}` : 'admin-icon',
         style: {
           display: 'inline-flex',
           width: `${sizeValue.value}px`,

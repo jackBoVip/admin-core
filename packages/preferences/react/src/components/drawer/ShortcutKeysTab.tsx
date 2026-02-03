@@ -53,10 +53,12 @@ const ShortcutItem = memo<ShortcutItemProps>(function ShortcutItem({
 
   return (
     <div
-      className={`shortcut-item ${disabled ? 'disabled' : ''}`}
+      className={`shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground ${disabled ? 'disabled' : ''}`}
       role="switch"
       aria-checked={checked}
       aria-disabled={disabled}
+      data-state={checked ? 'active' : 'inactive'}
+      data-disabled={disabled ? 'true' : undefined}
       tabIndex={disabled ? -1 : 0}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -70,7 +72,11 @@ const ShortcutItem = memo<ShortcutItemProps>(function ShortcutItem({
             ))}
           </div>
         )}
-        <div className={`preferences-switch ${checked ? 'checked' : ''}`}>
+        <div
+          className={`preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30 ${checked ? 'checked' : ''}`}
+          data-state={checked ? 'checked' : 'unchecked'}
+          data-disabled={disabled ? 'true' : undefined}
+        >
           <span className="preferences-switch-thumb" />
         </div>
       </div>

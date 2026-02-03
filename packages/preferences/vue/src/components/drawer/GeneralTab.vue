@@ -3,7 +3,7 @@
  * 通用设置标签页
  * @description 语言、动画、小部件等通用设置
  */
-import { computed, ref, onUnmounted } from 'vue';
+import { computed, ref, onUnmounted, watch, watchEffect } from 'vue';
 import { usePreferences } from '../../composables';
 import {
   PAGE_TRANSITION_OPTIONS,
@@ -11,6 +11,7 @@ import {
   supportedLocales,
   translateOptions,
   getFeatureItemConfig,
+  logger,
   type LocaleMessages,
   type SupportedLanguagesType,
   type PageTransitionType,
@@ -81,6 +82,26 @@ const D = DEFAULT_PREFERENCES;
 const animationOptions = computed(() =>
   translateOptions(PAGE_TRANSITION_OPTIONS, props.locale)
 );
+const TRANSITION_RENDER_CHUNK = 12;
+const transitionRenderCount = ref(TRANSITION_RENDER_CHUNK);
+const visibleAnimationOptions = computed(() =>
+  animationOptions.value.slice(0, transitionRenderCount.value)
+);
+
+watch(animationOptions, (list) => {
+  transitionRenderCount.value = Math.min(TRANSITION_RENDER_CHUNK, list.length);
+}, { immediate: true });
+
+watchEffect((onCleanup) => {
+  if (transitionRenderCount.value >= animationOptions.value.length) return;
+  const frame = requestAnimationFrame(() => {
+    transitionRenderCount.value = Math.min(
+      transitionRenderCount.value + TRANSITION_RENDER_CHUNK,
+      animationOptions.value.length
+    );
+  });
+  onCleanup(() => cancelAnimationFrame(frame));
+});
 
 // 语言选项
 const languageOptions = supportedLocales.map(l => ({
@@ -181,7 +202,15 @@ const clearPassword = () => {
       clearingTimerRef.value = null;
     }, 2000);
   } catch (error) {
-    console.error('[GeneralTab] Failed to clear password:', error);
+    logger.error('[GeneralTab] Failed to clear password:', error);
+  }
+};
+
+const handleTransitionOptionActivate = (e: Event) => {
+  if (!transitionEnable.value || configs.value.transitionName.disabled) return;
+  const value = (e.currentTarget as HTMLElement).dataset.value as PageTransitionType | undefined;
+  if (value) {
+    transitionName.value = value;
   }
 };
 </script>
@@ -225,8 +254,10 @@ const clearPassword = () => {
       <span class="select-item-label">{{ locale.lockScreen.clearPassword }}</span>
       <div class="select-item-control">
         <button 
-          class="preferences-btn preferences-btn-primary" 
+          class="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50" 
           :disabled="isClearing || configs.lockScreenClearPassword.disabled"
+          :aria-disabled="(isClearing || configs.lockScreenClearPassword.disabled) || undefined"
+          :data-disabled="(isClearing || configs.lockScreenClearPassword.disabled) ? 'true' : undefined"
           @click="clearPassword"
         >
           {{ isClearing ? locale.lockScreen.cleared : locale.common.clear }}
@@ -301,15 +332,19 @@ const clearPassword = () => {
       :aria-label="locale.transition.name"
     >
       <div
-        v-for="opt in animationOptions"
+        v-for="opt in visibleAnimationOptions"
         :key="opt.value"
-        class="transition-preset-item"
+        class="transition-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
         role="radio"
-        tabindex="0"
+        :tabindex="(!transitionEnable || configs.transitionName.disabled) ? -1 : 0"
         :aria-checked="transitionName === opt.value"
         :aria-label="opt.label"
-        @click="!configs.transitionName.disabled && (transitionName = opt.value as PageTransitionType)"
-        @keydown.enter.space.prevent="!configs.transitionName.disabled && (transitionName = opt.value as PageTransitionType)"
+        :aria-disabled="!transitionEnable || configs.transitionName.disabled"
+        :data-state="transitionName === opt.value ? 'active' : 'inactive'"
+        :data-disabled="(!transitionEnable || configs.transitionName.disabled) ? 'true' : undefined"
+        :data-value="opt.value"
+        @click="handleTransitionOptionActivate"
+        @keydown.enter.space.prevent="handleTransitionOptionActivate"
       >
         <div
           class="outline-box flex-center transition-preset-box"
@@ -317,6 +352,8 @@ const clearPassword = () => {
             'outline-box-active': transitionName === opt.value, 
             'disabled': !transitionEnable || configs.transitionName.disabled 
           }"
+          :data-disabled="(!transitionEnable || configs.transitionName.disabled) ? 'true' : undefined"
+          :data-state="transitionName === opt.value ? 'active' : 'inactive'"
         >
           <TransitionPreview 
             :transition="opt.value as PageTransitionType" 

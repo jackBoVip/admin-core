@@ -137,6 +137,25 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
     [previewCache]
   );
 
+  const handleLayoutTypeClick = useCallback((e: React.MouseEvent) => {
+    if (configs.layoutType.disabled) return;
+    const value = (e.currentTarget as HTMLElement).dataset.value as LayoutType | undefined;
+    if (value) {
+      handleSetLayout(value);
+    }
+  }, [configs.layoutType.disabled, handleSetLayout]);
+
+  const handleContentWidthClick = useCallback((e: React.MouseEvent) => {
+    if (configs.contentWidth.disabled) return;
+    const value = (e.currentTarget as HTMLElement).dataset.value as ContentWidthType | undefined;
+    if (!value) return;
+    if (value === 'wide') {
+      handleSetContentWide();
+    } else {
+      handleSetContentCompact();
+    }
+  }, [configs.contentWidth.disabled, handleSetContentWide, handleSetContentCompact]);
+
   return (
     <>
       {/* 布局类型 */}
@@ -146,17 +165,22 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
             {layoutOptions.map((opt) => (
               <div
                 key={opt.value}
-                className={`layout-preset-item${configs.layoutType.disabled ? ' disabled' : ''}`}
+                className={`layout-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.layoutType.disabled ? ' disabled' : ''}`}
                 role="radio"
                 tabIndex={configs.layoutType.disabled ? -1 : 0}
                 aria-checked={preferences.app.layout === opt.value}
                 aria-label={opt.label}
                 aria-disabled={configs.layoutType.disabled}
-                onClick={() => !configs.layoutType.disabled && handleSetLayout(opt.value as LayoutType)}
+                data-state={preferences.app.layout === opt.value ? 'active' : 'inactive'}
+                data-disabled={configs.layoutType.disabled ? 'true' : undefined}
+                data-value={opt.value}
+                onClick={handleLayoutTypeClick}
                 onKeyDown={(e) => { if (!configs.layoutType.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetLayout(opt.value as LayoutType); }}}
               >
                 <div
                   className={`outline-box flex-center layout-preset-box ${preferences.app.layout === opt.value ? 'outline-box-active' : ''}${configs.layoutType.disabled ? ' disabled' : ''}`}
+                  data-disabled={configs.layoutType.disabled ? 'true' : undefined}
+                  data-state={preferences.app.layout === opt.value ? 'active' : 'inactive'}
                 >
                   <div
                     className="layout-preset-preview"
@@ -175,17 +199,22 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
         <Block title={locale.layout.contentWidth}>
           <div className="content-width-grid" role="radiogroup" aria-label={locale.layout.contentWidth}>
             <div 
-              className={`content-width-item${configs.contentWidth.disabled ? ' disabled' : ''}`}
+              className={`content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.contentWidth.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.contentWidth.disabled ? -1 : 0}
               aria-checked={preferences.app.contentCompact === 'wide'}
               aria-label={locale.layout.contentWide}
               aria-disabled={configs.contentWidth.disabled}
-              onClick={() => !configs.contentWidth.disabled && handleSetContentWide()}
+              data-state={preferences.app.contentCompact === 'wide' ? 'active' : 'inactive'}
+              data-disabled={configs.contentWidth.disabled ? 'true' : undefined}
+              data-value="wide"
+              onClick={handleContentWidthClick}
               onKeyDown={(e) => { if (!configs.contentWidth.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetContentWide(); }}}
             >
               <div
                 className={`outline-box flex-center content-width-box ${preferences.app.contentCompact === 'wide' ? 'outline-box-active' : ''}${configs.contentWidth.disabled ? ' disabled' : ''}`}
+                data-disabled={configs.contentWidth.disabled ? 'true' : undefined}
+                data-state={preferences.app.contentCompact === 'wide' ? 'active' : 'inactive'}
               >
                 <div
                   className="content-width-preview"
@@ -195,17 +224,22 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               <span className="content-width-label">{locale.layout.contentWide}</span>
             </div>
             <div 
-              className={`content-width-item${configs.contentWidth.disabled ? ' disabled' : ''}`}
+              className={`content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.contentWidth.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.contentWidth.disabled ? -1 : 0}
               aria-checked={preferences.app.contentCompact === 'compact'}
               aria-label={locale.layout.contentCompact}
               aria-disabled={configs.contentWidth.disabled}
-              onClick={() => !configs.contentWidth.disabled && handleSetContentCompact()}
+              data-state={preferences.app.contentCompact === 'compact' ? 'active' : 'inactive'}
+              data-disabled={configs.contentWidth.disabled ? 'true' : undefined}
+              data-value="compact"
+              onClick={handleContentWidthClick}
               onKeyDown={(e) => { if (!configs.contentWidth.disabled && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSetContentCompact(); }}}
             >
               <div
                 className={`outline-box flex-center content-width-box ${preferences.app.contentCompact === 'compact' ? 'outline-box-active' : ''}${configs.contentWidth.disabled ? ' disabled' : ''}`}
+                data-disabled={configs.contentWidth.disabled ? 'true' : undefined}
+                data-state={preferences.app.contentCompact === 'compact' ? 'active' : 'inactive'}
               >
                 <div
                   className="content-width-preview"

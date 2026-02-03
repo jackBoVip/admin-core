@@ -32,6 +32,10 @@ let registeredLocales: Array<{
   { label: 'English', value: 'en-US', englishName: 'English' },
 ];
 
+const localeOptionMap = new Map(
+  registeredLocales.map((locale) => [locale.value, locale])
+);
+
 /**
  * 注册新的语言包
  * @param locale - 语言标识
@@ -45,12 +49,14 @@ export function registerLocale(
 ): void {
   localeRegistry[locale] = messages;
   
-  if (options && !registeredLocales.find(l => l.value === locale)) {
-    registeredLocales.push({
+  if (options && !localeOptionMap.has(locale)) {
+    const entry = {
       label: options.label,
       value: locale,
       englishName: options.englishName ?? options.label,
-    });
+    };
+    registeredLocales.push(entry);
+    localeOptionMap.set(locale, entry);
   }
 }
 
@@ -81,8 +87,7 @@ export function getSupportedLocales() {
  * 获取语言显示名称
  */
 export function getLocaleLabel(locale: string): string {
-  const item = registeredLocales.find((l) => l.value === locale);
-  return item?.label ?? locale;
+  return localeOptionMap.get(locale)?.label ?? locale;
 }
 
 /**

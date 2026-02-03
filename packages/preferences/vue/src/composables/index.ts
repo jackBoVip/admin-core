@@ -6,6 +6,7 @@
 export {
   destroyPreferences,
   getPreferencesManager,
+  isPreferencesInitialized,
   initPreferences,
   useLayout,
   usePreferences,

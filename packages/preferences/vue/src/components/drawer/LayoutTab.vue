@@ -164,6 +164,25 @@ const previewSvgCache = computed(() => {
 // 生成布局预览图（从缓存获取）
 const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutType];
 
+const handleLayoutTypeActivate = (e: Event) => {
+  if (configs.value.layoutType.disabled) return;
+  const value = (e.currentTarget as HTMLElement).dataset.value as LayoutType | undefined;
+  if (value) {
+    handleSetLayout(value);
+  }
+};
+
+const handleContentWidthActivate = (e: Event) => {
+  if (configs.value.contentWidth.disabled) return;
+  const value = (e.currentTarget as HTMLElement).dataset.value as ContentWidthType | undefined;
+  if (!value) return;
+  if (value === 'wide') {
+    handleSetContentWide();
+  } else {
+    handleSetContentCompact();
+  }
+};
+
 </script>
 
 <template>
@@ -173,19 +192,24 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
       <div
         v-for="opt in layoutOptions"
         :key="opt.value"
-        class="layout-preset-item"
+        class="layout-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
         :class="{ disabled: configs.layoutType.disabled }"
         role="radio"
         :tabindex="configs.layoutType.disabled ? -1 : 0"
         :aria-checked="layout === opt.value"
         :aria-label="opt.label"
         :aria-disabled="configs.layoutType.disabled"
-        @click="!configs.layoutType.disabled && handleSetLayout(opt.value as LayoutType)"
-        @keydown.enter.space.prevent="!configs.layoutType.disabled && handleSetLayout(opt.value as LayoutType)"
+        :data-state="layout === opt.value ? 'active' : 'inactive'"
+        :data-disabled="configs.layoutType.disabled ? 'true' : undefined"
+        :data-value="opt.value"
+        @click="handleLayoutTypeActivate"
+        @keydown.enter.space.prevent="handleLayoutTypeActivate"
       >
         <div
           class="outline-box flex-center layout-preset-box"
           :class="{ 'outline-box-active': layout === opt.value, disabled: configs.layoutType.disabled }"
+          :data-disabled="configs.layoutType.disabled ? 'true' : undefined"
+          :data-state="layout === opt.value ? 'active' : 'inactive'"
         >
           <div class="layout-preset-preview" v-html="getPreviewSvg(opt.value as LayoutType)" />
         </div>
@@ -198,38 +222,48 @@ const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutTy
   <Block v-if="configs.contentWidth.visible" :title="locale.layout.contentWidth">
     <div class="content-width-grid" role="radiogroup" :aria-label="locale.layout.contentWidth">
       <div 
-        class="content-width-item" 
+        class="content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
         :class="{ disabled: configs.contentWidth.disabled }"
         role="radio"
         :tabindex="configs.contentWidth.disabled ? -1 : 0"
         :aria-checked="contentCompact === 'wide'"
         :aria-label="locale.layout.contentWide"
         :aria-disabled="configs.contentWidth.disabled"
-        @click="!configs.contentWidth.disabled && handleSetContentWide()"
-        @keydown.enter.space.prevent="!configs.contentWidth.disabled && handleSetContentWide()"
+        :data-state="contentCompact === 'wide' ? 'active' : 'inactive'"
+        :data-disabled="configs.contentWidth.disabled ? 'true' : undefined"
+        data-value="wide"
+        @click="handleContentWidthActivate"
+        @keydown.enter.space.prevent="handleContentWidthActivate"
       >
         <div
           class="outline-box flex-center content-width-box"
           :class="{ 'outline-box-active': contentCompact === 'wide', disabled: configs.contentWidth.disabled }"
+        :data-disabled="configs.contentWidth.disabled ? 'true' : undefined"
+        :data-state="contentCompact === 'wide' ? 'active' : 'inactive'"
         >
           <div class="content-width-preview" v-html="getContentWidthIcon('wide' as ContentWidthType)" />
         </div>
         <span class="content-width-label">{{ locale.layout.contentWide }}</span>
       </div>
       <div 
-        class="content-width-item" 
+        class="content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
         :class="{ disabled: configs.contentWidth.disabled }"
         role="radio"
         :tabindex="configs.contentWidth.disabled ? -1 : 0"
         :aria-checked="contentCompact === 'compact'"
         :aria-label="locale.layout.contentCompact"
         :aria-disabled="configs.contentWidth.disabled"
-        @click="!configs.contentWidth.disabled && handleSetContentCompact()"
-        @keydown.enter.space.prevent="!configs.contentWidth.disabled && handleSetContentCompact()"
+        :data-state="contentCompact === 'compact' ? 'active' : 'inactive'"
+        :data-disabled="configs.contentWidth.disabled ? 'true' : undefined"
+        data-value="compact"
+        @click="handleContentWidthActivate"
+        @keydown.enter.space.prevent="handleContentWidthActivate"
       >
         <div
           class="outline-box flex-center content-width-box"
           :class="{ 'outline-box-active': contentCompact === 'compact', disabled: configs.contentWidth.disabled }"
+        :data-disabled="configs.contentWidth.disabled ? 'true' : undefined"
+        :data-state="contentCompact === 'compact' ? 'active' : 'inactive'"
         >
           <div class="content-width-preview" v-html="getContentWidthIcon('compact' as ContentWidthType)" />
         </div>

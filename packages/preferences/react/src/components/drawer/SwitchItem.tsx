@@ -54,6 +54,7 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
   return (
     <div
       className={`switch-item ${disabled ? 'disabled' : ''}`}
+      data-disabled={disabled ? 'true' : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       title={tip}
@@ -68,7 +69,8 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
         {label}
       </span>
       <div
-        className={`preferences-switch ${checked ? 'checked' : ''}`}
+        className={`preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30 ${checked ? 'checked' : ''}`}
+        data-state={checked ? 'checked' : 'unchecked'}
         aria-hidden="true"
       >
         <span className="preferences-switch-thumb" />

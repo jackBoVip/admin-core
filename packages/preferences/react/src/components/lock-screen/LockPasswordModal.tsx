@@ -68,6 +68,12 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
     };
   }, [locale]);
 
+  const icons = useMemo(() => ({
+    close: getIcon('close'),
+    eye: getIcon('eye'),
+    eyeOff: getIcon('eyeOff'),
+  }), []);
+
   useEffect(() => {
     if (open) {
       setIsClosing(false);
@@ -75,6 +81,14 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
       if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 100);
     } else {
+      if (focusTimerRef.current) {
+        clearTimeout(focusTimerRef.current);
+        focusTimerRef.current = null;
+      }
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
       setPassword('');
       setConfirmPassword('');
       setError('');
@@ -125,6 +139,14 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
     if (e.key === 'Escape') handleClose();
   };
 
+  const handleTogglePassword = useCallback(() => {
+    setShowPassword((prev) => !prev);
+  }, []);
+
+  const handleToggleConfirmPassword = useCallback(() => {
+    setShowConfirmPassword((prev) => !prev);
+  }, []);
+
   if (!open) return null;
 
   const overlayClass = `preferences-lock-modal-overlay ${isClosing ? 'is-closing' : ''}`;
@@ -137,8 +159,13 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
       role="dialog"
       aria-modal="true"
       aria-label={texts.title}
+      data-state={isClosing ? 'closing' : 'open'}
     >
-      <div className={cardClass} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={cardClass}
+        data-state={isClosing ? 'closing' : 'open'}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="preferences-lock-modal-header">
           <div className="preferences-lock-modal-title">
             <h3>{texts.title}</h3>
@@ -147,7 +174,7 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
           <button
             className="preferences-lock-modal-close"
             onClick={handleClose}
-            dangerouslySetInnerHTML={{ __html: getIcon('close') }}
+            dangerouslySetInnerHTML={{ __html: icons.close }}
             aria-label={texts.close}
           />
         </div>
@@ -170,10 +197,10 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
             <button
               type="button"
               className="preferences-lock-modal-eye"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={handleTogglePassword}
               aria-label={showPassword ? texts.hidePassword : texts.showPassword}
             >
-              <span dangerouslySetInnerHTML={{ __html: getIcon(showPassword ? 'eyeOff' : 'eye') }} aria-hidden="true" />
+              <span dangerouslySetInnerHTML={{ __html: showPassword ? icons.eyeOff : icons.eye }} aria-hidden="true" />
             </button>
           </div>
           <div className="preferences-lock-modal-input-wrapper">
@@ -192,10 +219,10 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
             <button
               type="button"
               className="preferences-lock-modal-eye"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              onClick={handleToggleConfirmPassword}
               aria-label={showConfirmPassword ? texts.hidePassword : texts.showPassword}
             >
-              <span dangerouslySetInnerHTML={{ __html: getIcon(showConfirmPassword ? 'eyeOff' : 'eye') }} aria-hidden="true" />
+              <span dangerouslySetInnerHTML={{ __html: showConfirmPassword ? icons.eyeOff : icons.eye }} aria-hidden="true" />
             </button>
           </div>
           

@@ -18,6 +18,7 @@ export {
   PreferencesProvider,
   usePreferencesContext,
   type PreferencesProviderProps,
+  type PreferencesContextValue,
 } from './PreferencesProvider';
 
 // 偏好设置抽屉组件（高级场景单独使用）

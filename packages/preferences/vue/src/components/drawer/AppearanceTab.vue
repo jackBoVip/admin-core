@@ -3,7 +3,7 @@
  * 外观设置标签页
  * @description 主题模式、内置主题、圆角、字体缩放等设置
  */
-import { computed, ref } from 'vue';
+import { computed, ref, watch, watchEffect } from 'vue';
 import { usePreferences, useTheme } from '../../composables';
 import {
   BUILT_IN_THEME_PRESETS,
@@ -86,6 +86,28 @@ const colorPrimary = computed({
 // 将 colorPrimary 转换为 HEX 格式（用于 input[type=color]）
 const colorPrimaryHex = computed(() => oklchToHex(colorPrimary.value));
 
+const themePresets = computed(() => BUILT_IN_THEME_PRESETS.filter(p => p.type !== 'custom'));
+const PRESET_RENDER_CHUNK = 12;
+const presetRenderCount = ref(PRESET_RENDER_CHUNK);
+const visibleThemePresets = computed(() =>
+  themePresets.value.slice(0, presetRenderCount.value)
+);
+
+watch(themePresets, (list) => {
+  presetRenderCount.value = Math.min(PRESET_RENDER_CHUNK, list.length);
+}, { immediate: true });
+
+watchEffect((onCleanup) => {
+  if (presetRenderCount.value >= themePresets.value.length) return;
+  const frame = requestAnimationFrame(() => {
+    presetRenderCount.value = Math.min(
+      presetRenderCount.value + PRESET_RENDER_CHUNK,
+      themePresets.value.length
+    );
+  });
+  onCleanup(() => cancelAnimationFrame(frame));
+});
+
 const radius = computed({
   get: () => preferences.value?.theme.radius ?? D.theme.radius,
   set: (value: string) => setPreferences({ theme: { radius: value } }),
@@ -149,54 +171,66 @@ const openColorPicker = () => {
   <Block v-if="configs.themeMode.visible" :title="locale.theme.mode">
     <div class="theme-mode-grid" role="radiogroup" :aria-label="locale.theme.mode">
       <div 
-        class="theme-mode-item" 
+        class="theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
         :class="{ disabled: configs.themeMode.disabled }"
         role="radio"
         :tabindex="configs.themeMode.disabled ? -1 : 0"
         :aria-checked="themeMode === 'light'"
         :aria-disabled="configs.themeMode.disabled"
+        :data-state="themeMode === 'light' ? 'active' : 'inactive'"
+        :data-disabled="configs.themeMode.disabled ? 'true' : undefined"
         @click="!configs.themeMode.disabled && (themeMode = 'light')"
         @keydown.enter.space.prevent="!configs.themeMode.disabled && (themeMode = 'light')"
       >
         <div
           class="outline-box flex-center theme-mode-box"
           :class="{ 'outline-box-active': themeMode === 'light', disabled: configs.themeMode.disabled }"
+          :data-disabled="configs.themeMode.disabled ? 'true' : undefined"
+          :data-state="themeMode === 'light' ? 'active' : 'inactive'"
         >
           <span v-html="sunIcon" class="theme-mode-icon" />
         </div>
         <span class="theme-mode-label">{{ locale.theme.modeLight }}</span>
       </div>
       <div 
-        class="theme-mode-item" 
+        class="theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
         :class="{ disabled: configs.themeMode.disabled }"
         role="radio"
         :tabindex="configs.themeMode.disabled ? -1 : 0"
         :aria-checked="themeMode === 'dark'"
         :aria-disabled="configs.themeMode.disabled"
+        :data-state="themeMode === 'dark' ? 'active' : 'inactive'"
+        :data-disabled="configs.themeMode.disabled ? 'true' : undefined"
         @click="!configs.themeMode.disabled && (themeMode = 'dark')"
         @keydown.enter.space.prevent="!configs.themeMode.disabled && (themeMode = 'dark')"
       >
         <div
           class="outline-box flex-center theme-mode-box"
           :class="{ 'outline-box-active': themeMode === 'dark', disabled: configs.themeMode.disabled }"
+          :data-disabled="configs.themeMode.disabled ? 'true' : undefined"
+          :data-state="themeMode === 'dark' ? 'active' : 'inactive'"
         >
           <span v-html="moonIcon" class="theme-mode-icon" />
         </div>
         <span class="theme-mode-label">{{ locale.theme.modeDark }}</span>
       </div>
       <div 
-        class="theme-mode-item" 
+        class="theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
         :class="{ disabled: configs.themeMode.disabled }"
         role="radio"
         :tabindex="configs.themeMode.disabled ? -1 : 0"
         :aria-checked="themeMode === 'auto'"
         :aria-disabled="configs.themeMode.disabled"
+        :data-state="themeMode === 'auto' ? 'active' : 'inactive'"
+        :data-disabled="configs.themeMode.disabled ? 'true' : undefined"
         @click="!configs.themeMode.disabled && (themeMode = 'auto')"
         @keydown.enter.space.prevent="!configs.themeMode.disabled && (themeMode = 'auto')"
       >
         <div
           class="outline-box flex-center theme-mode-box"
           :class="{ 'outline-box-active': themeMode === 'auto', disabled: configs.themeMode.disabled }"
+          :data-disabled="configs.themeMode.disabled ? 'true' : undefined"
+          :data-state="themeMode === 'auto' ? 'active' : 'inactive'"
         >
           <span v-html="monitorIcon" class="theme-mode-icon" />
         </div>
@@ -209,21 +243,25 @@ const openColorPicker = () => {
   <Block v-if="configs.builtinTheme.visible" :title="locale.theme.builtinTheme">
     <div class="theme-presets-grid" role="radiogroup" :aria-label="locale.theme.builtinTheme">
       <div
-        v-for="preset in BUILT_IN_THEME_PRESETS.filter(p => p.type !== 'custom')"
+        v-for="preset in visibleThemePresets"
         :key="preset.type"
-        class="theme-preset-item"
+        class="theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
         :class="{ disabled: configs.builtinTheme.disabled }"
         role="radio"
         :tabindex="configs.builtinTheme.disabled ? -1 : 0"
         :aria-checked="builtinType === preset.type"
         :aria-label="getThemePresetName(preset.nameKey) || preset.type"
         :aria-disabled="configs.builtinTheme.disabled"
+        :data-state="builtinType === preset.type ? 'active' : 'inactive'"
+        :data-disabled="configs.builtinTheme.disabled ? 'true' : undefined"
         @click="!configs.builtinTheme.disabled && (builtinType = preset.type)"
         @keydown.enter.space.prevent="!configs.builtinTheme.disabled && (builtinType = preset.type)"
       >
         <div
           class="outline-box flex-center theme-preset-box"
           :class="{ 'outline-box-active': builtinType === preset.type, disabled: configs.builtinTheme.disabled }"
+          :data-disabled="configs.builtinTheme.disabled ? 'true' : undefined"
+          :data-state="builtinType === preset.type ? 'active' : 'inactive'"
         >
           <div
             class="theme-preset-color"
@@ -233,20 +271,24 @@ const openColorPicker = () => {
         <span class="theme-preset-label">{{ getThemePresetName(preset.nameKey) || preset.type }}</span>
       </div>
       <!-- 自定义颜色 -->
-      <div 
-        class="theme-preset-item" 
+      <div
+        class="theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
         :class="{ disabled: configs.builtinTheme.disabled }"
         role="radio"
         :tabindex="configs.builtinTheme.disabled ? -1 : 0"
         :aria-checked="builtinType === 'custom'"
         :aria-label="locale.theme.colorCustom"
         :aria-disabled="configs.builtinTheme.disabled"
+        :data-state="builtinType === 'custom' ? 'active' : 'inactive'"
+        :data-disabled="configs.builtinTheme.disabled ? 'true' : undefined"
         @click="!configs.builtinTheme.disabled && (builtinType = 'custom')"
         @keydown.enter.space.prevent="!configs.builtinTheme.disabled && (builtinType = 'custom')"
       >
         <div
           class="outline-box flex-center theme-preset-box"
           :class="{ 'outline-box-active': builtinType === 'custom', disabled: configs.builtinTheme.disabled }"
+          :data-disabled="configs.builtinTheme.disabled ? 'true' : undefined"
+          :data-state="builtinType === 'custom' ? 'active' : 'inactive'"
         >
           <div class="theme-preset-custom" @click.stop="!configs.builtinTheme.disabled && openColorPicker()">
             <div class="theme-preset-custom-inner">
@@ -280,13 +322,19 @@ const openColorPicker = () => {
 
   <!-- 圆角 -->
   <Block v-if="configs.radius.visible" :title="locale.theme.radius">
-    <div class="radius-options" :class="{ disabled: configs.radius.disabled }">
+    <div
+      class="radius-options"
+      :class="{ disabled: configs.radius.disabled }"
+      :data-disabled="configs.radius.disabled ? 'true' : undefined"
+    >
       <button
         v-for="r in RADIUS_OPTIONS"
         :key="r"
-        class="radius-option"
+        class="radius-option data-active:text-foreground data-active:font-semibold data-disabled:opacity-50"
         :class="{ active: radius === r }"
         :disabled="configs.radius.disabled"
+        :data-state="radius === r ? 'active' : 'inactive'"
+        :data-disabled="configs.radius.disabled ? 'true' : undefined"
         @click="radius = r"
       >
         {{ r }}

@@ -4,6 +4,7 @@
 
 import type { DeepPartial } from '../types';
 import { isObject } from './helpers';
+import { logger } from './logger';
 
 /**
  * 检查是否为数组
@@ -68,7 +69,7 @@ export function deepMerge<T extends object>(
   ): void => {
     // 深度限制检查
     if (depth > MAX_DEPTH) {
-      console.warn('[deepMerge] Maximum recursion depth exceeded');
+      logger.warn('[deepMerge] Maximum recursion depth exceeded');
       return;
     }
 
@@ -83,7 +84,7 @@ export function deepMerge<T extends object>(
         } else if (isObject(sourceValue) && !isArray(sourceValue)) {
           // 循环引用检测
           if (seen.has(sourceValue as object)) {
-            console.warn('[deepMerge] Circular reference detected, skipping');
+            logger.warn('[deepMerge] Circular reference detected, skipping');
             continue;
           }
           seen.add(sourceValue as object);

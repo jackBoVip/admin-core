@@ -105,7 +105,8 @@
   }
 
   /* 禁用状态 */
-  .slider-native:disabled {
+  .slider-native:disabled,
+  .slider-native[data-disabled="true"] {
     cursor: not-allowed;
     opacity: 0.5;
   }

@@ -75,7 +75,7 @@
     color: var(--foreground);
   }
 
-  .preferences-segmented-item.active {
+  :is(.preferences-segmented-item.active, .preferences-segmented-item[data-state="active"]) {
     color: var(--foreground);
     font-weight: 600;
     /* 移除 active 状态的背景，由指示器提供 */
@@ -105,7 +105,7 @@
   }
 
   /* 固定模式：通过固定按钮激活 */
-  .preferences-tabs-wrapper.sticky {
+  :is(.preferences-tabs-wrapper.sticky, .preferences-tabs-wrapper[data-sticky="true"]) {
     position: sticky;
     top: -12px;
     padding-top: var(--pref-block-gap);

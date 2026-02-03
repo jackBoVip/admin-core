@@ -5,6 +5,18 @@
  */
 
 /* Layer order declaration - admin-core has highest priority */
+@custom-variant data-open ([data-state="open"] &);
+@custom-variant data-closed ([data-state="closed"] &);
+@custom-variant data-disabled ([data-disabled="true"] &);
+@custom-variant data-checked ([data-state="checked"] &);
+@custom-variant data-unchecked ([data-state="unchecked"] &);
+@custom-variant data-active ([data-state="active"] &);
+@custom-variant data-inactive ([data-state="inactive"] &);
+@custom-variant aria-expanded ([aria-expanded="true"] &);
+@custom-variant aria-selected ([aria-selected="true"] &);
+@custom-variant aria-checked ([aria-checked="true"] &);
+@custom-variant aria-disabled ([aria-disabled="true"] &);
+
 @layer theme, base, components, utilities, admin-core;
 
 /* Import all styles */

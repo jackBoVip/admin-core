@@ -47,6 +47,11 @@ const handleInput = (e: Event) => {
   if (debounceTimerRef.value) {
     clearTimeout(debounceTimerRef.value);
   }
+
+  if (props.debounce <= 0) {
+    modelValue.value = value;
+    return;
+  }
   
   // 防抖更新
   debounceTimerRef.value = setTimeout(() => {
@@ -68,7 +73,7 @@ const inputId = `input-${instance?.uid ?? Math.random().toString(36).slice(2, 9)
 </script>
 
 <template>
-  <div class="input-item" :class="{ disabled }">
+  <div class="input-item" :class="{ disabled }" :data-disabled="disabled ? 'true' : undefined">
     <label :id="`${inputId}-label`" class="input-item-label">{{ label }}</label>
     <input
       type="text"

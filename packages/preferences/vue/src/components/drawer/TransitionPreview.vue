@@ -3,7 +3,7 @@
  * 动画预览组件
  * @description 实时展示页面切换动画效果
  */
-import { ref, watch, onUnmounted, computed } from 'vue';
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import type { PageTransitionType } from '@admin-core/preferences';
 
 const props = withDefaults(defineProps<{
@@ -137,24 +137,54 @@ const stopLoop = () => {
   isAnimating.value = false;
 };
 
+let visibilityHandler: (() => void) | null = null;
+
 // 监听是否应该播放动画
 watch(shouldAnimate, (should) => {
-  if (should) {
-    startLoop();
-  } else {
+  if (!should) {
     stopLoop();
     showContent.value = true;
     currentClass.value = '';
+    return;
   }
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    stopLoop();
+    showContent.value = true;
+    currentClass.value = '';
+    return;
+  }
+  startLoop();
 }, { immediate: true });
 
+onMounted(() => {
+  if (typeof document === 'undefined') return;
+  visibilityHandler = () => {
+    if (document.visibilityState === 'hidden') {
+      stopLoop();
+      showContent.value = true;
+      currentClass.value = '';
+    } else if (shouldAnimate.value) {
+      startLoop();
+    }
+  };
+  document.addEventListener('visibilitychange', visibilityHandler);
+});
+
 onUnmounted(() => {
+  if (visibilityHandler) {
+    document.removeEventListener('visibilitychange', visibilityHandler);
+    visibilityHandler = null;
+  }
   stopLoop();
 });
 </script>
 
 <template>
-  <div class="transition-preview" :class="{ disabled: !enabled, compact: compact }">
+  <div
+    class="transition-preview"
+    :class="{ disabled: !enabled, compact: compact }"
+    :data-disabled="!enabled ? 'true' : undefined"
+  >
     <div class="transition-preview-screen">
       <!-- 模拟页面头部 -->
       <div class="transition-preview-header">
@@ -164,7 +194,7 @@ onUnmounted(() => {
       </div>
       <!-- 模拟侧边栏 -->
       <div class="transition-preview-sidebar">
-        <div class="transition-preview-menu-item active" />
+        <div class="transition-preview-menu-item active" data-state="active" />
         <div class="transition-preview-menu-item" />
         <div class="transition-preview-menu-item" />
       </div>

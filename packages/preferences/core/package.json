@@ -17,7 +17,7 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
       }
     },
@@ -79,7 +79,7 @@
         "default": "./dist/styles/tailwind/preset.js"
       },
       "require": {
-        "types": "./dist/styles/tailwind/preset.d.cts",
+        "types": "./dist/styles/tailwind/preset.d.ts",
         "default": "./dist/styles/tailwind/preset.cjs"
       }
     },

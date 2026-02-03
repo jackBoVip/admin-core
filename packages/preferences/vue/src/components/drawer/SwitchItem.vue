@@ -40,6 +40,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
   <div
     class="switch-item"
     :class="{ disabled }"
+    :data-disabled="disabled ? 'true' : undefined"
     :title="tip"
     role="switch"
     :aria-checked="checked"
@@ -54,8 +55,9 @@ const handleKeyDown = (e: KeyboardEvent) => {
       {{ label }}
     </span>
     <div
-      class="preferences-switch"
+      class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
       :class="{ checked: checked }"
+      :data-state="checked ? 'checked' : 'unchecked'"
       aria-hidden="true"
     >
       <span class="preferences-switch-thumb" />

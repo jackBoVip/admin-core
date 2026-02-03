@@ -31,7 +31,7 @@
     border-radius: var(--radius, var(--pref-control-radius));
 
     &:hover .theme-mode-label,
-    &:has(.outline-box-active) .theme-mode-label {
+    &:has(.outline-box-active, .outline-box[data-state="active"]) .theme-mode-label {
       color: var(--foreground);
     }
 
@@ -42,7 +42,8 @@
     }
 
     /* 禁用状态 - 使用 JS 阻止点击，CSS 只处理视觉样式 */
-    &.disabled {
+    &.disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.5;
 
@@ -87,7 +88,7 @@
       will-change: transform, box-shadow;
     }
 
-    &.outline-box-active {
+    &:is(.outline-box-active, .outline-box[data-state="active"]) {
       border-color: var(--primary);
       background: var(--background);
       box-shadow: var(--pref-shadow-active);
@@ -100,7 +101,7 @@
     color: var(--muted-foreground);
     transition: color var(--pref-transition), transform var(--pref-transition);
 
-    .outline-box-active & {
+    :is(.outline-box-active, .outline-box[data-state="active"]) & {
       color: var(--primary);
       transform: scale(1.1);
     }
@@ -121,6 +122,8 @@
     grid-template-columns: repeat(4, 1fr);
     gap: var(--pref-grid-gap-md);
     width: 100%;
+    content-visibility: auto;
+    contain-intrinsic-size: 320px 320px;
 
     /* 小屏响应式 */
     @media (max-width: 320px) {
@@ -135,9 +138,11 @@
     cursor: pointer;
     transition: opacity var(--pref-transition);
     border-radius: var(--radius, var(--pref-control-radius));
+    content-visibility: auto;
+    contain-intrinsic-size: 96px 120px;
 
     &:hover .theme-preset-label,
-    &:has(.outline-box-active) .theme-preset-label {
+    &:has(.outline-box-active, .outline-box[data-state="active"]) .theme-preset-label {
       color: var(--foreground);
     }
 
@@ -152,7 +157,8 @@
     }
 
     /* 禁用状态 */
-    &.disabled {
+    &.disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.5;
 
@@ -193,7 +199,7 @@
       will-change: transform;
     }
 
-    &.outline-box-active {
+    &:is(.outline-box-active, .outline-box[data-state="active"]) {
       border-color: var(--primary);
       background: var(--background);
       box-shadow: var(--pref-shadow-active);
@@ -268,7 +274,8 @@
     border: 1px solid var(--border);
 
     /* 禁用状态 */
-    &.disabled {
+    &.disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.5;
 
@@ -310,7 +317,8 @@
       outline-offset: -2px;
     }
 
-    &.active {
+    &.active,
+    &[data-state="active"] {
       color: var(--foreground);
       font-weight: 600;
       background: var(--background);
@@ -345,7 +353,8 @@
       background: var(--accent);
     }
 
-    &.active {
+    &.active,
+    &[data-state="active"] {
       color: var(--primary-foreground);
       background: var(--primary);
       border-color: var(--primary);
@@ -379,7 +388,8 @@
     }
 
     /* 禁用状态 */
-    &.disabled {
+    &.disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.5;
 
@@ -448,7 +458,8 @@
     }
 
     /* 禁用状态 */
-    &.disabled {
+    &.disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.5;
 

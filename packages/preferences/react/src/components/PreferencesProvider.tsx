@@ -5,7 +5,7 @@
  */
 import React, { memo, useCallback, useState, createContext, useContext, useMemo, useRef, useEffect } from 'react';
 import { logger, type PreferencesDrawerUIConfig } from '@admin-core/preferences';
-import { usePreferences, useLockScreen, useShortcutKeys, initPreferences, getPreferencesManager } from '../hooks';
+import { usePreferences, useLockScreen, useShortcutKeys, initPreferences, isPreferencesInitialized } from '../hooks';
 import { LockScreen } from './lock-screen';
 import { LockPasswordModal } from './lock-screen/LockPasswordModal';
 import { PreferencesDrawer, type PreferencesDrawerProps } from './drawer';
@@ -13,10 +13,7 @@ import { PreferencesTrigger, type PreferencesTriggerProps } from './drawer/Prefe
 import { Watermark } from './Watermark';
 
 // 自动初始化偏好设置管理器（确保在 usePreferences 调用前初始化）
-try {
-  getPreferencesManager();
-} catch (error) {
-  logger.warn('Preferences manager not initialized, initializing...', error);
+if (!isPreferencesInitialized()) {
   try {
     initPreferences({ namespace: 'admin-core' });
   } catch (initError) {
@@ -28,7 +25,7 @@ try {
 /**
  * Preferences Context 类型
  */
-interface PreferencesContextValue {
+export interface PreferencesContextValue {
   /** 打开偏好设置抽屉 */
   openPreferences: () => void;
   /** 关闭偏好设置抽屉 */

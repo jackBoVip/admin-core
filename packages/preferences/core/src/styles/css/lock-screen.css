@@ -50,7 +50,7 @@
     will-change: transform;
   }
 
-  .preferences-lock-orb.orb-1 {
+  :is(.preferences-lock-orb.orb-1, .preferences-lock-orb[data-orb="1"]) {
     width: 400px;
     height: 400px;
     background: var(--primary, #3b82f6);
@@ -59,7 +59,7 @@
     animation-delay: 0s;
   }
 
-  .preferences-lock-orb.orb-2 {
+  :is(.preferences-lock-orb.orb-2, .preferences-lock-orb[data-orb="2"]) {
     width: 300px;
     height: 300px;
     background: #8b5cf6;
@@ -68,7 +68,7 @@
     animation-delay: -7s;
   }
 
-  .preferences-lock-orb.orb-3 {
+  :is(.preferences-lock-orb.orb-3, .preferences-lock-orb[data-orb="3"]) {
     width: 250px;
     height: 250px;
     background: #06b6d4;
@@ -85,7 +85,7 @@
     75% { transform: translate(20px, 30px) scale(1.05); }
   }
 
-  .preferences-lock-orb.orb-3 {
+  :is(.preferences-lock-orb.orb-3, .preferences-lock-orb[data-orb="3"]) {
     animation-name: lockOrbFloatCenter;
   }
 
@@ -120,7 +120,7 @@
     padding: 2rem;
   }
 
-  .preferences-lock-content.minimal {
+  :is(.preferences-lock-content.minimal, .preferences-lock-content[data-variant="minimal"]) {
     justify-content: center;
   }
 
@@ -130,7 +130,7 @@
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .preferences-lock-time-center.compact {
+  :is(.preferences-lock-time-center.compact, .preferences-lock-time-center[data-compact="true"]) {
     transform: translateY(-80px) scale(0.7);
     opacity: 0.5;
   }
@@ -219,13 +219,13 @@
     transform: translateY(-2px);
   }
 
-  .preferences-lock-cta.minimal {
+  :is(.preferences-lock-cta.minimal, .preferences-lock-cta[data-variant="minimal"]) {
     background: transparent;
     border-color: transparent;
     opacity: 0.7;
   }
 
-  .preferences-lock-cta.minimal:hover {
+  :is(.preferences-lock-cta.minimal, .preferences-lock-cta[data-variant="minimal"]):hover {
     opacity: 1;
     background: rgba(255, 255, 255, 0.05);
   }
@@ -245,7 +245,7 @@
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .preferences-lock-unlock.visible {
+  :is(.preferences-lock-unlock.visible, .preferences-lock-unlock[data-visible="true"]) {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
     pointer-events: auto;
@@ -282,15 +282,15 @@
     letter-spacing: normal;
   }
 
-  .preferences-lock-unlock-input.has-error {
+  :is(.preferences-lock-unlock-input.has-error, .preferences-lock-unlock-input[data-error="true"]) {
     animation: lockInputShake 0.4s ease;
   }
 
-  .preferences-lock-unlock-input.has-error::placeholder {
+  :is(.preferences-lock-unlock-input.has-error, .preferences-lock-unlock-input[data-error="true"])::placeholder {
     color: #fca5a5;
   }
 
-  .preferences-lock-unlock-box.has-error {
+  :is(.preferences-lock-unlock-box.has-error, .preferences-lock-unlock-box[data-error="true"]) {
     border-color: rgba(239, 68, 68, 0.5);
     background: rgba(239, 68, 68, 0.08);
   }
@@ -422,7 +422,7 @@
     transition: opacity 0.2s ease;
   }
 
-  .preferences-lock-modal-overlay.is-closing {
+  :is(.preferences-lock-modal-overlay.is-closing, .preferences-lock-modal-overlay[data-state="closing"]) {
     opacity: 0;
   }
 
@@ -440,7 +440,7 @@
     transition: transform 0.2s ease, opacity 0.2s ease;
   }
 
-  .preferences-lock-modal-card.is-closing {
+  :is(.preferences-lock-modal-card.is-closing, .preferences-lock-modal-card[data-state="closing"]) {
     transform: translateY(-20px) scale(0.96);
     opacity: 0;
   }

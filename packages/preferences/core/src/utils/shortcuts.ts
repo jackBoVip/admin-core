@@ -87,10 +87,16 @@ export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction
   const keys = isMac ? binding.keysMac : binding.keys;
 
   // 检查修饰键
-  const needCtrl = keys.some((k) => k === 'Ctrl' || k === '⌘');
-  const needAlt = keys.some((k) => k === 'Alt' || k === '⌥');
-  const needShift = keys.some((k) => k === 'Shift' || k === '⇧');
-  const needMeta = isMac && keys.some((k) => k === '⌘');
+  let needCtrl = false;
+  let needAlt = false;
+  let needShift = false;
+  let needMeta = false;
+  for (const key of keys) {
+    if (key === 'Ctrl' || key === '⌘') needCtrl = true;
+    if (key === 'Alt' || key === '⌥') needAlt = true;
+    if (key === 'Shift' || key === '⇧') needShift = true;
+    if (isMac && key === '⌘') needMeta = true;
+  }
 
   // Mac 上 ⌘ 对应 metaKey，Windows 上 Ctrl 对应 ctrlKey
   const ctrlMatch = isMac ? event.metaKey === needMeta : event.ctrlKey === needCtrl;
@@ -100,9 +106,13 @@ export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction
   if (!ctrlMatch || !altMatch || !shiftMatch) return false;
 
   // 获取主键（非修饰键）
-  const mainKey = keys.find(
-    (k) => !['Ctrl', 'Alt', 'Shift', '⌘', '⌥', '⇧'].includes(k)
-  );
+  let mainKey: string | undefined;
+  for (const key of keys) {
+    if (!['Ctrl', 'Alt', 'Shift', '⌘', '⌥', '⇧'].includes(key)) {
+      mainKey = key;
+      break;
+    }
+  }
   if (!mainKey) return false;
 
   // 使用 event.code 匹配（更可靠，不受 Shift 影响）

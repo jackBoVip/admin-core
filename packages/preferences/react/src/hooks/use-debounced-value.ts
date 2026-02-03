@@ -56,6 +56,11 @@ export function useDebouncedValue<T>({
         clearTimeout(timerRef.current);
       }
 
+      if (delay <= 0) {
+        onChange(newValue);
+        return;
+      }
+
       // 防抖更新
       timerRef.current = setTimeout(() => {
         onChange(newValue);

@@ -17,6 +17,7 @@ import {
   getCopyButtonA11yProps,
   getFeatureConfig,
   mergeDrawerUIConfig,
+  logger,
   type CopyButtonState,
   type DrawerTabType,
   type DrawerHeaderActionType,
@@ -81,6 +82,13 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
       bodyRef.current.scrollTop = 0;
     }
   }, []);
+
+  const handleTabClick = useCallback((e: React.MouseEvent) => {
+    const tab = (e.currentTarget as HTMLElement).dataset.value as DrawerTabType | undefined;
+    if (tab) {
+      handleTabChange(tab);
+    }
+  }, [handleTabChange]);
 
   // 是否固定标签栏
   const [isPinned, setIsPinned] = useState(false);
@@ -147,11 +155,17 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
     [locale, mergedUIConfig]
   );
 
+  const tabsIndexMap = useMemo(() => {
+    const map = new Map<DrawerTabType, number>();
+    tabs.forEach((tab, index) => map.set(tab.value, index));
+    return map;
+  }, [tabs]);
+
   // 计算当前激活 tab 的索引（用于滑动指示器动画）
   const activeTabIndex = useMemo(() => {
-    const index = tabs.findIndex(tab => tab.value === activeTab);
-    return index >= 0 ? index : 0;
-  }, [tabs, activeTab]);
+    const index = tabsIndexMap.get(activeTab);
+    return index !== undefined ? index : 0;
+  }, [tabsIndexMap, activeTab]);
 
   // 缓存 tabs 样式对象，避免每次渲染创建新对象
   const tabsStyle = useMemo(() => ({
@@ -268,6 +282,13 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
     }
   }, [handleImportConfig, resetPreferences, onClose, onPinChange]);
 
+  const handleHeaderActionClick = useCallback((e: React.MouseEvent) => {
+    const type = (e.currentTarget as HTMLElement).dataset.value as DrawerHeaderActionType | undefined;
+    if (type) {
+      handleHeaderAction(type);
+    }
+  }, [handleHeaderAction]);
+
   // 复制配置（使用 core 的工具函数和控制器，带错误处理）
   const handleCopyConfig = useCallback(async () => {
     if (preferences && !copyState.isCopied) {
@@ -281,7 +302,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
           });
         }
       } catch (error) {
-        console.error('[PreferencesDrawer] Failed to copy config:', error);
+        logger.error('[PreferencesDrawer] Failed to copy config:', error);
         // 可以在这里添加用户提示
       }
     }
@@ -315,12 +336,13 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
       {showOverlay && (
         <div
           className={`preferences-drawer-overlay ${open ? 'open' : ''}`}
+          data-state={open ? 'open' : 'closed'}
           onClick={handleOverlayClick}
         />
       )}
 
       {/* 抽屉 */}
-      <div className={`preferences-drawer ${open ? 'open' : ''}`}>
+      <div className={`preferences-drawer ${open ? 'open' : ''}`} data-state={open ? 'open' : 'closed'}>
         {/* 头部（标题+副标题同行） */}
         <div className="preferences-drawer-header">
           <div className="preferences-drawer-title-wrapper">
@@ -333,11 +355,14 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
             {headerActions.map((action) => (
               <button
                 key={action.type}
-                className={`preferences-btn-icon${action.showIndicator ? ' relative' : ''}`}
+                className={`preferences-btn-icon data-disabled:opacity-50 aria-disabled:opacity-50${action.showIndicator ? ' relative' : ''}`}
                 disabled={action.disabled}
+                aria-disabled={action.disabled || undefined}
+                data-disabled={action.disabled ? 'true' : undefined}
                 aria-label={action.tooltip}
                 data-preference-tooltip={action.tooltip || undefined}
-                onClick={() => handleHeaderAction(action.type)}
+                data-value={action.type}
+                onClick={handleHeaderActionClick}
               >
                 {action.showIndicator && <span className="dot" />}
                 <span
@@ -353,7 +378,10 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
         {/* 内容区 */}
         <div ref={bodyRef} className="preferences-drawer-body">
           {/* 分段标签 */}
-          <div className={`preferences-tabs-wrapper${isPinned ? ' sticky' : ''}`}>
+          <div
+            className={`preferences-tabs-wrapper${isPinned ? ' sticky' : ''}`}
+            data-sticky={isPinned ? 'true' : undefined}
+          >
             <div 
               className="preferences-segmented" 
               role="tablist" 
@@ -367,10 +395,12 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
                   key={tab.value}
                   role="tab"
                   id={`pref-tab-${tab.value}`}
-                  className={`preferences-segmented-item ${activeTab === tab.value ? 'active' : ''}`}
+                  className={`preferences-segmented-item data-active:text-foreground data-active:font-semibold aria-selected:text-foreground ${activeTab === tab.value ? 'active' : ''}`}
                   aria-selected={activeTab === tab.value}
                   aria-controls={`pref-tabpanel-${tab.value}`}
-                  onClick={() => handleTabChange(tab.value)}
+                  data-state={activeTab === tab.value ? 'active' : 'inactive'}
+                  data-value={tab.value}
+                  onClick={handleTabClick}
                 >
                   {tab.label}
                 </button>
@@ -392,8 +422,11 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
         {showCopyButton && (
           <div className="preferences-drawer-footer">
             <button
-              className={`preferences-btn preferences-btn-primary${copyState.isCopied ? ' is-copied' : ''}`}
+              className={`preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50${copyState.isCopied ? ' is-copied' : ''}`}
               disabled={copyButtonDisabled}
+              aria-disabled={copyButtonDisabled || undefined}
+              data-disabled={copyButtonDisabled ? 'true' : undefined}
+              data-state={copyState.isCopied ? 'copied' : 'idle'}
               onClick={handleCopyConfig}
               {...copyButtonA11y}
             >
@@ -415,10 +448,11 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
         <div className="preferences-modal-overlay" onClick={closeImportError}>
           <div className="preferences-modal" onClick={(e) => e.stopPropagation()}>
             <div className="preferences-modal-header">
-              <span
-                className="preferences-modal-icon error"
-                dangerouslySetInnerHTML={{ __html: ICONS.alertCircle }}
-              />
+            <span
+              className="preferences-modal-icon error"
+              data-status="error"
+              dangerouslySetInnerHTML={{ __html: ICONS.alertCircle }}
+            />
               <span className="preferences-modal-title">
                 {locale.preferences.importErrorTitle}
               </span>
@@ -428,7 +462,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
             </div>
             <div className="preferences-modal-footer">
               <button
-                className="preferences-btn preferences-btn-primary"
+                className="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50"
                 onClick={closeImportError}
               >
                 {locale.common.confirm}

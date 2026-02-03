@@ -91,11 +91,14 @@ watch(() => props.open, (isOpen) => {
       }, 100);
     });
   } else {
+    clearFocusTimer();
+    clearCloseTimer();
     password.value = '';
     confirmPassword.value = '';
     error.value = '';
     showPassword.value = false;
     showConfirmPassword.value = false;
+    isClosing.value = false;
   }
 });
 
@@ -143,6 +146,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') handleClose();
 };
 
+const handleTogglePassword = () => {
+  showPassword.value = !showPassword.value;
+};
+
+const handleToggleConfirmPassword = () => {
+  showConfirmPassword.value = !showConfirmPassword.value;
+};
+
 const closeIcon = getIcon('close');
 const eyeIcon = getIcon('eye');
 const eyeOffIcon = getIcon('eyeOff');
@@ -152,14 +163,21 @@ const eyeOffIcon = getIcon('eyeOff');
   <Teleport to="body">
     <Transition name="lock-modal">
       <div 
-        v-if="open && !isClosing" 
+        v-if="open || isClosing" 
         class="preferences-lock-modal-overlay" 
+        :class="{ 'is-closing': isClosing }"
         role="dialog"
         aria-modal="true"
         :aria-label="texts.title"
+        :data-state="isClosing ? 'closing' : 'open'"
         @click="handleClose"
       >
-        <div class="preferences-lock-modal-card" @click.stop>
+        <div
+          class="preferences-lock-modal-card"
+          :class="{ 'is-closing': isClosing }"
+          :data-state="isClosing ? 'closing' : 'open'"
+          @click.stop
+        >
           <div class="preferences-lock-modal-header">
             <div class="preferences-lock-modal-title">
               <h3>{{ texts.title }}</h3>
@@ -190,7 +208,7 @@ const eyeOffIcon = getIcon('eyeOff');
               <button 
                 type="button"
                 class="preferences-lock-modal-eye"
-                @click="showPassword = !showPassword"
+                @click="handleTogglePassword"
                 :aria-label="showPassword ? texts.hidePassword : texts.showPassword"
               >
                 <span v-html="showPassword ? eyeOffIcon : eyeIcon" aria-hidden="true" />
@@ -211,7 +229,7 @@ const eyeOffIcon = getIcon('eyeOff');
               <button 
                 type="button"
                 class="preferences-lock-modal-eye"
-                @click="showConfirmPassword = !showConfirmPassword"
+                @click="handleToggleConfirmPassword"
                 :aria-label="showConfirmPassword ? texts.hidePassword : texts.showPassword"
               >
                 <span v-html="showConfirmPassword ? eyeOffIcon : eyeIcon" aria-hidden="true" />

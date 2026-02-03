@@ -117,12 +117,12 @@
     z-index: 1;
   }
 
-  .number-field-btn:hover:not(:disabled) {
+  .number-field-btn:hover:not(:disabled):not([data-disabled="true"]) {
     color: var(--foreground);
     background: var(--accent);
   }
 
-  .number-field-btn:disabled {
+  :is(.number-field-btn:disabled, .number-field-btn[data-disabled="true"]) {
     opacity: 0.2;
     cursor: not-allowed;
   }
@@ -180,14 +180,11 @@
 
   /* ========== 按钮基础样式 ========== */
   .preferences-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @apply inline-flex items-center justify-center font-medium select-none outline-none;
     gap: var(--pref-btn-gap);
     height: var(--pref-btn-height);
     padding: var(--pref-btn-padding);
     font-size: var(--pref-btn-font-size);
-    font-weight: 500;
     color: var(--foreground);
     background: var(--background);
     border: 1px solid var(--border);
@@ -205,7 +202,7 @@
     /* will-change 仅在 hover 时启用 */
   }
 
-  .preferences-btn:hover:not(:disabled) {
+  .preferences-btn:hover:not(:disabled):not([data-disabled="true"]) {
     background: var(--accent);
     border-color: var(--input);
     transform: translateY(-1px);
@@ -213,7 +210,7 @@
     will-change: transform, box-shadow;
   }
 
-  .preferences-btn:active:not(:disabled) {
+  .preferences-btn:active:not(:disabled):not([data-disabled="true"]) {
     transform: translateY(0);
     background: var(--muted);
   }
@@ -222,7 +219,7 @@
     box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
   }
 
-  .preferences-btn:disabled {
+  :is(.preferences-btn:disabled, .preferences-btn[data-disabled="true"]) {
     opacity: 0.5;
     cursor: not-allowed;
     background: var(--muted);
@@ -234,23 +231,21 @@
 
   /* 主要按钮 */
   .preferences-btn-primary {
-    color: var(--primary-foreground);
-    background: var(--primary);
-    border-color: var(--primary);
+    @apply text-primary-foreground bg-primary border-primary;
   }
 
-  .preferences-btn-primary:hover:not(:disabled) {
+  .preferences-btn-primary:hover:not(:disabled):not([data-disabled="true"]) {
     background: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
     border-color: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
     transform: translateY(-1px);
   }
 
-  .preferences-btn-primary:active:not(:disabled) {
+  .preferences-btn-primary:active:not(:disabled):not([data-disabled="true"]) {
     background: var(--primary-700, color-mix(in oklch, var(--primary) 80%, black));
     border-color: var(--primary-700, color-mix(in oklch, var(--primary) 80%, black));
   }
 
-  .preferences-btn-primary:disabled {
+  :is(.preferences-btn-primary:disabled, .preferences-btn-primary[data-disabled="true"]) {
     background: var(--primary);
     border-color: var(--primary);
     color: var(--primary-foreground);
@@ -258,28 +253,27 @@
   }
 
   /* 主要按钮 - 已复制状态 */
-  .preferences-btn-primary.is-copied {
+  :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"]) {
     background: var(--primary-500, var(--primary));
     border-color: var(--primary-500, var(--primary));
   }
 
-  .preferences-btn-primary.is-copied:disabled {
+  :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"]):disabled,
+  :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"])[data-disabled="true"] {
     opacity: 0.7;
   }
 
-  .preferences-btn-primary.is-copied:hover:not(:disabled) {
+  :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"]):hover:not(:disabled):not([data-disabled="true"]) {
     background: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
     border-color: var(--primary-600, color-mix(in oklch, var(--primary) 90%, black));
   }
 
   /* 次要/幽灵按钮 */
   .preferences-btn-ghost {
-    background: transparent;
-    border-color: var(--border);
-    color: var(--muted-foreground);
+    @apply bg-transparent border-border text-muted-foreground;
   }
 
-  .preferences-btn-ghost:hover:not(:disabled) {
+  .preferences-btn-ghost:hover:not(:disabled):not([data-disabled="true"]) {
     background: var(--accent);
     color: var(--foreground);
     border-color: var(--input);
@@ -294,9 +288,7 @@
 
   /* 图标按钮 */
   .preferences-btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @apply inline-flex items-center justify-center cursor-pointer;
     width: var(--pref-btn-icon-size);
     height: var(--pref-btn-icon-size);
     padding: 0;
@@ -311,12 +303,12 @@
       opacity var(--pref-transition);
   }
 
-  .preferences-btn-icon:hover {
+  .preferences-btn-icon:hover:not([data-disabled="true"]) {
     color: var(--foreground);
     background: var(--accent);
   }
 
-  .preferences-btn-icon:disabled {
+  :is(.preferences-btn-icon:disabled, .preferences-btn-icon[data-disabled="true"]) {
     opacity: 0.5;
     cursor: not-allowed;
   }
@@ -336,7 +328,7 @@
   }
 
   /* 复制成功动画 */
-  .preferences-btn.is-copied .copy-btn-icon {
+  :is(.preferences-btn.is-copied, .preferences-btn[data-state="copied"]) .copy-btn-icon {
     animation: pref-copy-success 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
@@ -360,12 +352,8 @@
 
   /* ========== 模态框/对话框 ========== */
   .preferences-modal-overlay {
-    position: fixed;
-    inset: 0;
     z-index: var(--pref-modal-z-index);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @apply fixed inset-0 flex items-center justify-center;
     background: color-mix(in oklch, var(--foreground) 50%, transparent);
     backdrop-filter: blur(2px);
     animation: pref-modal-overlay-in 0.2s ease;
@@ -403,43 +391,35 @@
   }
 
   .preferences-modal-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    @apply flex items-center gap-2;
     padding: var(--pref-modal-header-padding);
     border-bottom: 1px solid var(--border);
   }
 
   .preferences-modal-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    @apply inline-flex items-center justify-center;
     width: 24px;
     height: 24px;
     flex-shrink: 0;
   }
 
-  .preferences-modal-icon.error { color: var(--destructive); }
-  .preferences-modal-icon.success { color: var(--success); }
-  .preferences-modal-icon.warning { color: var(--warning); }
+  :is(.preferences-modal-icon.error, .preferences-modal-icon[data-status="error"]) { color: var(--destructive); }
+  :is(.preferences-modal-icon.success, .preferences-modal-icon[data-status="success"]) { color: var(--success); }
+  :is(.preferences-modal-icon.warning, .preferences-modal-icon[data-status="warning"]) { color: var(--warning); }
 
   .preferences-modal-title {
-    font-size: 16px;
-    font-weight: 600;
+    @apply text-base font-semibold;
     color: var(--foreground);
   }
 
   .preferences-modal-body {
+    @apply text-sm leading-relaxed;
     padding: var(--pref-modal-padding);
-    font-size: 14px;
-    line-height: 1.6;
     color: var(--muted-foreground);
   }
 
   .preferences-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    @apply flex justify-end gap-2.5;
     padding: var(--pref-modal-header-padding);
     border-top: 1px solid var(--border);
   }
@@ -457,72 +437,66 @@
 
   /* ========== 工具提示 ========== */
   [data-preference-tooltip] {
-    position: relative;
+    @apply relative;
 
     &::before,
     &::after {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%) translateY(0);
-      pointer-events: none;
-      opacity: 0;
-      transition: 
-        opacity var(--pref-transition),
-        transform var(--pref-transition);
+      @apply absolute left-1/2 -translate-x-1/2 pointer-events-none opacity-0;
+      transition:
+        opacity var(--tooltip-enter-duration) var(--tooltip-ease),
+        transform var(--tooltip-enter-duration) var(--tooltip-ease);
       z-index: var(--pref-tooltip-z-index);
     }
 
     /* 提示文字 */
     &::before {
       content: attr(data-preference-tooltip);
-      top: calc(100% + 10px);
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 500;
+      top: calc(100% + var(--tooltip-offset));
+      padding: var(--tooltip-padding-y) var(--tooltip-padding-x);
+      font-size: var(--tooltip-font-size);
       line-height: 1.2;
+      border-radius: var(--tooltip-radius);
+      color: var(--tooltip-fg);
+      background: var(--tooltip-bg);
+      border: 1px solid var(--tooltip-border);
+      box-shadow: var(--tooltip-shadow);
       white-space: nowrap;
-      color: var(--primary-foreground);
-      background: var(--primary);
-      border-radius: 6px;
-      box-shadow: 0 4px 12px -2px color-mix(in oklch, var(--primary) 30%, transparent);
+      transform: translateX(-50%) translateY(0) scale(0.95);
     }
 
     /* 箭头 */
     &::after {
       content: '';
-      top: calc(100% + 6px);
-      width: 10px;
-      height: 10px;
-      background: var(--primary);
-      border-radius: 2px;
-      transform: translateX(-50%) rotate(45deg);
+      top: calc(100% + var(--tooltip-arrow-offset));
+      width: var(--tooltip-arrow-size);
+      height: var(--tooltip-arrow-size);
+      border-radius: calc(var(--tooltip-radius) - 2px);
+      transform: translateX(-50%) translateY(0) rotate(45deg) scale(0.95);
+      background: var(--tooltip-bg);
+      border: 1px solid var(--tooltip-border);
       z-index: calc(var(--pref-tooltip-z-index) - 1);
     }
 
     /* 悬停状态 */
-    &:hover:not(:disabled) {
+    &:hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) {
       &::before {
-        opacity: 1;
-        transform: translateX(-50%) translateY(4px);
-        animation: pref-tooltip-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        @apply opacity-100;
+        transform: translateX(-50%) translateY(4px) scale(1);
       }
 
       &::after {
-        opacity: 1;
-        transform: translateX(-50%) translateY(4px) rotate(45deg);
-        animation: pref-tooltip-arrow-in 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        @apply opacity-100;
+        transform: translateX(-50%) translateY(4px) rotate(45deg) scale(1);
       }
     }
-  }
 
-  @keyframes pref-tooltip-in {
-    from { opacity: 0; transform: translateX(-50%) translateY(0); }
-    to { opacity: 1; transform: translateX(-50%) translateY(4px); }
-  }
-
-  @keyframes pref-tooltip-arrow-in {
-    from { opacity: 0; transform: translateX(-50%) translateY(0) rotate(45deg); }
-    to { opacity: 1; transform: translateX(-50%) translateY(4px) rotate(45deg); }
+    /* aria-disabled 时禁用提示 */
+    &[aria-disabled="true"] {
+      &::before,
+      &::after {
+        opacity: 0;
+      }
+    }
   }
 
   /* ========== 动画预览网格（响应式） ========== */
@@ -531,6 +505,8 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
     margin-top: 12px;
+    content-visibility: auto;
+    contain-intrinsic-size: 300px 240px;
 
     /* 小屏响应式 */
     @media (max-width: 320px) {
@@ -545,6 +521,8 @@
     gap: 6px;
     cursor: pointer;
     border-radius: 8px;
+    content-visibility: auto;
+    contain-intrinsic-size: 96px 100px;
 
     &:focus-visible {
       outline: 2px solid var(--ring);
@@ -552,7 +530,8 @@
     }
 
     /* 禁用状态 */
-    &.disabled {
+    &.disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.5;
 
@@ -574,7 +553,7 @@
     transition: opacity var(--pref-transition);
   }
 
-  .transition-preset-box.disabled {
+  :is(.transition-preset-box.disabled, .transition-preset-box[data-disabled="true"]) {
     opacity: 0.5;
   }
 
@@ -598,7 +577,7 @@
     height: 100%;
   }
 
-  .transition-preview.disabled {
+  :is(.transition-preview.disabled, .transition-preview[data-disabled="true"]) {
     opacity: 0.6;
   }
 
@@ -648,7 +627,7 @@
     background: var(--muted);
   }
 
-  .transition-preview-menu-item.active {
+  :is(.transition-preview-menu-item.active, .transition-preview-menu-item[data-state="active"]) {
     background: var(--primary);
     opacity: 0.7;
   }

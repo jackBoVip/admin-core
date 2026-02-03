@@ -10,7 +10,7 @@ import {
   useLockScreen, 
   useShortcutKeys,
   initPreferences,
-  getPreferencesManager,
+  isPreferencesInitialized,
 } from '../composables';
 import LockScreen from './lock-screen/LockScreen.vue';
 import LockPasswordModal from './lock-screen/LockPasswordModal.vue';
@@ -20,11 +20,26 @@ import Watermark from './Watermark.vue';
 import type { PreferencesDrawerUIConfig } from '@admin-core/preferences';
 import { logger } from '@admin-core/preferences';
 
+/** 触发按钮配置 */
+export interface PreferencesTriggerProps {
+  /** 是否显示 */
+  show?: boolean;
+}
+
+/** 抽屉配置 */
+export interface PreferencesDrawerProps {
+  /** 是否显示遮罩 */
+  showOverlay?: boolean;
+  /** 点击遮罩关闭 */
+  closeOnOverlay?: boolean;
+  /** 是否显示固定按钮 */
+  showPinButton?: boolean;
+  /** UI 配置（控制功能项显示/禁用） */
+  uiConfig?: PreferencesDrawerUIConfig;
+}
+
 // 自动初始化偏好设置管理器（确保在 usePreferences 调用前初始化）
-try {
-  getPreferencesManager();
-} catch (error) {
-  logger.warn('Preferences manager not initialized, initializing...', error);
+if (!isPreferencesInitialized()) {
   try {
     initPreferences({ namespace: 'admin-core' });
   } catch (initError) {
@@ -33,16 +48,20 @@ try {
   }
 }
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   /** 是否显示触发按钮 */
   showTrigger?: boolean;
+  /** 触发按钮配置 */
+  triggerProps?: PreferencesTriggerProps;
+  /** 抽屉配置 */
+  drawerProps?: PreferencesDrawerProps;
   /** 用户头像 URL */
   avatar?: string;
   /** 用户名 */
   username?: string;
   /** 锁屏背景图片 URL，传入空字符串禁用背景，不传则使用默认背景 */
   lockScreenBackground?: string;
-  /** UI 配置（控制功能项显示/禁用） */
+  /** UI 配置（控制功能项显示/禁用）- 便捷属性，等同于 drawerProps.uiConfig */
   uiConfig?: PreferencesDrawerUIConfig;
 }>(), {
   showTrigger: true,
@@ -151,8 +170,16 @@ provide('preferencesContext', {
   />
 
   <!-- 触发按钮 -->
-  <PreferencesTrigger v-if="showTrigger" @click="openPreferences" />
+  <PreferencesTrigger 
+    v-if="showTrigger" 
+    v-bind="props.triggerProps"
+    @click="openPreferences" 
+  />
 
   <!-- 偏好设置抽屉 -->
-  <PreferencesDrawer v-model:open="drawerOpen" :ui-config="uiConfig" />
+  <PreferencesDrawer 
+    v-model:open="drawerOpen" 
+    v-bind="props.drawerProps"
+    :ui-config="props.uiConfig ?? props.drawerProps?.uiConfig" 
+  />
 </template>

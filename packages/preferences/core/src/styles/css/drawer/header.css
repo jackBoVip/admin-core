@@ -89,14 +89,14 @@
     &:hover {
       z-index: 100;
 
-      &:not(:disabled) {
+      &:not(:disabled):not([data-disabled="true"]) {
         color: var(--foreground);
         background: var(--muted);
         transform: scale(1.05);
       }
     }
 
-    &:active:not(:disabled) {
+    &:active:not(:disabled):not([data-disabled="true"]) {
       transform: scale(0.95);
     }
 
@@ -105,7 +105,8 @@
       outline-offset: 2px;
     }
 
-    &:disabled {
+    &:disabled,
+    &[data-disabled="true"] {
       cursor: not-allowed;
       opacity: 0.3;
     }

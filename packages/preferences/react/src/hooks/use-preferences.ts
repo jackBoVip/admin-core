@@ -70,6 +70,13 @@ export function getPreferencesManager(): PreferencesManager {
 }
 
 /**
+ * 判断偏好设置管理器是否已初始化
+ */
+export function isPreferencesInitialized(): boolean {
+  return lifecycle.isInitialized();
+}
+
+/**
  * 销毁全局偏好设置管理器
  */
 export function destroyPreferences(): void {

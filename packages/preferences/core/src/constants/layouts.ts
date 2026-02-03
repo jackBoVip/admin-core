@@ -153,13 +153,17 @@ export const DEFAULT_LAYOUT_SIZES = {
   contentPadding: 16,
 } as const;
 
+const LAYOUT_OPTION_MAP = new Map<LayoutType, typeof LAYOUT_OPTIONS[number]>(
+  LAYOUT_OPTIONS.map((opt) => [opt.value, opt])
+);
+
 /**
  * 获取布局 i18n key
  * @param layout - 布局类型
  * @returns i18n key
  */
 export function getLayoutLabelKey(layout: LayoutType): string {
-  const option = LAYOUT_OPTIONS.find((opt) => opt.value === layout);
+  const option = LAYOUT_OPTION_MAP.get(layout);
   return option?.labelKey ?? `layout.${layout}`;
 }
 

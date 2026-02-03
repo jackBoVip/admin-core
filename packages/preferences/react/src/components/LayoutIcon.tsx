@@ -72,9 +72,13 @@ export const LayoutIcon = memo<LayoutIconProps>(function LayoutIcon({
 
   return (
     <div
-      className={['admin-layout-icon', active && 'admin-layout-icon--active', className]
-        .filter(Boolean)
-        .join(' ')}
+      className={(() => {
+        const classes = ['admin-layout-icon'];
+        if (active) classes.push('admin-layout-icon--active');
+        if (className) classes.push(className);
+        return classes.join(' ');
+      })()}
+      data-state={active ? 'active' : 'inactive'}
       style={combinedStyle}
       onClick={handleClick}
       dangerouslySetInnerHTML={{ __html: svgContent }}
