@@ -43,6 +43,49 @@
   }
 }
 
+/* 自定义滚动条 - 默认隐藏，悬停/滚动时显示 */
+@utility scrollbar-elegant {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.5s ease;
+
+  &:hover {
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
+/* Webkit 滚动条基础样式 */
+.scrollbar-elegant::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  height: var(--scrollbar-width);
+}
+
+.scrollbar-elegant::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: var(--scrollbar-radius);
+}
+
+.scrollbar-elegant::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: var(--scrollbar-radius);
+  transition: background-color 0.5s ease;
+}
+
+/* 悬停时显示滚动条 - 所有状态使用统一颜色 */
+.scrollbar-elegant:hover::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+}
+
+/* 鼠标直接在滚动条上时 - 使用相同颜色 */
+.scrollbar-elegant::-webkit-scrollbar-thumb:hover,
+.scrollbar-elegant:hover::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb);
+}
+
+:is(.scrollbar-elegant.is-scrolling, .scrollbar-elegant[data-scrolling="true"])::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+}
+
 /* 灰色模式（哀悼模式） */
 @utility grayscale-mode {
   filter: grayscale(100%);

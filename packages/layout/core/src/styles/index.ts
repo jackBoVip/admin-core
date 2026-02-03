@@ -33,10 +33,6 @@ export const layoutThemeTokens = {
   '--layout-z-index-panel': '215',
   '--layout-z-index-overlay': '250',
 
-  // 动画时长
-  '--layout-transition-fast': '150ms',
-  '--layout-transition-normal': '200ms',
-  '--layout-transition-slow': '300ms',
 } as const;
 
 /**
@@ -64,14 +60,14 @@ export const tailwindThemeCSS = `
   --z-layout-overlay: var(--layout-z-index-overlay, 250);
 
   /* 动画时长 */
-  --duration-layout-fast: var(--layout-transition-fast, 150ms);
-  --duration-layout-normal: var(--layout-transition-normal, 200ms);
-  --duration-layout-slow: var(--layout-transition-slow, 300ms);
+  --duration-layout-fast: var(--admin-duration-fast, 150ms);
+  --duration-layout-normal: var(--admin-duration-normal, 300ms);
+  --duration-layout-slow: var(--admin-duration-slow, 500ms);
 
   /* 动画曲线 */
-  --ease-layout: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-layout-in: cubic-bezier(0.4, 0, 1, 1);
-  --ease-layout-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-layout: var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  --ease-layout-in: var(--admin-easing-in, cubic-bezier(0.4, 0, 1, 1));
+  --ease-layout-out: var(--admin-easing-out, cubic-bezier(0, 0, 0.2, 1));
 }
 `;
 
@@ -95,18 +91,19 @@ export const layoutBaseCSS = `
   left: 0;
   z-index: var(--layout-z-index-header);
   height: var(--layout-header-height);
-  transition: all var(--layout-transition-normal) var(--ease-layout);
+  transition: all var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-header--with-sidebar {
+:is(.layout-header--with-sidebar, .layout-header[data-with-sidebar="true"]) {
   left: var(--layout-sidebar-width);
 }
 
-.layout-header--collapsed {
+:is(.layout-header--collapsed, .layout-header[data-collapsed="true"]) {
   left: var(--layout-sidebar-collapse-width);
 }
 
-.layout-header--hidden {
+:is(.layout-header--hidden, .layout-header[data-hidden="true"]) {
   transform: translateY(-100%);
 }
 
@@ -118,18 +115,19 @@ export const layoutBaseCSS = `
   bottom: 0;
   z-index: var(--layout-z-index-sidebar);
   width: var(--layout-sidebar-width);
-  transition: width var(--layout-transition-normal) var(--ease-layout);
+  transition: width var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-sidebar--collapsed {
+:is(.layout-sidebar--collapsed, .layout-sidebar[data-collapsed="true"]) {
   width: var(--layout-sidebar-collapse-width);
 }
 
-.layout-sidebar--mixed {
+:is(.layout-sidebar--mixed, .layout-sidebar[data-mixed="true"]) {
   width: var(--layout-sidebar-mixed-width);
 }
 
-.layout-sidebar--hidden {
+:is(.layout-sidebar--hidden, .layout-sidebar[data-hidden="true"]) {
   transform: translateX(-100%);
 }
 
@@ -141,14 +139,15 @@ export const layoutBaseCSS = `
   left: 0;
   z-index: var(--layout-z-index-tabbar);
   height: var(--layout-tabbar-height);
-  transition: all var(--layout-transition-normal) var(--ease-layout);
+  transition: all var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-tabbar--with-sidebar {
+:is(.layout-tabbar--with-sidebar, .layout-tabbar[data-with-sidebar="true"]) {
   left: var(--layout-sidebar-width);
 }
 
-.layout-tabbar--collapsed {
+:is(.layout-tabbar--collapsed, .layout-tabbar[data-collapsed="true"]) {
   left: var(--layout-sidebar-collapse-width);
 }
 
@@ -160,21 +159,39 @@ export const layoutBaseCSS = `
   margin-left: var(--layout-sidebar-width);
   margin-top: calc(var(--layout-header-height) + var(--layout-tabbar-height));
   padding: var(--layout-content-padding);
-  transition: margin var(--layout-transition-normal) var(--ease-layout);
+  transition: margin var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-content--collapsed {
+:is(.layout-content--collapsed, .layout-content[data-collapsed="true"]) {
   margin-left: var(--layout-sidebar-collapse-width);
 }
 
-.layout-content--compact {
+:is(.layout-content--compact, .layout-content[data-compact="true"]) {
   max-width: var(--layout-content-compact-width);
   margin-left: auto;
   margin-right: auto;
 }
 
-.layout-content--with-panel {
+:is(.layout-content--with-panel, .layout-content[data-with-panel="true"]) {
   margin-right: var(--layout-panel-width);
+}
+
+:is(.layout-content--mobile, .layout-content[data-mobile="true"]) {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+:is(.layout-content--panel-left, .layout-content[data-panel-position="left"]) {
+  margin-left: calc(var(--layout-sidebar-width) + var(--layout-panel-width));
+}
+
+:is(.layout-content--panel-right, .layout-content[data-panel-position="right"]) {
+  margin-right: var(--layout-panel-width);
+}
+
+:is(.layout-content--panel-collapsed, .layout-content[data-panel-collapsed="true"]) {
+  margin-right: 0;
 }
 
 /* 页脚 */
@@ -182,10 +199,15 @@ export const layoutBaseCSS = `
   position: relative;
   height: var(--layout-footer-height);
   margin-left: var(--layout-sidebar-width);
-  transition: margin var(--layout-transition-normal) var(--ease-layout);
+  transition: margin var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-footer--fixed {
+:is(.layout-footer--with-sidebar, .layout-footer[data-with-sidebar="true"]) {
+  margin-left: var(--layout-sidebar-width);
+}
+
+:is(.layout-footer--fixed, .layout-footer[data-fixed="true"]) {
   position: fixed;
   bottom: 0;
   right: 0;
@@ -193,7 +215,7 @@ export const layoutBaseCSS = `
   z-index: var(--layout-z-index);
 }
 
-.layout-footer--collapsed {
+:is(.layout-footer--collapsed, .layout-footer--sidebar-collapsed, .layout-footer[data-collapsed="true"]) {
   margin-left: var(--layout-sidebar-collapse-width);
   left: var(--layout-sidebar-collapse-width);
 }
@@ -205,18 +227,19 @@ export const layoutBaseCSS = `
   bottom: 0;
   z-index: var(--layout-z-index-panel);
   width: var(--layout-panel-width);
-  transition: width var(--layout-transition-normal) var(--ease-layout);
+  transition: width var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-panel--left {
+:is(.layout-panel--left, .layout-panel[data-position="left"]) {
   left: 0;
 }
 
-.layout-panel--right {
+:is(.layout-panel--right, .layout-panel[data-position="right"]) {
   right: 0;
 }
 
-.layout-panel--collapsed {
+:is(.layout-panel--collapsed, .layout-panel[data-collapsed="true"]) {
   width: var(--layout-panel-collapse-width);
 }
 
@@ -228,10 +251,11 @@ export const layoutBaseCSS = `
   background-color: rgb(0 0 0 / 45%);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--layout-transition-normal) var(--ease-layout);
+  transition: opacity var(--admin-duration-normal, 300ms)
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
-.layout-overlay--visible {
+:is(.layout-overlay--visible, .layout-overlay[data-state="visible"]) {
   opacity: 1;
   pointer-events: auto;
 }
@@ -242,12 +266,12 @@ export const layoutBaseCSS = `
     transform: translateX(-100%);
   }
 
-  .layout-sidebar--mobile-visible {
+  :is(.layout-sidebar--mobile-visible, .layout-sidebar[data-mobile-visible="true"]) {
     transform: translateX(0);
   }
 
-  .layout-header--with-sidebar,
-  .layout-tabbar--with-sidebar,
+  :is(.layout-header--with-sidebar, .layout-header[data-with-sidebar="true"]),
+  :is(.layout-tabbar--with-sidebar, .layout-tabbar[data-with-sidebar="true"]),
   .layout-content,
   .layout-footer {
     left: 0;
@@ -326,25 +350,25 @@ export const layoutUtilitiesCSS = `
 }
 
 @utility duration-layout-fast {
-  transition-duration: var(--layout-transition-fast);
+  transition-duration: var(--admin-duration-fast, 150ms);
 }
 
 @utility duration-layout-normal {
-  transition-duration: var(--layout-transition-normal);
+  transition-duration: var(--admin-duration-normal, 300ms);
 }
 
 @utility duration-layout-slow {
-  transition-duration: var(--layout-transition-slow);
+  transition-duration: var(--admin-duration-slow, 500ms);
 }
 
 @utility ease-layout {
-  transition-timing-function: var(--ease-layout);
+  transition-timing-function: var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 @utility transition-layout {
   transition-property: width, height, margin, padding, transform, opacity;
-  transition-duration: var(--layout-transition-normal);
-  transition-timing-function: var(--ease-layout);
+  transition-duration: var(--admin-duration-normal, 300ms);
+  transition-timing-function: var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 /* 内容区内边距工具类 */
@@ -369,18 +393,6 @@ export const layoutUtilitiesCSS = `
 }
 
 /* 滚动容器 */
-@utility scrollbar-thin {
-  scrollbar-width: thin;
-}
-
-@utility scrollbar-none {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-@utility scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
 `;
 
 /**

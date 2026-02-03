@@ -423,7 +423,7 @@ const handleLockScreen = () => {
     <!-- 内容区域 -->
     <template #default>
       <router-view v-slot="{ Component }">
-        <transition name="page-fade-slide" mode="out-in">
+        <transition name="fade-slide" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>

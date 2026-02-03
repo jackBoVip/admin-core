@@ -122,6 +122,11 @@ i18n.addMessages('zh-CN', {
 });
 ```
 
+## 样式与动画变量
+
+- 布局样式依赖 `@admin-core/preferences/styles` 提供的全局变量（如 `--admin-duration-*`、`--admin-easing-*`、`--admin-z-index-*`）。
+- 页面过渡统一使用 `fade-*` 系列动画类（由 `@admin-core/preferences` 提供）。
+
 ## Tailwind CSS v4 集成
 
 ```typescript

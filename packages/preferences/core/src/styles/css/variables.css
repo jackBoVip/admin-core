@@ -146,6 +146,22 @@ html {
     --popover: light-dark(oklch(1 0 0), oklch(0.15 0.02 250));
     --popover-foreground: var(--foreground);
 
+    /* ========== Tooltip（全局） ========== */
+    --tooltip-bg: var(--accent);
+    --tooltip-fg: var(--accent-foreground);
+    --tooltip-border: var(--border);
+    --tooltip-radius: calc(var(--radius) - 4px);
+    --tooltip-font-size: 0.75rem;
+    --tooltip-padding-y: 0.5rem;
+    --tooltip-padding-x: 1rem;
+    --tooltip-arrow-size: 8px;
+    --tooltip-arrow-offset: 6px;
+    --tooltip-offset: 0.5rem;
+    --tooltip-shadow: 0 10px 30px -12px color-mix(in oklch, var(--foreground) 25%, transparent),
+      0 4px 12px -6px color-mix(in oklch, var(--foreground) 20%, transparent);
+    --tooltip-enter-duration: var(--admin-duration-fast);
+    --tooltip-ease: var(--admin-easing-default);
+
     /* ========== 次要色 ========== */
     --secondary: var(--muted);
     --secondary-foreground: var(--foreground);
@@ -204,6 +220,17 @@ html {
     --admin-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
     --admin-easing-in: cubic-bezier(0.4, 0, 1, 1);
     --admin-easing-out: cubic-bezier(0, 0, 0.2, 1);
+
+    /* ========== 滚动条变量 ========== */
+    --scrollbar-width: 6px;
+    --scrollbar-radius: 3px;
+    /* 普通滚动条（用于浅色/深色背景自适应） */
+    --scrollbar-thumb: light-dark(
+      oklch(0.55 0.005 250 / 0.22),
+      oklch(0.75 0.005 250 / 0.32)
+    );
+    /* 深色背景滚动条（用于始终深色的侧边栏） */
+    --scrollbar-thumb-dark: oklch(0.9 0.005 250 / 0.22);
 
     /* ========== z-index 变量 ========== */
     --admin-z-index-base: 200;
