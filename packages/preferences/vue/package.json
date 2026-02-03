@@ -17,7 +17,7 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.cts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
       }
     },
@@ -28,7 +28,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build && vite build --config vite.cdn.config.ts && node scripts/copy-d-cts.mjs",
+    "build": "vite build && vite build --config vite.cdn.config.ts",
     "dev": "vite build --watch",
     "test": "vitest",
     "test:run": "vitest run",

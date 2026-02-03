@@ -27,6 +27,7 @@ catalog:
   '@types/node': ^25.0.9
   '@types/react': ^19.2.9
   '@types/react-dom': ^19.2.3
+  '@types/react-test-renderer': ^19.1.0
   '@typescript-eslint/eslint-plugin': ^8.42.0
   '@typescript-eslint/parser': ^8.42.0
   '@vitejs/plugin-react': ^5.1.2
@@ -43,8 +44,9 @@ catalog:
   lint-staged: ^16.2.7
   naive-ui: ^2.43.2
   prettier: ^3.6.2
-  react: ^19.2.3
-  react-dom: ^19.2.3
+  react: ^19.2.4
+  react-dom: ^19.2.4
+  react-test-renderer: ^19.2.4
   rimraf: ^6.0.1
   rollup-plugin-visualizer: ^6.0.3
   tailwindcss: ^4.1.10

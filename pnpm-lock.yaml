@@ -24,6 +24,9 @@ catalogs:
     '@types/react-dom':
       specifier: ^19.2.3
       version: 19.2.3
+    '@types/react-test-renderer':
+      specifier: ^19.1.0
+      version: 19.1.0
     '@typescript-eslint/eslint-plugin':
       specifier: ^8.42.0
       version: 8.53.1
@@ -64,11 +67,14 @@ catalogs:
       specifier: ^3.6.2
       version: 3.8.1
     react:
-      specifier: ^19.2.3
-      version: 19.2.3
+      specifier: ^19.2.4
+      version: 19.2.4
     react-dom:
-      specifier: ^19.2.3
-      version: 19.2.3
+      specifier: ^19.2.4
+      version: 19.2.4
+    react-test-renderer:
+      specifier: ^19.2.4
+      version: 19.2.4
     rimraf:
       specifier: ^6.0.1
       version: 6.1.2
@@ -99,6 +105,9 @@ catalogs:
     vue:
       specifier: ^3.5.27
       version: 3.5.27
+    vue-router:
+      specifier: ^4.5.0
+      version: 4.6.4
     vue-tsc:
       specifier: ^3.2.3
       version: 3.2.4
@@ -157,13 +166,13 @@ importers:
         version: link:../../packages/preferences/core
       react:
         specifier: 'catalog:'
-        version: 19.2.3
+        version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.3(react@19.2.3)
+        version: 19.2.4(react@19.2.4)
       react-router-dom:
         specifier: ^7.6.1
-        version: 7.13.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 7.13.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.1.10
@@ -279,7 +288,7 @@ importers:
         version: link:../../preferences/react
       '@floating-ui/react':
         specifier: ^0.27.17
-        version: 0.27.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+        version: 0.27.17(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -299,6 +308,9 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.9)
+      '@types/react-test-renderer':
+        specifier: 'catalog:'
+        version: 19.1.0
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.1.2(vite@7.3.1(@types/node@25.0.10)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2))
@@ -307,10 +319,13 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       react:
         specifier: 'catalog:'
-        version: 19.2.3
+        version: 19.2.4
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.3(react@19.2.3)
+        version: 19.2.4(react@19.2.4)
+      react-test-renderer:
+        specifier: 'catalog:'
+        version: 19.2.4(react@19.2.4)
       tailwindcss:
         specifier: 'catalog:'
         version: 4.1.18
@@ -381,6 +396,9 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.27(typescript@5.9.3)
+      vue-router:
+        specifier: 'catalog:'
+        version: 4.6.4(vue@3.5.27(typescript@5.9.3))
       vue-tsc:
         specifier: 'catalog:'
         version: 3.2.4(typescript@5.9.3)
@@ -423,7 +441,7 @@ importers:
         version: link:../core
       react-dom:
         specifier: '>=18.0.0'
-        version: 19.2.3(react@19.2.3)
+        version: 19.2.3(react@19.2.4)
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -442,7 +460,7 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       react:
         specifier: 'catalog:'
-        version: 19.2.3
+        version: 19.2.4
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(@microsoft/api-extractor@7.55.2(@types/node@25.0.10))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
@@ -1257,6 +1275,9 @@ packages:
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
       '@types/react': ^19.2.0
+
+  '@types/react-test-renderer@19.1.0':
+    resolution: {integrity: sha512-XD0WZrHqjNrxA/MaR9O22w/RNidWR9YZmBdRGI7wcnWGrv/3dA8wKCJ8m63Sn+tLJhcjmuhOi629N66W6kgWzQ==}
 
   '@types/react@19.2.9':
     resolution: {integrity: sha512-Lpo8kgb/igvMIPeNV2rsYKTgaORYdO1XGVZ4Qz3akwOj0ySGYMPlQWa8BaLn0G63D1aSaAQ5ldR06wCpChQCjA==}
@@ -2561,6 +2582,14 @@ packages:
     peerDependencies:
       react: ^19.2.3
 
+  react-dom@19.2.4:
+    resolution: {integrity: sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==}
+    peerDependencies:
+      react: ^19.2.4
+
+  react-is@19.2.4:
+    resolution: {integrity: sha512-W+EWGn2v0ApPKgKKCy/7s7WHXkboGcsrXE+2joLyVxkbyVQfO3MUEaUQDHoSmb8TFFrSKYa9mw64WZHNHSDzYA==}
+
   react-refresh@0.18.0:
     resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
     engines: {node: '>=0.10.0'}
@@ -2582,8 +2611,13 @@ packages:
       react-dom:
         optional: true
 
-  react@19.2.3:
-    resolution: {integrity: sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA==}
+  react-test-renderer@19.2.4:
+    resolution: {integrity: sha512-Ttl5D7Rnmi6JGMUpri4UjB4BAN0FPs4yRDnu2XSsigCWOLm11o8GwRlVsh27ER+4WFqsGtrBuuv5zumUaRCmKw==}
+    peerDependencies:
+      react: ^19.2.4
+
+  react@19.2.4:
+    resolution: {integrity: sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==}
     engines: {node: '>=0.10.0'}
 
   read-yaml-file@1.1.0:
@@ -3506,18 +3540,18 @@ snapshots:
       '@floating-ui/core': 1.7.4
       '@floating-ui/utils': 0.2.10
 
-  '@floating-ui/react-dom@2.1.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@floating-ui/react-dom@2.1.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@floating-ui/dom': 1.7.5
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
-  '@floating-ui/react@0.27.17(react-dom@19.2.3(react@19.2.3))(react@19.2.3)':
+  '@floating-ui/react@0.27.17(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.7(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@floating-ui/react-dom': 2.1.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@floating-ui/utils': 0.2.10
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
       tabbable: 6.4.0
 
   '@floating-ui/utils@0.2.10': {}
@@ -3893,6 +3927,10 @@ snapshots:
       undici-types: 7.16.0
 
   '@types/react-dom@19.2.3(@types/react@19.2.9)':
+    dependencies:
+      '@types/react': 19.2.9
+
+  '@types/react-test-renderer@19.1.0':
     dependencies:
       '@types/react': 19.2.9
 
@@ -5145,28 +5183,41 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-dom@19.2.3(react@19.2.3):
+  react-dom@19.2.3(react@19.2.4):
     dependencies:
-      react: 19.2.3
+      react: 19.2.4
       scheduler: 0.27.0
+
+  react-dom@19.2.4(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      scheduler: 0.27.0
+
+  react-is@19.2.4: {}
 
   react-refresh@0.18.0: {}
 
-  react-router-dom@7.13.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  react-router-dom@7.13.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
-      react: 19.2.3
-      react-dom: 19.2.3(react@19.2.3)
-      react-router: 7.13.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
+      react-router: 7.13.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  react-router@7.13.0(react-dom@19.2.3(react@19.2.3))(react@19.2.3):
+  react-router@7.13.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       cookie: 1.1.1
-      react: 19.2.3
+      react: 19.2.4
       set-cookie-parser: 2.7.2
     optionalDependencies:
-      react-dom: 19.2.3(react@19.2.3)
+      react-dom: 19.2.4(react@19.2.4)
 
-  react@19.2.3: {}
+  react-test-renderer@19.2.4(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-is: 19.2.4
+      scheduler: 0.27.0
+
+  react@19.2.4: {}
 
   read-yaml-file@1.1.0:
     dependencies:

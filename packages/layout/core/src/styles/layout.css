@@ -24,13 +24,13 @@
  * Tailwind CSS v4 主题配置
  * ============================================================ */
 @theme {
-  /* 布局尺寸变量 */
-  --spacing-header: var(--layout-header-height, 48px);
-  --spacing-sidebar: var(--layout-sidebar-width, 210px);
-  --spacing-sidebar-collapsed: var(--layout-sidebar-collapse-width, 60px);
+  /* 布局尺寸变量 - 引用 preferences 的 --admin-* 变量 */
+  --spacing-header: var(--admin-header-height, 50px);
+  --spacing-sidebar: var(--admin-sidebar-width, 224px);
+  --spacing-sidebar-collapsed: var(--admin-sidebar-collapsed-width, 60px);
   --spacing-sidebar-mixed: var(--layout-sidebar-mixed-width, 80px);
-  --spacing-tabbar: var(--layout-tabbar-height, 38px);
-  --spacing-footer: var(--layout-footer-height, 32px);
+  --spacing-tabbar: var(--admin-tabbar-height, 38px);
+  --spacing-footer: var(--admin-footer-height, 32px);
   --spacing-panel: var(--layout-panel-width, 280px);
   --spacing-content-compact: var(--layout-content-compact-width, 1200px);
 
@@ -65,22 +65,23 @@
 
 /* ============================================================
  * CSS 变量默认值
+ * @description 布局特有变量，尺寸变量引用 preferences 的 --admin-* 作为源
  * ============================================================ */
 :root {
-  /* 布局尺寸 */
-  --layout-header-height: 48px;
-  --layout-sidebar-width: 210px;
-  --layout-sidebar-collapse-width: 60px;
+  /* 布局尺寸 - 引用 --admin-* 变量（由 @admin-core/preferences 提供） */
+  --layout-header-height: var(--admin-header-height, 50px);
+  --layout-sidebar-width: var(--admin-sidebar-width, 224px);
+  --layout-sidebar-collapse-width: var(--admin-sidebar-collapsed-width, 60px);
   --layout-sidebar-mixed-width: 80px;
-  --layout-tabbar-height: 38px;
-  --layout-footer-height: 32px;
+  --layout-tabbar-height: var(--admin-tabbar-height, 38px);
+  --layout-footer-height: var(--admin-footer-height, 32px);
   --layout-panel-width: 280px;
   --layout-panel-collapse-width: 0px;
-  --layout-content-padding: 16px;
-  --layout-content-padding-top: 16px;
-  --layout-content-padding-bottom: 16px;
-  --layout-content-padding-left: 16px;
-  --layout-content-padding-right: 16px;
+  --layout-content-padding: var(--admin-content-padding, 16px);
+  --layout-content-padding-top: var(--admin-content-padding, 16px);
+  --layout-content-padding-bottom: var(--admin-content-padding, 16px);
+  --layout-content-padding-left: var(--admin-content-padding, 16px);
+  --layout-content-padding-right: var(--admin-content-padding, 16px);
   --layout-content-compact-width: 1200px;
   
   /* z-index 层级 */
@@ -680,14 +681,9 @@
 
 /* ============================================================
  * 灰色模式 & 色弱模式
+ * @note 这些类已在 @admin-core/preferences 的 utilities.css 中定义为 @utility
+ *       此处保留空注释作为向后兼容的提示，实际样式由 preferences 提供
  * ============================================================ */
-.grayscale-mode {
-  filter: grayscale(100%);
-}
-
-.color-weak-mode {
-  filter: invert(80%);
-}
 
 /* ============================================================
  * 偏好设置按钮

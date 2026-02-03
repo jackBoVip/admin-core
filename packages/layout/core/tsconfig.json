@@ -1,10 +1,8 @@
 {
-  "extends": "@admin-core/tsconfig/base.json",
+  "extends": "@admin-core/tsconfig/library.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "declaration": true,
-    "declarationMap": true
+    "rootDir": "src"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
