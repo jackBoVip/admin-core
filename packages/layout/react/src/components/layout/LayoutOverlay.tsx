@@ -19,6 +19,7 @@ export const LayoutOverlay = memo(function LayoutOverlay() {
   return createPortal(
     <div
       className="layout-overlay layout-overlay--visible"
+      data-state="visible"
       onClick={toggle}
       style={{
         position: 'fixed',

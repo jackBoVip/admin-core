@@ -22,16 +22,6 @@ const parentSubMenu = useSubMenuContext();
 // 路径
 const path = computed(() => props.item.key || props.item.path || '');
 
-// 父级路径（遍历父级子菜单上下文获取完整路径链）
-const parentPaths = computed(() => {
-  const paths: string[] = [];
-  let parent = parentSubMenu;
-  while (parent) {
-    paths.unshift(parent.path);
-    parent = parent.parent;
-  }
-  return paths;
-});
 
 // 是否激活
 const active = computed(() => {
@@ -47,10 +37,17 @@ const menuIcon = computed(() => {
 // 点击处理
 function handleClick() {
   if (props.item.disabled) return;
+
+  const parentPaths: string[] = [];
+  let parent = parentSubMenu;
+  while (parent) {
+    parentPaths.unshift(parent.path);
+    parent = parent.parent;
+  }
   
   menuContext.handleMenuItemClick({
     path: path.value,
-    parentPaths: parentPaths.value,
+    parentPaths,
   });
 }
 
@@ -77,7 +74,10 @@ const indentStyle = computed(() => {
 
 <template>
   <li
-    :class="itemClass"
+    :class="['data-active:text-primary data-disabled:opacity-50', itemClass]"
+    :data-state="active ? 'active' : 'inactive'"
+    :data-disabled="item.disabled ? 'true' : undefined"
+    :data-level="level"
     :style="indentStyle"
     @click="handleClick"
   >
@@ -90,7 +90,12 @@ const indentStyle = computed(() => {
     <span class="menu__name">{{ item.name }}</span>
     
     <!-- 徽章 -->
-    <span v-if="item.badge" class="menu__badge" :class="item.badgeType ? `menu__badge--${item.badgeType}` : ''">
+    <span
+      v-if="item.badge"
+      class="menu__badge"
+      :class="item.badgeType ? `menu__badge--${item.badgeType}` : ''"
+      :data-badge="item.badgeType"
+    >
       {{ item.badge }}
     </span>
   </li>

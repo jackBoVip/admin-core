@@ -3,7 +3,7 @@
  * 子菜单组件
  * @description 支持弹出层模式（水平/折叠）和折叠模式（垂直展开）
  */
-import { computed, ref, onUnmounted, getCurrentInstance } from 'vue';
+import { computed, ref, onUnmounted, getCurrentInstance, watch, watchEffect, nextTick } from 'vue';
 import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue';
 import { useMenuContext, useSubMenuContext, createSubMenuContext } from './use-menu-context';
 import MenuItemComp from './MenuItem.vue';
@@ -31,6 +31,15 @@ const instance = getCurrentInstance();
 // 状态
 const mouseInChild = ref(false);
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+const CHILD_RENDER_CHUNK = 60;
+const renderCount = ref(CHILD_RENDER_CHUNK);
+const popupScrollTop = ref(0);
+const popupViewportHeight = ref(0);
+const popupItemHeight = ref(40);
+const POPUP_OVERSCAN = 4;
+const popupResizeObserver = ref<ResizeObserver | null>(null);
+const popupItemResizeObserver = ref<ResizeObserver | null>(null);
+let popupWheelCleanup: (() => void) | null = null;
 
 // 路径
 const path = computed(() => props.item.key || props.item.path || '');
@@ -47,29 +56,38 @@ const parentPaths = computed(() => {
 });
 
 // 是否展开
-const opened = computed(() => menuContext.openedMenus.value.includes(path.value));
+const opened = computed(() => menuContext.openedMenuSet.value.has(path.value));
 
 // 是否激活（有子菜单激活）
-const active = computed(() => {
-  const checkActive = (items: MenuItem[]): boolean => {
-    for (const item of items) {
-      if (item.key === menuContext.activePath.value || item.path === menuContext.activePath.value) {
-        return true;
-      }
-      if (item.children?.length && checkActive(item.children)) {
-        return true;
-      }
-    }
-    return false;
-  };
-  return props.item.children ? checkActive(props.item.children) : false;
-});
+const active = computed(() => menuContext.activeParentSet.value.has(path.value));
 
 // 是否为一级菜单
 const isFirstLevel = computed(() => props.level === 0);
 
 // 是否为弹出模式
 const isPopup = computed(() => menuContext.isMenuPopup);
+
+watch(
+  [() => props.item.children?.length ?? 0, isPopup, opened],
+  ([total, popup]) => {
+    const nextCount = popup
+      ? total
+      : Math.min(CHILD_RENDER_CHUNK, total);
+    if (renderCount.value !== nextCount) {
+      renderCount.value = nextCount;
+    }
+  },
+  { immediate: true }
+);
+
+watchEffect((onCleanup) => {
+  const total = props.item.children?.length ?? 0;
+  if (isPopup.value || !opened.value || renderCount.value >= total) return;
+  const frame = requestAnimationFrame(() => {
+    renderCount.value = Math.min(renderCount.value + CHILD_RENDER_CHUNK, total);
+  });
+  onCleanup(() => cancelAnimationFrame(frame));
+});
 
 // 创建子菜单上下文（传递父级引用以支持完整路径遍历）
 createSubMenuContext({
@@ -128,6 +146,13 @@ function handleMouseenter(e: MouseEvent | FocusEvent, showTimeout = 300) {
     clearTimeout(hoverTimer);
     hoverTimer = null;
   }
+
+  // 已展开无需重复调度
+  if (opened.value) {
+    const parentEl = instance?.parent?.vnode.el as HTMLElement | null;
+    parentEl?.dispatchEvent(new MouseEvent('mouseenter'));
+    return;
+  }
   
   hoverTimer = setTimeout(() => {
     menuContext.openMenu(path.value, parentPaths.value);
@@ -152,6 +177,13 @@ function handleMouseleave(deepDispatch = false) {
   
   if (parentSubMenu) {
     parentSubMenu.mouseInChild.value = false;
+  }
+
+  if (!opened.value) {
+    if (deepDispatch) {
+      parentSubMenu?.handleMouseleave?.(true);
+    }
+    return;
   }
   
   hoverTimer = setTimeout(() => {
@@ -229,20 +261,165 @@ const subMenuClass = computed(() => [
 
 const contentClass = computed(() => [
   'menu__sub-menu-content',
-  {
-    'menu__sub-menu-content--active': active.value,
-  },
 ]);
+
+const visibleChildren = computed(() => (props.item.children ?? []).slice(0, renderCount.value));
+const popupChildren = computed(() => props.item.children ?? []);
+const popupStartIndex = computed(() =>
+  Math.max(0, Math.floor(popupScrollTop.value / popupItemHeight.value) - POPUP_OVERSCAN)
+);
+const popupEndIndex = computed(() =>
+  Math.min(
+    popupChildren.value.length,
+    Math.ceil((popupScrollTop.value + popupViewportHeight.value) / popupItemHeight.value) + POPUP_OVERSCAN
+  )
+);
+const popupVisibleChildren = computed(() =>
+  popupChildren.value.slice(popupStartIndex.value, popupEndIndex.value)
+);
+const popupListStyle = computed(() => {
+  if (!isPopup.value) return undefined;
+  const paddingTop = popupStartIndex.value * popupItemHeight.value;
+  const paddingBottom = (popupChildren.value.length - popupEndIndex.value) * popupItemHeight.value;
+  return {
+    paddingTop: `${paddingTop}px`,
+    paddingBottom: `${paddingBottom}px`,
+  };
+});
+
+watch(
+  [isPopup, opened, popupChildren, popupItemHeight, popupViewportHeight, popupScrollTop],
+  ([popup, openedValue, children, itemHeightValue, viewHeight, currentTop]) => {
+    if (!popup || !openedValue) return;
+    const totalHeight = children.length * itemHeightValue;
+    const maxScrollTop = Math.max(0, totalHeight - viewHeight);
+    if (currentTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (floatingRef.value) {
+      floatingRef.value.scrollTop = nextTop;
+    }
+    if (popupScrollTop.value !== nextTop) {
+      popupScrollTop.value = nextTop;
+    }
+  }
+);
+
+const updatePopupMetrics = () => {
+  const popupEl = floatingRef.value;
+  if (!popupEl) return;
+  const computedStyle = getComputedStyle(popupEl);
+  const heightValue = parseFloat(computedStyle.getPropertyValue('--menu-item-height'));
+  if (!Number.isNaN(heightValue) && heightValue > 0) {
+    popupItemHeight.value = heightValue;
+  }
+  const firstItem = popupEl.querySelector('.menu__item, .menu__sub-menu-content') as HTMLElement | null;
+  if (firstItem) {
+    const measuredHeight = firstItem.getBoundingClientRect().height;
+    if (measuredHeight > 0 && measuredHeight !== popupItemHeight.value) {
+      popupItemHeight.value = measuredHeight;
+    }
+  }
+  popupViewportHeight.value = popupEl.clientHeight;
+};
+
+const handlePopupScroll = (e: Event) => {
+  const target = e.currentTarget as HTMLElement | null;
+  if (!target) return;
+  const nextTop = target.scrollTop;
+  if (popupScrollTop.value !== nextTop) {
+    popupScrollTop.value = nextTop;
+  }
+};
+
+watch(opened, (value, _, onCleanup) => {
+  if (!value || !isPopup.value) return;
+  nextTick(() => {
+    updatePopupMetrics();
+    if (floatingRef.value) {
+      floatingRef.value.scrollTop = 0;
+    }
+    if (popupScrollTop.value !== 0) {
+      popupScrollTop.value = 0;
+    }
+    const container = floatingRef.value;
+    if (!container) return;
+    const handleResize = () => updatePopupMetrics();
+    if (typeof ResizeObserver !== 'undefined') {
+      popupResizeObserver.value = new ResizeObserver(handleResize);
+      popupResizeObserver.value.observe(container);
+    } else {
+      window.addEventListener('resize', handleResize);
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      let observedItem = container.querySelector('.menu__item, .menu__sub-menu-content') as HTMLElement | null;
+      if (observedItem) {
+        popupItemResizeObserver.value?.disconnect();
+        popupItemResizeObserver.value = new ResizeObserver(() => {
+          const currentItem = container.querySelector('.menu__item, .menu__sub-menu-content') as HTMLElement | null;
+          if (!currentItem) return;
+          if (currentItem !== observedItem) {
+            if (observedItem) {
+              popupItemResizeObserver.value?.unobserve(observedItem);
+            }
+            popupItemResizeObserver.value?.observe(currentItem);
+            observedItem = currentItem;
+          }
+          const measuredHeight = currentItem.getBoundingClientRect().height;
+          if (measuredHeight > 0 && measuredHeight !== popupItemHeight.value) {
+            popupItemHeight.value = measuredHeight;
+          }
+        });
+        popupItemResizeObserver.value.observe(observedItem);
+      }
+    }
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return;
+      e.preventDefault();
+      container.scrollTop += e.deltaY;
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    popupWheelCleanup = () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+    onCleanup(() => {
+      if (popupWheelCleanup) {
+        popupWheelCleanup();
+        popupWheelCleanup = null;
+      }
+      const hasResizeObserver = !!popupResizeObserver.value;
+      if (popupResizeObserver.value) {
+        popupResizeObserver.value.disconnect();
+        popupResizeObserver.value = null;
+      }
+      if (popupItemResizeObserver.value) {
+        popupItemResizeObserver.value.disconnect();
+        popupItemResizeObserver.value = null;
+      }
+      if (!hasResizeObserver) {
+        window.removeEventListener('resize', handleResize);
+      }
+    });
+  });
+});
 </script>
 
 <template>
-  <li :class="subMenuClass">
+  <li
+    :class="['data-active:text-primary data-disabled:opacity-50', subMenuClass]"
+    :data-state="active ? 'active' : 'inactive'"
+    :data-disabled="item.disabled ? 'true' : undefined"
+    :data-opened="opened ? 'true' : undefined"
+    :data-more="isMore ? 'true' : undefined"
+    :data-level="level"
+  >
     <!-- 弹出模式 -->
     <template v-if="isPopup">
       <!-- 触发器 -->
       <div
         ref="referenceRef"
-        :class="contentClass"
+        :class="['data-active:text-primary data-disabled:opacity-50', contentClass]"
+        :data-state="active ? 'active' : 'inactive'"
+        :data-disabled="item.disabled ? 'true' : undefined"
         @mouseenter="handleMouseenter"
         @mouseleave="() => handleMouseleave()"
         @click="handleClick"
@@ -286,12 +463,20 @@ const contentClass = computed(() => [
               `menu__popup--${menuContext.props.theme}`,
               `menu__popup--level-${level}`,
             ]"
+            :data-theme="menuContext.props.theme"
+            :data-level="level"
             :style="floatingStyles"
             @mouseenter="handlePopupMouseenter"
             @mouseleave="handlePopupMouseleave"
+            @scroll="handlePopupScroll"
           >
-            <ul class="menu__popup-list" :class="{ 'menu--rounded': menuContext.props.rounded }">
-              <template v-for="child in item.children" :key="child.key">
+            <ul
+              class="menu__popup-list"
+              :class="{ 'menu--rounded': menuContext.props.rounded }"
+              :data-rounded="menuContext.props.rounded ? 'true' : undefined"
+              :style="popupListStyle"
+            >
+              <template v-for="child in popupVisibleChildren" :key="child.key">
                 <SubMenu
                   v-if="child.children && child.children.length > 0"
                   :item="child"
@@ -313,7 +498,9 @@ const contentClass = computed(() => [
     <template v-else>
       <!-- 触发器 -->
       <div
-        :class="contentClass"
+        :class="['data-active:text-primary data-disabled:opacity-50', contentClass]"
+        :data-state="active ? 'active' : 'inactive'"
+        :data-disabled="item.disabled ? 'true' : undefined"
         @click="handleClick"
       >
         <span v-if="item.icon" class="menu__icon">
@@ -330,7 +517,7 @@ const contentClass = computed(() => [
       <!-- 子菜单列表 -->
       <Transition name="menu-collapse">
         <ul v-show="opened" class="menu__sub-list">
-          <template v-for="child in item.children" :key="child.key">
+          <template v-for="child in visibleChildren" :key="child.key">
             <SubMenu
               v-if="child.children && child.children.length > 0"
               :item="child"
@@ -362,10 +549,10 @@ const contentClass = computed(() => [
 }
 
 /* 子级弹出层从左侧滑入 */
-.menu__popup--level-1.menu-popup-enter-from,
-.menu__popup--level-1.menu-popup-leave-to,
-.menu__popup--level-2.menu-popup-enter-from,
-.menu__popup--level-2.menu-popup-leave-to {
+:is(.menu__popup--level-1, .menu__popup[data-level="1"]).menu-popup-enter-from,
+:is(.menu__popup--level-1, .menu__popup[data-level="1"]).menu-popup-leave-to,
+:is(.menu__popup--level-2, .menu__popup[data-level="2"]).menu-popup-enter-from,
+:is(.menu__popup--level-2, .menu__popup[data-level="2"]).menu-popup-leave-to {
   transform: translateX(-4px);
 }
 

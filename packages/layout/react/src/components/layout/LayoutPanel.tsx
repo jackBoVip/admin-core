@@ -25,13 +25,11 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
     context.props.disabled?.panelCollapseButton !== true;
 
   // 类名
-  const panelClassName = useMemo(() => [
-    'layout-panel',
-    `layout-panel--${position}`,
-    collapsed && 'layout-panel--collapsed',
-  ]
-    .filter(Boolean)
-    .join(' '), [position, collapsed]);
+  const panelClassName = useMemo(() => {
+    const classes = ['layout-panel', `layout-panel--${position}`];
+    if (collapsed) classes.push('layout-panel--collapsed');
+    return classes.join(' ');
+  }, [position, collapsed]);
 
   // 样式
   const panelStyle = useMemo(() => ({
@@ -40,7 +38,12 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
   }), [width, computed.headerHeight]);
 
   return (
-    <aside className={panelClassName} style={panelStyle}>
+    <aside
+      className={panelClassName}
+      style={panelStyle}
+      data-position={position}
+      data-collapsed={collapsed ? 'true' : undefined}
+    >
       <div className="layout-panel__inner flex h-full flex-col">
         {/* 头部 */}
         {(header || showCollapseButton) && (
@@ -76,7 +79,7 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
         )}
 
         {/* 内容 */}
-        <div className="layout-panel__content flex-1 overflow-y-auto overflow-x-hidden p-4">
+        <div className="layout-panel__content layout-scroll-container flex-1 overflow-y-auto overflow-x-hidden p-4">
           {children}
         </div>
 

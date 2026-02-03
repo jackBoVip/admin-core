@@ -63,13 +63,21 @@ export const Breadcrumb = memo(function Breadcrumb({
   // 点击处理
   const handleClick = useCallback((item: BreadcrumbItemType) => {
     if (!item.clickable || !item.path) return;
-    
     if (onItemClick) {
       onItemClick(item);
     } else {
       autoHandleClick(item);
     }
   }, [onItemClick, autoHandleClick]);
+
+  const handleItemClick = useCallback((e: React.MouseEvent) => {
+    const index = Number((e.currentTarget as HTMLElement).dataset.index);
+    if (Number.isNaN(index)) return;
+    const item = breadcrumbItems[index];
+    if (item) {
+      handleClick(item);
+    }
+  }, [breadcrumbItems, handleClick]);
 
   // 如果没有面包屑数据，不渲染
   if (breadcrumbItems.length === 0) {
@@ -90,7 +98,8 @@ export const Breadcrumb = memo(function Breadcrumb({
                 <button
                   type="button"
                   className="breadcrumb__item flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                  onClick={() => handleClick(item)}
+                  data-index={index}
+                  onClick={handleItemClick}
                 >
                   {showIcon && item.icon && (
                     <span className="breadcrumb__icon">

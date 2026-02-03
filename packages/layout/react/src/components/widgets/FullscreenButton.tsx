@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
+import { logger } from '@admin-core/layout';
 
 export const FullscreenButton = memo(function FullscreenButton() {
   const { events, t } = useLayoutContext();
@@ -46,7 +47,7 @@ export const FullscreenButton = memo(function FullscreenButton() {
       }
       events.onFullscreenToggle?.(!isFullscreen);
     } catch (error) {
-      console.warn('Fullscreen API not supported:', error);
+      logger.warn('Fullscreen API not supported:', error);
     }
   }, [isFullscreen, events]);
 
@@ -70,6 +71,7 @@ export const FullscreenButton = memo(function FullscreenButton() {
       type="button"
       className="header-widget-btn"
       title={isFullscreen ? t('layout.header.exitFullscreen') : t('layout.header.fullscreen')}
+      data-fullscreen={isFullscreen ? 'true' : undefined}
       onClick={toggleFullscreen}
     >
       {!isFullscreen ? (

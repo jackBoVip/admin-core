@@ -24,10 +24,20 @@ export function isMenuActive(item: MenuItem, activeKey: string): boolean {
  */
 export function hasActiveChild(item: MenuItem, activeKey: string): boolean {
   if (!item.children?.length) return false;
-  return item.children.some(
-    (child) =>
-      isMenuActive(child, activeKey) || hasActiveChild(child, activeKey)
-  );
+  const stack = [...item.children];
+  while (stack.length > 0) {
+    const child = stack.pop();
+    if (!child) continue;
+    if (isMenuActive(child, activeKey)) {
+      return true;
+    }
+    if (child.children?.length) {
+      for (let i = child.children.length - 1; i >= 0; i -= 1) {
+        stack.push(child.children[i]);
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -46,17 +56,16 @@ export function getMenuItemClassName(
   const { level, isActive, isExpanded, hasActiveChild: hasActive, prefix = 'sidebar-menu' } = options;
   const hasChildrenItems = hasChildren(item);
 
-  return [
+  const classes = [
     `${prefix}__item`,
     `${prefix}__item--level-${level}`,
-    isActive && `${prefix}__item--active`,
-    hasChildrenItems && `${prefix}__item--has-children`,
-    isExpanded && `${prefix}__item--expanded`,
-    hasActive && `${prefix}__item--has-active-child`,
-    item.disabled && `${prefix}__item--disabled`,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  ];
+  if (isActive) classes.push(`${prefix}__item--active`);
+  if (hasChildrenItems) classes.push(`${prefix}__item--has-children`);
+  if (isExpanded) classes.push(`${prefix}__item--expanded`);
+  if (hasActive) classes.push(`${prefix}__item--has-active-child`);
+  if (item.disabled) classes.push(`${prefix}__item--disabled`);
+  return classes.join(' ');
 }
 
 /**
@@ -80,23 +89,27 @@ export function findFirstActivatableChild(item: MenuItem): MenuItem | null {
  */
 export function getMenuParentKeys(menus: MenuItem[], targetKey: string): string[] {
   const keys: string[] = [];
+  const stack: string[] = [];
   
-  function find(items: MenuItem[], parents: string[]): boolean {
+  function find(items: MenuItem[]): boolean {
     for (const item of items) {
       if (item.key === targetKey) {
-        keys.push(...parents);
+        keys.push(...stack);
         return true;
       }
       if (item.children?.length) {
-        if (find(item.children, [...parents, item.key])) {
+        stack.push(item.key);
+        if (find(item.children)) {
+          stack.pop();
           return true;
         }
+        stack.pop();
       }
     }
     return false;
   }
   
-  find(menus, []);
+  find(menus);
   return keys;
 }
 
@@ -104,11 +117,15 @@ export function getMenuParentKeys(menus: MenuItem[], targetKey: string): string[
  * 根据 key 查找菜单项
  */
 export function findMenuByKey(menus: MenuItem[], key: string): MenuItem | null {
-  for (const item of menus) {
+  const stack = [...menus].reverse();
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
     if (item.key === key) return item;
     if (item.children?.length) {
-      const found = findMenuByKey(item.children, key);
-      if (found) return found;
+      for (let i = item.children.length - 1; i >= 0; i -= 1) {
+        stack.push(item.children[i]);
+      }
     }
   }
   return null;

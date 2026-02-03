@@ -6,8 +6,8 @@
  * 自动响应偏好设置变化（布局类型、主题等）
  */
 import { computed, ref, shallowRef, watch, onUnmounted } from 'vue';
-import type { BasicLayoutProps, LayoutEvents } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps } from '@admin-core/layout';
+import type { BasicLayoutProps, LayoutEvents, MenuItem, TabItem, BreadcrumbItem, NotificationItem } from '@admin-core/layout';
+import { mapPreferencesToLayoutProps, logger } from '@admin-core/layout';
 import { createLayoutContext, useResponsive } from '../../composables';
 import { 
   PreferencesProvider, 
@@ -25,6 +25,47 @@ import LayoutOverlay from './LayoutOverlay.vue';
 import HorizontalMenu from './HorizontalMenu.vue';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
 
+function buildMenuPathIndex(menus: MenuItem[]) {
+  const byKey = new Map<string, MenuItem>();
+  const byPath = new Map<string, MenuItem>();
+  const chainByKey = new Map<string, string[]>();
+  const chainByPath = new Map<string, string[]>();
+  const pathItems: MenuItem[] = [];
+  const stack: string[] = [];
+
+  const walk = (items: MenuItem[]) => {
+    for (const item of items) {
+      if (item.key) {
+        byKey.set(item.key, item);
+      }
+      if (item.path) {
+        byPath.set(item.path, item);
+        pathItems.push(item);
+      }
+      const chain = item.key ? [...stack, item.key] : [...stack];
+      if (item.key) {
+        chainByKey.set(item.key, chain);
+      }
+      if (item.path) {
+        chainByPath.set(item.path, chain);
+      }
+      if (item.key) {
+        stack.push(item.key);
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+      if (item.key) {
+        stack.pop();
+      }
+    }
+  };
+
+  walk(menus);
+  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
+  return { byKey, byPath, chainByKey, chainByPath, pathItems };
+}
+
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
 let preferencesManager: ReturnType<typeof getPreferencesManager> | null = null;
@@ -36,7 +77,7 @@ try {
     preferencesManager = getPreferencesManager();
   } catch (initError) {
     if (isDev) {
-      console.warn('[layout-vue] Failed to initialize preferences.', initError);
+      logger.warn('Failed to initialize preferences.', initError);
     }
   }
 }
@@ -63,11 +104,11 @@ const props = withDefaults(defineProps<BasicLayoutProps & {
   /** 是否显示偏好设置按钮 */
   showPreferencesButton?: boolean;
   /** 偏好设置按钮位置 */
-  preferencesButtonPosition?: 'header' | 'fixed';
+  preferencesButtonPosition?: 'header' | 'fixed' | 'auto';
 }>(), {
   locale: 'zh-CN',
   showPreferencesButton: true,
-  preferencesButtonPosition: 'fixed',
+  preferencesButtonPosition: 'auto',
 });
 
 // 从偏好设置获取配置（使用 shallowRef 确保整个对象替换时触发更新）
@@ -130,6 +171,9 @@ const mergedProps = computed<BasicLayoutProps>(() => {
   if (props.footer) result.footer = { ...preferencesProps.value.footer, ...props.footer };
   if (props.logo) result.logo = { ...preferencesProps.value.logo, ...props.logo };
   if (props.theme) result.theme = { ...preferencesProps.value.theme, ...props.theme };
+  if (props.preferencesButtonPosition) {
+    result.preferencesButtonPosition = props.preferencesButtonPosition;
+  }
   
   return result;
 });
@@ -137,15 +181,16 @@ const mergedProps = computed<BasicLayoutProps>(() => {
 // 事件定义
 const emit = defineEmits<{
   (e: 'sidebar-collapse', collapsed: boolean): void;
-  (e: 'menu-select', item: any, key: string): void;
-  (e: 'tab-select', item: any, key: string): void;
-  (e: 'tab-close', item: any, key: string): void;
+  (e: 'menu-select', item: MenuItem, key: string): void;
+  (e: 'tab-select', item: TabItem, key: string): void;
+  (e: 'tab-close', item: TabItem, key: string): void;
   (e: 'tab-close-all'): void;
   (e: 'tab-close-other', exceptKey: string): void;
-  (e: 'tab-refresh', item: any, key: string): void;
-  (e: 'breadcrumb-click', item: any, key: string): void;
+  (e: 'tab-refresh', item: TabItem, key: string): void;
+  (e: 'tab-maximize', isMaximized: boolean): void;
+  (e: 'breadcrumb-click', item: BreadcrumbItem, key: string): void;
   (e: 'user-menu-select', key: string): void;
-  (e: 'notification-click', item: any): void;
+  (e: 'notification-click', item: NotificationItem): void;
   (e: 'fullscreen-toggle', isFullscreen: boolean): void;
   (e: 'theme-toggle', theme: string): void;
   (e: 'locale-change', locale: string): void;
@@ -174,6 +219,7 @@ const events: LayoutEvents = {
   onTabCloseAll: () => emit('tab-close-all'),
   onTabCloseOther: (exceptKey) => emit('tab-close-other', exceptKey),
   onTabRefresh: (item, key) => emit('tab-refresh', item, key),
+  onTabMaximize: (isMaximized) => emit('tab-maximize', isMaximized),
   onBreadcrumbClick: (item, key) => emit('breadcrumb-click', item, key),
   onUserMenuSelect: (key) => emit('user-menu-select', key),
   onNotificationClick: (item) => emit('notification-click', item),
@@ -196,6 +242,14 @@ const contextProps = computed<BasicLayoutProps>(() => ({
   ...mergedProps.value,
   isMobile: props.isMobile ?? isMobile.value,
 }));
+
+const resolvedPreferencesButtonPosition = computed(() => {
+  return (
+    props.preferencesButtonPosition ??
+    contextProps.value.preferencesButtonPosition ??
+    'auto'
+  );
+});
 
 // 创建布局上下文（传入 ComputedRef 实现响应式）
 const { context, computed: layoutComputed, cssVars, state } = createLayoutContext(
@@ -240,31 +294,36 @@ const headerMenus = computed(() => {
   return [];
 });
 
+const headerMenuIndex = computed(() => buildMenuPathIndex(contextProps.value.menus || []));
+
 // 顶部菜单激活的 key
 const headerActiveKey = computed(() => {
   const path = typeof contextProps.value.router?.currentPath === 'object' 
     ? contextProps.value.router.currentPath.value 
     : contextProps.value.router?.currentPath;
   
-  // 根据当前路径查找激活的菜单
-  const findActiveKey = (items: typeof headerMenus.value): string | undefined => {
-    for (const item of items) {
-      if (item.path === path) return item.key;
-      if (item.children?.length) {
-        const found = findActiveKey(item.children);
-        if (found) {
-          // 对于 mixed-nav 模式，返回父级 key
-          if (layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) {
-            return item.key;
-          }
-          return found;
-        }
+  if (!path) return '';
+  const index = headerMenuIndex.value;
+  let menu =
+    index.byPath.get(path) ??
+    index.byKey.get(path);
+  if (!menu) {
+    for (const item of index.pathItems) {
+      if (item.path && path.startsWith(item.path)) {
+        menu = item;
+        break;
       }
     }
-    return undefined;
-  };
-  
-  return findActiveKey(contextProps.value.menus || []) || '';
+  }
+  if (!menu) return '';
+  const chain =
+    (menu.key ? index.chainByKey.get(menu.key) : undefined) ??
+    (menu.path ? index.chainByPath.get(menu.path) : undefined) ??
+    [];
+  if (layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) {
+    return chain[0] || '';
+  }
+  return menu.key || '';
 });
 
 // 是否显示顶部菜单
@@ -365,7 +424,11 @@ defineExpose({
       <template #actions>
         <slot name="header-actions">
           <!-- 默认顶栏工具栏 -->
-          <HeaderToolbar />
+          <HeaderToolbar
+            :show-preferences-button="showPreferencesButton"
+            :preferences-button-position="resolvedPreferencesButtonPosition"
+            :on-open-preferences="openPreferences"
+          />
         </slot>
       </template>
       <template #extra>
@@ -444,7 +507,7 @@ defineExpose({
       
       <!-- 内置偏好设置按钮（固定位置） -->
       <button
-        v-if="showPreferencesButton && preferencesButtonPosition === 'fixed'"
+        v-if="showPreferencesButton && resolvedPreferencesButtonPosition === 'fixed'"
         class="layout-preferences-button"
         title="偏好设置"
         @click="openPreferences"

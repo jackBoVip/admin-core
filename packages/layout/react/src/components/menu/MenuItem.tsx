@@ -3,7 +3,7 @@
  * @description 叶子节点菜单项
  */
 import { useMemo, useCallback, memo } from 'react';
-import { useMenuContext, useSubMenuContext } from './useMenuContext';
+import { useMenuContext, useSubMenuContext } from './use-menu-context';
 import type { MenuItem as MenuItemType } from '@admin-core/layout';
 
 export interface MenuItemProps {
@@ -20,14 +20,7 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
   // 路径
   const path = item.key || item.path || '';
 
-  // 父级路径
-  const parentPaths = useMemo(() => {
-    const paths: string[] = [];
-    if (parentSubMenu) {
-      paths.push(parentSubMenu.path);
-    }
-    return paths;
-  }, [parentSubMenu]);
+  const parentPath = parentSubMenu?.path;
 
   // 是否激活
   const active = path === menuContext.activePath;
@@ -44,19 +37,17 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
     
     menuContext.handleMenuItemClick({
       path,
-      parentPaths,
+      parentPaths: parentPath ? [parentPath] : [],
     });
-  }, [item.disabled, menuContext, path, parentPaths]);
+  }, [item.disabled, menuContext, path, parentPath]);
 
   // 类名
-  const itemClassName = useMemo(() => [
-    'menu__item',
-    active && 'menu__item--active',
-    item.disabled && 'menu__item--disabled',
-    `menu__item--level-${level}`,
-  ]
-    .filter(Boolean)
-    .join(' '), [active, item.disabled, level]);
+  const itemClassName = useMemo(() => {
+    const classes = ['menu__item', `menu__item--level-${level}`];
+    if (active) classes.push('menu__item--active');
+    if (item.disabled) classes.push('menu__item--disabled');
+    return classes.join(' ');
+  }, [active, item.disabled, level]);
 
   // 缩进样式（垂直模式）
   const indentStyle = useMemo(() => {
@@ -70,7 +61,10 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
 
   return (
     <li
-      className={itemClassName}
+      className={`${itemClassName} data-active:text-primary data-disabled:opacity-50`}
+      data-state={active ? 'active' : 'inactive'}
+      data-disabled={item.disabled ? 'true' : undefined}
+      data-level={level}
       style={indentStyle}
       onClick={handleClick}
     >
@@ -84,7 +78,10 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
       
       {/* 徽章 */}
       {item.badge && (
-        <span className={`menu__badge ${item.badgeType ? `menu__badge--${item.badgeType}` : ''}`}>
+        <span
+          className={`menu__badge ${item.badgeType ? `menu__badge--${item.badgeType}` : ''}`}
+          data-badge={item.badgeType}
+        >
           {item.badge}
         </span>
       )}

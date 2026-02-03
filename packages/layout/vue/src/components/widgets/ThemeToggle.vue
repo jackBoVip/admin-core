@@ -28,6 +28,13 @@ const handleThemeChange = (theme: ThemeModeType) => {
   isOpen.value = false;
 };
 
+const handleThemeOptionClick = (e: MouseEvent) => {
+  const theme = (e.currentTarget as HTMLElement | null)?.dataset?.value as ThemeModeType | undefined;
+  if (theme) {
+    handleThemeChange(theme);
+  }
+};
+
 // 切换下拉菜单
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
@@ -40,11 +47,12 @@ const closeDropdown = () => {
 </script>
 
 <template>
-  <div class="header-widget-dropdown relative" @mouseleave="closeDropdown">
+  <div class="header-widget-dropdown relative" :data-state="isOpen ? 'open' : 'closed'" @mouseleave="closeDropdown">
     <button
       type="button"
       class="header-widget-btn"
       :title="context.t('layout.header.toggleTheme')"
+      :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
     >
       <!-- 太阳图标（亮色模式） -->
@@ -76,6 +84,7 @@ const closeDropdown = () => {
       <div
         v-if="isOpen"
         class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        data-state="open"
       >
         <button
           v-for="option in themeOptions"
@@ -83,7 +92,9 @@ const closeDropdown = () => {
           type="button"
           class="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
           :class="{ 'text-primary bg-primary/10': currentTheme === option.value }"
-          @click="handleThemeChange(option.value)"
+          :data-selected="currentTheme === option.value ? 'true' : undefined"
+          :data-value="option.value"
+          @click="handleThemeOptionClick"
         >
           <!-- 太阳图标 -->
           <svg v-if="option.icon === 'sun'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -3,7 +3,7 @@
  * 通知按钮组件
  * @description 显示通知列表
  */
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onUnmounted, nextTick } from 'vue';
 import { useLayoutContext } from '../../composables';
 import type { NotificationItem } from '@admin-core/layout';
 
@@ -18,9 +18,14 @@ const notifications = computed<NotificationItem[]>(() =>
 );
 
 // 未读数量
-const unreadCount = computed(() => 
-  context.props.unreadCount ?? notifications.value.filter(n => !n.read).length
-);
+const unreadCount = computed(() => {
+  if (context.props.unreadCount !== undefined) return context.props.unreadCount;
+  let count = 0;
+  for (const item of notifications.value) {
+    if (!item.read) count += 1;
+  }
+  return count;
+});
 
 // 是否有未读通知
 const hasUnread = computed(() => unreadCount.value > 0);
@@ -33,12 +38,6 @@ const toggleDropdown = () => {
 // 关闭下拉菜单
 const closeDropdown = () => {
   isOpen.value = false;
-};
-
-// 处理通知点击
-const handleNotificationClick = (item: NotificationItem) => {
-  context.events.onNotificationClick?.(item);
-  item.onClick?.();
 };
 
 // 格式化时间
@@ -58,14 +57,155 @@ const formatTime = (time?: Date | string) => {
   
   return date.toLocaleDateString();
 };
+
+const notificationMap = computed(() => {
+  if (!isOpen.value) return new Map<string, NotificationItem>();
+  const map = new Map<string, NotificationItem>();
+  notifications.value.forEach((item) => {
+    map.set(String(item.id), item);
+  });
+  return map;
+});
+
+const formattedNotifications = computed(() => {
+  if (!isOpen.value) return [];
+  return notifications.value.map((item) => ({
+    ...item,
+    timeLabel: formatTime(item.time),
+  }));
+});
+
+const listRef = ref<HTMLElement | null>(null);
+const scrollTop = ref(0);
+
+const itemHeight = ref(72);
+const listResizeObserver = ref<ResizeObserver | null>(null);
+const MAX_HEIGHT = 320;
+const OVERSCAN = 4;
+const totalHeight = computed(() => formattedNotifications.value.length * itemHeight.value);
+const viewportHeight = computed(() =>
+  totalHeight.value === 0 ? MAX_HEIGHT : Math.min(totalHeight.value, MAX_HEIGHT)
+);
+const startIndex = computed(() =>
+  Math.max(0, Math.floor(scrollTop.value / itemHeight.value) - OVERSCAN)
+);
+const endIndex = computed(() =>
+  Math.min(
+    formattedNotifications.value.length,
+    Math.ceil((scrollTop.value + viewportHeight.value) / itemHeight.value) + OVERSCAN
+  )
+);
+const visibleNotifications = computed(() =>
+  formattedNotifications.value.slice(startIndex.value, endIndex.value)
+);
+
+watch(
+  [isOpen, totalHeight, viewportHeight, scrollTop],
+  ([open, total, viewHeight, currentTop]) => {
+    if (!open) return;
+    const maxScrollTop = Math.max(0, total - viewHeight);
+    if (currentTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (listRef.value) {
+      listRef.value.scrollTop = nextTop;
+    }
+    if (scrollTop.value !== nextTop) {
+      scrollTop.value = nextTop;
+    }
+  }
+);
+
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  const nextTop = target.scrollTop;
+  if (scrollTop.value !== nextTop) {
+    scrollTop.value = nextTop;
+  }
+};
+
+const handleWheel = (e: WheelEvent) => {
+  if (e.ctrlKey) return;
+  e.preventDefault();
+  const target = e.currentTarget as HTMLElement | null;
+  if (!target) return;
+  target.scrollTop += e.deltaY;
+  const nextTop = target.scrollTop;
+  if (scrollTop.value !== nextTop) {
+    scrollTop.value = nextTop;
+  }
+};
+
+watch(isOpen, (open) => {
+  if (open) return;
+  if (listRef.value) {
+    listRef.value.scrollTop = 0;
+  }
+  if (scrollTop.value !== 0) {
+    scrollTop.value = 0;
+  }
+});
+
+onUnmounted(() => {
+  if (listResizeObserver.value) {
+    listResizeObserver.value.disconnect();
+    listResizeObserver.value = null;
+  }
+});
+
+watch([isOpen, () => formattedNotifications.value.length], ([open]) => {
+  if (!open) return;
+  nextTick(() => {
+    const list = listRef.value;
+    if (!list) return;
+    const firstItem = list.querySelector('.layout-list-item') as HTMLElement | null;
+    if (!firstItem) return;
+    const height = firstItem.getBoundingClientRect().height;
+    if (height > 0 && height !== itemHeight.value) {
+      itemHeight.value = height;
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      listResizeObserver.value?.disconnect();
+      listResizeObserver.value = new ResizeObserver(() => {
+        const currentItem = list.querySelector('.layout-list-item') as HTMLElement | null;
+        if (!currentItem) return;
+        const nextHeight = currentItem.getBoundingClientRect().height;
+        if (nextHeight > 0 && nextHeight !== itemHeight.value) {
+          itemHeight.value = nextHeight;
+        }
+      });
+      listResizeObserver.value.observe(firstItem);
+    }
+  });
+});
+
+watch(isOpen, (open) => {
+  if (open) return;
+  if (listResizeObserver.value) {
+    listResizeObserver.value.disconnect();
+    listResizeObserver.value = null;
+  }
+});
+
+// 处理通知点击
+const handleNotificationClick = (e: MouseEvent) => {
+  const id = (e.currentTarget as HTMLElement | null)?.dataset?.id;
+  if (!id) return;
+  const item = notificationMap.value.get(id);
+  if (!item) return;
+  context.events.onNotificationClick?.(item);
+  item.onClick?.();
+};
 </script>
 
 <template>
-  <div class="header-widget-dropdown relative" @mouseleave="closeDropdown">
+  <div class="header-widget-dropdown relative" :data-state="isOpen ? 'open' : 'closed'" @mouseleave="closeDropdown">
     <button
       type="button"
       class="header-widget-btn relative"
       :title="context.t('layout.header.notifications')"
+      :data-unread="hasUnread ? 'true' : undefined"
+      :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
     >
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -86,6 +226,7 @@ const formatTime = (time?: Date | string) => {
       <div
         v-if="isOpen"
         class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        data-state="open"
       >
         <!-- 标题 -->
         <div class="flex items-center justify-between border-b px-4 py-3 dark:border-gray-700">
@@ -96,17 +237,33 @@ const formatTime = (time?: Date | string) => {
         </div>
         
         <!-- 通知列表 -->
-        <div class="max-h-80 overflow-y-auto">
-          <div v-if="notifications.length === 0" class="py-8 text-center text-gray-400">
+        <div
+          ref="listRef"
+          class="layout-scroll-container max-h-80 overflow-y-auto"
+          :style="{ height: `${viewportHeight}px`, position: 'relative' }"
+          @scroll="handleScroll"
+          @wheel="handleWheel"
+        >
+          <div v-if="formattedNotifications.length === 0" class="py-8 text-center text-gray-400">
             {{ context.t('layout.notification.empty') }}
           </div>
           <template v-else>
+            <div :style="{ height: `${totalHeight}px`, pointerEvents: 'none' }" />
             <div
-              v-for="item in notifications"
+              v-for="(item, index) in visibleNotifications"
               :key="item.id"
-              class="flex cursor-pointer gap-3 border-b px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+              :data-id="String(item.id)"
+              class="layout-list-item flex cursor-pointer gap-3 border-b px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
               :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': !item.read }"
-              @click="handleNotificationClick(item)"
+              :data-read="item.read ? 'true' : 'false'"
+              :style="{
+                position: 'absolute',
+                top: `${(startIndex + index) * itemHeight}px`,
+                left: 0,
+                right: 0,
+                height: `${itemHeight}px`,
+              }"
+              @click="handleNotificationClick"
             >
               <!-- 图标 -->
               <div
@@ -150,7 +307,7 @@ const formatTime = (time?: Date | string) => {
                   {{ item.description }}
                 </p>
                 <span class="mt-1 text-xs text-gray-400">
-                  {{ formatTime(item.time) }}
+                  {{ item.timeLabel }}
                 </span>
               </div>
             </div>

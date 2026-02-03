@@ -21,14 +21,17 @@ export const LayoutFooter = memo(function LayoutFooter({ left, center, right }: 
   const copyrightConfig = context.props.copyright || {};
 
   // 类名
-  const footerClassName = useMemo(() => [
-    'layout-footer',
-    footerConfig.fixed && 'layout-footer--fixed',
-    computed.showSidebar && !context.props.isMobile && 'layout-footer--with-sidebar',
-    sidebarCollapsed && !context.props.isMobile && 'layout-footer--collapsed',
-  ]
-    .filter(Boolean)
-    .join(' '), [footerConfig.fixed, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
+  const footerClassName = useMemo(() => {
+    const classes = ['layout-footer'];
+    if (footerConfig.fixed) classes.push('layout-footer--fixed');
+    if (computed.showSidebar && !context.props.isMobile) {
+      classes.push('layout-footer--with-sidebar');
+    }
+    if (sidebarCollapsed && !context.props.isMobile) {
+      classes.push('layout-footer--collapsed');
+    }
+    return classes.join(' ');
+  }, [footerConfig.fixed, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
 
   // 样式
   const footerStyle = useMemo(() => ({
@@ -40,7 +43,13 @@ export const LayoutFooter = memo(function LayoutFooter({ left, center, right }: 
   }), [computed.footerHeight, footerConfig.fixed, computed.showSidebar, context.props.isMobile, computed.sidebarWidth]);
 
   return (
-    <footer className={footerClassName} style={footerStyle}>
+    <footer
+      className={footerClassName}
+      style={footerStyle}
+      data-fixed={footerConfig.fixed ? 'true' : undefined}
+      data-with-sidebar={computed.showSidebar && !context.props.isMobile ? 'true' : undefined}
+      data-collapsed={sidebarCollapsed && !context.props.isMobile ? 'true' : undefined}
+    >
       <div className="layout-footer__inner flex h-full items-center justify-between px-4">
         {/* 左侧 */}
         <div className="layout-footer__left">{left}</div>

@@ -32,23 +32,22 @@ const emit = defineEmits<{
 
 const context = useLayoutContext();
 
+const menuIndex = computed(() => {
+  const map = new Map<string, MenuItem>();
+  const walk = (items: MenuItem[]) => {
+    items.forEach((item) => {
+      if (item.key) map.set(item.key, item);
+      if (item.path) map.set(item.path, item);
+      if (item.children?.length) walk(item.children);
+    });
+  };
+  walk(props.menus);
+  return map;
+});
+
 // 处理菜单选择
 const handleSelect = (path: string, _parentPaths: string[]) => {
-  // 查找菜单项
-  const findItem = (items: MenuItem[]): MenuItem | null => {
-    for (const item of items) {
-      if (item.key === path || item.path === path) {
-        return item;
-      }
-      if (item.children?.length) {
-        const found = findItem(item.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  
-  const item = findItem(props.menus);
+  const item = menuIndex.value.get(path);
   if (item) {
     emit('select', item, path);
     context.events?.onMenuSelect?.(item, path);
@@ -71,7 +70,7 @@ const containerClass = computed(() => [
 </script>
 
 <template>
-  <div :class="containerClass">
+  <div :class="containerClass" :data-align="props.align">
     <Menu
       :menus="menus"
       :default-active="activeKey"
@@ -94,15 +93,15 @@ const containerClass = computed(() => [
   overflow: hidden;
 }
 
-.header-menu-container--align-start {
+:is(.header-menu-container--align-start, .header-menu-container[data-align="start"]) {
   justify-content: flex-start;
 }
 
-.header-menu-container--align-center {
+:is(.header-menu-container--align-center, .header-menu-container[data-align="center"]) {
   justify-content: center;
 }
 
-.header-menu-container--align-end {
+:is(.header-menu-container--align-end, .header-menu-container[data-align="end"]) {
   justify-content: flex-end;
 }
 </style>

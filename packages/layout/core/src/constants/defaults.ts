@@ -452,3 +452,15 @@ export const BREAKPOINTS = {
   xl: 1280,
   '2xl': 1536,
 } as const;
+
+/**
+ * 通用防抖/节流延迟时间（毫秒）
+ */
+export const TIMING = {
+  /** 节流延迟（用于频繁触发的事件如 resize、scroll） */
+  throttle: 100,
+  /** 防抖延迟（用于用户输入、搜索等） */
+  debounce: 300,
+  /** SSR 默认窗口宽度 */
+  defaultWindowWidth: 1024,
+} as const;

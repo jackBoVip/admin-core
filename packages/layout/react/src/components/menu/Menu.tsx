@@ -11,7 +11,7 @@ import {
   useRef,
   memo,
 } from 'react';
-import { MenuProvider, type MenuContextValue, type MenuItemClicked } from './useMenuContext';
+import { MenuProvider, type MenuContextValue, type MenuItemClicked } from './use-menu-context';
 import { SubMenu } from './SubMenu';
 import { MenuItem as MenuItemComp } from './MenuItem';
 import type { MenuItem } from '@admin-core/layout';
@@ -59,21 +59,58 @@ export const Menu = memo(function Menu({
   const [openedMenus, setOpenedMenus] = useState<string[]>(
     defaultOpeneds && !collapse ? [...defaultOpeneds] : []
   );
+  const openedMenuSet = useMemo(() => new Set(openedMenus), [openedMenus]);
 
   // 同步 defaultActive
   useEffect(() => {
-    setActivePath(defaultActive);
+    setActivePath(prev => (prev === defaultActive ? prev : defaultActive));
   }, [defaultActive]);
 
   // 折叠时关闭所有菜单
   useEffect(() => {
     if (collapse) {
-      setOpenedMenus([]);
+      setOpenedMenus((prev) => (prev.length > 0 ? [] : prev));
     }
   }, [collapse]);
 
   // 是否为弹出模式
   const isMenuPopup = mode === 'horizontal' || (mode === 'vertical' && collapse);
+
+  const parentPathMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    const visit = (items: MenuItem[], parent: string | null) => {
+      for (const menu of items) {
+        const keyPath = menu.key || menu.path || '';
+        const path = menu.path || '';
+        if (keyPath) {
+          map.set(keyPath, parent);
+        }
+        if (path && path !== keyPath) {
+          map.set(path, parent);
+        }
+        if (menu.children?.length) {
+          visit(menu.children, keyPath || path || parent);
+        }
+      }
+    };
+    visit(menus, null);
+    return map;
+  }, [menus]);
+
+  const activeParentSet = useMemo(() => {
+    const parentSet = new Set<string>();
+    if (!activePath) return parentSet;
+    let current = activePath;
+    const visited = new Set<string>();
+    while (current && parentPathMap.has(current) && !visited.has(current)) {
+      visited.add(current);
+      const parent = parentPathMap.get(current);
+      if (!parent) break;
+      parentSet.add(parent);
+      current = parent;
+    }
+    return parentSet;
+  }, [activePath, parentPathMap]);
 
   // 打开菜单
   const openMenu = useCallback((path: string, parentPaths: string[] = []) => {
@@ -84,7 +121,22 @@ export const Menu = memo(function Menu({
       
       // 手风琴模式：关闭同级其他菜单
       if (accordion) {
-        newOpenedMenus = newOpenedMenus.filter(menu => parentPaths.includes(menu));
+        if (parentPaths.length === 0) {
+          newOpenedMenus = [];
+        } else {
+          const filtered: string[] = [];
+          for (const menu of newOpenedMenus) {
+            let keep = false;
+            for (const parent of parentPaths) {
+              if (menu.startsWith(parent)) {
+                keep = true;
+                break;
+              }
+            }
+            if (keep) filtered.push(menu);
+          }
+          newOpenedMenus = filtered;
+        }
       }
       
       newOpenedMenus.push(path);
@@ -116,10 +168,10 @@ export const Menu = memo(function Menu({
     
     // 弹出模式下点击菜单项关闭所有菜单
     if (isMenuPopup) {
-      setOpenedMenus([]);
+      setOpenedMenus((prev) => (prev.length > 0 ? [] : prev));
     }
     
-    setActivePath(path);
+    setActivePath(prev => (prev === path ? prev : path));
     onSelect?.(path, parentPaths);
   }, [isMenuPopup, onSelect]);
 
@@ -128,6 +180,19 @@ export const Menu = memo(function Menu({
   const [sliceIndex, setSliceIndex] = useState(-1);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const isFirstRenderRef = useRef(true);
+  const resizeFrameRef = useRef<number | null>(null);
+  const RENDER_CHUNK = 80;
+  const [renderCount, setRenderCount] = useState(RENDER_CHUNK);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [itemHeight, setItemHeight] = useState(40);
+  const VIRTUAL_OVERSCAN = 4;
+  const scrollResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const itemResizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  const canVirtualize =
+    mode === 'vertical' && collapse && viewportHeight > 0 && itemHeight > 0;
 
   // 计算菜单项宽度（参考 vben 实现）
   const calcMenuItemWidth = useCallback((menuItem: HTMLElement): number => {
@@ -142,11 +207,14 @@ export const Menu = memo(function Menu({
     if (!menuRef.current) return -1;
     
     // 获取所有直接子节点（排除注释和空文本）
-    const items = [...(menuRef.current.childNodes ?? [])].filter(
-      (item) =>
-        item.nodeName !== '#comment' &&
-        (item.nodeName !== '#text' || item.nodeValue)
-    ) as HTMLElement[];
+    const items: HTMLElement[] = [];
+    const nodes = menuRef.current.childNodes;
+    for (let i = 0; i < nodes.length; i += 1) {
+      const node = nodes[i];
+      if (node.nodeName === '#comment') continue;
+      if (node.nodeName === '#text' && !node.nodeValue) continue;
+      items.push(node as HTMLElement);
+    }
     
     if (items.length === 0) return -1;
     
@@ -159,44 +227,39 @@ export const Menu = memo(function Menu({
     let calcWidth = 0;
     let sliceIdx = 0;
     
-    items.forEach((item, index) => {
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
       calcWidth += calcMenuItemWidth(item);
       if (calcWidth <= menuWidth - moreItemWidth) {
         sliceIdx = index + 1;
       }
-    });
+    }
     
     return sliceIdx === items.length ? -1 : sliceIdx;
   }, [calcMenuItemWidth]);
 
   // 处理 resize（参考 vben 实现）
   const handleResize = useCallback(() => {
-    if (mode !== 'horizontal') {
-      setSliceIndex(-1);
-      return;
-    }
-    
-    // 如果切片索引没变，不更新
-    const newSliceIndex = calcSliceIndex();
-    if (sliceIndex === newSliceIndex && !isFirstRenderRef.current) {
-      return;
-    }
-    
-    const callback = () => {
-      setSliceIndex(-1);
-      // 使用 setTimeout 模拟 nextTick
-      setTimeout(() => {
-        setSliceIndex(calcSliceIndex());
-      }, 0);
-    };
-    
-    // 首次渲染直接执行
-    if (isFirstRenderRef.current) {
-      callback();
+    if (resizeFrameRef.current !== null) return;
+
+    resizeFrameRef.current = requestAnimationFrame(() => {
+      resizeFrameRef.current = null;
+
+      if (mode !== 'horizontal') {
+        if (sliceIndex !== -1) {
+          setSliceIndex(-1);
+        }
+        return;
+      }
+
+      const newSliceIndex = calcSliceIndex();
+      if (sliceIndex === newSliceIndex && !isFirstRenderRef.current) {
+        return;
+      }
+
+      setSliceIndex(newSliceIndex);
       isFirstRenderRef.current = false;
-    } else {
-      callback();
-    }
+    });
   }, [mode, calcSliceIndex, sliceIndex]);
 
   // 设置 ResizeObserver（使用 useLayoutEffect 确保同步）
@@ -215,6 +278,10 @@ export const Menu = memo(function Menu({
     return () => {
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
+      if (resizeFrameRef.current !== null) {
+        cancelAnimationFrame(resizeFrameRef.current);
+        resizeFrameRef.current = null;
+      }
     };
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -226,13 +293,147 @@ export const Menu = memo(function Menu({
     }
   }, [menus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 可见菜单和溢出菜单
-  const visibleMenus = useMemo(() => {
-    if (mode !== 'horizontal' || sliceIndex === -1) {
-      return menus;
+  useEffect(() => {
+    const nextCount =
+      mode !== 'vertical' || canVirtualize
+        ? menus.length
+        : Math.min(RENDER_CHUNK, menus.length);
+    setRenderCount((prev) => (prev === nextCount ? prev : nextCount));
+  }, [mode, menus.length, canVirtualize]);
+
+  useEffect(() => {
+    if (mode !== 'vertical' || canVirtualize || renderCount >= menus.length) return;
+    const frame = requestAnimationFrame(() => {
+      setRenderCount((prev) => Math.min(prev + RENDER_CHUNK, menus.length));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [mode, canVirtualize, renderCount, menus.length]);
+
+  useEffect(() => {
+    if (mode !== 'vertical' || !collapse) return;
+    const menuEl = menuRef.current;
+    if (!menuEl) return;
+    const container = menuEl.closest('.layout-scroll-container') as HTMLElement | null;
+    if (!container) return;
+    scrollContainerRef.current = container;
+
+    const updateMetrics = () => {
+      const nextHeight = container.clientHeight;
+      setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+      const computedStyle = getComputedStyle(menuEl);
+      const heightValue = parseFloat(computedStyle.getPropertyValue('--menu-item-height'));
+      if (Number.isFinite(heightValue) && heightValue > 0) {
+        setItemHeight((prev) => (prev === heightValue ? prev : heightValue));
+      }
+      const firstItem = menuEl.querySelector('.menu__item, .menu__sub-menu-content') as HTMLElement | null;
+      if (firstItem) {
+        const measuredHeight = firstItem.getBoundingClientRect().height;
+        if (measuredHeight > 0) {
+          setItemHeight((prev) => (prev === measuredHeight ? prev : measuredHeight));
+        }
+      }
+    };
+    const handleScroll = () => {
+      const nextTop = container.scrollTop;
+      setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+    };
+
+    updateMetrics();
+    handleScroll();
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    const useWindowResize = typeof ResizeObserver === 'undefined';
+    if (useWindowResize) {
+      window.addEventListener('resize', updateMetrics);
+    } else {
+      const observer = new ResizeObserver(updateMetrics);
+      observer.observe(container);
+      scrollResizeObserverRef.current = observer;
     }
-    return menus.slice(0, sliceIndex);
-  }, [menus, mode, sliceIndex]);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (useWindowResize) {
+        window.removeEventListener('resize', updateMetrics);
+      }
+      if (scrollResizeObserverRef.current) {
+        scrollResizeObserverRef.current.disconnect();
+        scrollResizeObserverRef.current = null;
+      }
+    };
+  }, [mode, collapse]);
+
+  useEffect(() => {
+    if (mode !== 'vertical' || !collapse || typeof ResizeObserver === 'undefined') return;
+    const menuEl = menuRef.current;
+    if (!menuEl) return;
+    let observedItem = menuEl.querySelector('.menu__item, .menu__sub-menu-content') as HTMLElement | null;
+    if (!observedItem) return;
+    const observer = new ResizeObserver(() => {
+      const currentItem = menuEl.querySelector('.menu__item, .menu__sub-menu-content') as HTMLElement | null;
+      if (!currentItem) return;
+      if (observedItem !== currentItem) {
+        if (observedItem) {
+          observer.unobserve(observedItem);
+        }
+        observer.observe(currentItem);
+        observedItem = currentItem;
+      }
+      const measuredHeight = currentItem.getBoundingClientRect().height;
+      if (measuredHeight > 0) {
+        setItemHeight((prev) => (prev === measuredHeight ? prev : measuredHeight));
+      }
+    });
+    observer.observe(observedItem);
+    itemResizeObserverRef.current = observer;
+    return () => {
+      if (itemResizeObserverRef.current) {
+        itemResizeObserverRef.current.disconnect();
+        itemResizeObserverRef.current = null;
+      }
+    };
+  }, [mode, collapse, menus.length]);
+
+  // 可见菜单和溢出菜单
+  const baseVisibleMenus = useMemo(() => {
+    if (mode === 'horizontal') {
+      if (sliceIndex === -1) {
+        return menus;
+      }
+      return menus.slice(0, sliceIndex);
+    }
+    if (mode === 'vertical') {
+      return menus.slice(0, renderCount);
+    }
+    return menus;
+  }, [menus, mode, sliceIndex, renderCount]);
+
+  const virtualTotalHeight = menus.length * itemHeight;
+  const virtualStartIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - VIRTUAL_OVERSCAN);
+  const virtualEndIndex = Math.min(
+    menus.length,
+    Math.ceil((scrollTop + viewportHeight) / itemHeight) + VIRTUAL_OVERSCAN
+  );
+  const virtualMenus = useMemo(
+    () => menus.slice(virtualStartIndex, virtualEndIndex),
+    [menus, virtualStartIndex, virtualEndIndex]
+  );
+  const renderMenus = canVirtualize ? virtualMenus : baseVisibleMenus;
+  const listStyle = canVirtualize
+    ? {
+        paddingTop: `${virtualStartIndex * itemHeight}px`,
+        paddingBottom: `${(menus.length - virtualEndIndex) * itemHeight}px`,
+      }
+    : undefined;
+
+  useEffect(() => {
+    if (!canVirtualize) return;
+    const maxScrollTop = Math.max(0, virtualTotalHeight - viewportHeight);
+    if (scrollTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = nextTop;
+    }
+    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+  }, [canVirtualize, virtualTotalHeight, viewportHeight, scrollTop]);
 
   const overflowMenus = useMemo(() => {
     if (mode !== 'horizontal' || sliceIndex === -1) {
@@ -247,29 +448,36 @@ export const Menu = memo(function Menu({
   const contextValue: MenuContextValue = useMemo(() => ({
     config: { mode, collapse, accordion, rounded, theme },
     activePath,
+    activeParentSet,
     openedMenus,
+    openedMenuSet,
     openMenu,
     closeMenu,
     closeAllMenus,
     handleMenuItemClick,
     isMenuPopup,
-  }), [mode, collapse, accordion, rounded, theme, activePath, openedMenus, openMenu, closeMenu, closeAllMenus, handleMenuItemClick, isMenuPopup]);
+  }), [mode, collapse, accordion, rounded, theme, activePath, activeParentSet, openedMenus, openedMenuSet, openMenu, closeMenu, closeAllMenus, handleMenuItemClick, isMenuPopup]);
 
   // 菜单类名
-  const menuClassName = useMemo(() => [
-    'menu',
-    `menu--${mode}`,
-    `menu--${theme}`,
-    collapse && 'menu--collapse',
-    rounded && 'menu--rounded',
-  ]
-    .filter(Boolean)
-    .join(' '), [mode, theme, collapse, rounded]);
+  const menuClassName = useMemo(() => {
+    const classes = ['menu', `menu--${mode}`, `menu--${theme}`];
+    if (collapse) classes.push('menu--collapse');
+    if (rounded) classes.push('menu--rounded');
+    return classes.join(' ');
+  }, [mode, theme, collapse, rounded]);
 
   return (
     <MenuProvider value={contextValue}>
-      <ul ref={menuRef} className={menuClassName}>
-        {visibleMenus.map(item => (
+      <ul
+        ref={menuRef}
+        className={menuClassName}
+        data-mode={mode}
+        data-theme={theme}
+        data-rounded={rounded ? 'true' : undefined}
+        data-collapse={collapse ? 'true' : undefined}
+        style={listStyle}
+      >
+        {renderMenus.map(item => (
           item.children && item.children.length > 0 ? (
             <SubMenu key={item.key} item={item} level={0} />
           ) : (

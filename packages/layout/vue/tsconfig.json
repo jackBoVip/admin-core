@@ -1,13 +1,11 @@
 {
-  "extends": "@admin-core/tsconfig/base.json",
+  "extends": "@admin-core/tsconfig/vue.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "dist",
+    "rootDir": "src",
     "declaration": true,
-    "declarationMap": true,
-    "jsx": "preserve",
-    "jsxImportSource": "vue"
+    "declarationMap": true
   },
   "include": ["src/**/*", "src/**/*.vue"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
 }

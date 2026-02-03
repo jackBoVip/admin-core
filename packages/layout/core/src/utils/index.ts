@@ -7,3 +7,4 @@ export * from './menu';
 export * from './common';
 export * from './tabbar';
 export * from './content';
+export * from './logger';

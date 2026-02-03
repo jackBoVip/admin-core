@@ -28,7 +28,9 @@ export interface MenuContext {
   
   // 状态
   activePath: Ref<string>;
+  activeParentSet: Ref<Set<string>>;
   openedMenus: Ref<string[]>;
+  openedMenuSet: Ref<Set<string>>;
   
   // 方法
   openMenu: (path: string, parentPaths?: string[]) => void;

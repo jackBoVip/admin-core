@@ -28,7 +28,7 @@
       "import": "./dist/styles/index.js",
       "require": "./dist/styles/index.cjs"
     },
-    "./styles/layout.css": "./src/styles/layout.css"
+    "./styles/layout.css": "./dist/styles/layout.css"
   },
   "files": [
     "dist",
@@ -36,6 +36,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "postbuild": "node ./scripts/copy-layout-css.mjs",
     "dev": "tsup --watch",
     "test": "vitest",
     "test:run": "vitest run",

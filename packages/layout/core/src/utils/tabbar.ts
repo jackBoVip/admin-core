@@ -76,6 +76,8 @@ export interface WheelSwitchConfig {
   tabs: TabItem[];
   /** 当前激活的标签 key */
   activeKey: string;
+  /** 标签索引缓存 */
+  indexMap?: Map<string, number>;
 }
 
 /**
@@ -88,11 +90,19 @@ export function computeWheelSwitchKey(
   config: WheelSwitchConfig,
   deltaY: number
 ): string | null {
-  const { wheelable, tabs, activeKey } = config;
+  const { wheelable, tabs, activeKey, indexMap } = config;
   
   if (!wheelable || tabs.length <= 1) return null;
   
-  const currentIndex = tabs.findIndex(t => t.key === activeKey);
+  let currentIndex = indexMap?.get(activeKey) ?? -1;
+  if (currentIndex < 0) {
+    for (let i = 0; i < tabs.length; i += 1) {
+      if (tabs[i].key === activeKey) {
+        currentIndex = i;
+        break;
+      }
+    }
+  }
   if (currentIndex === -1) return null;
   
   let newIndex: number;
@@ -212,15 +222,53 @@ export function generateContextMenuItems(
   tab: TabItem,
   tabs: TabItem[],
   activeKey: string,
-  t: (key: string) => string
+  t: (key: string) => string,
+  indexMap?: Map<string, number>
 ): ContextMenuItem[] {
-  const currentIndex = tabs.findIndex(t => t.key === tab.key);
+  let currentIndex = indexMap?.get(tab.key) ?? -1;
+  if (currentIndex < 0) {
+    for (let i = 0; i < tabs.length; i += 1) {
+      if (tabs[i].key === tab.key) {
+        currentIndex = i;
+        break;
+      }
+    }
+  }
   const isActive = tab.key === activeKey;
   const canClose = tab.closable !== false && !tab.affix;
-  const hasLeftTabs = currentIndex > 0 && tabs.slice(0, currentIndex).some(t => t.closable !== false && !t.affix);
-  const hasRightTabs = currentIndex < tabs.length - 1 && tabs.slice(currentIndex + 1).some(t => t.closable !== false && !t.affix);
-  const hasOtherTabs = tabs.some(t => t.key !== tab.key && t.closable !== false && !t.affix);
-  const hasClosableTabs = tabs.some(t => t.closable !== false && !t.affix);
+  let hasLeftTabs = false;
+  let hasRightTabs = false;
+  let hasOtherTabs = false;
+  let hasClosableTabs = false;
+  if (currentIndex > 0) {
+    for (let i = 0; i < currentIndex; i += 1) {
+      const item = tabs[i];
+      if (item.closable !== false && !item.affix) {
+        hasLeftTabs = true;
+        break;
+      }
+    }
+  }
+  if (currentIndex >= 0 && currentIndex < tabs.length - 1) {
+    for (let i = currentIndex + 1; i < tabs.length; i += 1) {
+      const item = tabs[i];
+      if (item.closable !== false && !item.affix) {
+        hasRightTabs = true;
+        break;
+      }
+    }
+  }
+  for (const item of tabs) {
+    if (item.closable !== false && !item.affix) {
+      hasClosableTabs = true;
+    }
+    if (item.key !== tab.key && item.closable !== false && !item.affix) {
+      hasOtherTabs = true;
+    }
+    if (hasOtherTabs && hasClosableTabs) {
+      break;
+    }
+  }
 
   return [
     {
@@ -274,35 +322,60 @@ export function generateContextMenuItems(
 export function getTabsToClose(
   action: ContextMenuAction,
   tab: TabItem,
-  tabs: TabItem[]
+  tabs: TabItem[],
+  indexMap?: Map<string, number>
 ): string[] {
-  const currentIndex = tabs.findIndex(t => t.key === tab.key);
-  
+  let currentIndex = indexMap?.get(tab.key) ?? -1;
+  if (currentIndex < 0) {
+    for (let i = 0; i < tabs.length; i += 1) {
+      if (tabs[i].key === tab.key) {
+        currentIndex = i;
+        break;
+      }
+    }
+  }
+
   switch (action) {
     case 'close':
       return tab.closable !== false && !tab.affix ? [tab.key] : [];
       
     case 'closeOther':
-      return tabs
-        .filter(t => t.key !== tab.key && t.closable !== false && !t.affix)
-        .map(t => t.key);
+      return tabs.reduce((keys, item) => {
+        if (item.key !== tab.key && item.closable !== false && !item.affix) {
+          keys.push(item.key);
+        }
+        return keys;
+      }, [] as string[]);
         
     case 'closeLeft':
-      return tabs
-        .slice(0, currentIndex)
-        .filter(t => t.closable !== false && !t.affix)
-        .map(t => t.key);
+      if (currentIndex <= 0) {
+        return [];
+      }
+      return tabs.reduce((keys, item, index) => {
+        if (index < currentIndex && item.closable !== false && !item.affix) {
+          keys.push(item.key);
+        }
+        return keys;
+      }, [] as string[]);
         
     case 'closeRight':
-      return tabs
-        .slice(currentIndex + 1)
-        .filter(t => t.closable !== false && !t.affix)
-        .map(t => t.key);
+      if (currentIndex < 0 || currentIndex >= tabs.length - 1) {
+        return [];
+      }
+      return tabs.reduce((keys, item, index) => {
+        if (index > currentIndex && item.closable !== false && !item.affix) {
+          keys.push(item.key);
+        }
+        return keys;
+      }, [] as string[]);
         
     case 'closeAll':
-      return tabs
-        .filter(t => t.closable !== false && !t.affix)
-        .map(t => t.key);
+      return tabs.reduce((keys, item) => {
+        if (item.closable !== false && !item.affix) {
+          keys.push(item.key);
+        }
+        return keys;
+      }, [] as string[]);
         
     default:
       return [];

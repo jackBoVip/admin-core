@@ -70,16 +70,17 @@ export const LayoutHeader = memo(function LayoutHeader({
   }), [headerToggleIconName]);
 
   // 类名
-  const headerClassName = useMemo(() => [
-    'layout-header',
-    `layout-header--${theme}`,
-    `layout-header--${mode}`,
-    hidden && 'layout-header--hidden',
-    computed.showSidebar && !context.props.isMobile && 'layout-header--with-sidebar',
-    sidebarCollapsed && !context.props.isMobile && 'layout-header--collapsed',
-  ]
-    .filter(Boolean)
-    .join(' '), [theme, mode, hidden, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
+  const headerClassName = useMemo(() => {
+    const classes = ['layout-header', `layout-header--${theme}`, `layout-header--${mode}`];
+    if (hidden) classes.push('layout-header--hidden');
+    if (computed.showSidebar && !context.props.isMobile) {
+      classes.push('layout-header--with-sidebar');
+    }
+    if (sidebarCollapsed && !context.props.isMobile) {
+      classes.push('layout-header--collapsed');
+    }
+    return classes.join(' ');
+  }, [theme, mode, hidden, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
 
   // 样式
   const headerStyle = useMemo(() => ({
@@ -91,17 +92,24 @@ export const LayoutHeader = memo(function LayoutHeader({
   }), [height, computed.showSidebar, context.props.isMobile, computed.sidebarWidth]);
 
   // 菜单容器类名
-  const menuContainerClassName = useMemo(() => [
-    'layout-header__menu flex-1 min-w-0 flex items-center overflow-hidden',
-    menuAlign === 'start' && 'justify-start',
-    menuAlign === 'center' && 'justify-center',
-    menuAlign === 'end' && 'justify-end',
-  ]
-    .filter(Boolean)
-    .join(' '), [menuAlign]);
+  const menuContainerClassName = useMemo(
+    () => 'layout-header__menu flex-1 min-w-0 flex items-center overflow-hidden',
+    []
+  );
 
   return (
-    <header className={headerClassName} style={headerStyle}>
+    <header
+      className={headerClassName}
+      style={headerStyle}
+      data-theme={theme}
+      data-hidden={hidden ? 'true' : undefined}
+      data-mode={mode}
+      data-with-sidebar={computed.showSidebar && !context.props.isMobile ? 'true' : undefined}
+      data-collapsed={sidebarCollapsed && !context.props.isMobile ? 'true' : undefined}
+      data-header-nav={computed.isHeaderNav ? 'true' : undefined}
+      data-mixed-nav={computed.isMixedNav ? 'true' : undefined}
+      data-header-mixed-nav={computed.isHeaderMixedNav ? 'true' : undefined}
+    >
       <div className="layout-header__inner flex h-full items-center px-4">
         {/* Logo（仅顶部导航模式） */}
         {showLogoInHeader && logoConfig.enable !== false && (
@@ -131,7 +139,7 @@ export const LayoutHeader = memo(function LayoutHeader({
         {showSidebarToggle && (
           <button
             type="button"
-            className="layout-header__toggle mr-2 flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+            className="layout-header__toggle mr-2 flex h-9 w-9 items-center justify-center rounded-md transition-colors header-light:hover:bg-black/5 header-dark:hover:bg-white/10"
             title={context.t('layout.header.toggleSidebar')}
             onClick={toggleSidebar}
           >
@@ -154,7 +162,9 @@ export const LayoutHeader = memo(function LayoutHeader({
 
         {/* 菜单区域（顶部导航模式） */}
         {showHeaderMenu ? (
-          <div className={menuContainerClassName}>{menu}</div>
+          <div className={menuContainerClassName} data-align={menuAlign}>
+            {menu}
+          </div>
         ) : (
           /* 非顶部菜单模式下的占位符，将右侧内容推到右边 */
           <div className="flex-1" />

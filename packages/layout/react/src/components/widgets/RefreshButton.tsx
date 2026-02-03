@@ -2,12 +2,13 @@
  * 刷新按钮组件
  * @description 刷新当前页面
  */
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 
 export const RefreshButton = memo(function RefreshButton() {
   const { events, t } = useLayoutContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleRefresh = useCallback(() => {
     if (isRefreshing) return;
@@ -15,16 +16,27 @@ export const RefreshButton = memo(function RefreshButton() {
     setIsRefreshing(true);
     events.onRefresh?.();
 
-    setTimeout(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => {
       setIsRefreshing(false);
     }, 600);
   }, [isRefreshing, events]);
+
+  useEffect(() => () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   return (
     <button
       type="button"
       className={`header-widget-btn ${isRefreshing ? 'animate-spin' : ''}`}
       title={t('layout.header.refresh')}
+      data-state={isRefreshing ? 'refreshing' : 'idle'}
       onClick={handleRefresh}
     >
       <svg

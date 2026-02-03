@@ -3,7 +3,7 @@
  * 标签栏组件
  * @description 支持拖拽排序、中键关闭、滚轮切换、最大化等功能
  */
-import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { computed, ref, onUnmounted, watch, watchEffect } from 'vue';
 import { useLayoutContext, useLayoutComputed, useTabsState, useSidebarState } from '../../composables';
 
 const context = useLayoutContext();
@@ -47,6 +47,16 @@ const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
 const contextMenuTargetKey = ref<string | null>(null);
 
+// 悬停状态
+const hoveredKey = ref<string | null>(null);
+const TAB_RENDER_CHUNK = 60;
+const tabRenderCount = ref(TAB_RENDER_CHUNK);
+const tabIndexMap = computed(() => {
+  const map = new Map<string, number>();
+  tabs.value.forEach((tab, index) => map.set(tab.key, index));
+  return map;
+});
+
 // 类名
 const tabbarClass = computed(() => [
   'layout-tabbar',
@@ -57,6 +67,8 @@ const tabbarClass = computed(() => [
   },
 ]);
 
+const visibleTabs = computed(() => tabs.value.slice(0, tabRenderCount.value));
+
 // 样式
 const tabbarStyle = computed(() => ({
   height: `${layoutComputed.value.tabbarHeight}px`,
@@ -66,9 +78,38 @@ const tabbarStyle = computed(() => ({
     : '0',
 }));
 
+watch([tabs, activeKey], () => {
+  const activeIndex = tabIndexMap.value.get(activeKey.value) ?? -1;
+  if (activeIndex >= 0) {
+    tabRenderCount.value = Math.min(tabs.value.length, Math.max(TAB_RENDER_CHUNK, activeIndex + 1));
+  } else {
+    tabRenderCount.value = Math.min(TAB_RENDER_CHUNK, tabs.value.length);
+  }
+}, { immediate: true });
+
+watchEffect((onCleanup) => {
+  if (tabRenderCount.value >= tabs.value.length) return;
+  const frame = requestAnimationFrame(() => {
+    tabRenderCount.value = Math.min(tabRenderCount.value + TAB_RENDER_CHUNK, tabs.value.length);
+  });
+  onCleanup(() => cancelAnimationFrame(frame));
+});
+
 // 处理标签点击
 const onTabClick = (key: string) => {
   handleSelect(key);
+};
+
+const onTabMouseEnter = (key: string) => {
+  if (hoveredKey.value !== key) {
+    hoveredKey.value = key;
+  }
+};
+
+const onTabMouseLeave = () => {
+  if (hoveredKey.value !== null) {
+    hoveredKey.value = null;
+  }
 };
 
 // 处理标签关闭
@@ -120,7 +161,7 @@ const contextMenuActions = {
 // 获取标签样式类 - 使用 computed 缓存避免重复计算
 const tabClassMap = computed(() => {
   const map = new Map<string, (string | Record<string, boolean>)[]>();
-  tabs.value.forEach((tab, index) => {
+  visibleTabs.value.forEach((tab, index) => {
     map.set(tab.key, [
       'layout-tabbar__tab',
       `layout-tabbar__tab--${styleType.value}`,
@@ -220,11 +261,11 @@ const onMouseDown = (e: MouseEvent, tab: typeof tabs.value[0]) => {
 // ==================== 滚轮切换功能 ====================
 const onWheel = (e: WheelEvent) => {
   if (!tabbarConfig.value.wheelable) return;
+  const currentIndex = tabIndexMap.value.get(activeKey.value) ?? -1;
+  if (currentIndex === -1) return;
+  if (tabs.value.length < 2) return;
   
   e.preventDefault();
-  
-  const currentIndex = tabs.value.findIndex(tab => tab.key === activeKey.value);
-  if (currentIndex === -1) return;
   
   let nextIndex: number;
   if (e.deltaY > 0 || e.deltaX > 0) {
@@ -256,31 +297,48 @@ const toggleMaximize = () => {
   // 添加/移除 body class 来控制其他元素的显示
   if (isMaximized.value) {
     document.body.classList.add('layout-content-maximized');
+    document.body.dataset.contentMaximized = 'true';
   } else {
     document.body.classList.remove('layout-content-maximized');
+    delete document.body.dataset.contentMaximized;
   }
 };
 
-// 监听 ESC 键退出最大化
+// 监听 ESC 键退出最大化（仅在最大化时绑定）
 const handleKeyDown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape' && isMaximized.value) {
+  if (e.key === 'Escape') {
     toggleMaximize();
   }
 };
 
-onMounted(() => {
-  document.addEventListener('keydown', handleKeyDown);
-});
+const syncKeydownListener = (enabled: boolean) => {
+  document.removeEventListener('keydown', handleKeyDown);
+  if (enabled) {
+    document.addEventListener('keydown', handleKeyDown);
+  }
+};
+
+watch(isMaximized, (value) => {
+  syncKeydownListener(value);
+}, { immediate: true });
 
 onUnmounted(() => {
-  document.removeEventListener('keydown', handleKeyDown);
+  syncKeydownListener(false);
   // 确保退出时移除 class
   document.body.classList.remove('layout-content-maximized');
+  delete document.body.dataset.contentMaximized;
 });
 </script>
 
 <template>
-  <div :class="tabbarClass" :style="tabbarStyle" @click="closeContextMenu">
+  <div
+    :class="tabbarClass"
+    :style="tabbarStyle"
+    :data-with-sidebar="layoutComputed.showSidebar && !context.props.isMobile ? 'true' : undefined"
+    :data-collapsed="sidebarCollapsed && !context.props.isMobile ? 'true' : undefined"
+    :data-style="styleType"
+    @click="closeContextMenu"
+  >
     <div class="layout-tabbar__inner flex h-full items-end">
       <!-- 左侧插槽 -->
       <div v-if="$slots.left" class="layout-tabbar__left shrink-0 px-2">
@@ -290,17 +348,25 @@ onUnmounted(() => {
       <!-- 标签列表 -->
       <div 
         ref="tabsContainerRef"
-        class="layout-tabbar__tabs flex flex-1 items-end overflow-x-auto scrollbar-none"
-        @wheel.passive="onWheel"
+        class="layout-tabbar__tabs layout-scroll-container flex flex-1 items-end overflow-x-auto scrollbar-none"
+        @wheel="onWheel"
       >
         <slot>
           <div
-            v-for="(tab, index) in tabs"
+            v-for="(tab, index) in visibleTabs"
             :key="tab.key"
-            :class="getTabClass(tab)"
+            :class="['data-active:text-primary', getTabClass(tab)]"
+            :data-state="tab.key === activeKey ? 'active' : 'inactive'"
+            :data-style="styleType"
+            :data-hovered="hoveredKey === tab.key ? 'true' : undefined"
+            :data-affix="tab.affix ? 'true' : undefined"
+            :data-dragging="dragState.isDragging && dragState.dragIndex === index ? 'true' : undefined"
+            :data-drop-target="dragState.isDragging && dragState.dropIndex === index ? 'true' : undefined"
             :draggable="tabbarConfig.draggable && !tab.affix"
             @click="onTabClick(tab.key)"
             @contextmenu="onContextMenu($event, tab.key)"
+            @mouseenter="onTabMouseEnter(tab.key)"
+            @mouseleave="onTabMouseLeave"
             @mousedown="onMouseDown($event, tab)"
             @dragstart="onDragStart($event, index)"
             @dragover="onDragOver($event, index)"

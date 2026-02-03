@@ -5,6 +5,7 @@
  */
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useLayoutContext } from '../../composables';
+import { logger } from '@admin-core/layout';
 
 const context = useLayoutContext();
 
@@ -51,7 +52,7 @@ const toggleFullscreen = async () => {
     
     context.events.onFullscreenToggle?.(!isFullscreen.value);
   } catch (error) {
-    console.warn('Fullscreen API not supported:', error);
+    logger.warn('Fullscreen API not supported:', error);
   }
 };
 
@@ -77,6 +78,7 @@ onUnmounted(() => {
     type="button"
     class="header-widget-btn"
     :title="isFullscreen ? context.t('layout.header.exitFullscreen') : context.t('layout.header.fullscreen')"
+    :data-fullscreen="isFullscreen ? 'true' : undefined"
     @click="toggleFullscreen"
   >
     <!-- 最大化图标 -->

@@ -156,13 +156,41 @@ export function getTabContextMenuItems(options: {
   t: (key: string) => string;
 }): TabContextMenuItem[] {
   const { targetKey, activeKey, tabs, t } = options;
-  const currentTab = tabs.find(tab => tab.key === targetKey);
-  const currentIndex = tabs.findIndex(tab => tab.key === targetKey);
+  let currentTab: TabItem | undefined;
+  let currentIndex = -1;
+  tabs.forEach((tab, index) => {
+    if (tab.key === targetKey) {
+      currentTab = tab;
+      currentIndex = index;
+    }
+  });
   const isAffix = currentTab?.affix === true;
   const isActive = targetKey === activeKey;
-  const hasLeft = currentIndex > 0 && tabs.slice(0, currentIndex).some(tab => !tab.affix);
-  const hasRight = currentIndex < tabs.length - 1 && tabs.slice(currentIndex + 1).some(tab => !tab.affix);
-  const hasOther = tabs.filter(tab => tab.key !== targetKey && !tab.affix).length > 0;
+  let hasLeft = false;
+  let hasRight = false;
+  let hasOther = false;
+  if (currentIndex > 0) {
+    for (let i = 0; i < currentIndex; i += 1) {
+      if (!tabs[i].affix) {
+        hasLeft = true;
+        break;
+      }
+    }
+  }
+  if (currentIndex >= 0 && currentIndex < tabs.length - 1) {
+    for (let i = currentIndex + 1; i < tabs.length; i += 1) {
+      if (!tabs[i].affix) {
+        hasRight = true;
+        break;
+      }
+    }
+  }
+  for (const tab of tabs) {
+    if (tab.key !== targetKey && !tab.affix) {
+      hasOther = true;
+      break;
+    }
+  }
 
   return [
     {
@@ -296,7 +324,12 @@ function containsFunction(obj: unknown, seen = new WeakSet()): boolean {
   seen.add(obj);
   
   if (Array.isArray(obj)) {
-    return obj.some(item => containsFunction(item, seen));
+    for (const item of obj) {
+      if (containsFunction(item, seen)) {
+        return true;
+      }
+    }
+    return false;
   }
   
   for (const key in obj) {

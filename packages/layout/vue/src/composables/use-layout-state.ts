@@ -52,13 +52,67 @@
 import { ref, computed, watch, onMounted, onUnmounted, isRef } from 'vue';
 import { getPreferencesManager } from '@admin-core/preferences-vue';
 import { useLayoutContext, useLayoutComputed } from './use-layout-context';
+
+function buildMenuPathIndex(menus: MenuItem[]) {
+  const byKey = new Map<string, MenuItem>();
+  const byPath = new Map<string, MenuItem>();
+  const chainByKey = new Map<string, string[]>();
+  const chainByPath = new Map<string, string[]>();
+  const pathItems: MenuItem[] = [];
+  const stack: string[] = [];
+
+  const walk = (items: MenuItem[]) => {
+    for (const item of items) {
+      if (item.key) {
+        byKey.set(item.key, item);
+      }
+      if (item.path) {
+        byPath.set(item.path, item);
+        pathItems.push(item);
+      }
+      const chain = item.key ? [...stack, item.key] : [...stack];
+      if (item.key) {
+        chainByKey.set(item.key, chain);
+      }
+      if (item.path) {
+        chainByPath.set(item.path, chain);
+      }
+      if (item.key) {
+        stack.push(item.key);
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+      if (item.key) {
+        stack.pop();
+      }
+    }
+  };
+
+  walk(menus);
+  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
+  return { byKey, byPath, chainByKey, chainByPath, pathItems };
+}
+
+const menuIndexCache = new WeakMap<MenuItem[], ReturnType<typeof buildMenuPathIndex>>();
+
+function getMenuPathIndex(menus: MenuItem[]) {
+  const cached = menuIndexCache.get(menus);
+  if (cached) return cached;
+  const index = buildMenuPathIndex(menus);
+  menuIndexCache.set(menus, index);
+  return index;
+}
 import { 
   BREAKPOINTS, 
   HEADER_TRIGGER_DISTANCE,
+  TIMING,
   mapPreferencesToLayoutProps,
   getResolvedLayoutProps,
   generateAllCSSVariables,
   getOrCreateTabManager,
+  logger,
+  type BasicLayoutProps,
 } from '@admin-core/layout';
 
 // ============================================================
@@ -75,22 +129,28 @@ export function useSidebarState() {
   const collapsed = computed({
     get: () => context.state.sidebarCollapsed,
     set: (value) => {
-      context.state.sidebarCollapsed = value;
-      context.events.onSidebarCollapse?.(value);
+      if (context.state.sidebarCollapsed !== value) {
+        context.state.sidebarCollapsed = value;
+        context.events.onSidebarCollapse?.(value);
+      }
     },
   });
 
   const expandOnHovering = computed({
     get: () => context.state.sidebarExpandOnHovering,
     set: (value) => {
-      context.state.sidebarExpandOnHovering = value;
+      if (context.state.sidebarExpandOnHovering !== value) {
+        context.state.sidebarExpandOnHovering = value;
+      }
     },
   });
 
   const extraVisible = computed({
     get: () => context.state.sidebarExtraVisible,
     set: (value) => {
-      context.state.sidebarExtraVisible = value;
+      if (context.state.sidebarExtraVisible !== value) {
+        context.state.sidebarExtraVisible = value;
+      }
     },
   });
 
@@ -98,7 +158,9 @@ export function useSidebarState() {
   const extraCollapsed = computed({
     get: () => context.state.sidebarExtraCollapsed ?? false,
     set: (value) => {
-      context.state.sidebarExtraCollapsed = value;
+      if (context.state.sidebarExtraCollapsed !== value) {
+        context.state.sidebarExtraCollapsed = value;
+      }
     },
   });
 
@@ -106,7 +168,9 @@ export function useSidebarState() {
   const expandOnHover = computed({
     get: () => context.state.sidebarExpandOnHover ?? false,
     set: (value) => {
-      context.state.sidebarExpandOnHover = value;
+      if (context.state.sidebarExpandOnHover !== value) {
+        context.state.sidebarExpandOnHover = value;
+      }
     },
   });
 
@@ -159,7 +223,9 @@ export function useHeaderState() {
   const hidden = computed({
     get: () => context.state.headerHidden,
     set: (value) => {
-      context.state.headerHidden = value;
+      if (context.state.headerHidden !== value) {
+        context.state.headerHidden = value;
+      }
     },
   });
 
@@ -174,50 +240,70 @@ export function useHeaderState() {
   let scrollHandler: (() => void) | null = null;
   let mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
 
-  onMounted(() => {
-    if (mode.value !== 'auto' && mode.value !== 'auto-scroll') return;
-
-    mouseMoveHandler = (e: MouseEvent) => {
-      mouseY = e.clientY;
-    };
-
-    scrollHandler = () => {
-      if (animationFrame) return;
-
-      animationFrame = requestAnimationFrame(() => {
-        const currentScrollY = window.scrollY;
-        const headerMode = mode.value;
-
-        if (headerMode === 'auto') {
-          // 鼠标靠近顶部时显示
-          hidden.value = mouseY > HEADER_TRIGGER_DISTANCE;
-        } else if (headerMode === 'auto-scroll') {
-          // 向上滚动显示，向下滚动隐藏
-          if (currentScrollY > lastScrollY && currentScrollY > height.value) {
-            hidden.value = true;
-          } else if (currentScrollY < lastScrollY) {
-            hidden.value = false;
-          }
-        }
-
-        lastScrollY = currentScrollY;
-        animationFrame = null;
-      });
-    };
-
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-    if (mode.value === 'auto') {
-      window.addEventListener('mousemove', mouseMoveHandler, { passive: true });
+  const ensureHandlers = () => {
+    if (!mouseMoveHandler) {
+      mouseMoveHandler = (e: MouseEvent) => {
+        mouseY = e.clientY;
+      };
     }
-  });
+    if (!scrollHandler) {
+      scrollHandler = () => {
+        if (animationFrame) return;
 
-  onUnmounted(() => {
+        animationFrame = requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const headerMode = mode.value;
+
+          if (headerMode === 'auto') {
+            // 鼠标靠近顶部时显示
+            hidden.value = mouseY > HEADER_TRIGGER_DISTANCE;
+          } else if (headerMode === 'auto-scroll') {
+            // 向上滚动显示，向下滚动隐藏
+            if (currentScrollY > lastScrollY && currentScrollY > height.value) {
+              hidden.value = true;
+            } else if (currentScrollY < lastScrollY) {
+              hidden.value = false;
+            }
+          }
+
+          lastScrollY = currentScrollY;
+          animationFrame = null;
+        });
+      };
+    }
+  };
+
+  const removeListeners = () => {
     if (scrollHandler) {
       window.removeEventListener('scroll', scrollHandler);
     }
     if (mouseMoveHandler) {
       window.removeEventListener('mousemove', mouseMoveHandler);
     }
+  };
+
+  const updateListeners = () => {
+    if (mode.value !== 'auto' && mode.value !== 'auto-scroll') {
+      removeListeners();
+      return;
+    }
+    ensureHandlers();
+    removeListeners();
+    window.addEventListener('scroll', scrollHandler!, { passive: true });
+    if (mode.value === 'auto') {
+      window.addEventListener('mousemove', mouseMoveHandler!, { passive: true });
+    }
+  };
+
+  onMounted(updateListeners);
+
+  watch(mode, () => {
+    if (typeof window === 'undefined') return;
+    updateListeners();
+  }, { immediate: true });
+
+  onUnmounted(() => {
+    removeListeners();
     if (animationFrame !== null) {
       cancelAnimationFrame(animationFrame);
     }
@@ -256,8 +342,10 @@ export function usePanelState() {
   const collapsed = computed({
     get: () => context.state.panelCollapsed,
     set: (value) => {
-      context.state.panelCollapsed = value;
-      context.events.onPanelCollapse?.(value);
+      if (context.state.panelCollapsed !== value) {
+        context.state.panelCollapsed = value;
+        context.events.onPanelCollapse?.(value);
+      }
     },
   });
 
@@ -287,23 +375,32 @@ export function useFullscreenState() {
 
   const toggle = async () => {
     try {
-      if (!document.fullscreenElement) {
+      const nextValue = !document.fullscreenElement;
+      if (nextValue) {
         await document.documentElement.requestFullscreen();
-        isFullscreen.value = true;
       } else {
         await document.exitFullscreen();
-        isFullscreen.value = false;
       }
-      context.state.isFullscreen = isFullscreen.value;
-      context.events.onFullscreenToggle?.(isFullscreen.value);
+      if (isFullscreen.value !== nextValue) {
+        isFullscreen.value = nextValue;
+      }
+      if (context.state.isFullscreen !== nextValue) {
+        context.state.isFullscreen = nextValue;
+      }
+      context.events.onFullscreenToggle?.(nextValue);
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      logger.error('Fullscreen error:', error);
     }
   };
 
   const handleFullscreenChange = () => {
-    isFullscreen.value = !!document.fullscreenElement;
-    context.state.isFullscreen = isFullscreen.value;
+    const nextValue = !!document.fullscreenElement;
+    if (isFullscreen.value !== nextValue) {
+      isFullscreen.value = nextValue;
+    }
+    if (context.state.isFullscreen !== nextValue) {
+      context.state.isFullscreen = nextValue;
+    }
   };
 
   onMounted(() => {
@@ -325,7 +422,7 @@ export function useFullscreenState() {
  * 优化：使用 window.resize 事件 + 节流，避免 ResizeObserver 监听整个文档的性能开销
  */
 export function useResponsive() {
-  const width = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  const width = ref(typeof window !== 'undefined' ? window.innerWidth : TIMING.defaultWindowWidth);
 
   const isMobile = computed(() => width.value < BREAKPOINTS.md);
   const isTablet = computed(() => width.value >= BREAKPOINTS.md && width.value < BREAKPOINTS.lg);
@@ -351,9 +448,12 @@ export function useResponsive() {
       if (timeoutId) return;
       
       timeoutId = setTimeout(() => {
-        width.value = window.innerWidth;
+        const nextWidth = window.innerWidth;
+        if (nextWidth !== width.value) {
+          width.value = nextWidth;
+        }
         timeoutId = null;
-      }, 100); // 100ms 节流
+      }, TIMING.throttle);
     };
 
     window.addEventListener('resize', resizeHandler, { passive: true });
@@ -393,22 +493,41 @@ export function useMenuState() {
 
   const activeKey = computed<string>(() => context.props.activeMenuKey || currentPath.value || '');
   const menus = computed<MenuItem[]>(() => context.props.menus || []);
+  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
 
   // 根据当前路径自动展开菜单
   watch(
-    currentPath,
-    (path) => {
+    [currentPath, menuIndex],
+    ([path]) => {
       if (!path) return;
-      const menu = findMenuByPath(menus.value, path);
+      const index = menuIndex.value;
+      const menu = index.byPath.get(path) ?? index.byKey.get(path);
       if (menu) {
         // 获取菜单路径，自动展开父级
-        const menuPath = getMenuPathByPath(menus.value, path);
-        if (menuPath.length > 1) {
-          const parentKeys = menuPath.slice(0, -1).map((m) => m.key);
+        const chain =
+          index.chainByPath.get(path) ??
+          (menu.key ? index.chainByKey.get(menu.key) : undefined) ??
+          [];
+        if (chain.length > 1) {
+          const parentKeys = chain.slice(0, -1);
           if (context.props.navigation?.accordion) {
             openKeys.value = [parentKeys[parentKeys.length - 1]!];
           } else {
-            openKeys.value = [...new Set([...openKeys.value, ...parentKeys])];
+            const merged = [...new Set([...openKeys.value, ...parentKeys])];
+            if (merged.length !== openKeys.value.length) {
+              openKeys.value = merged;
+            } else {
+              let same = true;
+              for (let i = 0; i < merged.length; i += 1) {
+                if (merged[i] !== openKeys.value[i]) {
+                  same = false;
+                  break;
+                }
+              }
+              if (!same) {
+                openKeys.value = merged;
+              }
+            }
           }
         }
       }
@@ -418,7 +537,7 @@ export function useMenuState() {
 
   // 选择菜单（内置路由跳转）
   const handleSelect = (key: string) => {
-    const item = findMenuByKey(menus.value, key);
+    const item = menuIndex.value.byKey.get(key);
     if (item) {
       // 内置路由跳转
       handleMenuItemClick(item);
@@ -430,9 +549,25 @@ export function useMenuState() {
   const handleOpenChange = (keys: string[]) => {
     if (context.props.navigation?.accordion) {
       // 手风琴模式：只保留最后一个展开的菜单
-      openKeys.value = keys.length > 0 ? [keys[keys.length - 1]!] : [];
+      const nextKeys = keys.length > 0 ? [keys[keys.length - 1]!] : [];
+      if (nextKeys.length !== openKeys.value.length || nextKeys[0] !== openKeys.value[0]) {
+        openKeys.value = nextKeys;
+      }
     } else {
-      openKeys.value = keys;
+      if (keys.length !== openKeys.value.length) {
+        openKeys.value = keys;
+        return;
+      }
+      let same = true;
+      for (let i = 0; i < keys.length; i += 1) {
+        if (keys[i] !== openKeys.value[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (!same) {
+        openKeys.value = keys;
+      }
     }
   };
 
@@ -482,15 +617,33 @@ export function useTabsState() {
   });
 
   const activeKey = computed<string>(() => context.props.activeTabKey || currentPath.value || '');
+  const tabMap = computed(() => {
+    const map = new Map<string, TabItem>();
+    for (const tab of tabs.value) {
+      map.set(tab.key, tab);
+    }
+    return map;
+  });
+  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
 
   // 监听当前路径变化，自动添加标签
   watch(
-    currentPath,
-    (path) => {
+    [currentPath, menuIndex],
+    ([path]) => {
       if (!isAutoMode.value || !path) return;
 
-      const menus = context.props.menus || [];
-      const menu = findMenuByPath(menus, path);
+      const index = menuIndex.value;
+      let menu =
+        index.byPath.get(path) ??
+        index.byKey.get(path);
+      if (!menu) {
+        for (const item of index.pathItems) {
+          if (item.path && path.startsWith(item.path)) {
+            menu = item;
+            break;
+          }
+        }
+      }
 
       // 检查菜单是否配置了隐藏标签
       if (menu && menu.path && !menu.hideInTab) {
@@ -515,7 +668,7 @@ export function useTabsState() {
 
   // 选择标签（内置路由跳转）
   const handleSelect = (key: string) => {
-    const item = tabs.value.find((t) => t.key === key);
+    const item = tabMap.value.get(key);
     if (item) {
       // 内置路由跳转
       handleTabClick(item);
@@ -526,7 +679,7 @@ export function useTabsState() {
 
   // 关闭标签（内置导航处理）
   const handleClose = (key: string) => {
-    const item = tabs.value.find((t) => t.key === key);
+    const item = tabMap.value.get(key);
     if (item && item.closable !== false) {
       if (isAutoMode.value) {
         internalTabs.value = tabManager.removeTab(key);
@@ -572,7 +725,7 @@ export function useTabsState() {
   };
 
   const handleRefresh = (key: string) => {
-    const item = tabs.value.find((t) => t.key === key);
+    const item = tabMap.value.get(key);
     if (item) {
       context.events.onTabRefresh?.(item, key);
     }
@@ -620,6 +773,7 @@ export function useBreadcrumbState() {
 
   // 面包屑配置
   const breadcrumbConfig = computed(() => context.props.breadcrumb || {});
+  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
 
   // 面包屑数据
   const breadcrumbs = computed(() => {
@@ -627,25 +781,67 @@ export function useBreadcrumbState() {
       return context.props.breadcrumbs || [];
     }
 
-    const menus = context.props.menus || [];
     const path = currentPath.value;
     const config = context.props.autoBreadcrumb || {};
 
-    if (!path || menus.length === 0) {
+    if (!path || menuIndex.value.byKey.size === 0) {
       return [];
     }
 
     // 翻译首页名称
     const translatedHomeName = context.t('layout.breadcrumb.home');
-    
-    return generateBreadcrumbsFromMenus(menus, path, {
-      showHome: config.showHome ?? breadcrumbConfig.value.showHome ?? true,
-      homePath: config.homePath || context.props.defaultHomePath || '/',
-      homeName: config.homeName || translatedHomeName,
-      homeIcon: config.homeIcon || 'home',
-      // 只有一项时隐藏
-      hideOnlyOne: breadcrumbConfig.value.hideOnlyOne ?? true,
-    });
+
+    const showHome = config.showHome ?? breadcrumbConfig.value.showHome ?? true;
+    const homePath = config.homePath || context.props.defaultHomePath || '/';
+    const hideOnlyOne = breadcrumbConfig.value.hideOnlyOne ?? true;
+    const homeName = config.homeName || translatedHomeName;
+    const homeIcon = config.homeIcon || 'home';
+
+    const index = menuIndex.value;
+    let menu =
+      index.byPath.get(path) ??
+      index.byKey.get(path);
+    if (!menu) {
+      for (const item of index.pathItems) {
+        if (item.path && path.startsWith(item.path)) {
+          menu = item;
+          break;
+        }
+      }
+    }
+    const chainKeys =
+      (menu?.key ? index.chainByKey.get(menu.key) : undefined) ??
+      (menu?.path ? index.chainByPath.get(menu.path) : undefined) ??
+      [];
+
+    const items: BreadcrumbItem[] = [];
+    if (showHome) {
+      items.push({
+        key: '__breadcrumb_home__',
+        name: homeName,
+        icon: homeIcon,
+        path: homePath,
+        clickable: true,
+      });
+    }
+
+    for (const key of chainKeys) {
+      const menuItem = index.byKey.get(key);
+      if (!menuItem) continue;
+      if (showHome && menuItem.path === homePath) continue;
+      items.push({
+        key: `__breadcrumb_${menuItem.key}__`,
+        name: menuItem.name,
+        icon: menuItem.icon,
+        path: menuItem.path,
+        clickable: !!menuItem.path && menuItem.path !== path,
+      });
+    }
+
+    if (hideOnlyOne && items.length <= 1) {
+      return [];
+    }
+    return items;
   });
 
   // 是否显示图标
@@ -673,8 +869,6 @@ export function useBreadcrumbState() {
   };
 }
 
-// 从核心包导入 findMenuByKey
-import { findMenuByKey } from '@admin-core/layout';
 
 /**
  * 使用快捷键
@@ -788,6 +982,7 @@ export function useDynamicTitle() {
 
   const enabled = computed(() => context.props.dynamicTitle !== false);
   const appName = computed(() => context.props.appName || '');
+  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
 
   // 更新标题
   const updateTitle = (pageTitle?: string) => {
@@ -804,12 +999,22 @@ export function useDynamicTitle() {
 
   // 监听当前路径变化，自动更新标题
   watch(
-    () => context.props.currentPath,
-    (path) => {
+    [() => context.props.currentPath, menuIndex],
+    ([path]) => {
       if (!enabled.value || !path) return;
 
-      const menus = context.props.menus || [];
-      const menu = findMenuByPath(menus, path);
+      const index = menuIndex.value;
+      let menu =
+        index.byPath.get(path) ??
+        index.byKey.get(path);
+      if (!menu) {
+        for (const item of index.pathItems) {
+          if (item.path && path.startsWith(item.path)) {
+            menu = item;
+            break;
+          }
+        }
+      }
 
       if (menu) {
         updateTitle(menu.name);
@@ -827,9 +1032,6 @@ export function useDynamicTitle() {
 
 // 从核心包导入
 import { 
-  generateBreadcrumbsFromMenus, 
-  findMenuByPath,
-  getMenuPathByPath,
   generateThemeCSSVariables,
   generateThemeClasses,
   generateWatermarkContent,
@@ -837,7 +1039,7 @@ import {
   createAutoLockTimer,
   createCheckUpdatesTimer,
 } from '@admin-core/layout';
-import type { TabItem, BreadcrumbItem, ThemeConfig, WatermarkConfig, LockScreenConfig, MenuItem } from '@admin-core/layout';
+import type { TabItem, BreadcrumbItem, ThemeConfig, WatermarkConfig, LockScreenConfig, MenuItem, NotificationItem } from '@admin-core/layout';
 
 /**
  * 创建 Vue Router 适配器
@@ -850,8 +1052,13 @@ import type { TabItem, BreadcrumbItem, ThemeConfig, WatermarkConfig, LockScreenC
  * import { useRouter, useRoute } from 'vue-router';
  * const router = useVueRouterAdapter(useRouter(), useRoute());
  */
+/** Vue Router 实例类型（简化版） */
+interface VueRouterInstance {
+  push: (to: string | Record<string, unknown>) => void | Promise<unknown>;
+}
+
 export function useVueRouterAdapter(
-  routerInstance?: { push: (to: any) => void },
+  routerInstance?: VueRouterInstance,
   routeInstance?: { path: string }
 ) {
   // 尝试自动获取 vue-router
@@ -861,13 +1068,13 @@ export function useVueRouterAdapter(
   if (!router.value || !route.value) {
     onMounted(async () => {
       try {
-        const dynamicImport = new Function('m', 'return import(m)') as (m: string) => Promise<any>;
-        const vueRouter = await dynamicImport('vue-router');
+        const dynamicImport = new Function('m', 'return import(m)') as (m: string) => Promise<unknown>;
+        const vueRouter = await dynamicImport('vue-router') as Record<string, unknown>;
         if (!router.value && typeof vueRouter.useRouter === 'function') {
-          router.value = vueRouter.useRouter();
+          router.value = (vueRouter.useRouter as () => typeof routerInstance)();
         }
         if (!route.value && typeof vueRouter.useRoute === 'function') {
-          route.value = vueRouter.useRoute();
+          route.value = (vueRouter.useRoute as () => typeof routeInstance)();
         }
       } catch {
         // vue-router 未安装，这是正常的可选依赖场景
@@ -1006,7 +1213,13 @@ export function useRouter() {
     // 如果关闭的是当前标签，需要跳转到其他标签
     if (closedKey === activeKey && tabs.length > 0) {
       // 优先跳转到右边的标签，没有则跳转到左边
-      const closedIndex = tabs.findIndex((t) => t.key === closedKey);
+      let closedIndex = -1;
+      for (let i = 0; i < tabs.length; i += 1) {
+        if (tabs[i].key === closedKey) {
+          closedIndex = i;
+          break;
+        }
+      }
       // 安全的数组访问
       let nextTab: TabItem | undefined;
       if (closedIndex >= 0 && closedIndex < tabs.length) {
@@ -1364,7 +1577,7 @@ export function useNotifications() {
   const unreadCount = computed(() => context.props.unreadCount || 0);
   const hasUnread = computed(() => unreadCount.value > 0);
 
-  const handleClick = (item: any) => {
+  const handleClick = (item: NotificationItem) => {
     context.events.onNotificationClick?.(item);
   };
 
@@ -1393,6 +1606,9 @@ export function useRefresh() {
       context.events.onRefresh?.();
     } finally {
       // 短暂延迟后重置状态
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
       refreshTimer = setTimeout(() => {
         isRefreshing.value = false;
         refreshTimer = null;
@@ -1433,8 +1649,8 @@ export function useAllCSSVariables() {
  */
 export function useLayoutPreferences() {
   const context = useLayoutContext();
-  const preferencesProps = ref<Record<string, any>>({});
-  const preferencesManager = ref<any>(null);
+  const preferencesProps = ref<Partial<BasicLayoutProps>>({});
+  const preferencesManager = ref<ReturnType<typeof getPreferencesManager> | null>(null);
   let unsubscribe: (() => void) | null = null;
 
   const updatePreferencesProps = () => {

@@ -4,6 +4,7 @@
 export { HeaderToolbar } from './HeaderToolbar';
 export { RefreshButton } from './RefreshButton';
 export { GlobalSearch } from './GlobalSearch';
+export { PreferencesButton } from './PreferencesButton';
 export { ThemeToggle } from './ThemeToggle';
 export { LanguageToggle } from './LanguageToggle';
 export { FullscreenButton } from './FullscreenButton';

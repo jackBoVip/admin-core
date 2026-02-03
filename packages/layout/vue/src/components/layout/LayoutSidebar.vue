@@ -162,6 +162,12 @@ const toggleCollapse = () => {
   <aside
     :class="sidebarClass"
     :style="sidebarStyle"
+    :data-theme="theme"
+    :data-collapsed="collapsed && !expandOnHovering ? 'true' : undefined"
+    :data-hidden="sidebarConfig.hidden ? 'true' : undefined"
+    :data-mixed="isMixedMode ? 'true' : undefined"
+    :data-expand-on-hover="expandOnHovering ? 'true' : undefined"
+    :data-mobile-visible="context.props.isMobile && !collapsed ? 'true' : undefined"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
@@ -179,7 +185,7 @@ const toggleCollapse = () => {
             />
             <span
               v-if="!collapsed || sidebarConfig.collapsedShowTitle"
-              class="ml-2 truncate text-lg font-semibold"
+              class="ml-2 truncate text-lg font-semibold transition-opacity sidebar-collapsed:opacity-80"
             >
               {{ context.props.appName || '' }}
             </span>
@@ -189,7 +195,7 @@ const toggleCollapse = () => {
 
       <!-- 菜单区域 -->
       <div class="layout-sidebar__menu flex-1 overflow-hidden">
-        <div class="h-full overflow-y-auto overflow-x-hidden scrollbar-elegant">
+        <div class="layout-scroll-container h-full overflow-y-auto overflow-x-hidden scrollbar-elegant">
           <slot name="menu">
             <!-- 混合模式：只显示一级菜单图标 -->
             <MixedSidebarMenu v-if="isMixedMode" @root-menu-change="onRootMenuChange" />
@@ -210,7 +216,7 @@ const toggleCollapse = () => {
           <!-- 折叠按钮 -->
           <button
             type="button"
-            class="flex w-full items-center justify-center py-3 transition-colors hover:bg-white/5"
+            class="flex w-full items-center justify-center py-3 transition-colors sidebar-dark:hover:bg-white/5 sidebar-light:hover:bg-black/5"
             :title="collapsed ? context.t('layout.sidebar.expand') : context.t('layout.sidebar.collapse')"
             @click="toggleCollapse"
           >
@@ -235,6 +241,7 @@ const toggleCollapse = () => {
       v-if="isMixedMode"
       class="layout-sidebar__extra"
       :class="{ 'layout-sidebar__extra--visible': showExtraContent }"
+      :data-visible="showExtraContent ? 'true' : undefined"
       :style="extraStyle"
     >
       <slot name="mixed-menu">

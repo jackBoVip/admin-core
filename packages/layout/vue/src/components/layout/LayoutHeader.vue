@@ -97,7 +97,18 @@ const menuContainerClass = computed(() => [
 </script>
 
 <template>
-  <header :class="headerClass" :style="headerStyle">
+  <header
+    :class="headerClass"
+    :style="headerStyle"
+    :data-theme="theme"
+    :data-hidden="hidden ? 'true' : undefined"
+    :data-mode="mode"
+    :data-with-sidebar="layoutComputed.showSidebar && !context.props.isMobile ? 'true' : undefined"
+    :data-collapsed="sidebarCollapsed && !context.props.isMobile ? 'true' : undefined"
+    :data-header-nav="layoutComputed.isHeaderNav ? 'true' : undefined"
+    :data-mixed-nav="layoutComputed.isMixedNav ? 'true' : undefined"
+    :data-header-mixed-nav="layoutComputed.isHeaderMixedNav ? 'true' : undefined"
+  >
     <div class="layout-header__inner flex h-full items-center px-4">
       <!-- Logo（仅顶部导航模式） -->
       <div v-if="showLogoInHeader && logoConfig.enable !== false" class="layout-header__logo mr-4 shrink-0">
@@ -120,7 +131,7 @@ const menuContainerClass = computed(() => [
       <button
         v-if="showSidebarToggle"
         type="button"
-        class="layout-header__toggle mr-2 flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+        class="layout-header__toggle mr-2 flex h-9 w-9 items-center justify-center rounded-md transition-colors header-light:hover:bg-black/5 header-dark:hover:bg-white/10"
         :title="context.t('layout.header.toggleSidebar')"
         @click="toggleSidebar"
       >
@@ -143,7 +154,7 @@ const menuContainerClass = computed(() => [
       </div>
 
       <!-- 菜单区域（顶部导航模式） -->
-      <div v-if="showHeaderMenu" :class="menuContainerClass">
+      <div v-if="showHeaderMenu" :class="menuContainerClass" :data-align="menuAlign">
         <slot name="menu">
           <!-- 顶部菜单默认内容 - 由 BasicLayout 提供 HorizontalMenu 组件 -->
         </slot>

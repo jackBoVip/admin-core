@@ -45,6 +45,7 @@ import {
   mapPreferencesToLayoutProps,
 } from '@admin-core/preferences';
 import type { LayoutType } from '@admin-core/preferences';
+import { logger } from './logger';
 import type { 
   BasicLayoutProps, 
   BreadcrumbItem, 
@@ -56,7 +57,6 @@ import type {
   TabItem,
   WatermarkConfig,
 } from '../types';
-import { findMenuByKey } from './menu';
 import {
   CSS_VAR_NAMES,
   DEFAULT_HEADER_CONFIG,
@@ -408,22 +408,26 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
  */
 export function getMenuPath(menus: MenuItem[], key: string): MenuItem[] {
   const path: MenuItem[] = [];
+  const stack: MenuItem[] = [];
 
-  function traverse(items: MenuItem[], target: string, currentPath: MenuItem[]): boolean {
+  function traverse(items: MenuItem[], target: string): boolean {
     for (const item of items) {
-      const newPath = [...currentPath, item];
+      stack.push(item);
       if (item.key === target) {
-        path.push(...newPath);
+        path.push(...stack);
+        stack.pop();
         return true;
       }
-      if (item.children && traverse(item.children, target, newPath)) {
+      if (item.children && traverse(item.children, target)) {
+        stack.pop();
         return true;
       }
+      stack.pop();
     }
     return false;
   }
 
-  traverse(menus, key, []);
+  traverse(menus, key);
   return path;
 }
 
@@ -432,17 +436,17 @@ export function getMenuPath(menus: MenuItem[], key: string): MenuItem[] {
  */
 export function flattenMenus(menus: MenuItem[]): MenuItem[] {
   const result: MenuItem[] = [];
-
-  function traverse(items: MenuItem[]) {
-    for (const item of items) {
-      result.push(item);
-      if (item.children) {
-        traverse(item.children);
+  const stack = [...menus].reverse();
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
+    result.push(item);
+    if (item.children?.length) {
+      for (let i = item.children.length - 1; i >= 0; i -= 1) {
+        stack.push(item.children[i]);
       }
     }
   }
-
-  traverse(menus);
   return result;
 }
 
@@ -450,12 +454,16 @@ export function flattenMenus(menus: MenuItem[]): MenuItem[] {
  * 过滤隐藏菜单
  */
 export function filterHiddenMenus(menus: MenuItem[]): MenuItem[] {
-  return menus
-    .filter((item) => !item.hidden)
-    .map((item) => ({
+  const result: MenuItem[] = [];
+  for (const item of menus) {
+    if (item.hidden) continue;
+    const children = item.children ? filterHiddenMenus(item.children) : undefined;
+    result.push({
       ...item,
-      children: item.children ? filterHiddenMenus(item.children) : undefined,
-    }));
+      children,
+    });
+  }
+  return result;
 }
 
 /**
@@ -523,39 +531,31 @@ export function generateBreadcrumbsFromMenus(
  * 根据路径查找菜单项（支持精确匹配和前缀匹配）
  */
 export function findMenuByPath(menus: MenuItem[], path: string): MenuItem | undefined {
-  // 先尝试精确匹配（兼容 key 与 path）
-  const exact = findMenuByKey(menus, path) ?? findMenuByPathValue(menus, path);
-  if (exact) return exact;
-
-  // 前缀匹配（找最长匹配）
+  let exactMatch: MenuItem | undefined;
   let bestMatch: MenuItem | undefined;
   let bestMatchLength = 0;
 
-  function traverse(items: MenuItem[]) {
+  function traverse(items: MenuItem[]): boolean {
     for (const item of items) {
+      if (item.key === path || item.path === path) {
+        exactMatch = item;
+        return true;
+      }
       if (item.path && path.startsWith(item.path) && item.path.length > bestMatchLength) {
         bestMatch = item;
         bestMatchLength = item.path.length;
       }
-      if (item.children) {
-        traverse(item.children);
+      if (item.children?.length) {
+        if (traverse(item.children)) {
+          return true;
+        }
       }
     }
+    return false;
   }
 
   traverse(menus);
-  return bestMatch;
-}
-
-function findMenuByPathValue(menus: MenuItem[], path: string): MenuItem | undefined {
-  for (const item of menus) {
-    if (item.path === path) return item;
-    if (item.children?.length) {
-      const found = findMenuByPathValue(item.children, path);
-      if (found) return found;
-    }
-  }
-  return undefined;
+  return exactMatch ?? bestMatch;
 }
 
 /**
@@ -564,25 +564,29 @@ function findMenuByPathValue(menus: MenuItem[], path: string): MenuItem | undefi
  */
 export function getMenuPathByPath(menus: MenuItem[], targetPath: string): MenuItem[] {
   const path: MenuItem[] = [];
+  const stack: MenuItem[] = [];
 
-  function traverse(items: MenuItem[], currentPath: MenuItem[]): boolean {
+  function traverse(items: MenuItem[]): boolean {
     for (const item of items) {
-      const newPath = [...currentPath, item];
+      stack.push(item);
       
       // 精确匹配或前缀匹配
       if (item.path === targetPath) {
-        path.push(...newPath);
+        path.push(...stack);
+        stack.pop();
         return true;
       }
       
-      if (item.children && traverse(item.children, newPath)) {
+      if (item.children && traverse(item.children)) {
+        stack.pop();
         return true;
       }
+      stack.pop();
     }
     return false;
   }
 
-  traverse(menus, []);
+  traverse(menus);
   return path;
 }
 
@@ -606,6 +610,8 @@ export interface TabItemWithState extends TabItem {
  */
 export class TabManager {
   private tabs: TabItemWithState[] = [];
+  private tabMap: Map<string, TabItemWithState> = new Map();
+  private tabIndexMap: Map<string, number> = new Map();
   private maxCount: number;
   private affixTabs: Set<string> = new Set();
   private persistKey: string | null = null;
@@ -629,6 +635,7 @@ export class TabManager {
     }
     // 从持久化存储恢复
     this.restoreFromStorage();
+    this.syncTabMaps();
   }
 
   /**
@@ -659,12 +666,12 @@ export class TabManager {
         if (this.isValidTabData(parsed)) {
           this.setTabs(parsed);
         } else {
-          console.warn('Invalid tabs data format, clearing storage');
+          logger.warn('Invalid tabs data format, clearing storage');
           this.clearStorage();
         }
       }
     } catch (error) {
-      console.warn('Failed to restore tabs from storage:', error);
+      logger.warn('Failed to restore tabs from storage:', error);
       // 清除损坏的数据
       this.clearStorage();
     }
@@ -681,10 +688,10 @@ export class TabManager {
     } catch (error) {
       // 处理存储配额超出等错误
       if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('Storage quota exceeded, clearing old data');
+        logger.warn('Storage quota exceeded, clearing old data');
         this.clearStorage();
       } else {
-        console.warn('Failed to save tabs to storage:', error);
+        logger.warn('Failed to save tabs to storage:', error);
       }
     }
   }
@@ -705,6 +712,20 @@ export class TabManager {
       this.saveToStorage();
       this.saveDebounceTimer = null;
     }, TabManager.SAVE_DEBOUNCE_DELAY);
+  }
+
+  private syncTabMaps(): void {
+    this.tabMap.clear();
+    this.tabIndexMap.clear();
+    this.tabs.forEach((tab, index) => {
+      this.tabMap.set(tab.key, tab);
+      this.tabIndexMap.set(tab.key, index);
+    });
+  }
+
+  private getTabIndex(key: string): number {
+    const index = this.tabIndexMap.get(key);
+    return index === undefined ? -1 : index;
   }
 
   /**
@@ -741,12 +762,11 @@ export class TabManager {
   addTab(tab: TabItem): TabItem[] {
     // 验证标签数据
     if (!this.validateTab(tab)) {
-      console.warn('Invalid tab data:', tab);
+      logger.warn('Invalid tab data:', tab);
       return this.getTabs();
     }
 
-    const exists = this.tabs.find((t) => t.key === tab.key);
-    if (exists) {
+    if (this.tabMap.has(tab.key)) {
       return this.getTabs();
     }
 
@@ -760,16 +780,27 @@ export class TabManager {
 
     // 检查是否超过最大数量（固定标签不计入）
     if (this.maxCount > 0) {
-      const closableTabs = this.tabs.filter((t) => t.closable !== false && !t.affix);
-      if (closableTabs.length > this.maxCount) {
-        // 关闭最早打开的可关闭标签
-        const oldest = closableTabs.sort((a, b) => (a.openTime || 0) - (b.openTime || 0))[0];
-        if (oldest) {
-          this.tabs = this.tabs.filter((t) => t.key !== oldest.key);
+      let closableCount = 0;
+      let oldest: TabItemWithState | null = null;
+      for (const tabItem of this.tabs) {
+        if (tabItem.closable !== false && !tabItem.affix) {
+          closableCount += 1;
+          if (!oldest || (tabItem.openTime ?? 0) < (oldest.openTime ?? 0)) {
+            oldest = tabItem;
+          }
         }
+      }
+      if (closableCount > this.maxCount && oldest) {
+        // 关闭最早打开的可关闭标签
+        const nextTabs: TabItemWithState[] = [];
+        for (const item of this.tabs) {
+          if (item.key !== oldest.key) nextTabs.push(item);
+        }
+        this.tabs = nextTabs;
       }
     }
 
+    this.syncTabMaps();
     this.notifyChange();
     return this.getTabs();
   }
@@ -786,9 +817,14 @@ export class TabManager {
    * 移除标签
    */
   removeTab(key: string): TabItem[] {
-    const tab = this.tabs.find((t) => t.key === key);
+    const tab = this.findTab(key);
     if (tab && tab.closable !== false && !tab.affix) {
-      this.tabs = this.tabs.filter((t) => t.key !== key);
+      const nextTabs: TabItemWithState[] = [];
+      for (const item of this.tabs) {
+        if (item.key !== key) nextTabs.push(item);
+      }
+      this.tabs = nextTabs;
+      this.syncTabMaps();
       this.notifyChange();
     }
     return this.getTabs();
@@ -798,9 +834,14 @@ export class TabManager {
    * 移除其他标签
    */
   removeOtherTabs(exceptKey: string): TabItem[] {
-    this.tabs = this.tabs.filter(
-      (t) => t.key === exceptKey || t.closable === false || t.affix
-    );
+    const nextTabs: TabItemWithState[] = [];
+    for (const item of this.tabs) {
+      if (item.key === exceptKey || item.closable === false || item.affix) {
+        nextTabs.push(item);
+      }
+    }
+    this.tabs = nextTabs;
+    this.syncTabMaps();
     this.notifyChange();
     return this.getTabs();
   }
@@ -809,11 +850,17 @@ export class TabManager {
    * 移除左侧标签
    */
   removeLeftTabs(key: string): TabItem[] {
-    const index = this.tabs.findIndex((t) => t.key === key);
+    const index = this.getTabIndex(key);
     if (index > 0) {
-      this.tabs = this.tabs.filter(
-        (t, i) => i >= index || t.closable === false || t.affix
-      );
+      const nextTabs: TabItemWithState[] = [];
+      for (let i = 0; i < this.tabs.length; i += 1) {
+        const item = this.tabs[i];
+        if (i >= index || item.closable === false || item.affix) {
+          nextTabs.push(item);
+        }
+      }
+      this.tabs = nextTabs;
+      this.syncTabMaps();
       this.notifyChange();
     }
     return this.getTabs();
@@ -823,11 +870,17 @@ export class TabManager {
    * 移除右侧标签
    */
   removeRightTabs(key: string): TabItem[] {
-    const index = this.tabs.findIndex((t) => t.key === key);
+    const index = this.getTabIndex(key);
     if (index >= 0) {
-      this.tabs = this.tabs.filter(
-        (t, i) => i <= index || t.closable === false || t.affix
-      );
+      const nextTabs: TabItemWithState[] = [];
+      for (let i = 0; i < this.tabs.length; i += 1) {
+        const item = this.tabs[i];
+        if (i <= index || item.closable === false || item.affix) {
+          nextTabs.push(item);
+        }
+      }
+      this.tabs = nextTabs;
+      this.syncTabMaps();
       this.notifyChange();
     }
     return this.getTabs();
@@ -837,7 +890,14 @@ export class TabManager {
    * 移除所有可关闭标签
    */
   removeAllTabs(): TabItem[] {
-    this.tabs = this.tabs.filter((t) => t.closable === false || t.affix);
+    const nextTabs: TabItemWithState[] = [];
+    for (const item of this.tabs) {
+      if (item.closable === false || item.affix) {
+        nextTabs.push(item);
+      }
+    }
+    this.tabs = nextTabs;
+    this.syncTabMaps();
     this.notifyChange();
     return this.getTabs();
   }
@@ -848,11 +908,12 @@ export class TabManager {
   setAffixTabs(keys: string[]): void {
     this.affixTabs = new Set(keys);
     // 更新现有标签的 affix 状态
-    this.tabs = this.tabs.map((t) => ({
-      ...t,
-      affix: this.affixTabs.has(t.key),
-      closable: !this.affixTabs.has(t.key),
-    }));
+    for (const tab of this.tabs) {
+      const isAffix = this.affixTabs.has(tab.key);
+      tab.affix = isAffix;
+      tab.closable = !isAffix;
+    }
+    this.syncTabMaps();
     this.notifyChange();
   }
 
@@ -860,7 +921,7 @@ export class TabManager {
    * 切换固定状态
    */
   toggleAffix(key: string): TabItem[] {
-    const tab = this.tabs.find((t) => t.key === key);
+    const tab = this.findTab(key);
     if (tab) {
       if (this.affixTabs.has(key)) {
         this.affixTabs.delete(key);
@@ -871,6 +932,7 @@ export class TabManager {
         tab.affix = true;
         tab.closable = false;
       }
+      this.syncTabMaps();
       this.notifyChange();
     }
     return this.getTabs();
@@ -883,6 +945,7 @@ export class TabManager {
     const [removed] = this.tabs.splice(fromIndex, 1);
     if (removed) {
       this.tabs.splice(toIndex, 0, removed);
+      this.syncTabMaps();
       this.notifyChange();
     }
     return this.getTabs();
@@ -920,26 +983,33 @@ export class TabManager {
    * 设置标签（用于初始化或持久化恢复）
    */
   setTabs(tabs: TabItem[]): void {
-    this.tabs = tabs.map((t) => ({
-      ...t,
-      affix: this.affixTabs.has(t.key) || t.affix,
-      closable: !this.affixTabs.has(t.key) && t.closable !== false && !t.affix,
-      openTime: Date.now(),
-    }));
+    const now = Date.now();
+    const nextTabs: TabItemWithState[] = [];
+    for (const tab of tabs) {
+      const isAffix = this.affixTabs.has(tab.key) || tab.affix;
+      nextTabs.push({
+        ...tab,
+        affix: isAffix,
+        closable: !isAffix && tab.closable !== false,
+        openTime: now,
+      });
+    }
+    this.tabs = nextTabs;
+    this.syncTabMaps();
   }
 
   /**
    * 查找标签
    */
   findTab(key: string): TabItem | undefined {
-    return this.tabs.find((t) => t.key === key);
+    return this.tabMap.get(key);
   }
 
   /**
    * 检查标签是否存在
    */
   hasTab(key: string): boolean {
-    return this.tabs.some((t) => t.key === key);
+    return this.tabMap.has(key);
   }
 }
 
@@ -1112,7 +1182,7 @@ export function createCheckUpdatesTimer(
       const hasUpdate = await checkFn();
       onUpdate(hasUpdate);
     } catch (error) {
-      console.error('Check updates failed:', error);
+      logger.error('Check updates failed:', error);
     }
   };
 

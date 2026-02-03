@@ -11,13 +11,7 @@ import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
 import type { MenuItem } from '@admin-core/layout';
-import {
-  isMenuActive,
-  hasActiveChild as checkHasActiveChild,
-  getIconDefinition,
-  getIconRenderType,
-  findMenuByPath,
-} from '@admin-core/layout';
+import { renderIcon as renderIconByType } from '../../utils/icon-renderer';
 
 interface MixedSidebarMenuProps {
   onRootMenuChange?: (menu: MenuItem | null) => void;
@@ -28,7 +22,7 @@ interface MixedSidebarMenuProps {
  */
 export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   const context = useLayoutContext();
-  const { setExtraVisible, layoutComputed } = useSidebarState();
+  const { extraVisible, setExtraVisible, layoutComputed } = useSidebarState();
   const { activeKey, handleSelect } = useMenuState();
   
   // Logo 配置
@@ -41,12 +35,79 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     () => context.props.menus || [],
     [context.props.menus]
   );
+  const rootMenus = useMemo(() => {
+    const result: MenuItem[] = [];
+    for (const item of menus) {
+      if (!item.hidden) result.push(item);
+    }
+    return result;
+  }, [menus]);
+  const rootNavRef = useRef<HTMLElement>(null);
+  const [rootScrollTop, setRootScrollTop] = useState(0);
+  const [rootViewportHeight, setRootViewportHeight] = useState(0);
+  const [rootItemHeight, setRootItemHeight] = useState(72);
+  const ROOT_OVERSCAN = 4;
+  const rootResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const rootItemResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const rootTotalHeight = rootMenus.length * rootItemHeight;
+  const rootStartIndex = Math.max(0, Math.floor(rootScrollTop / rootItemHeight) - ROOT_OVERSCAN);
+  const rootEndIndex = Math.min(
+    rootMenus.length,
+    Math.ceil((rootScrollTop + rootViewportHeight) / rootItemHeight) + ROOT_OVERSCAN
+  );
+  const visibleRootMenus = useMemo(
+    () => rootMenus.slice(rootStartIndex, rootEndIndex),
+    [rootMenus, rootStartIndex, rootEndIndex]
+  );
+
+  useEffect(() => {
+    const maxScrollTop = Math.max(0, rootTotalHeight - rootViewportHeight);
+    if (rootScrollTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (rootNavRef.current) {
+      rootNavRef.current.scrollTop = nextTop;
+    }
+    setRootScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+  }, [rootTotalHeight, rootViewportHeight, rootScrollTop]);
 
   // 当前选中的一级菜单
   const [selectedRootMenu, setSelectedRootMenu] = useState<MenuItem | null>(null);
 
   // 记录每个一级菜单最后激活的子菜单路径（类似 vben 的 defaultSubMap）
   const lastActiveSubMenuMapRef = useRef<Map<string, string>>(new Map());
+
+  const parentPathMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    const visit = (items: MenuItem[], parent: string | null) => {
+      for (const menu of items) {
+        const keyPath = menu.key || '';
+        const path = menu.path || '';
+        const id = keyPath || path || '';
+        if (keyPath) map.set(keyPath, parent);
+        if (path && path !== keyPath) map.set(path, parent);
+        if (menu.children?.length) {
+          visit(menu.children, id || parent);
+        }
+      }
+    };
+    visit(menus, null);
+    return map;
+  }, [menus]);
+
+  const activeParentSet = useMemo(() => {
+    const parentSet = new Set<string>();
+    if (!activeKey) return parentSet;
+    let current = activeKey;
+    const visited = new Set<string>();
+    while (current && parentPathMap.has(current) && !visited.has(current)) {
+      visited.add(current);
+      const parent = parentPathMap.get(current);
+      if (!parent) break;
+      parentSet.add(parent);
+      current = parent;
+    }
+    return parentSet;
+  }, [activeKey, parentPathMap]);
 
   // 同步 selectedRootMenu 变化到父组件
   useEffect(() => {
@@ -57,102 +118,167 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   useEffect(() => {
     if (!activeKey || !menus.length) return;
 
-    // 查找当前激活菜单所属的一级菜单
-    const currentMenu = findMenuByPath(menus, activeKey);
-    if (currentMenu) {
-      // 找到根菜单
-      const rootMenu = menus.find((m) => {
-        if (m.key === currentMenu.key || m.path === activeKey) return true;
-        return checkHasActiveChild(m, activeKey);
-      });
-      if (rootMenu) {
-        setSelectedRootMenu(rootMenu);
-        setExtraVisible(!!(rootMenu.children && rootMenu.children.length > 0));
-        // 记录该一级菜单最后激活的子菜单
-        if (rootMenu.children?.length) {
-          lastActiveSubMenuMapRef.current.set(rootMenu.key, activeKey);
-        }
+    let rootMenu: MenuItem | undefined;
+    for (const item of menus) {
+      const menuId = item.key || item.path || '';
+      const isActive = item.key === activeKey || item.path === activeKey;
+      const hasActiveChild = menuId ? activeParentSet.has(menuId) : false;
+      if (isActive || hasActiveChild) {
+        rootMenu = item;
+        break;
       }
     }
-  }, [activeKey, menus, setExtraVisible]);
+    if (rootMenu) {
+      if (selectedRootMenu?.key !== rootMenu.key) {
+        setSelectedRootMenu(rootMenu);
+      }
+      const nextExtraVisible = !!(rootMenu.children && rootMenu.children.length > 0);
+      if (extraVisible !== nextExtraVisible) {
+        setExtraVisible(nextExtraVisible);
+      }
+      // 记录该一级菜单最后激活的子菜单
+      if (rootMenu.children?.length) {
+        lastActiveSubMenuMapRef.current.set(rootMenu.key, activeKey);
+      }
+    }
+  }, [activeKey, menus, activeParentSet, selectedRootMenu?.key, extraVisible, setExtraVisible]);
 
-  // 处理一级菜单悬停
-  const handleRootMenuEnter = useCallback(
-    (item: MenuItem) => {
-      setSelectedRootMenu(item);
-      if (item.children?.length) {
+  const rootMenuMap = useMemo(() => {
+    const map = new Map<string, MenuItem>();
+    rootMenus.forEach((item) => map.set(item.key, item));
+    return map;
+  }, [rootMenus]);
+
+  const handleRootMenuEnter = useCallback((item: MenuItem) => {
+    setSelectedRootMenu((prev) => (prev?.key === item.key ? prev : item));
+    if (item.children?.length && !extraVisible) {
+      setExtraVisible(true);
+    }
+  }, [extraVisible, setExtraVisible]);
+
+  const handleRootMenuClick = useCallback((item: MenuItem) => {
+    setSelectedRootMenu((prev) => (prev?.key === item.key ? prev : item));
+
+    if (item.children?.length) {
+      if (!extraVisible) {
         setExtraVisible(true);
       }
-    },
-    [setExtraVisible]
-  );
-
-  // 处理一级菜单点击
-  const handleRootMenuClick = useCallback(
-    (item: MenuItem) => {
-      setSelectedRootMenu(item);
-
-      if (item.children?.length) {
-        setExtraVisible(true);
-        // 自动激活子菜单：优先使用上次记录的，否则使用第一个
-        const autoActivateChild = context.props.sidebar?.autoActivateChild ?? true;
-        if (autoActivateChild) {
-          const lastActivePath = lastActiveSubMenuMapRef.current.get(item.key);
-          const firstChildPath = item.children[0]?.path || item.children[0]?.key;
-          const targetPath = lastActivePath || firstChildPath;
-          if (targetPath && targetPath !== activeKey) {
-            handleSelect(targetPath);
-          }
+      // 自动激活子菜单：优先使用上次记录的，否则使用第一个
+      const autoActivateChild = context.props.sidebar?.autoActivateChild ?? true;
+      if (autoActivateChild) {
+        const lastActivePath = lastActiveSubMenuMapRef.current.get(item.key);
+        const firstChildPath = item.children[0]?.path || item.children[0]?.key;
+        const targetPath = lastActivePath || firstChildPath;
+        if (targetPath && targetPath !== activeKey) {
+          handleSelect(targetPath);
         }
-      } else if (item.path) {
-        handleSelect(item.key);
       }
-    },
-    [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey]
-  );
+    } else if (item.path) {
+      handleSelect(item.key);
+    }
+  }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey]);
 
-  // 判断一级菜单是否选中
-  const isRootActive = useCallback(
-    (item: MenuItem) => {
-      return (
-        selectedRootMenu?.key === item.key ||
-        isMenuActive(item, activeKey) ||
-        checkHasActiveChild(item, activeKey)
-      );
-    },
-    [selectedRootMenu, activeKey]
-  );
+  const handleRootMenuMouseEnter = useCallback((e: React.MouseEvent) => {
+    const key = (e.currentTarget as HTMLElement).dataset.key;
+    if (!key) return;
+    const item = rootMenuMap.get(key);
+    if (item) {
+      handleRootMenuEnter(item);
+    }
+  }, [rootMenuMap, handleRootMenuEnter]);
+
+  const handleRootMenuItemClick = useCallback((e: React.MouseEvent) => {
+    const key = (e.currentTarget as HTMLElement).dataset.key;
+    if (!key) return;
+    const item = rootMenuMap.get(key);
+    if (item) {
+      handleRootMenuClick(item);
+    }
+  }, [rootMenuMap, handleRootMenuClick]);
+
+  useEffect(() => {
+    const container = rootNavRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const nextTop = container.scrollTop;
+      setRootScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+    };
+    const updateHeight = () => {
+      const nextHeight = container.clientHeight;
+      setRootViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+      const firstItem = container.querySelector('.mixed-sidebar-menu__root-item') as HTMLElement | null;
+      if (firstItem) {
+        const height = firstItem.getBoundingClientRect().height;
+        if (height > 0 && height !== rootItemHeight) {
+          setRootItemHeight(height);
+        }
+      }
+    };
+
+    updateHeight();
+    handleScroll();
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    const useWindowResize = typeof ResizeObserver === 'undefined';
+    if (useWindowResize) {
+      window.addEventListener('resize', updateHeight);
+    } else {
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(container);
+      rootResizeObserverRef.current = observer;
+    }
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (useWindowResize) {
+        window.removeEventListener('resize', updateHeight);
+      }
+      if (rootResizeObserverRef.current) {
+        rootResizeObserverRef.current.disconnect();
+        rootResizeObserverRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return;
+    const container = rootNavRef.current;
+    if (!container) return;
+    let observedItem = container.querySelector('.mixed-sidebar-menu__root-item') as HTMLElement | null;
+    if (!observedItem) return;
+    const observer = new ResizeObserver(() => {
+      const currentItem = container.querySelector('.mixed-sidebar-menu__root-item') as HTMLElement | null;
+      if (!currentItem) return;
+      if (currentItem !== observedItem) {
+        if (observedItem) {
+          observer.unobserve(observedItem);
+        }
+        observer.observe(currentItem);
+        observedItem = currentItem;
+      }
+      const height = currentItem.getBoundingClientRect().height;
+      if (height > 0 && height !== rootItemHeight) {
+        setRootItemHeight(height);
+      }
+    });
+    observer.observe(observedItem);
+    rootItemResizeObserverRef.current = observer;
+    return () => {
+      if (rootItemResizeObserverRef.current) {
+        rootItemResizeObserverRef.current.disconnect();
+        rootItemResizeObserverRef.current = null;
+      }
+    };
+  }, [rootMenus.length, rootItemHeight]);
 
   // 渲染图标
-  const renderIcon = (icon: string | undefined, itemName: string) => {
+  const renderRootIcon = (icon: string | undefined, itemName: string) => {
     if (!icon) {
       return (
         <span className="mixed-sidebar-menu__icon">{itemName.charAt(0)}</span>
       );
     }
 
-    const type = getIconRenderType(icon);
-
-    if (type === 'svg') {
-      const def = getIconDefinition(icon);
-      if (def) {
-        return (
-          <span className="mixed-sidebar-menu__icon">
-            <svg
-              className="h-5 w-5"
-              viewBox={def.viewBox}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d={def.path} />
-            </svg>
-          </span>
-        );
-      }
-    }
-
-    return <span className="mixed-sidebar-menu__icon">{icon}</span>;
+    return <span className="mixed-sidebar-menu__icon">{renderIconByType(icon, 'md')}</span>;
   };
 
   // 渲染 Logo
@@ -190,23 +316,40 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
       {renderLogo()}
       
       {/* 一级菜单 */}
-      <nav className="mixed-sidebar-menu__root">
-        {menus
-          .filter((item) => !item.hidden)
-          .map((item) => (
+      <nav ref={rootNavRef} className="mixed-sidebar-menu__root" style={{ position: 'relative' }}>
+        <div style={{ height: `${rootTotalHeight}px`, pointerEvents: 'none' }} />
+        {visibleRootMenus.map((item, index) => {
+          const actualIndex = rootStartIndex + index;
+          const menuId = item.key || item.path || '';
+          const isActive =
+            selectedRootMenu?.key === item.key ||
+            item.key === activeKey ||
+            item.path === activeKey ||
+            (menuId ? activeParentSet.has(menuId) : false);
+          return (
             <div
               key={item.key}
-              className={`mixed-sidebar-menu__root-item ${
-                isRootActive(item) ? 'mixed-sidebar-menu__root-item--active' : ''
+              className={`mixed-sidebar-menu__root-item data-active:text-foreground data-disabled:opacity-50 ${
+                isActive ? 'mixed-sidebar-menu__root-item--active' : ''
               }`}
+              data-state={isActive ? 'active' : 'inactive'}
+              data-disabled={item.disabled ? 'true' : undefined}
+              data-key={item.key}
               title={item.name}
-              onMouseEnter={() => handleRootMenuEnter(item)}
-              onClick={() => handleRootMenuClick(item)}
+              onMouseEnter={handleRootMenuMouseEnter}
+              onClick={handleRootMenuItemClick}
+              style={{
+                position: 'absolute',
+                top: `${actualIndex * rootItemHeight}px`,
+                left: 0,
+                right: 0,
+              }}
             >
-              {renderIcon(item.icon, item.name)}
+              {renderRootIcon(item.icon, item.name)}
               <span className="mixed-sidebar-menu__root-name">{item.name}</span>
             </div>
-          ))}
+          );
+        })}
       </nav>
     </div>
   );
@@ -240,9 +383,62 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   onCollapse,
   onTogglePin,
 }: MixedSidebarSubMenuProps) {
+  const SUB_RENDER_CHUNK = 80;
+  const [subRenderCount, setSubRenderCount] = useState(SUB_RENDER_CHUNK);
+  const navRef = useRef<HTMLElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [subItemHeight, setSubItemHeight] = useState(40);
+  const SUB_OVERSCAN = 4;
+  const subResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const subItemResizeObserverRef = useRef<ResizeObserver | null>(null);
+
+  useEffect(() => {
+    const nextCount = collapsed
+      ? menus.length
+      : Math.min(SUB_RENDER_CHUNK, menus.length);
+    setSubRenderCount((prev) => (prev === nextCount ? prev : nextCount));
+  }, [collapsed, menus.length]);
+
+  useEffect(() => {
+    if (collapsed || subRenderCount >= menus.length) return;
+    const frame = requestAnimationFrame(() => {
+      setSubRenderCount((prev) => Math.min(prev + SUB_RENDER_CHUNK, menus.length));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [collapsed, subRenderCount, menus.length]);
+
+  const visibleMenus = useMemo(() => menus.slice(0, subRenderCount), [menus, subRenderCount]);
+  const virtualTotalHeight = menus.length * subItemHeight;
+  const virtualStartIndex = Math.max(0, Math.floor(scrollTop / subItemHeight) - SUB_OVERSCAN);
+  const virtualEndIndex = Math.min(
+    menus.length,
+    Math.ceil((scrollTop + viewportHeight) / subItemHeight) + SUB_OVERSCAN
+  );
+  const virtualMenus = useMemo(
+    () => menus.slice(virtualStartIndex, virtualEndIndex),
+    [menus, virtualStartIndex, virtualEndIndex]
+  );
+  const renderMenus = collapsed ? virtualMenus : visibleMenus;
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
+  const menuItemMap = useMemo(() => {
+    const map = new Map<string, MenuItem>();
+    const stack = [...menus].reverse();
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (!current) continue;
+      map.set(current.key, current);
+      if (current.children?.length) {
+        for (let i = current.children.length - 1; i >= 0; i -= 1) {
+          stack.push(current.children[i]);
+        }
+      }
+    }
+    return map;
+  }, [menus]);
 
   const toggleExpand = useCallback((key: string) => {
+    if (!menuItemMap.has(key)) return;
     setExpandedKeys((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -250,26 +446,52 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       } else {
         next.add(key);
       }
+      if (next.size === prev.size) {
+        let same = true;
+        for (const value of next) {
+          if (!prev.has(value)) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return prev;
+      }
       return next;
     });
-  }, []);
+  }, [menuItemMap]);
 
-  const isActive = useCallback(
-    (item: MenuItem) => {
-      return item.key === activeKey || item.path === activeKey;
-    },
-    [activeKey]
-  );
+  const parentPathMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    const visit = (items: MenuItem[], parent: string | null) => {
+      for (const menu of items) {
+        const keyPath = menu.key || '';
+        const path = menu.path || '';
+        const id = keyPath || path || '';
+        if (keyPath) map.set(keyPath, parent);
+        if (path && path !== keyPath) map.set(path, parent);
+        if (menu.children?.length) {
+          visit(menu.children, id || parent);
+        }
+      }
+    };
+    visit(menus, null);
+    return map;
+  }, [menus]);
 
-  const hasActiveChild = useCallback(
-    (item: MenuItem): boolean => {
-      if (!item.children?.length) return false;
-      return item.children.some(
-        (child) => isActive(child) || hasActiveChild(child)
-      );
-    },
-    [isActive]
-  );
+  const activeParentSet = useMemo(() => {
+    const parentSet = new Set<string>();
+    if (!activeKey) return parentSet;
+    let current = activeKey;
+    const visited = new Set<string>();
+    while (current && parentPathMap.has(current) && !visited.has(current)) {
+      visited.add(current);
+      const parent = parentPathMap.get(current);
+      if (!parent) break;
+      parentSet.add(parent);
+      current = parent;
+    }
+    return parentSet;
+  }, [activeKey, parentPathMap]);
 
   const handleClick = useCallback(
     (item: MenuItem) => {
@@ -282,56 +504,59 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     [toggleExpand, onSelect]
   );
 
-  // 渲染图标
-  const renderIcon = (icon: string | undefined) => {
-    if (!icon) return null;
-
-    const type = getIconRenderType(icon);
-
-    if (type === 'svg') {
-      const def = getIconDefinition(icon);
-      if (def) {
-        return (
-          <span className="mixed-sidebar-submenu__icon">
-            <svg
-              className="h-4 w-4"
-              viewBox={def.viewBox}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d={def.path} />
-            </svg>
-          </span>
-        );
-      }
+  const handleItemClick = useCallback((e: React.MouseEvent) => {
+    const key = (e.currentTarget as HTMLElement).dataset.key;
+    if (!key) return;
+    const item = menuItemMap.get(key);
+    if (item) {
+      handleClick(item);
     }
+  }, [menuItemMap, handleClick]);
 
-    return <span className="mixed-sidebar-submenu__icon">{icon}</span>;
+  // 渲染图标
+  const renderSubIcon = (icon: string | undefined) => {
+    if (!icon) return null;
+    return <span className="mixed-sidebar-submenu__icon">{renderIconByType(icon, 'sm')}</span>;
   };
 
   // 递归渲染菜单项
-  const renderMenuItem = (item: MenuItem, level: number): React.ReactNode => {
+  const renderMenuItem = (
+    item: MenuItem,
+    level: number,
+    style?: React.CSSProperties
+  ): React.ReactNode => {
     if (item.hidden) return null;
 
-    const active = isActive(item);
+    const menuId = item.key || item.path || '';
+    const active = item.key === activeKey || item.path === activeKey;
     const hasChildren = Boolean(item.children?.length);
     const expanded = expandedKeys.has(item.key);
-    const hasActive = hasActiveChild(item);
+    const hasActive = menuId ? activeParentSet.has(menuId) : false;
 
-    const itemClassName = [
-      'mixed-sidebar-submenu__item',
-      `mixed-sidebar-submenu__item--level-${level}`,
-      active && 'mixed-sidebar-submenu__item--active',
-      hasActive && 'mixed-sidebar-submenu__item--has-active-child',
-    ]
-      .filter(Boolean)
-      .join(' ');
+    const itemClassName = (() => {
+      const classes = [
+        'mixed-sidebar-submenu__item',
+        `mixed-sidebar-submenu__item--level-${level}`,
+      ];
+      if (active) classes.push('mixed-sidebar-submenu__item--active');
+      if (hasActive) classes.push('mixed-sidebar-submenu__item--has-active-child');
+      return classes.join(' ');
+    })();
 
     return (
-      <div key={item.key} className="mixed-sidebar-submenu__group">
-        <div className={itemClassName} onClick={() => handleClick(item)}>
-          {renderIcon(item.icon)}
+      <div key={item.key} className="mixed-sidebar-submenu__group" style={style}>
+        <div
+          className={`${itemClassName} data-active:text-primary data-disabled:opacity-50`}
+          data-state={active ? 'active' : 'inactive'}
+          data-disabled={item.disabled ? 'true' : undefined}
+          data-has-active-child={hasActive ? 'true' : undefined}
+          data-has-children={hasChildren ? 'true' : undefined}
+          data-expanded={hasChildren && expanded ? 'true' : undefined}
+          data-level={level}
+          data-key={item.key}
+          onClick={handleItemClick}
+        >
+          {renderSubIcon(item.icon)}
           {/* 名称（折叠时隐藏） */}
           {!collapsed && (
             <span className="mixed-sidebar-submenu__name">{item.name}</span>
@@ -342,6 +567,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
               className={`mixed-sidebar-submenu__arrow ${
                 expanded ? 'mixed-sidebar-submenu__arrow--expanded' : ''
               }`}
+              data-expanded={expanded ? 'true' : undefined}
             >
               <svg
                 className="h-4 w-4"
@@ -365,13 +591,111 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     );
   };
 
-  const containerClassName = [
-    'mixed-sidebar-submenu',
-    collapsed && 'mixed-sidebar-submenu--collapsed',
-  ].filter(Boolean).join(' ');
+  useEffect(() => {
+    const container = navRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const nextTop = container.scrollTop;
+      setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+    };
+    const updateHeight = () => {
+      const nextHeight = container.clientHeight;
+      setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+      const firstItem = container.querySelector('.mixed-sidebar-submenu__item') as HTMLElement | null;
+      if (firstItem) {
+        const height = firstItem.getBoundingClientRect().height;
+        if (height > 0 && height !== subItemHeight) {
+          setSubItemHeight(height);
+        }
+      }
+    };
+
+    updateHeight();
+    handleScroll();
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    const useWindowResize = typeof ResizeObserver === 'undefined';
+    if (useWindowResize) {
+      window.addEventListener('resize', updateHeight);
+    } else {
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(container);
+      subResizeObserverRef.current = observer;
+    }
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (useWindowResize) {
+        window.removeEventListener('resize', updateHeight);
+      }
+      if (subResizeObserverRef.current) {
+        subResizeObserverRef.current.disconnect();
+        subResizeObserverRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!collapsed || typeof ResizeObserver === 'undefined') return;
+    const container = navRef.current;
+    if (!container) return;
+    let observedItem = container.querySelector('.mixed-sidebar-submenu__item') as HTMLElement | null;
+    if (!observedItem) return;
+    const observer = new ResizeObserver(() => {
+      const currentItem = container.querySelector('.mixed-sidebar-submenu__item') as HTMLElement | null;
+      if (!currentItem) return;
+      if (currentItem !== observedItem) {
+        if (observedItem) {
+          observer.unobserve(observedItem);
+        }
+        observer.observe(currentItem);
+        observedItem = currentItem;
+      }
+      const height = currentItem.getBoundingClientRect().height;
+      if (height > 0 && height !== subItemHeight) {
+        setSubItemHeight(height);
+      }
+    });
+    observer.observe(observedItem);
+    subItemResizeObserverRef.current = observer;
+    return () => {
+      if (subItemResizeObserverRef.current) {
+        subItemResizeObserverRef.current.disconnect();
+        subItemResizeObserverRef.current = null;
+      }
+    };
+  }, [collapsed, menus.length, subItemHeight]);
+
+  useEffect(() => {
+    if (!collapsed) return;
+    const container = navRef.current;
+    if (container) {
+      container.scrollTop = 0;
+    }
+    setScrollTop((prev) => (prev === 0 ? prev : 0));
+  }, [collapsed]);
+
+  useEffect(() => {
+    if (!collapsed) return;
+    const maxScrollTop = Math.max(0, virtualTotalHeight - viewportHeight);
+    if (scrollTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (navRef.current) {
+      navRef.current.scrollTop = nextTop;
+    }
+    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+  }, [collapsed, virtualTotalHeight, viewportHeight, scrollTop]);
+
+  const containerClassName = (() => {
+    const classes = ['mixed-sidebar-submenu'];
+    if (collapsed) classes.push('mixed-sidebar-submenu--collapsed');
+    return classes.join(' ');
+  })();
 
   return (
-    <div className={containerClassName}>
+    <div
+      className={containerClassName}
+      data-collapsed={collapsed ? 'true' : undefined}
+    >
       {/* 折叠按钮 - 左下角 */}
       {showCollapseBtn && (
         <button
@@ -427,8 +751,24 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       {/* 标题（折叠时隐藏） */}
       {!collapsed && title && <div className="mixed-sidebar-submenu__title">{title}</div>}
       {/* 菜单列表 */}
-      <nav className="mixed-sidebar-submenu__nav">
-        {menus.map((item) => renderMenuItem(item, 0))}
+      <nav
+        ref={navRef}
+        className="mixed-sidebar-submenu__nav"
+        style={collapsed ? { position: 'relative' } : undefined}
+      >
+        {collapsed && <div style={{ height: `${virtualTotalHeight}px`, pointerEvents: 'none' }} />}
+        {renderMenus.map((item, index) => {
+          const actualIndex = virtualStartIndex + index;
+          const itemStyle = collapsed
+            ? {
+                position: 'absolute' as const,
+                top: `${actualIndex * subItemHeight}px`,
+                left: 0,
+                right: 0,
+              }
+            : undefined;
+          return renderMenuItem(item, 0, itemStyle);
+        })}
       </nav>
     </div>
   );

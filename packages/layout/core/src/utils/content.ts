@@ -79,7 +79,7 @@ export function computeContentClassName(
   }
   
   if (state.sidebarCollapsed) {
-    classes.push('layout-content--sidebar-collapsed');
+    classes.push('layout-content--collapsed');
   }
   
   if (state.showPanel) {
@@ -252,7 +252,7 @@ export function computeFooterClassName(
     classes.push('layout-footer--with-sidebar');
     
     if (sidebarCollapsed) {
-      classes.push('layout-footer--sidebar-collapsed');
+      classes.push('layout-footer--collapsed');
     }
   }
   

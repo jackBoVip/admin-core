@@ -7,12 +7,18 @@ import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useLayoutContext } from '../../composables';
 import type { MenuItem } from '@admin-core/layout';
 
+interface SearchMenuItem extends MenuItem {
+  parentPath?: string[];
+  searchText: string;
+}
+
 const context = useLayoutContext();
 
 // 搜索框状态
 const isOpen = ref(false);
 const keyword = ref('');
 const selectedIndex = ref(0);
+const scrollTop = ref(0);
 const inputRef = ref<HTMLInputElement | null>(null);
 const resultListRef = ref<HTMLDivElement | null>(null);
 
@@ -20,8 +26,9 @@ const resultListRef = ref<HTMLDivElement | null>(null);
 const menus = computed(() => context.props.menus || []);
 
 // 扁平化菜单（用于搜索）
-const flatMenus = computed(() => {
-  const result: (MenuItem & { parentPath?: string[] })[] = [];
+const flatMenus = computed<SearchMenuItem[]>(() => {
+  if (!isOpen.value) return [];
+  const result: SearchMenuItem[] = [];
   
   const flatten = (items: MenuItem[], parentPath: string[] = []) => {
     for (const item of items) {
@@ -29,8 +36,11 @@ const flatMenus = computed(() => {
       
       // 只添加有路径的菜单项
       if (item.path && !item.hidden) {
+        const name = item.name || '';
+        const path = item.path || '';
         result.push({
           ...item,
+          searchText: `${name} ${path}`.toLowerCase(),
           parentPath: parentPath.length > 0 ? parentPath : undefined,
         });
       }
@@ -47,19 +57,57 @@ const flatMenus = computed(() => {
 });
 
 // 搜索结果
+const MAX_RESULTS = 200;
 const searchResults = computed(() => {
-  if (!keyword.value.trim()) return [];
-  
-  const query = keyword.value.toLowerCase();
-  
-  return flatMenus.value
-    .filter(item => {
-      const name = (item.name || '').toLowerCase();
-      const path = (item.path || '').toLowerCase();
-      return name.includes(query) || path.includes(query);
-    })
-    .slice(0, 10); // 限制结果数量
+  const query = keyword.value.trim().toLowerCase();
+  if (!query) return [];
+
+  const results: SearchMenuItem[] = [];
+  for (const item of flatMenus.value) {
+    if (item.searchText.includes(query)) {
+      results.push(item);
+      if (results.length >= MAX_RESULTS) break;
+    }
+  }
+  return results;
 });
+
+const itemHeight = ref(56);
+const listResizeObserver = ref<ResizeObserver | null>(null);
+const RESULT_MAX_HEIGHT = 320;
+const RESULT_OVERSCAN = 4;
+const totalHeight = computed(() => searchResults.value.length * itemHeight.value);
+const viewportHeight = computed(() =>
+  totalHeight.value === 0 ? RESULT_MAX_HEIGHT : Math.min(totalHeight.value, RESULT_MAX_HEIGHT)
+);
+const startIndex = computed(() =>
+  Math.max(0, Math.floor(scrollTop.value / itemHeight.value) - RESULT_OVERSCAN)
+);
+const endIndex = computed(() =>
+  Math.min(
+    searchResults.value.length,
+    Math.ceil((scrollTop.value + viewportHeight.value) / itemHeight.value) + RESULT_OVERSCAN
+  )
+);
+const visibleResults = computed(() =>
+  searchResults.value.slice(startIndex.value, endIndex.value)
+);
+
+watch(
+  [isOpen, totalHeight, viewportHeight, scrollTop],
+  ([open, total, viewHeight, currentTop]) => {
+    if (!open) return;
+    const maxScrollTop = Math.max(0, total - viewHeight);
+    if (currentTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (resultListRef.value) {
+      resultListRef.value.scrollTop = nextTop;
+    }
+    if (scrollTop.value !== nextTop) {
+      scrollTop.value = nextTop;
+    }
+  }
+);
 
 // 打开搜索框
 const openSearch = () => {
@@ -89,6 +137,19 @@ const selectItem = (item: MenuItem) => {
     }
   }
   closeSearch();
+};
+
+const handleResultClick = (e: MouseEvent) => {
+  const index = Number((e.currentTarget as HTMLElement | null)?.dataset?.index);
+  if (Number.isNaN(index)) return;
+  const item = searchResults.value[index];
+  if (item) selectItem(item);
+};
+
+const handleResultMouseEnter = (e: MouseEvent) => {
+  const index = Number((e.currentTarget as HTMLElement | null)?.dataset?.index);
+  if (Number.isNaN(index)) return;
+  selectedIndex.value = index;
 };
 
 // 键盘导航
@@ -122,20 +183,33 @@ const handleKeydown = (e: KeyboardEvent) => {
 };
 
 // 滚动到选中项
+const ensureIndexVisible = (index: number) => {
+  const list = resultListRef.value;
+  if (!list) return;
+  const itemTop = index * itemHeight.value;
+  const itemBottom = itemTop + itemHeight.value;
+  const viewTop = list.scrollTop;
+  const viewBottom = viewTop + list.clientHeight;
+
+  if (itemTop < viewTop) {
+    list.scrollTop = itemTop;
+    if (scrollTop.value !== itemTop) {
+      scrollTop.value = itemTop;
+    }
+    return;
+  }
+  if (itemBottom > viewBottom) {
+    const nextTop = Math.max(0, itemBottom - list.clientHeight);
+    list.scrollTop = nextTop;
+    if (scrollTop.value !== nextTop) {
+      scrollTop.value = nextTop;
+    }
+  }
+};
+
 const scrollToSelected = () => {
   nextTick(() => {
-    const list = resultListRef.value;
-    const selected = list?.querySelector(`[data-index="${selectedIndex.value}"]`) as HTMLElement;
-    if (selected && list) {
-      const listRect = list.getBoundingClientRect();
-      const selectedRect = selected.getBoundingClientRect();
-      
-      if (selectedRect.bottom > listRect.bottom) {
-        list.scrollTop += selectedRect.bottom - listRect.bottom;
-      } else if (selectedRect.top < listRect.top) {
-        list.scrollTop -= listRect.top - selectedRect.top;
-      }
-    }
+    ensureIndexVisible(selectedIndex.value);
   });
 };
 
@@ -154,8 +228,81 @@ const handleGlobalKeydown = (e: KeyboardEvent) => {
 
 // 监听关键字变化，重置选中索引
 watch(keyword, () => {
-  selectedIndex.value = 0;
+  if (selectedIndex.value !== 0) {
+    selectedIndex.value = 0;
+  }
+  if (resultListRef.value) {
+    resultListRef.value.scrollTop = 0;
+  }
+  if (scrollTop.value !== 0) {
+    scrollTop.value = 0;
+  }
 });
+
+watch(isOpen, (open) => {
+  if (open) return;
+  if (resultListRef.value) {
+    resultListRef.value.scrollTop = 0;
+  }
+  if (scrollTop.value !== 0) {
+    scrollTop.value = 0;
+  }
+});
+
+watch([isOpen, () => searchResults.value.length], ([open]) => {
+  if (!open) return;
+  nextTick(() => {
+    const list = resultListRef.value;
+    if (!list) return;
+    const firstItem = list.querySelector('.layout-list-item') as HTMLElement | null;
+    if (!firstItem) return;
+    const height = firstItem.getBoundingClientRect().height;
+    if (height > 0 && height !== itemHeight.value) {
+      itemHeight.value = height;
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      listResizeObserver.value?.disconnect();
+      listResizeObserver.value = new ResizeObserver(() => {
+        const currentItem = list.querySelector('.layout-list-item') as HTMLElement | null;
+        if (!currentItem) return;
+        const nextHeight = currentItem.getBoundingClientRect().height;
+        if (nextHeight > 0 && nextHeight !== itemHeight.value) {
+          itemHeight.value = nextHeight;
+        }
+      });
+      listResizeObserver.value.observe(firstItem);
+    }
+  });
+});
+
+watch(isOpen, (open) => {
+  if (open) return;
+  if (listResizeObserver.value) {
+    listResizeObserver.value.disconnect();
+    listResizeObserver.value = null;
+  }
+});
+
+const handleScroll = (e: Event) => {
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  const nextTop = target.scrollTop;
+  if (scrollTop.value !== nextTop) {
+    scrollTop.value = nextTop;
+  }
+};
+
+const handleWheel = (e: WheelEvent) => {
+  if (e.ctrlKey) return;
+  e.preventDefault();
+  const target = e.currentTarget as HTMLElement | null;
+  if (!target) return;
+  target.scrollTop += e.deltaY;
+  const nextTop = target.scrollTop;
+  if (scrollTop.value !== nextTop) {
+    scrollTop.value = nextTop;
+  }
+};
 
 // 监听快捷键
 onMounted(() => {
@@ -164,6 +311,10 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleGlobalKeydown);
+  if (listResizeObserver.value) {
+    listResizeObserver.value.disconnect();
+    listResizeObserver.value = null;
+  }
 });
 
 // 获取快捷键显示文本
@@ -179,6 +330,7 @@ const shortcutText = computed(() => {
     type="button"
     class="header-search-btn flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800"
     :title="context.t('layout.header.search')"
+    :data-state="isOpen ? 'open' : 'closed'"
     @click="openSearch"
   >
     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -196,7 +348,8 @@ const shortcutText = computed(() => {
     <Transition name="modal">
       <div
         v-if="isOpen"
-        class="fixed inset-0 z-[9999] flex items-start justify-center px-4 pt-20"
+        class="fixed inset-0 z-9999 flex items-start justify-center px-4 pt-20"
+        data-state="open"
       >
         <!-- 遮罩 -->
         <div class="fixed inset-0 bg-black/50" @click="closeSearch" />
@@ -225,7 +378,13 @@ const shortcutText = computed(() => {
           </div>
           
           <!-- 搜索结果 -->
-          <div ref="resultListRef" class="max-h-80 overflow-y-auto">
+          <div
+            ref="resultListRef"
+            class="layout-scroll-container max-h-80 overflow-y-auto"
+            :style="{ height: `${viewportHeight}px`, position: 'relative' }"
+            @scroll="handleScroll"
+          @wheel="handleWheel"
+          >
             <!-- 无结果 -->
             <div v-if="keyword && searchResults.length === 0" class="py-12 text-center text-gray-400">
               {{ context.t('layout.search.noResults') }}
@@ -233,19 +392,28 @@ const shortcutText = computed(() => {
             
             <!-- 结果列表 -->
             <template v-else-if="searchResults.length > 0">
+              <div :style="{ height: `${totalHeight}px`, pointerEvents: 'none' }" />
               <div
-                v-for="(item, index) in searchResults"
+                v-for="(item, index) in visibleResults"
                 :key="item.key"
-                :data-index="index"
-                class="flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors"
-                :class="index === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'"
-                @click="selectItem(item)"
-                @mouseenter="selectedIndex = index"
+                :data-index="startIndex + index"
+                class="layout-list-item flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors"
+                :class="startIndex + index === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'"
+                :data-selected="startIndex + index === selectedIndex ? 'true' : undefined"
+                :style="{
+                  position: 'absolute',
+                top: `${(startIndex + index) * itemHeight}px`,
+                  left: 0,
+                  right: 0,
+                height: `${itemHeight}px`,
+                }"
+                @click="handleResultClick"
+                @mouseenter="handleResultMouseEnter"
               >
                 <!-- 图标 -->
                 <div
                   class="flex h-8 w-8 items-center justify-center rounded-lg"
-                  :class="index === selectedIndex ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-700'"
+                  :class="startIndex + index === selectedIndex ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-700'"
                 >
                   <span v-if="item.icon" class="text-lg">{{ item.icon }}</span>
                   <svg v-else class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -263,7 +431,7 @@ const shortcutText = computed(() => {
                 </div>
                 
                 <!-- 回车提示 -->
-                <span v-if="index === selectedIndex" class="text-xs text-gray-400">
+                <span v-if="startIndex + index === selectedIndex" class="text-xs text-gray-400">
                   ↵
                 </span>
               </div>

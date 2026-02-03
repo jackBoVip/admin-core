@@ -1,11 +1,10 @@
 {
-  "extends": "@admin-core/tsconfig/base.json",
+  "extends": "@admin-core/tsconfig/react.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "dist",
+    "rootDir": "src",
     "declaration": true,
-    "declarationMap": true,
-    "jsx": "react-jsx"
+    "declarationMap": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]

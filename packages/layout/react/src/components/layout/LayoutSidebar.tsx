@@ -98,17 +98,22 @@ export const LayoutSidebar = memo(function LayoutSidebar({
   }, [expandOnHover, setExpandOnHover]);
 
   // 类名
-  const sidebarClassName = [
-    'layout-sidebar',
-    `layout-sidebar--${theme}`,
-    collapsed && !expandOnHovering && 'layout-sidebar--collapsed',
-    expandOnHovering && 'layout-sidebar--expand-on-hover',
-    isMixedMode && 'layout-sidebar--mixed',
-    sidebarConfig.hidden && 'layout-sidebar--hidden',
-    context.props.isMobile && !collapsed && 'layout-sidebar--mobile-visible',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const sidebarClassName = useMemo(() => {
+    const classes = ['layout-sidebar', `layout-sidebar--${theme}`];
+    if (collapsed && !expandOnHovering) classes.push('layout-sidebar--collapsed');
+    if (expandOnHovering) classes.push('layout-sidebar--expand-on-hover');
+    if (isMixedMode) classes.push('layout-sidebar--mixed');
+    if (sidebarConfig.hidden) classes.push('layout-sidebar--hidden');
+    if (context.props.isMobile && !collapsed) classes.push('layout-sidebar--mobile-visible');
+    return classes.join(' ');
+  }, [
+    theme,
+    collapsed,
+    expandOnHovering,
+    isMixedMode,
+    sidebarConfig.hidden,
+    context.props.isMobile,
+  ]);
 
   // 混合模式下的图标列宽度
   const mixedWidth = sidebarConfig.mixedWidth || DEFAULT_SIDEBAR_CONFIG.mixedWidth;
@@ -123,12 +128,11 @@ export const LayoutSidebar = memo(function LayoutSidebar({
   }, [showExtraContent, extraCollapsed, extraCollapsedWidth, sidebarConfig.width]);
   
   // 扩展区域类名
-  const extraClassName = [
-    'layout-sidebar__extra',
-    showExtraContent && 'layout-sidebar__extra--visible',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const extraClassName = useMemo(() => {
+    const classes = ['layout-sidebar__extra'];
+    if (showExtraContent) classes.push('layout-sidebar__extra--visible');
+    return classes.join(' ');
+  }, [showExtraContent]);
   
   // 扩展区域宽度
   const extraWidth = showExtraContent ? `${extraWidthNum}px` : '0px';
@@ -165,6 +169,12 @@ export const LayoutSidebar = memo(function LayoutSidebar({
     <aside
       className={sidebarClassName}
       style={{ width: `${sidebarTotalWidth}px` }}
+      data-theme={theme}
+      data-collapsed={collapsed && !expandOnHovering ? 'true' : undefined}
+      data-hidden={sidebarConfig.hidden ? 'true' : undefined}
+      data-mixed={isMixedMode ? 'true' : undefined}
+      data-expand-on-hover={expandOnHovering ? 'true' : undefined}
+      data-mobile-visible={context.props.isMobile && !collapsed ? 'true' : undefined}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -187,7 +197,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
                   />
                 )}
                 {(!collapsed || sidebarConfig.collapsedShowTitle) && (
-                  <span className="ml-2 truncate text-lg font-semibold">
+                  <span className="ml-2 truncate text-lg font-semibold transition-opacity sidebar-collapsed:opacity-80">
                     {context.props.appName || ''}
                   </span>
                 )}
@@ -198,7 +208,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
 
         {/* 菜单区域 */}
         <div className="layout-sidebar__menu flex-1 overflow-hidden">
-          <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-elegant">
+          <div className="layout-scroll-container h-full overflow-y-auto overflow-x-hidden scrollbar-elegant">
             {isMixedMode ? (
               menu || <MixedSidebarMenu onRootMenuChange={handleRootMenuChange} />
             ) : (
@@ -216,7 +226,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
             showCollapseButton && (
               <button
                 type="button"
-                className="flex w-full items-center justify-center py-3 transition-colors hover:bg-white/5"
+                className="flex w-full items-center justify-center py-3 transition-colors sidebar-dark:hover:bg-white/5 sidebar-light:hover:bg-black/5"
                 title={
                   collapsed
                     ? context.t('layout.sidebar.expand')
@@ -246,6 +256,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
         <div
           className={extraClassName}
           style={extraStyle}
+          data-visible={showExtraContent ? 'true' : undefined}
         >
           {showExtraContent && (mixedMenu || (
             <MixedSidebarSubMenu

@@ -23,6 +23,7 @@ const handleClick = () => {
       <div
         v-if="visible"
         class="layout-overlay layout-overlay--visible"
+        data-state="visible"
         @click="handleClick"
       />
     </Transition>

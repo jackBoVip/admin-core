@@ -33,7 +33,9 @@ export interface MenuContextValue {
   
   // 状态
   activePath: string;
+  activeParentSet: Set<string>;
   openedMenus: string[];
+  openedMenuSet: Set<string>;
   
   // 方法
   openMenu: (path: string, parentPaths?: string[]) => void;

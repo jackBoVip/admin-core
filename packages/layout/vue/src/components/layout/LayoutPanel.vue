@@ -35,7 +35,12 @@ const panelStyle = computed(() => ({
 </script>
 
 <template>
-  <aside :class="panelClass" :style="panelStyle">
+  <aside
+    :class="panelClass"
+    :style="panelStyle"
+    :data-position="position"
+    :data-collapsed="collapsed ? 'true' : undefined"
+  >
     <div class="layout-panel__inner flex h-full flex-col">
       <!-- 头部 -->
       <div v-if="$slots.header || showCollapseButton" class="layout-panel__header flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
@@ -65,7 +70,7 @@ const panelStyle = computed(() => ({
       </div>
 
       <!-- 内容 -->
-      <div class="layout-panel__content flex-1 overflow-y-auto overflow-x-hidden p-4">
+      <div class="layout-panel__content layout-scroll-container flex-1 overflow-y-auto overflow-x-hidden p-4">
         <slot />
       </div>
 

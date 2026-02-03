@@ -32,12 +32,32 @@ export const UserDropdown = memo(function UserDropdown() {
     [events]
   );
 
+  const handleMenuClick = useCallback((e: React.MouseEvent) => {
+    const key = (e.currentTarget as HTMLElement).dataset.value;
+    if (key) {
+      handleMenuSelect(key);
+    }
+  }, [handleMenuSelect]);
+
+  const handleToggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
   return (
-    <div className="header-widget-dropdown relative" onMouseLeave={() => setIsOpen(false)}>
+    <div
+      className="header-widget-dropdown relative"
+      data-state={isOpen ? 'open' : 'closed'}
+      onMouseLeave={handleClose}
+    >
       <button
         type="button"
         className="header-widget-user flex items-center gap-2 rounded-full p-1 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-        onClick={() => setIsOpen(!isOpen)}
+        data-state={isOpen ? 'open' : 'closed'}
+        onClick={handleToggleOpen}
       >
         <img
           src={userInfo?.avatar || defaultAvatar}
@@ -59,7 +79,10 @@ export const UserDropdown = memo(function UserDropdown() {
       </button>
 
       {isOpen && (
-        <div className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div
+          className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          data-state="open"
+        >
           <div className="border-b px-4 py-3 dark:border-gray-700">
             <div className="flex items-center gap-3">
               <img
@@ -82,7 +105,8 @@ export const UserDropdown = memo(function UserDropdown() {
             <button
               type="button"
               className="flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => handleMenuSelect('profile')}
+              data-value="profile"
+              onClick={handleMenuClick}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <circle cx="12" cy="8" r="5" />
@@ -94,7 +118,8 @@ export const UserDropdown = memo(function UserDropdown() {
             <button
               type="button"
               className="flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => handleMenuSelect('settings')}
+              data-value="settings"
+              onClick={handleMenuClick}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
@@ -106,7 +131,8 @@ export const UserDropdown = memo(function UserDropdown() {
             <button
               type="button"
               className="flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => handleMenuSelect('lock')}
+              data-value="lock"
+              onClick={handleMenuClick}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
@@ -120,7 +146,8 @@ export const UserDropdown = memo(function UserDropdown() {
             <button
               type="button"
               className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
-              onClick={() => handleMenuSelect('logout')}
+              data-value="logout"
+              onClick={handleMenuClick}
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />

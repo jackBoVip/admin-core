@@ -55,7 +55,16 @@ const innerStyle = computed(() => {
 </script>
 
 <template>
-  <main :class="contentClass" :style="contentStyle">
+  <main
+    :class="contentClass"
+    :style="contentStyle"
+    :data-compact="contentCompact === 'compact' ? 'true' : undefined"
+    :data-collapsed="sidebarCollapsed && !context.props.isMobile ? 'true' : undefined"
+    :data-with-panel="layoutComputed.showPanel ? 'true' : undefined"
+    :data-panel-position="layoutComputed.showPanel ? panelPosition : undefined"
+    :data-panel-collapsed="panelCollapsed ? 'true' : undefined"
+    :data-mobile="context.props.isMobile ? 'true' : undefined"
+  >
     <!-- 内容头部 -->
     <div v-if="$slots.header" class="layout-content__header mb-4">
       <slot name="header" />

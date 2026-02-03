@@ -26,6 +26,13 @@ const handleLocaleChange = (locale: string) => {
   isOpen.value = false;
 };
 
+const handleLocaleOptionClick = (e: MouseEvent) => {
+  const locale = (e.currentTarget as HTMLElement | null)?.dataset?.value;
+  if (locale) {
+    handleLocaleChange(locale);
+  }
+};
+
 // 切换下拉菜单
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
@@ -39,11 +46,12 @@ const closeDropdown = () => {
 </script>
 
 <template>
-  <div class="header-widget-dropdown relative" @mouseleave="closeDropdown">
+  <div class="header-widget-dropdown relative" :data-state="isOpen ? 'open' : 'closed'" @mouseleave="closeDropdown">
     <button
       type="button"
       class="header-widget-btn"
       :title="context.t('layout.header.toggleLanguage')"
+      :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
     >
       <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -58,6 +66,7 @@ const closeDropdown = () => {
       <div
         v-if="isOpen"
         class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        data-state="open"
       >
         <button
           v-for="option in languageOptions"
@@ -65,7 +74,9 @@ const closeDropdown = () => {
           type="button"
           class="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
           :class="{ 'text-primary bg-primary/10': currentLocale === option.value }"
-          @click="handleLocaleChange(option.value)"
+          :data-selected="currentLocale === option.value ? 'true' : undefined"
+          :data-value="option.value"
+          @click="handleLocaleOptionClick"
         >
           <span>{{ option.label }}</span>
         </button>

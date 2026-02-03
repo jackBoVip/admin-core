@@ -374,6 +374,11 @@ export function getSvgIconProps(iconName: string, options?: {
     viewBox: definition?.viewBox || DEFAULT_SVG_VIEWBOX,
     path: definition?.path || '',
     extra: definition?.extra,
-    className: [baseClass, animationClass, rotateClass].filter(Boolean).join(' '),
+    className: (() => {
+      const classes = [baseClass];
+      if (animationClass) classes.push(animationClass);
+      if (rotateClass) classes.push(rotateClass);
+      return classes.join(' ');
+    })(),
   };
 }

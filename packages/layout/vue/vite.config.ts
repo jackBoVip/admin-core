@@ -29,6 +29,7 @@ export default defineConfig({
         '@admin-core/preferences',
         '@admin-core/preferences-vue',
         '@vueuse/core',
+        '@floating-ui/vue',
       ],
       output: {
         globals: {
@@ -37,6 +38,8 @@ export default defineConfig({
       },
     },
     cssCodeSplit: false,
-    sourcemap: true,
+    sourcemap: process.env.NODE_ENV !== 'production',
+    minify: 'esbuild',
+    target: 'es2020',
   },
 });

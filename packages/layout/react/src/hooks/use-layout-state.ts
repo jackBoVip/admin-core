@@ -48,12 +48,9 @@ import { useLayoutContext, useLayoutComputed, useLayoutState } from './use-layou
 import {
   BREAKPOINTS,
   HEADER_TRIGGER_DISTANCE,
+  TIMING,
   TabManager,
   getOrCreateTabManager,
-  generateBreadcrumbsFromMenus,
-  findMenuByPath,
-  findMenuByKey,
-  getMenuPathByPath,
   generateThemeCSSVariables,
   generateThemeClasses,
   generateWatermarkContent,
@@ -63,15 +60,18 @@ import {
   getResolvedLayoutProps,
   generateAllCSSVariables,
   mapPreferencesToLayoutProps,
+  logger,
+  type BasicLayoutProps,
   type TabItem,
   type BreadcrumbItem,
   type MenuItem,
+  type NotificationItem,
   type ThemeConfig,
   type WatermarkConfig,
   type LockScreenConfig,
   type RouterConfig,
 } from '@admin-core/layout';
-import { getPreferencesManager } from '@admin-core/preferences-react';
+import { getPreferencesManager, type Preferences } from '@admin-core/preferences-react';
 
 // ============================================================
 // 1. 帮助函数
@@ -80,6 +80,57 @@ function unwrapCurrentPath(path: string | { value: string } | undefined): string
   if (!path) return '';
   if (typeof path === 'string') return path;
   return path.value;
+}
+
+function buildMenuPathIndex(menus: MenuItem[]) {
+  const byKey = new Map<string, MenuItem>();
+  const byPath = new Map<string, MenuItem>();
+  const chainByKey = new Map<string, string[]>();
+  const chainByPath = new Map<string, string[]>();
+  const pathItems: MenuItem[] = [];
+  const stack: string[] = [];
+
+  const walk = (items: MenuItem[]) => {
+    for (const item of items) {
+      if (item.key) {
+        byKey.set(item.key, item);
+      }
+      if (item.path) {
+        byPath.set(item.path, item);
+        pathItems.push(item);
+      }
+      const chain = item.key ? [...stack, item.key] : [...stack];
+      if (item.key) {
+        chainByKey.set(item.key, chain);
+      }
+      if (item.path) {
+        chainByPath.set(item.path, chain);
+      }
+      if (item.key) {
+        stack.push(item.key);
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+      if (item.key) {
+        stack.pop();
+      }
+    }
+  };
+
+  walk(menus);
+  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
+  return { byKey, byPath, chainByKey, chainByPath, pathItems };
+}
+
+const menuIndexCache = new WeakMap<MenuItem[], ReturnType<typeof buildMenuPathIndex>>();
+
+function getMenuPathIndex(menus: MenuItem[]) {
+  const cached = menuIndexCache.get(menus);
+  if (cached) return cached;
+  const index = buildMenuPathIndex(menus);
+  menuIndexCache.set(menus, index);
+  return index;
 }
 
 // 使用 core 的 TabManager 缓存管理
@@ -220,7 +271,13 @@ export function useRouter() {
     activeKey: string
   ) => {
     if (closedKey === activeKey && tabs.length > 0) {
-      const closedIndex = tabs.findIndex((t) => t.key === closedKey);
+      let closedIndex = -1;
+      for (let i = 0; i < tabs.length; i += 1) {
+        if (tabs[i].key === closedKey) {
+          closedIndex = i;
+          break;
+        }
+      }
       // 安全的数组访问：优先选择下一个标签，否则选择上一个，最后选择第一个
       let nextTab: TabItem | undefined;
       if (closedIndex >= 0 && closedIndex < tabs.length) {
@@ -268,8 +325,15 @@ export function useSidebarState() {
 
   const setCollapsed = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, sidebarCollapsed: value }));
-      context.events.onSidebarCollapse?.(value);
+      let changed = false;
+      setState((prev) => {
+        if (prev.sidebarCollapsed === value) return prev;
+        changed = true;
+        return { ...prev, sidebarCollapsed: value };
+      });
+      if (changed) {
+        context.events.onSidebarCollapse?.(value);
+      }
     },
     [setState, context.events]
   );
@@ -280,28 +344,44 @@ export function useSidebarState() {
 
   const setExpandOnHovering = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, sidebarExpandOnHovering: value }));
+      setState((prev) => (
+        prev.sidebarExpandOnHovering === value
+          ? prev
+          : { ...prev, sidebarExpandOnHovering: value }
+      ));
     },
     [setState]
   );
 
   const setExtraVisible = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, sidebarExtraVisible: value }));
+      setState((prev) => (
+        prev.sidebarExtraVisible === value
+          ? prev
+          : { ...prev, sidebarExtraVisible: value }
+      ));
     },
     [setState]
   );
 
   const setExtraCollapsed = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, sidebarExtraCollapsed: value }));
+      setState((prev) => (
+        prev.sidebarExtraCollapsed === value
+          ? prev
+          : { ...prev, sidebarExtraCollapsed: value }
+      ));
     },
     [setState]
   );
 
   const setExpandOnHover = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, sidebarExpandOnHover: value }));
+      setState((prev) => (
+        prev.sidebarExpandOnHover === value
+          ? prev
+          : { ...prev, sidebarExpandOnHover: value }
+      ));
     },
     [setState]
   );
@@ -358,7 +438,7 @@ export function useHeaderState() {
 
   const setHidden = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, headerHidden: value }));
+      setState((prev) => (prev.headerHidden === value ? prev : { ...prev, headerHidden: value }));
     },
     [setState]
   );
@@ -445,8 +525,15 @@ export function usePanelState() {
 
   const setCollapsed = useCallback(
     (value: boolean) => {
-      setState((prev) => ({ ...prev, panelCollapsed: value }));
-      context.events.onPanelCollapse?.(value);
+      let changed = false;
+      setState((prev) => {
+        if (prev.panelCollapsed === value) return prev;
+        changed = true;
+        return { ...prev, panelCollapsed: value };
+      });
+      if (changed) {
+        context.events.onPanelCollapse?.(value);
+      }
     },
     [setState, context.events]
   );
@@ -474,22 +561,23 @@ export function useFullscreenState() {
 
   const toggle = useCallback(async () => {
     try {
-      if (!document.fullscreenElement) {
+      const nextValue = !document.fullscreenElement;
+      if (nextValue) {
         await document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
       } else {
         await document.exitFullscreen();
-        setIsFullscreen(false);
       }
-      context.events.onFullscreenToggle?.(!isFullscreen);
+      setIsFullscreen((prev) => (prev === nextValue ? prev : nextValue));
+      context.events.onFullscreenToggle?.(nextValue);
     } catch (error) {
-      console.error('Fullscreen error:', error);
+      logger.error('Fullscreen error:', error);
     }
-  }, [context.events, isFullscreen]);
+  }, [context.events]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const nextValue = !!document.fullscreenElement;
+      setIsFullscreen((prev) => (prev === nextValue ? prev : nextValue));
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -510,7 +598,7 @@ export function useFullscreenState() {
  */
 export function useResponsive() {
   const [width, setWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1024
+    typeof window !== 'undefined' ? window.innerWidth : TIMING.defaultWindowWidth
   );
 
   const isMobile = width < BREAKPOINTS.md;
@@ -536,9 +624,10 @@ export function useResponsive() {
       if (timeoutId) return;
       
       timeoutId = setTimeout(() => {
-        setWidth(window.innerWidth);
+        const nextWidth = window.innerWidth;
+        setWidth((prev) => (prev === nextWidth ? prev : nextWidth));
         timeoutId = null;
-      }, 100); // 100ms 节流
+      }, TIMING.throttle);
     };
 
     window.addEventListener('resize', handleResize, { passive: true });
@@ -575,10 +664,27 @@ export function useMenuState() {
   const openKeys = state.openMenuKeys;
   const activeKey = context.props.activeMenuKey || currentPath;
   const menus = context.props.menus || [];
+  const menuIndex = useMemo(
+    () => getMenuPathIndex(context.props.menus || []),
+    [context.props.menus]
+  );
 
   const setOpenKeys = useCallback(
     (keys: string[]) => {
-      setState((prev) => ({ ...prev, openMenuKeys: keys }));
+      setState((prev) => {
+        const prevKeys = prev.openMenuKeys;
+        if (prevKeys.length === keys.length) {
+          let same = true;
+          for (let i = 0; i < keys.length; i += 1) {
+            if (prevKeys[i] !== keys[i]) {
+              same = false;
+              break;
+            }
+          }
+          if (same) return prev;
+        }
+        return { ...prev, openMenuKeys: keys };
+      });
     },
     [setState]
   );
@@ -590,44 +696,73 @@ export function useMenuState() {
   useEffect(() => {
     if (!currentPath) return;
     
-    const menu = findMenuByPath(menus, currentPath);
+    const menu = menuIndex.byPath.get(currentPath) ?? menuIndex.byKey.get(currentPath);
     if (menu) {
-      const menuPath = getMenuPathByPath(menus, currentPath);
-      if (menuPath.length > 1) {
-        const parentKeys = menuPath.slice(0, -1).map((m) => m.key);
+      const chain =
+        menuIndex.chainByPath.get(currentPath) ??
+        (menu.key ? menuIndex.chainByKey.get(menu.key) : undefined) ??
+        [];
+      if (chain.length > 1) {
+        const parentKeys = chain.slice(0, -1);
         if (isAccordion) {
           setOpenKeys([parentKeys[parentKeys.length - 1]!]);
         } else {
           // 使用函数式更新避免依赖 openKeys
-          setState((prev) => ({
-            ...prev,
-            openMenuKeys: [...new Set([...prev.openMenuKeys, ...parentKeys])],
-          }));
+          setState((prev) => {
+            const merged = [...new Set([...prev.openMenuKeys, ...parentKeys])];
+            if (merged.length === prev.openMenuKeys.length) {
+              let same = true;
+              for (let i = 0; i < merged.length; i += 1) {
+                if (merged[i] !== prev.openMenuKeys[i]) {
+                  same = false;
+                  break;
+                }
+              }
+              if (same) return prev;
+            }
+            return { ...prev, openMenuKeys: merged };
+          });
         }
       }
     }
-  }, [currentPath, menus, isAccordion, setOpenKeys, setState]);
+  }, [currentPath, menuIndex, isAccordion, setOpenKeys, setState]);
 
   const handleSelect = useCallback(
     (key: string) => {
-      const item = findMenuByKey(menus, key);
+      const item = menuIndex.byKey.get(key);
       if (item) {
         handleMenuItemClick(item);
         context.events.onMenuSelect?.(item, key);
       }
     },
-    [menus, handleMenuItemClick, context.events]
+    [menuIndex, handleMenuItemClick, context.events]
   );
 
   const handleOpenChange = useCallback(
     (keys: string[]) => {
       if (context.props.navigation?.accordion) {
-        setOpenKeys(keys.length > 0 ? [keys[keys.length - 1]!] : []);
+        const nextKeys = keys.length > 0 ? [keys[keys.length - 1]!] : [];
+        if (nextKeys.length !== openKeys.length || nextKeys[0] !== openKeys[0]) {
+          setOpenKeys(nextKeys);
+        }
       } else {
-        setOpenKeys(keys);
+        if (keys.length !== openKeys.length) {
+          setOpenKeys(keys);
+          return;
+        }
+        let same = true;
+        for (let i = 0; i < keys.length; i += 1) {
+          if (keys[i] !== openKeys[i]) {
+            same = false;
+            break;
+          }
+        }
+        if (!same) {
+          setOpenKeys(keys);
+        }
       }
     },
-    [context.props.navigation?.accordion, setOpenKeys]
+    [context.props.navigation?.accordion, setOpenKeys, openKeys]
   );
 
   return {
@@ -671,13 +806,33 @@ export function useTabsState() {
 
   const tabs = isAutoMode ? internalTabs : (context.props.tabs || []);
   const activeKey = context.props.activeTabKey || currentPath;
+  const tabMap = useMemo(() => {
+    const map = new Map<string, TabItem>();
+    for (const tab of tabs) {
+      map.set(tab.key, tab);
+    }
+    return map;
+  }, [tabs]);
+  const menuIndex = useMemo(
+    () => getMenuPathIndex(context.props.menus || []),
+    [context.props.menus]
+  );
 
   // 监听当前路径变化，自动添加标签
   useEffect(() => {
     if (!isAutoMode || !currentPath) return;
 
-    const menus = context.props.menus || [];
-    const menu = findMenuByPath(menus, currentPath);
+    let menu =
+      menuIndex.byPath.get(currentPath) ??
+      menuIndex.byKey.get(currentPath);
+    if (!menu) {
+      for (const item of menuIndex.pathItems) {
+        if (item.path && currentPath.startsWith(item.path)) {
+          menu = item;
+          break;
+        }
+      }
+    }
 
     if (menu && menu.path && !menu.hideInTab) {
       const newTabs = tabManagerRef.current.addTabFromMenu(menu, {
@@ -685,7 +840,7 @@ export function useTabsState() {
       });
       setInternalTabs(newTabs);
     }
-  }, [currentPath, context.props.menus, isAutoMode]);
+  }, [currentPath, isAutoMode, menuIndex]);
 
   // 监听固定标签配置变化
   useEffect(() => {
@@ -698,18 +853,18 @@ export function useTabsState() {
 
   const handleSelect = useCallback(
     (key: string) => {
-      const item = tabs.find((t) => t.key === key);
+      const item = tabMap.get(key);
       if (item) {
         handleTabClick(item);
         context.events.onTabSelect?.(item, key);
       }
     },
-    [tabs, handleTabClick, context.events]
+    [tabMap, handleTabClick, context.events]
   );
 
   const handleClose = useCallback(
     (key: string) => {
-      const item = tabs.find((t) => t.key === key);
+      const item = tabMap.get(key);
       if (item && item.closable !== false) {
         if (isAutoMode) {
           const newTabs = tabManagerRef.current.removeTab(key);
@@ -719,7 +874,7 @@ export function useTabsState() {
         context.events.onTabClose?.(item, key);
       }
     },
-    [tabs, isAutoMode, activeKey, handleTabCloseNavigate, context.events]
+    [tabMap, isAutoMode, activeKey, handleTabCloseNavigate, context.events]
   );
 
   const handleCloseAll = useCallback(() => {
@@ -767,12 +922,12 @@ export function useTabsState() {
 
   const handleRefresh = useCallback(
     (key: string) => {
-      const item = tabs.find((t) => t.key === key);
+      const item = tabMap.get(key);
       if (item) {
         context.events.onTabRefresh?.(item, key);
       }
     },
-    [tabs, context.events]
+    [tabMap, context.events]
   );
 
   const handleToggleAffix = useCallback(
@@ -825,40 +980,86 @@ export function useBreadcrumbState() {
 
   const isAutoMode = context.props.autoBreadcrumb?.enabled !== false;
   const breadcrumbConfig = context.props.breadcrumb || {};
+  const menuIndex = useMemo(
+    () => getMenuPathIndex(context.props.menus || []),
+    [context.props.menus]
+  );
 
   const breadcrumbs = useMemo(() => {
     if (!isAutoMode) {
       return context.props.breadcrumbs || [];
     }
 
-    const menus = context.props.menus || [];
     const path = currentPath;
     const config = context.props.autoBreadcrumb || {};
 
-    if (!path || menus.length === 0) {
+    if (!path || menuIndex.byKey.size === 0) {
       return [];
     }
 
     // 翻译首页名称
     const translatedHomeName = context.t('layout.breadcrumb.home');
-    
-    return generateBreadcrumbsFromMenus(menus, path, {
-      showHome: config.showHome ?? breadcrumbConfig.showHome ?? true,
-      homePath: config.homePath || context.props.defaultHomePath || '/',
-      homeName: config.homeName || translatedHomeName,
-      homeIcon: config.homeIcon || 'home',
-      hideOnlyOne: breadcrumbConfig.hideOnlyOne ?? true,
-    });
+
+    const showHome = config.showHome ?? breadcrumbConfig.showHome ?? true;
+    const homePath = config.homePath || context.props.defaultHomePath || '/';
+    const hideOnlyOne = breadcrumbConfig.hideOnlyOne ?? true;
+    const homeName = config.homeName || translatedHomeName;
+    const homeIcon = config.homeIcon || 'home';
+
+    let menu =
+      menuIndex.byPath.get(path) ??
+      menuIndex.byKey.get(path);
+    if (!menu) {
+      for (const item of menuIndex.pathItems) {
+        if (item.path && path.startsWith(item.path)) {
+          menu = item;
+          break;
+        }
+      }
+    }
+    const chainKeys =
+      (menu?.key ? menuIndex.chainByKey.get(menu.key) : undefined) ??
+      (menu?.path ? menuIndex.chainByPath.get(menu.path) : undefined) ??
+      [];
+
+    const items: BreadcrumbItem[] = [];
+    if (showHome) {
+      items.push({
+        key: '__breadcrumb_home__',
+        name: homeName,
+        icon: homeIcon,
+        path: homePath,
+        clickable: true,
+      });
+    }
+
+    for (const key of chainKeys) {
+      const menuItem = menuIndex.byKey.get(key);
+      if (!menuItem) continue;
+      if (showHome && menuItem.path === homePath) continue;
+      items.push({
+        key: `__breadcrumb_${menuItem.key}__`,
+        name: menuItem.name,
+        icon: menuItem.icon,
+        path: menuItem.path,
+        clickable: !!menuItem.path && menuItem.path !== path,
+      });
+    }
+
+    if (hideOnlyOne && items.length <= 1) {
+      return [];
+    }
+    return items;
   }, [
     isAutoMode,
     context.props.breadcrumbs,
-    context.props.menus,
     currentPath,
     context.props.autoBreadcrumb,
     context.props.defaultHomePath,
     breadcrumbConfig.showHome,
     breadcrumbConfig.hideOnlyOne,
     context.t,
+    menuIndex,
   ]);
 
   const showIcon = breadcrumbConfig.showIcon !== false;
@@ -1143,6 +1344,10 @@ export function useDynamicTitle() {
 
   const enabled = context.props.dynamicTitle !== false;
   const appName = context.props.appName || '';
+  const menuIndex = useMemo(
+    () => getMenuPathIndex(context.props.menus || []),
+    [context.props.menus]
+  );
 
   const updateTitle = useCallback((pageTitle?: string) => {
     if (!enabled || typeof document === 'undefined') return;
@@ -1159,13 +1364,22 @@ export function useDynamicTitle() {
   useEffect(() => {
     if (!enabled || !currentPath) return;
 
-    const menus = context.props.menus || [];
-    const menu = findMenuByPath(menus, currentPath);
+    let menu =
+      menuIndex.byPath.get(currentPath) ??
+      menuIndex.byKey.get(currentPath);
+    if (!menu) {
+      for (const item of menuIndex.pathItems) {
+        if (item.path && currentPath.startsWith(item.path)) {
+          menu = item;
+          break;
+        }
+      }
+    }
 
     if (menu) {
       updateTitle(menu.name);
     }
-  }, [enabled, currentPath, context.props.menus, updateTitle]);
+  }, [enabled, currentPath, menuIndex, updateTitle]);
 
   return {
     enabled,
@@ -1270,7 +1484,7 @@ export function useNotifications() {
   const unreadCount = context.props.unreadCount || 0;
   const hasUnread = unreadCount > 0;
 
-  const handleClick = useCallback((item: any) => {
+  const handleClick = useCallback((item: NotificationItem) => {
     context.events.onNotificationClick?.(item);
   }, [context.events]);
 
@@ -1308,6 +1522,9 @@ export function useRefresh() {
     try {
       eventsRef.current.onRefresh?.();
     } finally {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       timerRef.current = setTimeout(() => {
         setIsRefreshing(false);
         timerRef.current = null;
@@ -1343,10 +1560,10 @@ export function useAllCSSVariables() {
  */
 export function useLayoutPreferences() {
   const context = useLayoutContext();
-  const [preferencesProps, setPreferencesProps] = useState<Record<string, any>>({});
+  const [preferencesProps, setPreferencesProps] = useState<Partial<BasicLayoutProps>>({});
   
   // 尝试获取 preferences（如果可用）
-  const preferencesManagerRef = useRef<any>(null);
+  const preferencesManagerRef = useRef<ReturnType<typeof getPreferencesManager> | null>(null);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
@@ -1361,7 +1578,7 @@ export function useLayoutPreferences() {
       setPreferencesProps(mapPreferencesToLayoutProps(prefs));
 
       // 订阅变化
-      unsubscribe = manager.subscribe((newPrefs: any) => {
+      unsubscribe = manager.subscribe((newPrefs: Preferences) => {
         setPreferencesProps(mapPreferencesToLayoutProps(newPrefs));
       });
     } catch {

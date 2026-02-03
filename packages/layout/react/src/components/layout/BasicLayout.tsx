@@ -11,6 +11,7 @@ import type { SupportedLocale } from '@admin-core/layout';
 import { mapPreferencesToLayoutProps } from '@admin-core/layout';
 import { LayoutProvider, useLayoutComputed, useLayoutCSSVars, useLayoutState, useLayoutContext } from '../../hooks';
 import { useResponsive } from '../../hooks/use-layout-state';
+import { logger } from '@admin-core/layout';
 import { 
   PreferencesProvider, 
   PreferencesDrawer,
@@ -26,6 +27,48 @@ import { LayoutPanel } from './LayoutPanel';
 import { LayoutOverlay } from './LayoutOverlay';
 import { HorizontalMenu } from '../menu';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
+import { ErrorBoundary } from '../ErrorBoundary';
+
+function buildMenuPathIndex(menus: MenuItem[]) {
+  const byKey = new Map<string, MenuItem>();
+  const byPath = new Map<string, MenuItem>();
+  const chainByKey = new Map<string, string[]>();
+  const chainByPath = new Map<string, string[]>();
+  const pathItems: MenuItem[] = [];
+  const stack: string[] = [];
+
+  const walk = (items: MenuItem[]) => {
+    for (const item of items) {
+      if (item.key) {
+        byKey.set(item.key, item);
+      }
+      if (item.path) {
+        byPath.set(item.path, item);
+        pathItems.push(item);
+      }
+      const chain = item.key ? [...stack, item.key] : [...stack];
+      if (item.key) {
+        chainByKey.set(item.key, chain);
+      }
+      if (item.path) {
+        chainByPath.set(item.path, chain);
+      }
+      if (item.key) {
+        stack.push(item.key);
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+      if (item.key) {
+        stack.pop();
+      }
+    }
+  };
+
+  walk(menus);
+  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
+  return { byKey, byPath, chainByKey, chainByPath, pathItems };
+}
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
@@ -38,7 +81,7 @@ try {
     preferencesManager = getPreferencesManager();
   } catch (initError) {
     if (isDev) {
-      console.warn('[layout-react] Failed to initialize preferences.', initError);
+      logger.warn('Failed to initialize preferences.', initError);
     }
   }
 }
@@ -104,7 +147,7 @@ export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots
   /** 是否显示偏好设置按钮 */
   showPreferencesButton?: boolean;
   /** 偏好设置按钮位置 */
-  preferencesButtonPosition?: 'header' | 'fixed';
+  preferencesButtonPosition?: 'header' | 'fixed' | 'auto';
   /** 自定义偏好设置按钮图标 */
   preferencesButtonIcon?: ReactNode;
   // 事件
@@ -115,6 +158,7 @@ export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots
   onTabCloseAll?: () => void;
   onTabCloseOther?: (exceptKey: string) => void;
   onTabRefresh?: (item: TabItem, key: string) => void;
+  onTabMaximize?: (isMaximized: boolean) => void;
   onBreadcrumbClick?: (item: BreadcrumbItem, key: string) => void;
   onUserMenuSelect?: (key: string) => void;
   onNotificationClick?: (item: NotificationItem) => void;
@@ -146,7 +190,7 @@ function LayoutInner({
   className,
   style,
   showPreferencesButton = true,
-  preferencesButtonPosition = 'fixed',
+  preferencesButtonPosition = 'auto',
   preferencesButtonIcon,
   onPreferencesOpen,
   onPreferencesClose,
@@ -185,6 +229,9 @@ function LayoutInner({
   const [state, setState] = useLayoutState();
   const { isMobile } = useResponsive();
   const { props: contextProps } = useLayoutContext();
+
+  const resolvedPreferencesButtonPosition =
+    preferencesButtonPosition ?? contextProps.preferencesButtonPosition ?? 'auto';
   
   // 偏好设置抽屉状态
   const [showPreferencesDrawer, setShowPreferencesDrawer] = useState(false);
@@ -237,6 +284,11 @@ function LayoutInner({
     return [];
   }, [contextProps.menus, computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav]);
 
+  const headerMenuIndex = useMemo(
+    () => buildMenuPathIndex(contextProps.menus || []),
+    [contextProps.menus]
+  );
+
   // 顶部导航菜单激活 key
   const headerActiveKey = useMemo(() => {
     if (contextProps.activeMenuKey) return contextProps.activeMenuKey;
@@ -244,26 +296,27 @@ function LayoutInner({
     const path = contextProps.currentPath;
     if (!path || !headerMenus.length) return undefined;
     
-    // 查找激活的菜单
-    const findActiveKey = (items: typeof headerMenus): string | undefined => {
-      for (const item of items) {
-        if (item.path === path) return item.key;
-        if (item.children?.length) {
-          const found = findActiveKey(item.children);
-          if (found) {
-            // mixed-nav 模式返回顶级菜单 key
-            if (computed.isMixedNav || computed.isHeaderMixedNav) {
-              return item.key;
-            }
-            return found;
-          }
+    let menu =
+      headerMenuIndex.byPath.get(path) ??
+      headerMenuIndex.byKey.get(path);
+    if (!menu) {
+      for (const item of headerMenuIndex.pathItems) {
+        if (item.path && path.startsWith(item.path)) {
+          menu = item;
+          break;
         }
       }
-      return undefined;
-    };
-    
-    return findActiveKey(contextProps.menus || []);
-  }, [contextProps.activeMenuKey, contextProps.currentPath, contextProps.menus, headerMenus.length, computed.isMixedNav, computed.isHeaderMixedNav]);
+    }
+    if (!menu) return undefined;
+    const chain =
+      (menu.key ? headerMenuIndex.chainByKey.get(menu.key) : undefined) ??
+      (menu.path ? headerMenuIndex.chainByPath.get(menu.path) : undefined) ??
+      [];
+    if (computed.isMixedNav || computed.isHeaderMixedNav) {
+      return chain[0];
+    }
+    return menu.key;
+  }, [contextProps.activeMenuKey, contextProps.currentPath, headerMenuIndex, headerMenus.length, computed.isMixedNav, computed.isHeaderMixedNav]);
 
   // 菜单对齐方式
   const headerMenuAlign = contextProps.header?.menuAlign || 'start';
@@ -272,17 +325,15 @@ function LayoutInner({
   const headerMenuTheme = (contextProps.headerTheme === 'dark' ? 'dark' : 'light') as 'light' | 'dark';
 
   // 根元素类名
-  const rootClassName = [
-    'layout-container',
-    `layout-${computed.currentLayout}`,
-    isMobile && 'layout-mobile',
-    state.sidebarCollapsed && 'layout-sidebar-collapsed',
-    state.headerHidden && 'layout-header-hidden',
-    state.panelCollapsed && 'layout-panel-collapsed',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const rootClassName = (() => {
+    const classes = ['layout-container', `layout-${computed.currentLayout}`];
+    if (isMobile) classes.push('layout-mobile');
+    if (state.sidebarCollapsed) classes.push('layout-sidebar-collapsed');
+    if (state.headerHidden) classes.push('layout-header-hidden');
+    if (state.panelCollapsed) classes.push('layout-panel-collapsed');
+    if (className) classes.push(className);
+    return classes.join(' ');
+  })();
 
   // 合并样式
   const rootStyle: CSSProperties = {
@@ -319,7 +370,15 @@ function LayoutInner({
               />
             ) : undefined)}
             right={headerRight}
-            actions={headerActions || <HeaderToolbar />}
+            actions={
+              headerActions || (
+                <HeaderToolbar
+                  onOpenPreferences={openPreferences}
+                  showPreferencesButton={showPreferencesButton}
+                  preferencesButtonPosition={resolvedPreferencesButtonPosition}
+                />
+              )
+            }
             extra={headerExtra}
           />
         )}
@@ -370,7 +429,7 @@ function LayoutInner({
         {extra}
 
         {/* 内置偏好设置按钮（固定位置） */}
-        {showPreferencesButton && preferencesButtonPosition === 'fixed' && (
+        {showPreferencesButton && resolvedPreferencesButtonPosition === 'fixed' && (
           <button
             className="layout-preferences-button"
             title="偏好设置"
@@ -446,6 +505,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     appName,
     copyright,
     widgets,
+    preferencesButtonPosition,
     visibility,
     disabled,
     router,
@@ -466,6 +526,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onTabCloseAll,
     onTabCloseOther,
     onTabRefresh,
+    onTabMaximize,
     onBreadcrumbClick,
     onUserMenuSelect,
     onNotificationClick,
@@ -520,6 +581,8 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     appName: appName ?? preferencesProps.appName,
     copyright: copyright ?? preferencesProps.copyright,
     widgets: widgets ?? preferencesProps.widgets,
+    preferencesButtonPosition:
+      preferencesButtonPosition ?? preferencesProps.preferencesButtonPosition,
     visibility: visibility ?? preferencesProps.visibility,
     disabled: disabled ?? preferencesProps.disabled,
     router,
@@ -546,6 +609,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     appName,
     copyright,
     widgets,
+    preferencesButtonPosition,
     visibility,
     disabled,
     router,
@@ -573,6 +637,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onTabCloseAll,
     onTabCloseOther,
     onTabRefresh,
+    onTabMaximize,
     onBreadcrumbClick,
     onUserMenuSelect,
     onNotificationClick,
@@ -596,6 +661,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onTabCloseAll,
     onTabCloseOther,
     onTabRefresh,
+    onTabMaximize,
     onBreadcrumbClick,
     onUserMenuSelect,
     onNotificationClick,
@@ -617,7 +683,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
         locale={locale}
         customMessages={customMessages}
       >
-        <LayoutInner {...props} />
+        <ErrorBoundary resetKey={currentPath ?? locale}>
+          <LayoutInner {...props} />
+        </ErrorBoundary>
       </LayoutProvider>
     </PreferencesProvider>
   );

@@ -10,7 +10,9 @@ export default defineConfig({
   format: ['cjs', 'esm'],
   dts: true,
   clean: true,
-  sourcemap: true,
+  sourcemap: process.env.NODE_ENV !== 'production',
   treeshake: true,
+  minify: true,
+  target: 'es2020',
   external: ['@admin-core/preferences'],
 });

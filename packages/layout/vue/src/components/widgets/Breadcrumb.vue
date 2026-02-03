@@ -53,9 +53,17 @@ const showIcon = computed(() => props.showIcon ?? autoShowIcon.value);
 // 点击处理
 function handleClick(item: BreadcrumbItem) {
   if (!item.clickable || !item.path) return;
-  
   emit('itemClick', item);
   autoHandleClick(item);
+}
+
+function handleItemClick(e: MouseEvent) {
+  const index = Number((e.currentTarget as HTMLElement | null)?.dataset?.index);
+  if (Number.isNaN(index)) return;
+  const item = breadcrumbItems.value[index];
+  if (item) {
+    handleClick(item);
+  }
 }
 
 // 判断是否可点击
@@ -77,7 +85,8 @@ function isClickable(item: BreadcrumbItem, index: number): boolean {
           v-if="isClickable(item, index)"
           type="button"
           class="breadcrumb__item flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-          @click="handleClick(item)"
+          :data-index="index"
+          @click="handleItemClick"
         >
           <span v-if="showIcon && item.icon" class="breadcrumb__icon">
             <svg v-if="item.icon === 'home'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

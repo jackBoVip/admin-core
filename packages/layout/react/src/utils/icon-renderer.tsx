@@ -19,6 +19,19 @@ export const ICON_SIZES = {
 
 export type IconSize = keyof typeof ICON_SIZES;
 
+const iconMetaCache = new Map<string, { type: ReturnType<typeof getIconRenderType>; def?: ReturnType<typeof getIconDefinition> }>();
+
+const getIconMeta = (icon: string | undefined) => {
+  if (!icon) return null;
+  const cached = iconMetaCache.get(icon);
+  if (cached) return cached;
+  const type = getIconRenderType(icon);
+  const def = type === 'svg' ? getIconDefinition(icon) : undefined;
+  const meta = { type, def };
+  iconMetaCache.set(icon, meta);
+  return meta;
+};
+
 /**
  * 渲染 SVG 图标
  * @param icon - 图标名称或自定义内容
@@ -32,7 +45,8 @@ export function renderIcon(
 ): React.ReactNode {
   if (!icon) return null;
 
-  const type = getIconRenderType(icon);
+  const meta = getIconMeta(icon);
+  const type = meta?.type;
   const sizeClass = size in ICON_SIZES ? ICON_SIZES[size as IconSize] : size;
 
   if (type === 'emoji' || type === 'custom') {
@@ -40,7 +54,7 @@ export function renderIcon(
   }
 
   if (type === 'svg') {
-    const svgDef = getIconDefinition(icon);
+    const svgDef = meta?.def;
     if (svgDef) {
       return (
         <svg
@@ -79,11 +93,12 @@ export function renderIconWithContainer(
 
   if (!icon) return null;
 
-  const type = getIconRenderType(icon);
+  const meta = getIconMeta(icon);
+  const type = meta?.type;
   const sizeClass = iconSize in ICON_SIZES ? ICON_SIZES[iconSize as IconSize] : iconSize;
 
   if (type === 'svg') {
-    const svgDef = getIconDefinition(icon);
+    const svgDef = meta?.def;
     if (svgDef) {
       return (
         <span className={containerClassName}>

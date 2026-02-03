@@ -93,6 +93,17 @@ export function createLayoutContext(
 
   // 设置展开的菜单
   const setOpenMenuKeys = (keys: string[]) => {
+    const prevKeys = state.openMenuKeys;
+    if (prevKeys.length === keys.length) {
+      let same = true;
+      for (let i = 0; i < keys.length; i += 1) {
+        if (prevKeys[i] !== keys[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return;
+    }
     state.openMenuKeys = keys;
   };
 
@@ -111,6 +122,8 @@ export function createLayoutContext(
   });
 
   // 监听并同步 props 变化
+  // 注意：deep: true 是必要的，因为需要检测嵌套属性（如 sidebar.collapsed）的变化
+  // 以正确同步偏好设置更新到布局状态
   watch(
     mergedProps,
     (newProps) => {

@@ -9,12 +9,7 @@ import { createPortal } from 'react-dom';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
 import type { MenuItem } from '@admin-core/layout';
-import {
-  hasChildren,
-  isMenuActive,
-  hasActiveChild as checkHasActiveChild,
-  getMenuItemClassName,
-} from '@admin-core/layout';
+import { hasChildren, getMenuItemClassName } from '@admin-core/layout';
 import { renderIcon } from '../../utils/icon-renderer';
 
 interface MenuItemProps {
@@ -24,10 +19,14 @@ interface MenuItemProps {
   expandOnHovering: boolean;
   expandedKeys: Set<string>;
   activeKey: string;
+  activeParentSet: Set<string>;
+  isActive: boolean;
+  hasActiveChild: boolean;
   onToggleExpand: (key: string) => void;
   onSelect: (key: string) => void;
   onShowPopup: (item: MenuItem, event: React.MouseEvent) => void;
   onHidePopup: () => void;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -40,17 +39,28 @@ const MenuItemComponent = memo(function MenuItemComponent({
   expandOnHovering,
   expandedKeys,
   activeKey,
+  activeParentSet,
+  isActive,
+  hasActiveChild,
   onToggleExpand,
   onSelect,
   onShowPopup,
   onHidePopup,
+  style,
 }: MenuItemProps) {
   const isExpanded = expandedKeys.has(item.key);
-  const isActive = isMenuActive(item, activeKey);
   const hasChildrenItems = hasChildren(item);
-  const hasActiveChildItem = checkHasActiveChild(item, activeKey);
   
   const showName = !collapsed || expandOnHovering;
+  const visibleChildren = useMemo(() => {
+    const result: MenuItem[] = [];
+    const children = item.children;
+    if (!children?.length) return result;
+    for (const child of children) {
+      if (!child.hidden) result.push(child);
+    }
+    return result;
+  }, [item.children]);
 
   const handleClick = useCallback(() => {
     if (hasChildrenItems) {
@@ -74,15 +84,21 @@ const MenuItemComponent = memo(function MenuItemComponent({
     level,
     isActive,
     isExpanded,
-    hasActiveChild: hasActiveChildItem,
+    hasActiveChild,
   });
 
   if (item.hidden) return null;
 
   return (
-    <div className="sidebar-menu__group">
+    <div className="sidebar-menu__group" style={style}>
       <div 
-        className={itemClassName} 
+        className={`${itemClassName} data-active:text-primary data-disabled:opacity-50`}
+        data-state={isActive ? 'active' : 'inactive'}
+        data-disabled={item.disabled ? 'true' : undefined}
+        data-has-active-child={hasActiveChild ? 'true' : undefined}
+        data-has-children={hasChildrenItems ? 'true' : undefined}
+        data-expanded={hasChildrenItems && isExpanded ? 'true' : undefined}
+        data-level={level}
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={onHidePopup}
@@ -98,11 +114,12 @@ const MenuItemComponent = memo(function MenuItemComponent({
         {showName && <span className="sidebar-menu__name">{item.name}</span>}
 
         {/* 展开箭头（展开状态） */}
-        {hasChildrenItems && showName && (
+      {hasChildrenItems && showName && (
           <span
             className={`sidebar-menu__arrow ${
               isExpanded ? 'sidebar-menu__arrow--expanded' : ''
             }`}
+            data-expanded={isExpanded ? 'true' : undefined}
           >
             <svg
               className="h-4 w-4"
@@ -133,11 +150,9 @@ const MenuItemComponent = memo(function MenuItemComponent({
       </div>
 
       {/* 子菜单 */}
-      {hasChildrenItems && showName && isExpanded && (
+        {hasChildrenItems && showName && isExpanded && (
         <div className="sidebar-menu__submenu">
-          {item.children!
-            .filter((child) => !child.hidden)
-            .map((child) => (
+            {visibleChildren.map((child) => (
               <MenuItemComponent
                 key={child.key}
                 item={child}
@@ -146,6 +161,9 @@ const MenuItemComponent = memo(function MenuItemComponent({
                 expandOnHovering={expandOnHovering}
                 expandedKeys={expandedKeys}
                 activeKey={activeKey}
+            activeParentSet={activeParentSet}
+            isActive={child.key === activeKey || child.path === activeKey}
+            hasActiveChild={activeParentSet.has(child.key || child.path || '')}
                 onToggleExpand={onToggleExpand}
                 onSelect={onSelect}
                 onShowPopup={onShowPopup}
@@ -166,6 +184,7 @@ interface PopupMenuProps {
   top: number;
   left: number;
   activeKey: string;
+  activeParentSet: Set<string>;
   theme: string;
   onSelect: (key: string) => void;
   onMouseEnter: () => void;
@@ -177,31 +196,77 @@ const PopupMenu = memo(function PopupMenu({
   top,
   left,
   activeKey,
+  activeParentSet,
   theme,
   onSelect,
   onMouseEnter,
   onMouseLeave,
 }: PopupMenuProps) {
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => {
-    // 自动展开有激活子菜单的项
+  const popupRef = useRef<HTMLDivElement>(null);
+  const popupContentRef = useRef<HTMLDivElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [contentTop, setContentTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const popupResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const popupStyle = useMemo(() => ({ top: `${top}px`, left: `${left}px` }), [top, left]);
+  const buildExpandedKeys = useCallback(() => {
     const keys = new Set<string>();
-    const expandActiveChildren = (children: MenuItem[]) => {
-      for (const child of children) {
-        if (checkHasActiveChild(child, activeKey) || isMenuActive(child, activeKey)) {
-          keys.add(child.key);
-          if (child.children) {
-            expandActiveChildren(child.children);
+    if (!item.children?.length) return keys;
+    const stack = [...item.children].reverse();
+    while (stack.length > 0) {
+      const child = stack.pop();
+      if (!child) continue;
+      const childId = child.key || child.path || '';
+      const isActive = child.key === activeKey || child.path === activeKey;
+      if ((childId && activeParentSet.has(childId)) || isActive) {
+        keys.add(child.key);
+        if (child.children?.length) {
+          for (let i = child.children.length - 1; i >= 0; i -= 1) {
+            stack.push(child.children[i]);
           }
         }
       }
-    };
-    if (item.children) {
-      expandActiveChildren(item.children);
     }
     return keys;
-  });
+  }, [item.children, activeKey, activeParentSet]);
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => buildExpandedKeys());
+
+  useEffect(() => {
+    const nextKeys = buildExpandedKeys();
+    let isSame = nextKeys.size === expandedKeys.size;
+    if (isSame) {
+      for (const key of nextKeys) {
+        if (!expandedKeys.has(key)) {
+          isSame = false;
+          break;
+        }
+      }
+    }
+    if (!isSame) {
+      setExpandedKeys(nextKeys);
+    }
+  }, [buildExpandedKeys, expandedKeys]);
+
+  const menuItemMap = useMemo(() => {
+    const map = new Map<string, MenuItem>();
+    const stack = [...(item.children ?? [])].reverse();
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (!current) continue;
+      if (current.key) {
+        map.set(current.key, current);
+      }
+      if (current.children?.length) {
+        for (let i = current.children.length - 1; i >= 0; i -= 1) {
+          stack.push(current.children[i]);
+        }
+      }
+    }
+    return map;
+  }, [item.children]);
 
   const toggleExpand = useCallback((key: string) => {
+    if (!menuItemMap.has(key)) return;
     setExpandedKeys(prev => {
       const next = new Set(prev);
       if (next.has(key)) {
@@ -209,9 +274,19 @@ const PopupMenu = memo(function PopupMenu({
       } else {
         next.add(key);
       }
+      if (next.size === prev.size) {
+        let same = true;
+        for (const value of next) {
+          if (!prev.has(value)) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return prev;
+      }
       return next;
     });
-  }, []);
+  }, [menuItemMap]);
 
   const handleItemClick = useCallback((menuItem: MenuItem) => {
     if (hasChildren(menuItem)) {
@@ -221,24 +296,140 @@ const PopupMenu = memo(function PopupMenu({
     }
   }, [toggleExpand, onSelect]);
 
-  const renderPopupItem = (menuItem: MenuItem, level: number): React.ReactNode => {
+  const handlePopupItemClick = useCallback((e: React.MouseEvent) => {
+    const key = (e.currentTarget as HTMLElement).dataset.key;
+    if (!key) return;
+    const menuItem = menuItemMap.get(key);
+    if (menuItem) {
+      handleItemClick(menuItem);
+    }
+  }, [menuItemMap, handleItemClick]);
+
+  const popupChildren = item.children ?? [];
+  const [popupItemHeight, setPopupItemHeight] = useState(44);
+  const POPUP_OVERSCAN = 4;
+  const shouldVirtualize = expandedKeys.size === 0;
+  const contentScrollTop = Math.max(0, scrollTop - contentTop);
+  const totalHeight = popupChildren.length * popupItemHeight;
+  const startIndex = Math.max(0, Math.floor(contentScrollTop / popupItemHeight) - POPUP_OVERSCAN);
+  const endIndex = Math.min(
+    popupChildren.length,
+    Math.ceil((contentScrollTop + viewportHeight) / popupItemHeight) + POPUP_OVERSCAN
+  );
+  const visiblePopupChildren = useMemo(
+    () => (shouldVirtualize ? popupChildren.slice(startIndex, endIndex) : popupChildren),
+    [popupChildren, startIndex, endIndex, shouldVirtualize]
+  );
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const nextTop = e.currentTarget.scrollTop;
+    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+  }, []);
+
+  useEffect(() => {
+    const container = popupRef.current;
+    const content = popupContentRef.current;
+    if (!container || !content) return;
+
+    const update = () => {
+      const offset = content.offsetTop;
+      setContentTop(offset);
+      setViewportHeight(Math.max(0, container.clientHeight - offset));
+      const firstItem = container.querySelector('.sidebar-menu__popup-item') as HTMLElement | null;
+      if (firstItem) {
+        const height = firstItem.getBoundingClientRect().height;
+        if (height > 0) {
+          setPopupItemHeight((prev) => (prev === height ? prev : height));
+        }
+      }
+    };
+    update();
+    const useWindowResize = typeof ResizeObserver === 'undefined';
+    if (useWindowResize) {
+      window.addEventListener('resize', update);
+    } else {
+      const observer = new ResizeObserver(update);
+      observer.observe(container);
+      popupResizeObserverRef.current = observer;
+    }
+    return () => {
+      if (popupResizeObserverRef.current) {
+        popupResizeObserverRef.current.disconnect();
+        popupResizeObserverRef.current = null;
+      }
+      if (useWindowResize) {
+        window.removeEventListener('resize', update);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    const container = popupRef.current;
+    if (container) {
+      container.scrollTop = 0;
+    }
+    setScrollTop((prev) => (prev === 0 ? prev : 0));
+  }, [shouldVirtualize, item.key]);
+
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    if (!popupRef.current) return;
+    const el = popupRef.current;
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return;
+      e.preventDefault();
+      el.scrollTop += e.deltaY;
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, [shouldVirtualize]);
+
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    const maxScrollTop = Math.max(0, totalHeight - viewportHeight - contentTop);
+    if (scrollTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (popupRef.current) {
+      popupRef.current.scrollTop = nextTop;
+    }
+    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+  }, [shouldVirtualize, totalHeight, viewportHeight, contentTop, scrollTop]);
+
+  const renderPopupItem = (
+    menuItem: MenuItem,
+    level: number,
+    style?: React.CSSProperties
+  ): React.ReactNode => {
     if (menuItem.hidden) return null;
 
-    const isActive = isMenuActive(menuItem, activeKey);
-    const hasActiveChild = checkHasActiveChild(menuItem, activeKey);
+    const isActive = menuItem.key === activeKey || menuItem.path === activeKey;
+    const menuId = menuItem.key || menuItem.path || '';
+    const hasActiveChild = menuId ? activeParentSet.has(menuId) : false;
     const isExpanded = expandedKeys.has(menuItem.key);
     const hasChildrenItems = hasChildren(menuItem);
 
-    const itemClass = [
-      'sidebar-menu__popup-item',
-      isActive && 'sidebar-menu__popup-item--active',
-      hasActiveChild && 'sidebar-menu__popup-item--has-active-child',
-      level > 0 && `sidebar-menu__popup-item--level-${level}`,
-    ].filter(Boolean).join(' ');
+    const itemClass = (() => {
+      const classes = ['sidebar-menu__popup-item'];
+      if (isActive) classes.push('sidebar-menu__popup-item--active');
+      if (hasActiveChild) classes.push('sidebar-menu__popup-item--has-active-child');
+      if (level > 0) classes.push(`sidebar-menu__popup-item--level-${level}`);
+      return classes.join(' ');
+    })();
 
     return (
-      <div key={menuItem.key} className="sidebar-menu__popup-group">
-        <div className={itemClass} onClick={() => handleItemClick(menuItem)}>
+      <div key={menuItem.key} className="sidebar-menu__popup-group" style={style}>
+        <div
+          className={`${itemClass} data-active:text-primary data-disabled:opacity-50`}
+          data-state={isActive ? 'active' : 'inactive'}
+          data-disabled={menuItem.disabled ? 'true' : undefined}
+          data-has-active-child={hasActiveChild ? 'true' : undefined}
+          data-has-children={hasChildrenItems ? 'true' : undefined}
+          data-expanded={hasChildrenItems && isExpanded ? 'true' : undefined}
+          data-level={level}
+          data-key={menuItem.key}
+          onClick={handlePopupItemClick}
+        >
           {menuItem.icon && (
             <span className="sidebar-menu__popup-icon">
               {renderIcon(menuItem.icon, 'sm')}
@@ -246,7 +437,10 @@ const PopupMenu = memo(function PopupMenu({
           )}
           <span className="sidebar-menu__popup-name">{menuItem.name}</span>
           {hasChildrenItems && (
-            <span className={`sidebar-menu__popup-arrow ${isExpanded ? 'sidebar-menu__popup-arrow--expanded' : ''}`}>
+            <span
+              className={`sidebar-menu__popup-arrow ${isExpanded ? 'sidebar-menu__popup-arrow--expanded' : ''}`}
+              data-expanded={isExpanded ? 'true' : undefined}
+            >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 18l6-6-6-6" />
               </svg>
@@ -265,13 +459,36 @@ const PopupMenu = memo(function PopupMenu({
   return createPortal(
     <div
       className={`sidebar-menu__popup sidebar-menu__popup--${theme}`}
-      style={{ top: `${top}px`, left: `${left}px` }}
+      data-theme={theme}
+      style={popupStyle}
+      ref={popupRef}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onScroll={handleScroll}
     >
       <div className="sidebar-menu__popup-title">{item.name}</div>
-      <div className="sidebar-menu__popup-content">
-        {item.children?.map(child => renderPopupItem(child, 0))}
+      <div
+        className="sidebar-menu__popup-content"
+        ref={popupContentRef}
+        style={
+          shouldVirtualize
+            ? { position: 'relative', height: `${Math.max(totalHeight, viewportHeight)}px` }
+            : undefined
+        }
+      >
+        {shouldVirtualize && <div style={{ height: `${totalHeight}px`, pointerEvents: 'none' }} />}
+        {visiblePopupChildren.map((child, index) => {
+          const actualIndex = startIndex + index;
+          const itemStyle = shouldVirtualize
+            ? {
+                position: 'absolute' as const,
+                top: `${actualIndex * popupItemHeight}px`,
+                left: 0,
+                right: 0,
+              }
+            : undefined;
+          return renderPopupItem(child, 0, itemStyle);
+        })}
       </div>
     </div>,
     document.body
@@ -294,6 +511,22 @@ export function SidebarMenu() {
     () => new Set(openKeys)
   );
 
+  useEffect(() => {
+    setExpandedKeys((prev) => {
+      if (prev.size === openKeys.length) {
+        let same = true;
+        for (const key of openKeys) {
+          if (!prev.has(key)) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return prev;
+      }
+      return new Set(openKeys);
+    });
+  }, [openKeys]);
+
   // 弹出菜单状态
   const [popupState, setPopupState] = useState<{
     item: MenuItem | null;
@@ -308,11 +541,153 @@ export function SidebarMenu() {
   });
 
   const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const popupFrameRef = useRef<number | null>(null);
+  const sidebarRectRef = useRef<DOMRect | null>(null);
+  const sidebarRectFrameRef = useRef<number | null>(null);
+  const menuRef = useRef<HTMLElement>(null);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const scrollResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const menuItemResizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const menus = useMemo<MenuItem[]>(
     () => context.props.menus || [],
     [context.props.menus]
   );
+  const visibleMenus = useMemo(() => {
+    const result: MenuItem[] = [];
+    for (const item of menus) {
+      if (!item.hidden) result.push(item);
+    }
+    return result;
+  }, [menus]);
+  const RENDER_CHUNK = 80;
+  const [renderCount, setRenderCount] = useState(RENDER_CHUNK);
+  const [menuItemHeight, setMenuItemHeight] = useState(48);
+  const MENU_OVERSCAN = 4;
+  const shouldVirtualize = collapsed && !expandOnHovering;
+
+  useEffect(() => {
+    const nextCount = shouldVirtualize
+      ? visibleMenus.length
+      : Math.min(RENDER_CHUNK, visibleMenus.length);
+    setRenderCount((prev) => (prev === nextCount ? prev : nextCount));
+  }, [shouldVirtualize, visibleMenus.length]);
+
+  useEffect(() => {
+    if (shouldVirtualize || renderCount >= visibleMenus.length) return;
+    const frame = requestAnimationFrame(() => {
+      setRenderCount((prev) => Math.min(prev + RENDER_CHUNK, visibleMenus.length));
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [shouldVirtualize, renderCount, visibleMenus.length]);
+
+  const slicedMenus = useMemo(
+    () => visibleMenus.slice(0, renderCount),
+    [visibleMenus, renderCount]
+  );
+
+  const virtualTotalHeight = visibleMenus.length * menuItemHeight;
+  const virtualViewportHeight = viewportHeight || 0;
+  const virtualStartIndex = Math.max(0, Math.floor(scrollTop / menuItemHeight) - MENU_OVERSCAN);
+  const virtualEndIndex = Math.min(
+    visibleMenus.length,
+    Math.ceil((scrollTop + virtualViewportHeight) / menuItemHeight) + MENU_OVERSCAN
+  );
+  const virtualMenus = useMemo(
+    () => visibleMenus.slice(virtualStartIndex, virtualEndIndex),
+    [visibleMenus, virtualStartIndex, virtualEndIndex]
+  );
+  const renderMenus = shouldVirtualize ? virtualMenus : slicedMenus;
+  const menuStyle = shouldVirtualize
+    ? { position: 'relative' as const, height: `${Math.max(virtualTotalHeight, virtualViewportHeight)}px` }
+    : undefined;
+
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    const menuEl = menuRef.current;
+    if (!menuEl) return;
+    const updateItemHeight = () => {
+      const firstItem = menuEl.querySelector('.sidebar-menu__item') as HTMLElement | null;
+      if (!firstItem) return;
+      const height = firstItem.getBoundingClientRect().height;
+      if (height > 0 && height !== menuItemHeight) {
+        setMenuItemHeight(height);
+      }
+    };
+    const frame = requestAnimationFrame(updateItemHeight);
+    if (typeof ResizeObserver !== 'undefined') {
+      let observedItem = menuEl.querySelector('.sidebar-menu__item') as HTMLElement | null;
+      if (observedItem) {
+        const observer = new ResizeObserver(() => {
+          const currentItem = menuEl.querySelector('.sidebar-menu__item') as HTMLElement | null;
+          if (!currentItem) return;
+          if (currentItem !== observedItem) {
+            if (observedItem) {
+              observer.unobserve(observedItem);
+            }
+            observer.observe(currentItem);
+            observedItem = currentItem;
+          }
+          updateItemHeight();
+        });
+        observer.observe(observedItem);
+        menuItemResizeObserverRef.current = observer;
+      }
+    }
+    return () => {
+      cancelAnimationFrame(frame);
+      if (menuItemResizeObserverRef.current) {
+        menuItemResizeObserverRef.current.disconnect();
+        menuItemResizeObserverRef.current = null;
+      }
+    };
+  }, [shouldVirtualize, visibleMenus.length, menuItemHeight]);
+
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    const maxScrollTop = Math.max(0, virtualTotalHeight - virtualViewportHeight);
+    if (scrollTop <= maxScrollTop) return;
+    const nextTop = Math.max(0, maxScrollTop);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = nextTop;
+    }
+    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+  }, [shouldVirtualize, virtualTotalHeight, virtualViewportHeight, scrollTop]);
+
+  const parentPathMap = useMemo(() => {
+    const map = new Map<string, string | null>();
+    const visit = (items: MenuItem[], parent: string | null) => {
+      for (const menu of items) {
+        const keyPath = menu.key || '';
+        const path = menu.path || '';
+        const id = keyPath || path || '';
+        if (keyPath) map.set(keyPath, parent);
+        if (path && path !== keyPath) map.set(path, parent);
+        if (menu.children?.length) {
+          visit(menu.children, id || parent);
+        }
+      }
+    };
+    visit(menus, null);
+    return map;
+  }, [menus]);
+
+  const activeParentSet = useMemo(() => {
+    const parentSet = new Set<string>();
+    if (!activeKey) return parentSet;
+    let current = activeKey;
+    const visited = new Set<string>();
+    while (current && parentPathMap.has(current) && !visited.has(current)) {
+      visited.add(current);
+      const parent = parentPathMap.get(current);
+      if (!parent) break;
+      parentSet.add(parent);
+      current = parent;
+    }
+    return parentSet;
+  }, [activeKey, parentPathMap]);
 
   const toggleExpand = useCallback(
     (key: string) => {
@@ -323,6 +698,16 @@ export function SidebarMenu() {
         } else {
           next.add(key);
         }
+        if (next.size === prev.size) {
+          let same = true;
+          for (const value of next) {
+            if (!prev.has(value)) {
+              same = false;
+              break;
+            }
+          }
+          if (same) return prev;
+        }
         handleOpenChange(Array.from(next));
         return next;
       });
@@ -330,26 +715,128 @@ export function SidebarMenu() {
     [handleOpenChange]
   );
 
+  const updateSidebarRect = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const sidebar = document.querySelector('.layout-sidebar') as HTMLElement | null;
+    if (sidebar) {
+      sidebarRectRef.current = sidebar.getBoundingClientRect();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    updateSidebarRect();
+    const scrollOptions: AddEventListenerOptions = { capture: true, passive: true };
+    const handle = () => {
+      if (sidebarRectFrameRef.current !== null) return;
+      sidebarRectFrameRef.current = requestAnimationFrame(() => {
+        sidebarRectFrameRef.current = null;
+        updateSidebarRect();
+      });
+    };
+
+    const sidebar = document.querySelector('.layout-sidebar') as HTMLElement | null;
+    const useWindowResize = typeof ResizeObserver === 'undefined' || !sidebar;
+    let resizeObserver: ResizeObserver | null = null;
+    if (useWindowResize) {
+      window.addEventListener('resize', handle);
+    } else {
+      resizeObserver = new ResizeObserver(handle);
+      resizeObserver.observe(sidebar);
+    }
+    window.addEventListener('scroll', handle, scrollOptions);
+    return () => {
+      if (useWindowResize) {
+        window.removeEventListener('resize', handle);
+      }
+      resizeObserver?.disconnect();
+      window.removeEventListener('scroll', handle, scrollOptions);
+      if (sidebarRectFrameRef.current !== null) {
+        cancelAnimationFrame(sidebarRectFrameRef.current);
+        sidebarRectFrameRef.current = null;
+      }
+    };
+  }, [updateSidebarRect]);
+
+  useEffect(() => {
+    const menuEl = menuRef.current;
+    if (!menuEl) return;
+    const container = menuEl.closest('.layout-scroll-container') as HTMLElement | null;
+    scrollContainerRef.current = container;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const nextTop = container.scrollTop;
+      setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
+    };
+    const updateHeight = () => {
+      const nextHeight = container.clientHeight;
+      setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
+    };
+
+    updateHeight();
+    handleScroll();
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    const useWindowResize = typeof ResizeObserver === 'undefined';
+    if (useWindowResize) {
+      window.addEventListener('resize', updateHeight);
+    } else {
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(container);
+      scrollResizeObserverRef.current = observer;
+    }
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (useWindowResize) {
+        window.removeEventListener('resize', updateHeight);
+      }
+      if (scrollResizeObserverRef.current) {
+        scrollResizeObserverRef.current.disconnect();
+        scrollResizeObserverRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shouldVirtualize) return;
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = 0;
+    }
+    setScrollTop((prev) => (prev === 0 ? prev : 0));
+  }, [shouldVirtualize]);
+
   const showPopupMenu = useCallback((item: MenuItem, event: React.MouseEvent) => {
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
       leaveTimerRef.current = null;
     }
 
+    if (popupFrameRef.current !== null) return;
     const target = event.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    const sidebar = target.closest('.layout-sidebar');
-    const sidebarRect = sidebar?.getBoundingClientRect();
 
-    setPopupState({
-      item,
-      visible: true,
-      top: rect.top,
-      left: sidebarRect ? sidebarRect.right : rect.right,
+    popupFrameRef.current = requestAnimationFrame(() => {
+      popupFrameRef.current = null;
+      const rect = target.getBoundingClientRect();
+      const sidebarRect = sidebarRectRef.current;
+      const left = sidebarRect ? sidebarRect.right : rect.right;
+
+      setPopupState((prev) => ({
+        ...prev,
+        item,
+        visible: true,
+        top: rect.top,
+        left,
+      }));
     });
   }, []);
 
   const hidePopupMenu = useCallback(() => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
     leaveTimerRef.current = setTimeout(() => {
       setPopupState(prev => ({ ...prev, visible: false, item: null }));
     }, 100);
@@ -373,29 +860,46 @@ export function SidebarMenu() {
       if (leaveTimerRef.current) {
         clearTimeout(leaveTimerRef.current);
       }
+      if (popupFrameRef.current !== null) {
+        cancelAnimationFrame(popupFrameRef.current);
+        popupFrameRef.current = null;
+      }
     };
   }, []);
 
   return (
     <>
-      <nav className="sidebar-menu">
-        {menus
-          .filter((item) => !item.hidden)
-          .map((item) => (
-            <MenuItemComponent
-              key={item.key}
-              item={item}
-              level={0}
-              collapsed={collapsed}
-              expandOnHovering={expandOnHovering}
-              expandedKeys={expandedKeys}
-              activeKey={activeKey}
-              onToggleExpand={toggleExpand}
-              onSelect={handleSelect}
-              onShowPopup={showPopupMenu}
-              onHidePopup={hidePopupMenu}
-            />
-          ))}
+      <nav ref={menuRef} className="sidebar-menu" style={menuStyle}>
+        {renderMenus.map((item, index) => {
+          const actualIndex = shouldVirtualize ? virtualStartIndex + index : index;
+          const itemStyle = shouldVirtualize
+            ? {
+                position: 'absolute' as const,
+                top: `${actualIndex * menuItemHeight}px`,
+                left: 0,
+                right: 0,
+              }
+            : undefined;
+          return (
+          <MenuItemComponent
+            key={item.key}
+            item={item}
+            level={0}
+            collapsed={collapsed}
+            expandOnHovering={expandOnHovering}
+            expandedKeys={expandedKeys}
+            activeKey={activeKey}
+            activeParentSet={activeParentSet}
+            isActive={item.key === activeKey || item.path === activeKey}
+            hasActiveChild={activeParentSet.has(item.key || item.path || '')}
+            onToggleExpand={toggleExpand}
+            onSelect={handleSelect}
+            onShowPopup={showPopupMenu}
+            onHidePopup={hidePopupMenu}
+            style={itemStyle}
+          />
+          );
+        })}
       </nav>
 
       {/* 折叠状态下的弹出菜单 */}
@@ -405,6 +909,7 @@ export function SidebarMenu() {
           top={popupState.top}
           left={popupState.left}
           activeKey={activeKey}
+          activeParentSet={activeParentSet}
           theme={sidebarTheme}
           onSelect={handlePopupSelect}
           onMouseEnter={cancelHidePopup}

@@ -29,23 +29,22 @@ export const HorizontalMenu = memo(function HorizontalMenu({
 }: HorizontalMenuProps) {
   const context = useLayoutContext();
 
-  // 查找菜单项
-  const findItem = useCallback((items: MenuItem[], path: string): MenuItem | null => {
-    for (const item of items) {
-      if (item.key === path || item.path === path) {
-        return item;
-      }
-      if (item.children?.length) {
-        const found = findItem(item.children, path);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
+  const menuIndex = useMemo(() => {
+    const map = new Map<string, MenuItem>();
+    const walk = (items: MenuItem[]) => {
+      items.forEach((item) => {
+        if (item.key) map.set(item.key, item);
+        if (item.path) map.set(item.path, item);
+        if (item.children?.length) walk(item.children);
+      });
+    };
+    walk(menus);
+    return map;
+  }, [menus]);
 
   // 处理菜单选择
   const handleSelect = useCallback((path: string, _parentPaths: string[]) => {
-    const item = findItem(menus, path);
+    const item = menuIndex.get(path);
     if (item) {
       onSelect?.(item, path);
       context.events?.onMenuSelect?.(item, path);
@@ -58,18 +57,16 @@ export const HorizontalMenu = memo(function HorizontalMenu({
         });
       }
     }
-  }, [menus, findItem, onSelect, context]);
+  }, [menuIndex, onSelect, context]);
 
   // 容器类名
-  const containerClassName = useMemo(() => [
-    'header-menu-container w-full min-w-0',
-    `header-menu-container--align-${align}`,
-  ]
-    .filter(Boolean)
-    .join(' '), [align]);
+  const containerClassName = useMemo(
+    () => `header-menu-container w-full min-w-0 header-menu-container--align-${align}`,
+    [align]
+  );
 
   return (
-    <div className={containerClassName}>
+    <div className={containerClassName} data-align={align}>
       <Menu
         menus={menus}
         defaultActive={activeKey}

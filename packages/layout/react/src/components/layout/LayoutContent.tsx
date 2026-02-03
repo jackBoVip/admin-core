@@ -31,17 +31,18 @@ export const LayoutContent = memo(function LayoutContent({
   const contentCompactWidth = context.props.contentCompactWidth || DEFAULT_CONTENT_CONFIG.contentCompactWidth;
 
   // 类名
-  const contentClassName = useMemo(() => [
-    'layout-content',
-    contentCompact === 'compact' && 'layout-content--compact',
-    sidebarCollapsed && !context.props.isMobile && 'layout-content--collapsed',
-    computed.showPanel && 'layout-content--with-panel',
-    computed.showPanel && panelPosition === 'left' && 'layout-content--panel-left',
-    computed.showPanel && panelPosition === 'right' && 'layout-content--panel-right',
-    panelCollapsed && 'layout-content--panel-collapsed',
-  ]
-    .filter(Boolean)
-    .join(' '), [contentCompact, sidebarCollapsed, context.props.isMobile, computed.showPanel, panelPosition, panelCollapsed]);
+  const contentClassName = useMemo(() => {
+    const classes = ['layout-content'];
+    if (contentCompact === 'compact') classes.push('layout-content--compact');
+    if (sidebarCollapsed && !context.props.isMobile) classes.push('layout-content--collapsed');
+    if (computed.showPanel) {
+      classes.push('layout-content--with-panel');
+      if (panelPosition === 'left') classes.push('layout-content--panel-left');
+      if (panelPosition === 'right') classes.push('layout-content--panel-right');
+    }
+    if (panelCollapsed) classes.push('layout-content--panel-collapsed');
+    return classes.join(' ');
+  }, [contentCompact, sidebarCollapsed, context.props.isMobile, computed.showPanel, panelPosition, panelCollapsed]);
 
   // 样式
   const contentStyle = useMemo(() => ({
@@ -64,7 +65,16 @@ export const LayoutContent = memo(function LayoutContent({
       : {}, [contentCompact, contentCompactWidth]);
 
   return (
-    <main className={contentClassName} style={contentStyle}>
+    <main
+      className={contentClassName}
+      style={contentStyle}
+      data-compact={contentCompact === 'compact' ? 'true' : undefined}
+      data-collapsed={sidebarCollapsed && !context.props.isMobile ? 'true' : undefined}
+      data-with-panel={computed.showPanel ? 'true' : undefined}
+      data-panel-position={computed.showPanel ? panelPosition : undefined}
+      data-panel-collapsed={panelCollapsed ? 'true' : undefined}
+      data-mobile={context.props.isMobile ? 'true' : undefined}
+    >
       {/* 内容头部 */}
       {header && <div className="layout-content__header mb-4">{header}</div>}
 

@@ -3,13 +3,14 @@
  * 刷新按钮组件
  * @description 刷新当前页面
  */
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { useLayoutContext } from '../../composables';
 
 const context = useLayoutContext();
 
 // 是否正在刷新
 const isRefreshing = ref(false);
+const timerRef = ref<ReturnType<typeof setTimeout> | null>(null);
 
 // 处理刷新
 const handleRefresh = async () => {
@@ -21,10 +22,21 @@ const handleRefresh = async () => {
   context.events.onRefresh?.();
   
   // 动画持续时间
-  setTimeout(() => {
+  if (timerRef.value) {
+    clearTimeout(timerRef.value);
+  }
+  timerRef.value = setTimeout(() => {
     isRefreshing.value = false;
+    timerRef.value = null;
   }, 600);
 };
+
+onUnmounted(() => {
+  if (timerRef.value) {
+    clearTimeout(timerRef.value);
+    timerRef.value = null;
+  }
+});
 </script>
 
 <template>
@@ -33,6 +45,7 @@ const handleRefresh = async () => {
     class="header-widget-btn"
     :class="{ 'animate-spin': isRefreshing }"
     :title="context.t('layout.header.refresh')"
+    :data-state="isRefreshing ? 'refreshing' : 'idle'"
     @click="handleRefresh"
   >
     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

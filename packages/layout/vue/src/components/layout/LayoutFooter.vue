@@ -33,7 +33,13 @@ const footerStyle = computed(() => ({
 </script>
 
 <template>
-  <footer :class="footerClass" :style="footerStyle">
+  <footer
+    :class="footerClass"
+    :style="footerStyle"
+    :data-fixed="footerConfig.fixed ? 'true' : undefined"
+    :data-with-sidebar="layoutComputed.showSidebar && !context.props.isMobile ? 'true' : undefined"
+    :data-collapsed="sidebarCollapsed && !context.props.isMobile ? 'true' : undefined"
+  >
     <div class="layout-footer__inner flex h-full items-center justify-between px-4">
       <!-- 左侧 -->
       <div class="layout-footer__left">

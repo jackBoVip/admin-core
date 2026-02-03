@@ -35,6 +35,21 @@ export const ThemeToggle = memo(function ThemeToggle() {
     [events]
   );
 
+  const handleToggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  const handleOptionClick = useCallback((e: React.MouseEvent) => {
+    const theme = (e.currentTarget as HTMLElement).dataset.value as ThemeModeType | undefined;
+    if (theme) {
+      handleThemeChange(theme);
+    }
+  }, [handleThemeChange]);
+
   const renderIcon = useCallback((icon: string, className = 'h-4 w-4') => {
     switch (icon) {
       case 'sun':
@@ -69,18 +84,26 @@ export const ThemeToggle = memo(function ThemeToggle() {
   }, []);
 
   return (
-    <div className="header-widget-dropdown relative" onMouseLeave={() => setIsOpen(false)}>
+    <div
+      className="header-widget-dropdown relative"
+      data-state={isOpen ? 'open' : 'closed'}
+      onMouseLeave={handleClose}
+    >
       <button
         type="button"
         className="header-widget-btn"
         title={t('layout.header.toggleTheme')}
-        onClick={() => setIsOpen(!isOpen)}
+        data-state={isOpen ? 'open' : 'closed'}
+        onClick={handleToggleOpen}
       >
         {renderIcon(currentTheme === 'light' ? 'sun' : currentTheme === 'dark' ? 'moon' : 'monitor')}
       </button>
 
       {isOpen && (
-        <div className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div
+          className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[120px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          data-state="open"
+        >
           {themeOptions.map((option) => (
             <button
               key={option.value}
@@ -88,7 +111,9 @@ export const ThemeToggle = memo(function ThemeToggle() {
               className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 ${
                 currentTheme === option.value ? 'text-primary bg-primary/10' : ''
               }`}
-              onClick={() => handleThemeChange(option.value)}
+              data-selected={currentTheme === option.value ? 'true' : undefined}
+              data-value={option.value}
+              onClick={handleOptionClick}
             >
               {renderIcon(option.icon)}
               <span>{t(option.label)}</span>

@@ -4,6 +4,7 @@
 export { default as HeaderToolbar } from './HeaderToolbar.vue';
 export { default as RefreshButton } from './RefreshButton.vue';
 export { default as GlobalSearch } from './GlobalSearch.vue';
+export { default as PreferencesButton } from './PreferencesButton.vue';
 export { default as ThemeToggle } from './ThemeToggle.vue';
 export { default as LanguageToggle } from './LanguageToggle.vue';
 export { default as FullscreenButton } from './FullscreenButton.vue';

@@ -33,13 +33,33 @@ export const LanguageToggle = memo(function LanguageToggle() {
     [events]
   );
 
+  const handleToggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  const handleOptionClick = useCallback((e: React.MouseEvent) => {
+    const locale = (e.currentTarget as HTMLElement).dataset.value;
+    if (locale) {
+      handleLocaleChange(locale);
+    }
+  }, [handleLocaleChange]);
+
   return (
-    <div className="header-widget-dropdown relative" onMouseLeave={() => setIsOpen(false)}>
+    <div
+      className="header-widget-dropdown relative"
+      data-state={isOpen ? 'open' : 'closed'}
+      onMouseLeave={handleClose}
+    >
       <button
         type="button"
         className="header-widget-btn"
         title={t('layout.header.toggleLanguage')}
-        onClick={() => setIsOpen(!isOpen)}
+        data-state={isOpen ? 'open' : 'closed'}
+        onClick={handleToggleOpen}
       >
         <svg
           className="h-4 w-4"
@@ -57,7 +77,10 @@ export const LanguageToggle = memo(function LanguageToggle() {
       </button>
 
       {isOpen && (
-        <div className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div
+          className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          data-state="open"
+        >
           {languageOptions.map((option) => (
             <button
               key={option.value}
@@ -65,7 +88,9 @@ export const LanguageToggle = memo(function LanguageToggle() {
               className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 ${
                 currentLocale === option.value ? 'text-primary bg-primary/10' : ''
               }`}
-              onClick={() => handleLocaleChange(option.value)}
+              data-selected={currentLocale === option.value ? 'true' : undefined}
+              data-value={option.value}
+              onClick={handleOptionClick}
             >
               <span>{option.label}</span>
             </button>
