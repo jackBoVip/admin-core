@@ -26,6 +26,7 @@ export default defineConfig({
     // 优化依赖处理 - 使用 alias 指向 dist 后，不再需要特殊处理
     optimizeDeps: {
         include: ['vue', 'vue-router'],
+        exclude: ['@admin-core/preferences'],
     },
     // CSS 配置
     css: {
