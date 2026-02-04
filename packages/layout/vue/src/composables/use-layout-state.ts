@@ -52,57 +52,6 @@
 import { ref, computed, watch, onMounted, onUnmounted, isRef } from 'vue';
 import { getPreferencesManager } from '@admin-core/preferences-vue';
 import { useLayoutContext, useLayoutComputed } from './use-layout-context';
-
-function buildMenuPathIndex(menus: MenuItem[]) {
-  const byKey = new Map<string, MenuItem>();
-  const byPath = new Map<string, MenuItem>();
-  const chainByKey = new Map<string, string[]>();
-  const chainByPath = new Map<string, string[]>();
-  const pathItems: MenuItem[] = [];
-  const stack: string[] = [];
-
-  const walk = (items: MenuItem[]) => {
-    for (const item of items) {
-      if (item.key) {
-        byKey.set(item.key, item);
-      }
-      if (item.path) {
-        byPath.set(item.path, item);
-        pathItems.push(item);
-      }
-      const chain = item.key ? [...stack, item.key] : [...stack];
-      if (item.key) {
-        chainByKey.set(item.key, chain);
-      }
-      if (item.path) {
-        chainByPath.set(item.path, chain);
-      }
-      if (item.key) {
-        stack.push(item.key);
-      }
-      if (item.children?.length) {
-        walk(item.children);
-      }
-      if (item.key) {
-        stack.pop();
-      }
-    }
-  };
-
-  walk(menus);
-  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
-  return { byKey, byPath, chainByKey, chainByPath, pathItems };
-}
-
-const menuIndexCache = new WeakMap<MenuItem[], ReturnType<typeof buildMenuPathIndex>>();
-
-function getMenuPathIndex(menus: MenuItem[]) {
-  const cached = menuIndexCache.get(menus);
-  if (cached) return cached;
-  const index = buildMenuPathIndex(menus);
-  menuIndexCache.set(menus, index);
-  return index;
-}
 import { 
   BREAKPOINTS, 
   HEADER_TRIGGER_DISTANCE,
@@ -112,7 +61,20 @@ import {
   generateAllCSSVariables,
   getOrCreateTabManager,
   logger,
+  getMenuPathIndex,
+  resolveMenuNavigation,
+  getTabNavigationPath,
+  getBreadcrumbNavigationPath,
+  getNextTabAfterClose,
   type BasicLayoutProps,
+  type TabItem,
+  type BreadcrumbItem,
+  type MenuItem,
+  type NotificationItem,
+  type ThemeConfig,
+  type WatermarkConfig,
+  type LockScreenConfig,
+  type RouterConfig,
 } from '@admin-core/layout';
 
 // ============================================================
@@ -982,7 +944,7 @@ export function useDynamicTitle() {
 
   const enabled = computed(() => context.props.dynamicTitle !== false);
   const appName = computed(() => context.props.appName || '');
-  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
+  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
 
   // 更新标题
   const updateTitle = (pageTitle?: string) => {
@@ -1143,64 +1105,36 @@ export function useRouter() {
 
   // 处理菜单项点击
   const handleMenuItemClick = (menu: MenuItem) => {
-    // 外链处理
-    if (menu.externalLink) {
-      const target = menu.openInNewWindow !== false ? '_blank' : '_self';
-      window.open(menu.externalLink, target);
+    const action = resolveMenuNavigation(menu, {
+      autoActivateChild: context.props.sidebar?.autoActivateChild,
+    });
+
+    if (action.type === 'external' && action.url) {
+      window.open(action.url, action.target ?? '_blank');
       return;
     }
 
-    // 有路径才跳转
-    if (menu.path) {
-      // 如果有重定向，跳转到重定向地址
-      const targetPath = menu.redirect || menu.path;
-      navigate(targetPath, {
-        params: menu.params,
-        query: menu.query,
+    if (action.type === 'internal' && action.path) {
+      navigate(action.path, {
+        params: action.params,
+        query: action.query,
       });
-      return;
     }
-
-    // autoActivateChild：如果菜单没有路径但有子菜单，自动激活第一个可用的子菜单
-    if (context.props.sidebar?.autoActivateChild && menu.children?.length) {
-      const firstChild = findFirstActivatableChild(menu.children);
-      if (firstChild) {
-        handleMenuItemClick(firstChild);
-      }
-    }
-  };
-
-  // 递归查找第一个可激活的子菜单
-  const findFirstActivatableChild = (menus: MenuItem[]): MenuItem | null => {
-    for (const menu of menus) {
-      // 跳过隐藏和禁用的菜单
-      if (menu.hidden || menu.disabled) continue;
-      
-      // 如果有路径或外链，返回该菜单
-      if (menu.path || menu.externalLink) {
-        return menu;
-      }
-      
-      // 递归查找子菜单
-      if (menu.children?.length) {
-        const child = findFirstActivatableChild(menu.children);
-        if (child) return child;
-      }
-    }
-    return null;
   };
 
   // 处理标签点击
   const handleTabClick = (tab: TabItem) => {
-    if (tab.path && tab.path !== currentPath.value) {
-      navigate(tab.path);
+    const targetPath = getTabNavigationPath(tab, currentPath.value);
+    if (targetPath) {
+      navigate(targetPath);
     }
   };
 
   // 处理面包屑点击
   const handleBreadcrumbClick = (item: BreadcrumbItem) => {
-    if (item.path && item.clickable && item.path !== currentPath.value) {
-      navigate(item.path);
+    const targetPath = getBreadcrumbNavigationPath(item, currentPath.value);
+    if (targetPath) {
+      navigate(targetPath);
     }
   };
 
@@ -1210,28 +1144,9 @@ export function useRouter() {
     tabs: TabItem[],
     activeKey: string
   ) => {
-    // 如果关闭的是当前标签，需要跳转到其他标签
-    if (closedKey === activeKey && tabs.length > 0) {
-      // 优先跳转到右边的标签，没有则跳转到左边
-      let closedIndex = -1;
-      for (let i = 0; i < tabs.length; i += 1) {
-        if (tabs[i].key === closedKey) {
-          closedIndex = i;
-          break;
-        }
-      }
-      // 安全的数组访问
-      let nextTab: TabItem | undefined;
-      if (closedIndex >= 0 && closedIndex < tabs.length) {
-        nextTab = tabs[closedIndex];
-      } else if (closedIndex > 0) {
-        nextTab = tabs[closedIndex - 1];
-      } else if (tabs.length > 0) {
-        nextTab = tabs[0];
-      }
-      if (nextTab) {
-        navigate(nextTab.path);
-      }
+    const nextTab = getNextTabAfterClose(tabs, closedKey, activeKey);
+    if (nextTab?.path) {
+      navigate(nextTab.path);
     }
   };
 
@@ -1591,28 +1506,42 @@ export function useNotifications() {
 
 /**
  * 使用刷新
+ * @description 刷新当前标签页（如果有），否则触发通用刷新事件
  */
 export function useRefresh() {
   const context = useLayoutContext();
+  const { currentPath } = useRouter();
 
   const isRefreshing = ref(false);
   let refreshTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // 从 context.props 获取标签和活动标签
+  const tabs = computed(() => context.props.tabs || []);
+  const activeKey = computed(() => context.props.activeTabKey || currentPath.value || '');
+  const activeTab = computed(() => {
+    if (!activeKey.value) return undefined;
+    return tabs.value.find((tab) => tab.key === activeKey.value);
+  });
 
   const refresh = async () => {
     if (isRefreshing.value) return;
 
     isRefreshing.value = true;
     try {
-      context.events.onRefresh?.();
+      if (activeTab.value && context.events.onTabRefresh) {
+        context.events.onTabRefresh(activeTab.value, activeTab.value.key);
+      } else {
+        context.events.onRefresh?.();
+      }
     } finally {
-      // 短暂延迟后重置状态
+      // 短暂延迟后重置状态（与动画时长一致 --admin-duration-slow）
       if (refreshTimer) {
         clearTimeout(refreshTimer);
       }
       refreshTimer = setTimeout(() => {
         isRefreshing.value = false;
         refreshTimer = null;
-      }, 300);
+      }, 500);
     }
   };
 

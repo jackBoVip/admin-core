@@ -3,27 +3,13 @@
  * @description 用于数值范围选择，性能优化：使用 debounce 避免频繁更新
  */
 import React, { memo, useState, useCallback, useRef, useEffect, useId, useMemo } from 'react';
-import { SLIDER_DEBOUNCE_MS } from '@admin-core/preferences';
+import { SLIDER_DEBOUNCE_MS, type SliderItemBaseProps } from '@admin-core/preferences';
 
-export interface SliderItemProps {
-  /** 标签文本 */
-  label: string;
+export interface SliderItemProps extends SliderItemBaseProps {
   /** 当前值 */
   value: number;
   /** 值变化回调 */
   onChange: (value: number) => void;
-  /** 最小值 */
-  min?: number;
-  /** 最大值 */
-  max?: number;
-  /** 步进值 */
-  step?: number;
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 单位文本 */
-  unit?: string;
-  /** 防抖延迟 (ms) */
-  debounce?: number;
 }
 
 export const SliderItem: React.FC<SliderItemProps> = memo(({

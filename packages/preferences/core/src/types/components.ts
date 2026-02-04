@@ -39,6 +39,62 @@ export interface BlockComponentProps {
 }
 
 /**
+ * 抽屉基础组件 Props（框架无关）
+ */
+export interface DrawerItemBaseProps {
+  /** 标签文本 */
+  label: string;
+  /** 是否禁用 */
+  disabled?: boolean;
+}
+
+/**
+ * 开关项基础 Props
+ */
+export interface SwitchItemBaseProps extends DrawerItemBaseProps {
+  /** 图标 SVG 字符串 */
+  icon?: string;
+  /** 提示文本 */
+  tip?: string;
+}
+
+/**
+ * 选择项基础 Props
+ */
+export interface SelectItemBaseProps extends DrawerItemBaseProps {
+  /** 选项列表 */
+  options: Array<{ label: string; value: string | number }>;
+}
+
+/**
+ * 滑动条基础 Props
+ */
+export interface SliderItemBaseProps extends DrawerItemBaseProps {
+  /** 最小值 */
+  min?: number;
+  /** 最大值 */
+  max?: number;
+  /** 步进值 */
+  step?: number;
+  /** 单位文本 */
+  unit?: string;
+  /** 防抖延迟 (ms) */
+  debounce?: number;
+}
+
+/**
+ * 输入项基础 Props
+ */
+export interface InputItemBaseProps extends DrawerItemBaseProps {
+  /** 占位符 */
+  placeholder?: string;
+  /** 防抖延迟 (ms) */
+  debounce?: number;
+  /** 最大长度 */
+  maxLength?: number;
+}
+
+/**
  * 开关组件 Props（通用基础）
  */
 export interface SwitchComponentProps {

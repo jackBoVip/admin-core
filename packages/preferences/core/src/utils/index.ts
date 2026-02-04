@@ -40,6 +40,9 @@ export {
   type DiffResult,
 } from './diff';
 
+// 防抖工具
+export { createDebouncedCallback, type DebouncedCallback } from './debounce';
+
 // 平台检测
 export {
   formatShortcut,
@@ -90,6 +93,16 @@ export {
   type ShortcutManagerOptions,
   type UseShortcutKeysResult,
 } from './shortcuts';
+
+// 水印工具
+export {
+  buildWatermarkCacheKey,
+  createWatermarkGenerator,
+  getWatermarkText,
+  type WatermarkConfig,
+  type WatermarkGenerator,
+  type WatermarkGeneratorOptions,
+} from './watermark';
 
 // 密码工具
 export {

@@ -3,20 +3,13 @@
  * @description 与 Vue 版本保持一致的 API 设计
  */
 import { memo, useCallback, useId } from 'react';
+import type { SwitchItemBaseProps } from '@admin-core/preferences';
 
-export interface SwitchItemProps {
-  /** 标签文本 */
-  label: string;
-  /** 图标 SVG 字符串 */
-  icon?: string;
+export interface SwitchItemProps extends SwitchItemBaseProps {
   /** 是否选中 */
   checked: boolean;
   /** 变更回调 */
   onChange: (checked: boolean) => void;
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 提示文本 */
-  tip?: string;
 }
 
 /**

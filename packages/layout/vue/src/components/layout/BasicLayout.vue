@@ -7,7 +7,7 @@
  */
 import { computed, ref, shallowRef, watch, onUnmounted } from 'vue';
 import type { BasicLayoutProps, LayoutEvents, MenuItem, TabItem, BreadcrumbItem, NotificationItem } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps, logger } from '@admin-core/layout';
+import { mapPreferencesToLayoutProps, logger, buildMenuPathIndex } from '@admin-core/layout';
 import { createLayoutContext, useResponsive } from '../../composables';
 import { 
   PreferencesProvider, 
@@ -24,47 +24,6 @@ import LayoutPanel from './LayoutPanel.vue';
 import LayoutOverlay from './LayoutOverlay.vue';
 import HorizontalMenu from './HorizontalMenu.vue';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
-
-function buildMenuPathIndex(menus: MenuItem[]) {
-  const byKey = new Map<string, MenuItem>();
-  const byPath = new Map<string, MenuItem>();
-  const chainByKey = new Map<string, string[]>();
-  const chainByPath = new Map<string, string[]>();
-  const pathItems: MenuItem[] = [];
-  const stack: string[] = [];
-
-  const walk = (items: MenuItem[]) => {
-    for (const item of items) {
-      if (item.key) {
-        byKey.set(item.key, item);
-      }
-      if (item.path) {
-        byPath.set(item.path, item);
-        pathItems.push(item);
-      }
-      const chain = item.key ? [...stack, item.key] : [...stack];
-      if (item.key) {
-        chainByKey.set(item.key, chain);
-      }
-      if (item.path) {
-        chainByPath.set(item.path, chain);
-      }
-      if (item.key) {
-        stack.push(item.key);
-      }
-      if (item.children?.length) {
-        walk(item.children);
-      }
-      if (item.key) {
-        stack.pop();
-      }
-    }
-  };
-
-  walk(menus);
-  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
-  return { byKey, byPath, chainByKey, chainByPath, pathItems };
-}
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
@@ -164,6 +123,7 @@ const mergedProps = computed<BasicLayoutProps>(() => {
   if (props.router) result.router = props.router;
   if (props.userInfo) result.userInfo = props.userInfo;
   if (props.appName) result.appName = props.appName;
+  if (props.locale) result.locale = props.locale;
   if (props.isMobile !== undefined) result.isMobile = props.isMobile;
   if (props.header) result.header = { ...preferencesProps.value.header, ...props.header };
   if (props.sidebar) result.sidebar = { ...preferencesProps.value.sidebar, ...props.sidebar };
@@ -224,8 +184,16 @@ const events: LayoutEvents = {
   onUserMenuSelect: (key) => emit('user-menu-select', key),
   onNotificationClick: (item) => emit('notification-click', item),
   onFullscreenToggle: (isFullscreen) => emit('fullscreen-toggle', isFullscreen),
-  onThemeToggle: (theme) => emit('theme-toggle', theme),
-  onLocaleChange: (locale) => emit('locale-change', locale),
+  onThemeToggle: (theme) => {
+    // 同步更新偏好设置
+    preferencesManager?.setPreferences({ theme: { mode: theme as 'light' | 'dark' } });
+    emit('theme-toggle', theme);
+  },
+  onLocaleChange: (locale) => {
+    // 同步更新偏好设置
+    preferencesManager?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
+    emit('locale-change', locale);
+  },
   onLockScreen: () => emit('lock-screen'),
   onLogout: () => emit('logout'),
   onPanelCollapse: (collapsed) => {

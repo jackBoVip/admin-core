@@ -3,23 +3,13 @@
  * @description 用于文本输入，支持防抖
  */
 import React, { memo, useState, useCallback, useRef, useEffect, useId } from 'react';
-import { INPUT_DEBOUNCE_MS, INPUT_MAX_LENGTH } from '@admin-core/preferences';
+import { INPUT_DEBOUNCE_MS, INPUT_MAX_LENGTH, type InputItemBaseProps } from '@admin-core/preferences';
 
-export interface InputItemProps {
-  /** 标签文本 */
-  label: string;
+export interface InputItemProps extends InputItemBaseProps {
   /** 当前值 */
   value: string;
   /** 值变化回调 */
   onChange: (value: string) => void;
-  /** 占位符 */
-  placeholder?: string;
-  /** 是否禁用 */
-  disabled?: boolean;
-  /** 防抖延迟 (ms) */
-  debounce?: number;
-  /** 最大长度 */
-  maxLength?: number;
 }
 
 export const InputItem: React.FC<InputItemProps> = memo(({

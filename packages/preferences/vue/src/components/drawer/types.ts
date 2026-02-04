@@ -3,7 +3,13 @@
  * @description 导出所有抽屉组件的 Props 类型，供外部使用
  */
 
-import type { LocaleMessages } from '@admin-core/preferences';
+import type {
+  InputItemBaseProps,
+  SelectItemBaseProps,
+  SliderItemBaseProps,
+  SwitchItemBaseProps,
+  TabComponentProps,
+} from '@admin-core/preferences';
 
 /**
  * PreferencesDrawer Props
@@ -38,43 +44,25 @@ export interface BlockProps {
 /**
  * SwitchItem Props
  */
-export interface SwitchItemProps {
-  /** 标签文本 */
-  label: string;
+export interface SwitchItemProps extends SwitchItemBaseProps {
   /** 当前值 */
   modelValue: boolean;
-  /** 是否禁用 */
-  disabled?: boolean;
 }
 
 /**
  * SelectItem Props
  */
-export interface SelectItemProps {
-  /** 标签文本 */
-  label: string;
+export interface SelectItemProps extends SelectItemBaseProps {
   /** 当前值 */
   modelValue: string | number;
-  /** 选项列表 */
-  options: Array<{ label: string; value: string | number }>;
-  /** 是否禁用 */
-  disabled?: boolean;
 }
 
 /**
  * SliderItem Props
  */
-export interface SliderItemProps {
+export interface SliderItemProps extends SliderItemBaseProps {
   /** 当前值 */
   modelValue: number;
-  /** 最小值 */
-  min: number;
-  /** 最大值 */
-  max: number;
-  /** 步进值 */
-  step?: number;
-  /** 是否禁用 */
-  disabled?: boolean;
   /** 格式化显示值 */
   formatValue?: (value: number) => string;
 }
@@ -82,45 +70,27 @@ export interface SliderItemProps {
 /**
  * InputItem Props
  */
-export interface InputItemProps {
-  /** 标签文本 */
-  label: string;
+export interface InputItemProps extends InputItemBaseProps {
   /** 当前值 */
   modelValue: string;
-  /** 占位符 */
-  placeholder?: string;
-  /** 是否禁用 */
-  disabled?: boolean;
 }
 
 /**
  * AppearanceTab Props
  */
-export interface AppearanceTabProps {
-  /** 当前语言包 */
-  locale: LocaleMessages;
-}
+export type AppearanceTabProps = TabComponentProps;
 
 /**
  * LayoutTab Props
  */
-export interface LayoutTabProps {
-  /** 当前语言包 */
-  locale: LocaleMessages;
-}
+export type LayoutTabProps = TabComponentProps;
 
 /**
  * ShortcutKeysTab Props
  */
-export interface ShortcutKeysTabProps {
-  /** 当前语言包 */
-  locale: LocaleMessages;
-}
+export type ShortcutKeysTabProps = TabComponentProps;
 
 /**
  * GeneralTab Props
  */
-export interface GeneralTabProps {
-  /** 当前语言包 */
-  locale: LocaleMessages;
-}
+export type GeneralTabProps = TabComponentProps;

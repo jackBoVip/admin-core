@@ -6,6 +6,74 @@
 import type { MenuItem } from '../types';
 
 /**
+ * 菜单路径索引结构
+ */
+export interface MenuPathIndex {
+  byKey: Map<string, MenuItem>;
+  byPath: Map<string, MenuItem>;
+  chainByKey: Map<string, string[]>;
+  chainByPath: Map<string, string[]>;
+  pathItems: MenuItem[];
+}
+
+/**
+ * 构建菜单路径索引
+ */
+export function buildMenuPathIndex(menus: MenuItem[]): MenuPathIndex {
+  const byKey = new Map<string, MenuItem>();
+  const byPath = new Map<string, MenuItem>();
+  const chainByKey = new Map<string, string[]>();
+  const chainByPath = new Map<string, string[]>();
+  const pathItems: MenuItem[] = [];
+  const stack: string[] = [];
+
+  const walk = (items: MenuItem[]) => {
+    for (const item of items) {
+      if (item.key) {
+        byKey.set(item.key, item);
+      }
+      if (item.path) {
+        byPath.set(item.path, item);
+        pathItems.push(item);
+      }
+      const chain = item.key ? [...stack, item.key] : [...stack];
+      if (item.key) {
+        chainByKey.set(item.key, chain);
+      }
+      if (item.path) {
+        chainByPath.set(item.path, chain);
+      }
+      if (item.key) {
+        stack.push(item.key);
+      }
+      if (item.children?.length) {
+        walk(item.children);
+      }
+      if (item.key) {
+        stack.pop();
+      }
+    }
+  };
+
+  walk(menus);
+  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
+  return { byKey, byPath, chainByKey, chainByPath, pathItems };
+}
+
+const menuIndexCache = new WeakMap<MenuItem[], MenuPathIndex>();
+
+/**
+ * 获取菜单路径索引（带缓存）
+ */
+export function getMenuPathIndex(menus: MenuItem[]): MenuPathIndex {
+  const cached = menuIndexCache.get(menus);
+  if (cached) return cached;
+  const index = buildMenuPathIndex(menus);
+  menuIndexCache.set(menus, index);
+  return index;
+}
+
+/**
  * 判断菜单项是否有子菜单
  */
 export function hasChildren(item: MenuItem): boolean {

@@ -3,6 +3,7 @@
  * @description 用于 InputItem、SliderItem 等组件，避免频繁更新
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { createDebouncedCallback } from '@admin-core/preferences';
 
 export interface UseDebouncedValueOptions<T> {
   /** 初始值 */
@@ -30,43 +31,29 @@ export function useDebouncedValue<T>({
   delay = 300,
 }: UseDebouncedValueOptions<T>): UseDebouncedValueReturn<T> {
   const [localValue, setLocalValueState] = useState(value);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedRef = useRef(createDebouncedCallback(onChange, delay));
 
   // 同步外部值变化（仅在值实际改变时更新，避免不必要的 re-render）
   useEffect(() => {
     setLocalValueState(prev => prev !== value ? value : prev);
   }, [value]);
 
-  // 清理定时器
   useEffect(() => {
+    debouncedRef.current.cancel();
+    debouncedRef.current = createDebouncedCallback(onChange, delay);
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      debouncedRef.current.cancel();
     };
-  }, []);
+  }, [onChange, delay]);
 
   // 更新本地值并触发防抖回调
   const setLocalValue = useCallback(
     (newValue: T) => {
       setLocalValueState(newValue);
 
-      // 清除之前的定时器
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-
-      if (delay <= 0) {
-        onChange(newValue);
-        return;
-      }
-
-      // 防抖更新
-      timerRef.current = setTimeout(() => {
-        onChange(newValue);
-      }, delay);
+      debouncedRef.current.trigger(newValue);
     },
-    [onChange, delay]
+    []
   );
 
   return { localValue, setLocalValue };

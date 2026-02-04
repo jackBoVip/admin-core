@@ -3,19 +3,13 @@
  * @description 完全自定义样式，解决原生 select 无法自定义下拉菜单的问题
  */
 import { memo, useCallback, useId, useState, useRef, useEffect, useMemo } from 'react';
-import { getIcon } from '@admin-core/preferences';
+import { getIcon, type SelectItemBaseProps } from '@admin-core/preferences';
 
-export interface SelectItemProps {
-  /** 标签文本 */
-  label: string;
+export interface SelectItemProps extends SelectItemBaseProps {
   /** 当前值 */
   value: string | number;
   /** 变更回调 */
   onChange: (value: string | number) => void;
-  /** 选项列表 */
-  options: Array<{ label: string; value: string | number }>;
-  /** 是否禁用 */
-  disabled?: boolean;
 }
 
 // 获取下拉箭头图标

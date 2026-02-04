@@ -3,6 +3,7 @@
  * @description 用于 InputItem、SliderItem 等组件，避免频繁更新
  */
 import { ref, watch, onUnmounted, type Ref } from 'vue';
+import { createDebouncedCallback } from '@admin-core/preferences';
 
 export interface UseDebouncedValueOptions<T> {
   /** 外部模型值 */
@@ -29,16 +30,9 @@ export function useDebouncedValue<T>({
   // 本地值用于即时响应 UI
   const localValue = ref(modelValue.value) as Ref<T>;
 
-  // 防抖定时器 - 使用 ref 确保每个组件实例独立
-  const debounceTimerRef = ref<ReturnType<typeof setTimeout> | null>(null);
-
-  // 清除定时器辅助函数
-  const clearTimer = () => {
-    if (debounceTimerRef.value) {
-      clearTimeout(debounceTimerRef.value);
-      debounceTimerRef.value = null;
-    }
-  };
+  const debounced = createDebouncedCallback((value: T) => {
+    modelValue.value = value;
+  }, delay);
 
   // 同步外部值变化
   watch(modelValue, (newVal) => {
@@ -51,24 +45,12 @@ export function useDebouncedValue<T>({
   const handleInput = (value: T) => {
     localValue.value = value;
 
-    // 清除之前的定时器
-    clearTimer();
-
-    if (delay <= 0) {
-      modelValue.value = value;
-      return;
-    }
-
-    // 防抖更新
-    debounceTimerRef.value = setTimeout(() => {
-      modelValue.value = value;
-      debounceTimerRef.value = null;
-    }, delay);
+    debounced.trigger(value);
   };
 
   // 清理定时器
   onUnmounted(() => {
-    clearTimer();
+    debounced.cancel();
   });
 
   return { localValue, handleInput };

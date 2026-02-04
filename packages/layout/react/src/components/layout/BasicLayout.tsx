@@ -8,7 +8,7 @@
 import { useEffect, useState, useMemo, type ReactNode, type CSSProperties } from 'react';
 import type { BasicLayoutProps, LayoutEvents, RouterConfig, MenuItem, TabItem, NotificationItem, BreadcrumbItem } from '@admin-core/layout';
 import type { SupportedLocale } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps } from '@admin-core/layout';
+import { mapPreferencesToLayoutProps, buildMenuPathIndex } from '@admin-core/layout';
 import { LayoutProvider, useLayoutComputed, useLayoutCSSVars, useLayoutState, useLayoutContext } from '../../hooks';
 import { useResponsive } from '../../hooks/use-layout-state';
 import { logger } from '@admin-core/layout';
@@ -28,47 +28,6 @@ import { LayoutOverlay } from './LayoutOverlay';
 import { HorizontalMenu } from '../menu';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
 import { ErrorBoundary } from '../ErrorBoundary';
-
-function buildMenuPathIndex(menus: MenuItem[]) {
-  const byKey = new Map<string, MenuItem>();
-  const byPath = new Map<string, MenuItem>();
-  const chainByKey = new Map<string, string[]>();
-  const chainByPath = new Map<string, string[]>();
-  const pathItems: MenuItem[] = [];
-  const stack: string[] = [];
-
-  const walk = (items: MenuItem[]) => {
-    for (const item of items) {
-      if (item.key) {
-        byKey.set(item.key, item);
-      }
-      if (item.path) {
-        byPath.set(item.path, item);
-        pathItems.push(item);
-      }
-      const chain = item.key ? [...stack, item.key] : [...stack];
-      if (item.key) {
-        chainByKey.set(item.key, chain);
-      }
-      if (item.path) {
-        chainByPath.set(item.path, chain);
-      }
-      if (item.key) {
-        stack.push(item.key);
-      }
-      if (item.children?.length) {
-        walk(item.children);
-      }
-      if (item.key) {
-        stack.pop();
-      }
-    }
-  };
-
-  walk(menus);
-  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
-  return { byKey, byPath, chainByKey, chainByPath, pathItems };
-}
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
@@ -477,7 +436,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   }, []);
 
   const {
-    locale = 'zh-CN',
+    locale: localeProp,
     customMessages,
     // Props
     layout: layoutProp,
@@ -542,6 +501,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
 
   // 合并配置（preferences 为底，用户 props 优先）
   const mergedLayout = layoutProp !== undefined ? layoutProp : preferencesProps.layout;
+  const mergedLocale = localeProp ?? preferencesProps.locale ?? 'zh-CN';
   
   // 区域配置（header, sidebar, footer 等）- 较少变化
   const regionConfig = useMemo(() => ({
@@ -642,8 +602,16 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onUserMenuSelect,
     onNotificationClick,
     onFullscreenToggle,
-    onThemeToggle,
-    onLocaleChange,
+    onThemeToggle: (theme: string) => {
+      // 同步更新偏好设置
+      preferencesManager?.setPreferences({ theme: { mode: theme as 'light' | 'dark' } });
+      onThemeToggle?.(theme);
+    },
+    onLocaleChange: (locale: string) => {
+      // 同步更新偏好设置
+      preferencesManager?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
+      onLocaleChange?.(locale);
+    },
     onLockScreen,
     onLogout,
     onPanelCollapse: (collapsed: boolean) => {
@@ -680,10 +648,10 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
       <LayoutProvider
         props={layoutProps}
         events={events}
-        locale={locale}
+        locale={mergedLocale}
         customMessages={customMessages}
       >
-        <ErrorBoundary resetKey={currentPath ?? locale}>
+        <ErrorBoundary resetKey={currentPath ?? mergedLocale}>
           <LayoutInner {...props} />
         </ErrorBoundary>
       </LayoutProvider>

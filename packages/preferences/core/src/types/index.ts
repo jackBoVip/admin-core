@@ -80,6 +80,11 @@ export type {
   LockScreenComponentProps,
   LockPasswordModalComponentProps,
   PreferencesProviderComponentProps,
+  DrawerItemBaseProps,
+  SwitchItemBaseProps,
+  SelectItemBaseProps,
+  SliderItemBaseProps,
+  InputItemBaseProps,
 } from './components';
 
 // 抽屉 UI 配置类型

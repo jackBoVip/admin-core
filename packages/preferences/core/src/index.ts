@@ -285,6 +285,11 @@ export type {
   LockScreenComponentProps,
   LockPasswordModalComponentProps,
   PreferencesProviderComponentProps,
+  DrawerItemBaseProps,
+  SwitchItemBaseProps,
+  SelectItemBaseProps,
+  SliderItemBaseProps,
+  InputItemBaseProps,
   // 抽屉 UI 配置类型
   FeatureItemConfig,
   FeatureBlockConfig,
@@ -409,6 +414,9 @@ export {
   getChangedKeys,
   hasChanges,
   type DiffResult,
+  // 防抖工具
+  createDebouncedCallback,
+  type DebouncedCallback,
   // 平台检测
   formatShortcut,
   getModifierKeyText,
@@ -461,6 +469,13 @@ export {
   type ShortcutKeyCallbacks,
   type ShortcutManagerOptions,
   type UseShortcutKeysResult,
+  // 水印工具
+  buildWatermarkCacheKey,
+  createWatermarkGenerator,
+  getWatermarkText,
+  type WatermarkConfig,
+  type WatermarkGenerator,
+  type WatermarkGeneratorOptions,
   // 密码工具
   PASSWORD_MIN_LENGTH,
   hashPassword,

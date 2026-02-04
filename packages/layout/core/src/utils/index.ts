@@ -4,6 +4,7 @@
 
 export * from './layout';
 export * from './menu';
+export * from './router';
 export * from './common';
 export * from './tabbar';
 export * from './content';
