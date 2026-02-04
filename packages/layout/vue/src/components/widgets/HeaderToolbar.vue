@@ -47,7 +47,9 @@ const showUser = computed(() => widgets.value.userDropdown !== false);
 <template>
   <div class="header-toolbar flex items-center gap-1">
     <!-- 全局搜索 -->
-    <GlobalSearch v-if="showSearch" />
+    <div v-if="showSearch" class="mr-2">
+      <GlobalSearch />
+    </div>
 
     <!-- 偏好设置 -->
     <PreferencesButton v-if="showPreferences" :on-open-preferences="props.onOpenPreferences" />

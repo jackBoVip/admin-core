@@ -74,7 +74,6 @@ import {
   type ThemeConfig,
   type WatermarkConfig,
   type LockScreenConfig,
-  type RouterConfig,
 } from '@admin-core/layout';
 
 // ============================================================
@@ -1001,7 +1000,7 @@ import {
   createAutoLockTimer,
   createCheckUpdatesTimer,
 } from '@admin-core/layout';
-import type { TabItem, BreadcrumbItem, ThemeConfig, WatermarkConfig, LockScreenConfig, MenuItem, NotificationItem } from '@admin-core/layout';
+// 类型已从上面导入，无需重复导入
 
 /**
  * 创建 Vue Router 适配器

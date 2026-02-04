@@ -44,7 +44,7 @@ export const HeaderToolbar = memo(function HeaderToolbar({
 
   return (
     <div className="header-toolbar flex items-center gap-1">
-      {showSearch && <GlobalSearch />}
+      {showSearch && <div className="mr-2"><GlobalSearch /></div>}
       {showPreferences && <PreferencesButton onOpenPreferences={onOpenPreferences} />}
       {showTheme && <ThemeToggle />}
       {showLanguage && <LanguageToggle />}

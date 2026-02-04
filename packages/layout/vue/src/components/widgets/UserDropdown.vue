@@ -82,7 +82,7 @@ const handleMenuClick = (e: MouseEvent) => {
     <Transition name="dropdown">
       <div
         v-if="isOpen"
-        class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-56"
         data-state="open"
       >
         <!-- 用户信息 -->
@@ -108,11 +108,11 @@ const handleMenuClick = (e: MouseEvent) => {
         <div class="py-1">
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="header-widget-dropdown__item group"
             data-value="profile"
             @click="handleMenuClick"
           >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="8" r="5" />
               <path d="M20 21a8 8 0 1 0-16 0" />
             </svg>
@@ -121,11 +121,11 @@ const handleMenuClick = (e: MouseEvent) => {
 
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="header-widget-dropdown__item group"
             data-value="settings"
             @click="handleMenuClick"
           >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
               <circle cx="12" cy="12" r="3" />
             </svg>
@@ -134,11 +134,11 @@ const handleMenuClick = (e: MouseEvent) => {
 
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="header-widget-dropdown__item group"
             data-value="lock"
             @click="handleMenuClick"
           >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
@@ -150,11 +150,11 @@ const handleMenuClick = (e: MouseEvent) => {
         <div class="border-t py-1 dark:border-gray-700">
           <button
             type="button"
-            class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+            class="header-widget-dropdown__item group text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
             data-value="logout"
             @click="handleMenuClick"
           >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16,17 21,12 16,7" />
               <line x1="21" x2="9" y1="12" y2="12" />

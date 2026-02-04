@@ -7,7 +7,7 @@ import { useLayoutContext } from '../../hooks';
 import { logger } from '@admin-core/layout';
 
 export const FullscreenButton = memo(function FullscreenButton() {
-  const { events, t } = useLayoutContext();
+  const { events } = useLayoutContext();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const checkFullscreen = useCallback(() => {
@@ -70,7 +70,6 @@ export const FullscreenButton = memo(function FullscreenButton() {
     <button
       type="button"
       className="header-widget-btn"
-      title={isFullscreen ? t('layout.header.exitFullscreen') : t('layout.header.fullscreen')}
       data-fullscreen={isFullscreen ? 'true' : undefined}
       onClick={toggleFullscreen}
     >

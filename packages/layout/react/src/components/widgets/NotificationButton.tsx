@@ -210,7 +210,6 @@ export const NotificationButton = memo(function NotificationButton() {
       <button
         type="button"
         className="header-widget-btn relative"
-        title={t('layout.header.notifications')}
         data-state={isOpen ? 'open' : 'closed'}
         data-unread={hasUnread ? 'true' : undefined}
         onClick={handleToggleOpen}
@@ -236,27 +235,27 @@ export const NotificationButton = memo(function NotificationButton() {
 
       {isOpen && (
         <div
-          className="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+          className="header-widget-dropdown__menu header-widget-dropdown__menu--notification absolute right-0 top-full mt-1"
           data-state="open"
         >
-          <div className="flex items-center justify-between border-b px-4 py-3 dark:border-gray-700">
+          <div className="header-notification__header">
             <span className="font-medium">{t('layout.notification.title')}</span>
             {hasUnread && (
-              <span className="text-xs text-gray-500">
+              <span className="header-notification__meta">
                 {unreadCount} {t('layout.notification.unread')}
               </span>
             )}
           </div>
 
           <div
-            className="layout-scroll-container max-h-80 overflow-y-auto"
+            className="header-notification__list layout-scroll-container"
             ref={listRef}
             onScroll={handleScroll}
             onWheel={handleWheel}
             style={{ height: `${viewportHeight}px`, position: 'relative' }}
           >
             {formattedNotifications.length === 0 ? (
-              <div className="py-8 text-center text-gray-400">{t('layout.notification.empty')}</div>
+              <div className="header-notification__empty">{t('layout.notification.empty')}</div>
             ) : (
               <>
                 <div style={{ height: `${totalHeight}px`, pointerEvents: 'none' }} />
@@ -266,9 +265,7 @@ export const NotificationButton = memo(function NotificationButton() {
                     <div
                       key={item.id}
                       data-id={String(item.id)}
-                      className={`layout-list-item flex cursor-pointer gap-3 border-b px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50 ${
-                        !item.read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
-                      }`}
+                      className="header-notification__item layout-list-item"
                       data-read={item.read ? 'true' : 'false'}
                       onClick={handleNotificationItemClick}
                       style={{
@@ -297,12 +294,12 @@ export const NotificationButton = memo(function NotificationButton() {
                           <span className={`truncate font-medium ${!item.read ? 'text-gray-900 dark:text-gray-100' : ''}`}>
                             {item.title}
                           </span>
-                          {!item.read && <span className="h-2 w-2 shrink-0 rounded-full bg-blue-500" />}
+                          {!item.read && <span className="header-notification__unread-dot shrink-0" />}
                         </div>
                         {item.description && (
-                          <p className="mt-0.5 truncate text-sm text-gray-500">{item.description}</p>
+                          <p className="header-notification__description truncate">{item.description}</p>
                         )}
-                        <span className="mt-1 text-xs text-gray-400">{item.timeLabel}</span>
+                        <span className="header-notification__time">{item.timeLabel}</span>
                       </div>
                     </div>
                   );
@@ -311,17 +308,17 @@ export const NotificationButton = memo(function NotificationButton() {
             )}
           </div>
 
-          <div className="flex border-t dark:border-gray-700">
+          <div className="header-notification__footer">
             <button
               type="button"
-              className="flex-1 py-2.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-700/50"
+              className="header-notification__footer-button"
             >
               {t('layout.notification.markAllRead')}
             </button>
-            <div className="w-px bg-gray-200 dark:bg-gray-700" />
+            <div className="header-notification__divider" />
             <button
               type="button"
-              className="flex-1 py-2.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-700/50"
+              className="header-notification__footer-button"
             >
               {t('layout.notification.viewAll')}
             </button>

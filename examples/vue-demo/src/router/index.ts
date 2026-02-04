@@ -13,6 +13,7 @@ const ComponentsButton = () => import('../views/components/Button.vue');
 const ComponentsForm = () => import('../views/components/Form.vue');
 const ComponentsTable = () => import('../views/components/Table.vue');
 const About = () => import('../views/About.vue');
+const FeatureClipboard = () => import('../views/feature/Clipboard.vue');
 
 const router = createRouter({
   history: createWebHistory(),
@@ -83,6 +84,15 @@ const router = createRouter({
       path: '/components/table',
       name: 'ComponentsTable',
       component: ComponentsTable,
+    },
+    {
+      path: '/feature',
+      redirect: '/feature/clipboard',
+    },
+    {
+      path: '/feature/clipboard',
+      name: 'FeatureClipboard',
+      component: FeatureClipboard,
     },
     {
       path: '/about',

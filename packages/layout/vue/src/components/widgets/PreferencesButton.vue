@@ -1,28 +1,22 @@
 <script setup lang="ts">
 /**
  * 偏好设置按钮
- * @description 打开偏好设置抽屉
+ * @description 打开偏好设置抽屉，hover时齿轮旋转
  */
-import { useLayoutContext } from '../../composables';
 
 interface Props {
   onOpenPreferences?: () => void;
 }
 
 const props = defineProps<Props>();
-const context = useLayoutContext();
-
-const handleClick = () => {
-  props.onOpenPreferences?.();
-};
 </script>
 
 <template>
   <button
     type="button"
     class="header-widget-btn"
-    :title="context.t('layout.widgetLegacy.preferences.tooltip')"
-    @click="handleClick"
+    data-widget="preferences"
+    @click="props.onOpenPreferences?.()"
   >
     <svg
       class="h-4 w-4"

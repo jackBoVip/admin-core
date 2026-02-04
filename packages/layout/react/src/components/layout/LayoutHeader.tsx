@@ -7,6 +7,7 @@ import { useMemo, memo, type ReactNode } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useHeaderState, useSidebarState } from '../../hooks/use-layout-state';
 import { LAYOUT_ICONS, ANIMATION_CLASSES, getIconPath, getIconViewBox } from '@admin-core/layout';
+import { RefreshButton } from '../widgets';
 
 export interface LayoutHeaderProps {
   logo?: ReactNode;
@@ -55,6 +56,9 @@ export const LayoutHeader = memo(function LayoutHeader({
     computed.showSidebar && 
     context.props.widgets?.sidebarToggle !== false &&
     !computed.isSidebarMixedNav;
+
+  // 是否显示刷新按钮（左侧）
+  const showRefresh = context.props.widgets?.refresh !== false;
 
   // 折叠图标配置（根据状态显示不同图标）
   const headerToggleIconName = useMemo(() => 
@@ -135,30 +139,35 @@ export const LayoutHeader = memo(function LayoutHeader({
           </div>
         )}
 
-        {/* 侧边栏切换按钮 */}
-        {showSidebarToggle && (
-          <button
-            type="button"
-            className="layout-header__toggle mr-2 flex h-9 w-9 items-center justify-center rounded-md transition-colors header-light:hover:bg-black/5 header-dark:hover:bg-white/10"
-            title={context.t('layout.header.toggleSidebar')}
-            onClick={toggleSidebar}
-          >
-            <svg
-              className={headerToggleIconProps.className}
-              viewBox={headerToggleIconProps.viewBox}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* 左侧按钮组（统一间距） */}
+        <div className="layout-header__left-actions flex items-center gap-1 shrink-0">
+          {/* 侧边栏切换按钮 */}
+          {showSidebarToggle && (
+            <button
+              type="button"
+              className="header-widget-btn"
+              onClick={toggleSidebar}
             >
-              <path d={headerToggleIconProps.path} />
-            </svg>
-          </button>
-        )}
+              <svg
+                className={headerToggleIconProps.className}
+                viewBox={headerToggleIconProps.viewBox}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={headerToggleIconProps.path} />
+              </svg>
+            </button>
+          )}
+
+          {/* 左侧刷新按钮（与 vben 保持一致位置） */}
+          {showRefresh && <RefreshButton />}
+        </div>
 
         {/* 左侧插槽 */}
-        {left && <div className="layout-header__left shrink-0">{left}</div>}
+        {left && <div className="layout-header__left shrink-0 ml-3">{left}</div>}
 
         {/* 菜单区域（顶部导航模式） */}
         {showHeaderMenu ? (

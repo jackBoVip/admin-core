@@ -77,7 +77,6 @@ onUnmounted(() => {
   <button
     type="button"
     class="header-widget-btn"
-    :title="isFullscreen ? context.t('layout.header.exitFullscreen') : context.t('layout.header.fullscreen')"
     :data-fullscreen="isFullscreen ? 'true' : undefined"
     @click="toggleFullscreen"
   >

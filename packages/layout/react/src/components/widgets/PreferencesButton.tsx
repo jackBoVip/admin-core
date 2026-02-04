@@ -1,9 +1,8 @@
 /**
  * 偏好设置按钮
- * @description 打开偏好设置抽屉
+ * @description 打开偏好设置抽屉，hover时齿轮旋转
  */
 import { memo } from 'react';
-import { useLayoutContext } from '../../hooks';
 
 export interface PreferencesButtonProps {
   onOpenPreferences?: () => void;
@@ -12,13 +11,12 @@ export interface PreferencesButtonProps {
 export const PreferencesButton = memo(function PreferencesButton({
   onOpenPreferences,
 }: PreferencesButtonProps) {
-  const { t } = useLayoutContext();
 
   return (
     <button
       type="button"
       className="header-widget-btn"
-      title={t('layout.widgetLegacy.preferences.tooltip')}
+      data-widget="preferences"
       onClick={onOpenPreferences}
     >
       <svg

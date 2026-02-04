@@ -374,7 +374,6 @@ function AppLayout() {
       userInfo={userInfo}
       logo={{ source: 'https://vitejs.dev/logo.svg' }}
       appName="Admin"
-      locale="zh-CN"
       onLogout={handleLogout}
       onGlobalSearch={handleSearch}
       onRefresh={handleRefresh}

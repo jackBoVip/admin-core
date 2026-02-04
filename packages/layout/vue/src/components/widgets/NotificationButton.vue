@@ -203,7 +203,6 @@ const handleNotificationClick = (e: MouseEvent) => {
     <button
       type="button"
       class="header-widget-btn relative"
-      :title="context.t('layout.header.notifications')"
       :data-unread="hasUnread ? 'true' : undefined"
       :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
@@ -225,13 +224,13 @@ const handleNotificationClick = (e: MouseEvent) => {
     <Transition name="dropdown">
       <div
         v-if="isOpen"
-        class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        class="header-widget-dropdown__menu header-widget-dropdown__menu--notification absolute right-0 top-full mt-1"
         data-state="open"
       >
         <!-- 标题 -->
-        <div class="flex items-center justify-between border-b px-4 py-3 dark:border-gray-700">
+        <div class="header-notification__header">
           <span class="font-medium">{{ context.t('layout.notification.title') }}</span>
-          <span v-if="hasUnread" class="text-xs text-gray-500">
+          <span v-if="hasUnread" class="header-notification__meta">
             {{ unreadCount }} {{ context.t('layout.notification.unread') }}
           </span>
         </div>
@@ -239,12 +238,12 @@ const handleNotificationClick = (e: MouseEvent) => {
         <!-- 通知列表 -->
         <div
           ref="listRef"
-          class="layout-scroll-container max-h-80 overflow-y-auto"
+          class="header-notification__list layout-scroll-container"
           :style="{ height: `${viewportHeight}px`, position: 'relative' }"
           @scroll="handleScroll"
           @wheel="handleWheel"
         >
-          <div v-if="formattedNotifications.length === 0" class="py-8 text-center text-gray-400">
+          <div v-if="formattedNotifications.length === 0" class="header-notification__empty">
             {{ context.t('layout.notification.empty') }}
           </div>
           <template v-else>
@@ -253,8 +252,7 @@ const handleNotificationClick = (e: MouseEvent) => {
               v-for="(item, index) in visibleNotifications"
               :key="item.id"
               :data-id="String(item.id)"
-              class="layout-list-item flex cursor-pointer gap-3 border-b px-4 py-3 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
-              :class="{ 'bg-blue-50/50 dark:bg-blue-900/10': !item.read }"
+              class="header-notification__item layout-list-item"
               :data-read="item.read ? 'true' : 'false'"
               :style="{
                 position: 'absolute',
@@ -301,12 +299,12 @@ const handleNotificationClick = (e: MouseEvent) => {
                   <span class="truncate font-medium" :class="{ 'text-gray-900 dark:text-gray-100': !item.read }">
                     {{ item.title }}
                   </span>
-                  <span v-if="!item.read" class="h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                  <span v-if="!item.read" class="header-notification__unread-dot shrink-0" />
                 </div>
-                <p v-if="item.description" class="mt-0.5 truncate text-sm text-gray-500">
+                <p v-if="item.description" class="header-notification__description truncate">
                   {{ item.description }}
                 </p>
-                <span class="mt-1 text-xs text-gray-400">
+                <span class="header-notification__time">
                   {{ item.timeLabel }}
                 </span>
               </div>
@@ -315,17 +313,17 @@ const handleNotificationClick = (e: MouseEvent) => {
         </div>
         
         <!-- 底部操作 -->
-        <div class="flex border-t dark:border-gray-700">
+        <div class="header-notification__footer">
           <button
             type="button"
-            class="flex-1 py-2.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-700/50"
+            class="header-notification__footer-button"
           >
             {{ context.t('layout.notification.markAllRead') }}
           </button>
-          <div class="w-px bg-gray-200 dark:bg-gray-700" />
+          <div class="header-notification__divider" />
           <button
             type="button"
-            class="flex-1 py-2.5 text-sm text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:hover:bg-gray-700/50"
+            class="header-notification__footer-button"
           >
             {{ context.t('layout.notification.viewAll') }}
           </button>
@@ -344,6 +342,6 @@ const handleNotificationClick = (e: MouseEvent) => {
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(0.98);
 }
 </style>

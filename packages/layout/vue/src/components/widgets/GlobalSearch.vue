@@ -328,8 +328,7 @@ const shortcutText = computed(() => {
   <!-- 搜索按钮 -->
   <button
     type="button"
-    class="header-search-btn flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800"
-    :title="context.t('layout.header.search')"
+    class="header-search-btn"
     :data-state="isOpen ? 'open' : 'closed'"
     @click="openSearch"
   >
@@ -338,7 +337,7 @@ const shortcutText = computed(() => {
       <path d="m21 21-4.3-4.3" />
     </svg>
     <span class="hidden md:inline">{{ context.t('layout.header.search') }}</span>
-    <kbd class="hidden rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700 md:inline">
+    <kbd class="hidden md:inline">
       {{ shortcutText }}
     </kbd>
   </button>
@@ -356,12 +355,12 @@ const shortcutText = computed(() => {
         
         <!-- 搜索面板 -->
         <div
-          class="relative w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-800"
+          class="header-search-modal"
           @keydown="handleKeydown"
         >
           <!-- 搜索输入框 -->
-          <div class="flex items-center border-b px-4 dark:border-gray-700">
-            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="header-search-modal__input-wrapper">
+            <svg class="h-5 w-5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8" />
               <path d="m21 21-4.3-4.3" />
             </svg>
@@ -369,10 +368,10 @@ const shortcutText = computed(() => {
               ref="inputRef"
               v-model="keyword"
               type="text"
-              class="flex-1 border-0 bg-transparent px-3 py-4 text-base outline-none placeholder:text-gray-400"
+              class="header-search-modal__input"
               :placeholder="context.t('layout.search.placeholder')"
             />
-            <kbd class="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700">
+            <kbd class="header-search-modal__kbd">
               ESC
             </kbd>
           </div>
@@ -380,13 +379,13 @@ const shortcutText = computed(() => {
           <!-- 搜索结果 -->
           <div
             ref="resultListRef"
-            class="layout-scroll-container max-h-80 overflow-y-auto"
+            class="header-search-modal__results layout-scroll-container"
             :style="{ height: `${viewportHeight}px`, position: 'relative' }"
             @scroll="handleScroll"
-          @wheel="handleWheel"
+            @wheel="handleWheel"
           >
             <!-- 无结果 -->
-            <div v-if="keyword && searchResults.length === 0" class="py-12 text-center text-gray-400">
+            <div v-if="keyword && searchResults.length === 0" class="py-12 text-center text-muted-foreground">
               {{ context.t('layout.search.noResults') }}
             </div>
             
@@ -397,67 +396,63 @@ const shortcutText = computed(() => {
                 v-for="(item, index) in visibleResults"
                 :key="item.key"
                 :data-index="startIndex + index"
-                class="layout-list-item flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors"
-                :class="startIndex + index === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'"
+                class="header-search-modal__item"
                 :data-selected="startIndex + index === selectedIndex ? 'true' : undefined"
                 :style="{
                   position: 'absolute',
-                top: `${(startIndex + index) * itemHeight}px`,
-                  left: 0,
-                  right: 0,
-                height: `${itemHeight}px`,
+                  top: `${(startIndex + index) * itemHeight}px`,
+                  left: '0.5rem',
+                  right: '0.5rem',
+                  height: `${itemHeight}px`,
                 }"
                 @click="handleResultClick"
                 @mouseenter="handleResultMouseEnter"
               >
                 <!-- 图标 -->
-                <div
-                  class="flex h-8 w-8 items-center justify-center rounded-lg"
-                  :class="startIndex + index === selectedIndex ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-700'"
-                >
-                  <span v-if="item.icon" class="text-lg">{{ item.icon }}</span>
-                  <svg v-else class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="header-search-modal__item-icon">
+                  <span v-if="item.icon">{{ item.icon }}</span>
+                  <svg v-else class="h-4 w-4 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
                     <path d="M9 18c-4.51 2-5-2-7-2" />
                   </svg>
                 </div>
                 
                 <!-- 内容 -->
-                <div class="flex-1 overflow-hidden">
-                  <div class="truncate font-medium">{{ item.name }}</div>
-                  <div v-if="item.parentPath" class="truncate text-xs text-gray-400">
+                <div class="header-search-modal__item-content">
+                  <div class="header-search-modal__item-title">{{ item.name }}</div>
+                  <div v-if="item.parentPath" class="header-search-modal__item-path">
                     {{ item.parentPath.join(' / ') }}
                   </div>
                 </div>
                 
                 <!-- 回车提示 -->
-                <span v-if="startIndex + index === selectedIndex" class="text-xs text-gray-400">
+                <span v-if="startIndex + index === selectedIndex" class="text-xs opacity-40">
                   ↵
                 </span>
               </div>
             </template>
             
             <!-- 提示 -->
-            <div v-else class="py-8 text-center text-gray-400">
+            <div v-else class="py-12 text-center text-muted-foreground">
               {{ context.t('layout.search.tips') }}
             </div>
           </div>
           
           <!-- 底部提示 -->
-          <div class="flex items-center gap-4 border-t px-4 py-2 text-xs text-gray-400 dark:border-gray-700">
-            <span class="flex items-center gap-1">
-              <kbd class="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">↑</kbd>
-              <kbd class="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">↓</kbd>
-              {{ context.t('layout.search.navigate') }}
-            </span>
-            <span class="flex items-center gap-1">
-              <kbd class="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">↵</kbd>
-              {{ context.t('layout.search.select') }}
-            </span>
-            <span class="flex items-center gap-1">
-              <kbd class="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">esc</kbd>
-              {{ context.t('layout.search.close') }}
-            </span>
+          <div class="header-search-modal__footer">
+            <div class="header-search-modal__footer-item">
+              <kbd class="header-search-modal__kbd">↑</kbd>
+              <kbd class="header-search-modal__kbd">↓</kbd>
+              <span>{{ context.t('layout.search.navigate') }}</span>
+            </div>
+            <div class="header-search-modal__footer-item">
+              <kbd class="header-search-modal__kbd">↵</kbd>
+              <span>{{ context.t('layout.search.select') }}</span>
+            </div>
+            <div class="header-search-modal__footer-item">
+              <kbd class="header-search-modal__kbd">esc</kbd>
+              <span>{{ context.t('layout.search.close') }}</span>
+            </div>
           </div>
         </div>
       </div>

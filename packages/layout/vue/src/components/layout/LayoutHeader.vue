@@ -6,6 +6,7 @@
 import { computed } from 'vue';
 import { useLayoutContext, useLayoutComputed, useHeaderState, useSidebarState } from '../../composables';
 import { LAYOUT_ICONS, ANIMATION_CLASSES, getIconPath, getIconViewBox } from '@admin-core/layout';
+import { RefreshButton } from '../widgets';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -51,6 +52,9 @@ const showSidebarToggle = computed(() => {
          context.props.widgets?.sidebarToggle !== false &&
          !layoutComputed.value.isSidebarMixedNav;
 });
+
+// 是否显示刷新按钮（左侧）
+const showRefresh = computed(() => context.props.widgets?.refresh !== false);
 
 // 是否显示顶部菜单（顶部导航模式）
 const showHeaderMenu = computed(() => {
@@ -127,29 +131,34 @@ const menuContainerClass = computed(() => [
         </slot>
       </div>
 
-      <!-- 侧边栏切换按钮 -->
-      <button
-        v-if="showSidebarToggle"
-        type="button"
-        class="layout-header__toggle mr-2 flex h-9 w-9 items-center justify-center rounded-md transition-colors header-light:hover:bg-black/5 header-dark:hover:bg-white/10"
-        :title="context.t('layout.header.toggleSidebar')"
-        @click="toggleSidebar"
-      >
-        <svg 
-          :class="headerToggleIconProps.className"
-          :viewBox="headerToggleIconProps.viewBox"
-          fill="none" 
-          stroke="currentColor" 
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+      <!-- 左侧按钮组（统一间距） -->
+      <div class="layout-header__left-actions flex items-center gap-1 shrink-0">
+        <!-- 侧边栏切换按钮 -->
+        <button
+          v-if="showSidebarToggle"
+          type="button"
+          class="header-widget-btn"
+          @click="toggleSidebar"
         >
-          <path :d="headerToggleIconProps.path" />
-        </svg>
-      </button>
+          <svg 
+            :class="headerToggleIconProps.className"
+            :viewBox="headerToggleIconProps.viewBox"
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path :d="headerToggleIconProps.path" />
+          </svg>
+        </button>
+
+        <!-- 左侧刷新按钮（与 vben 保持一致位置） -->
+        <RefreshButton v-if="showRefresh" />
+      </div>
 
       <!-- 左侧插槽 -->
-      <div v-if="$slots.left" class="layout-header__left shrink-0">
+      <div v-if="$slots.left" class="layout-header__left shrink-0 ml-3">
         <slot name="left" />
       </div>
 

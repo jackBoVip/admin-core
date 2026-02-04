@@ -414,7 +414,6 @@ const handleLockScreen = () => {
     :user-info="userInfo"
     :logo="{ source: 'https://vitejs.dev/logo.svg' }"
     app-name="Admin"
-    locale="zh-CN"
     @logout="handleLogout"
     @global-search="handleSearch"
     @refresh="handleRefresh"

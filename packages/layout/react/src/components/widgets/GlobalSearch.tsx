@@ -303,8 +303,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
     <>
       <button
         type="button"
-        className="header-search-btn flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-100/50 px-3 py-1.5 text-sm text-gray-500 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800/50 dark:hover:bg-gray-800"
-        title={t('layout.header.search')}
+        className="header-search-btn"
         data-state={isOpen ? 'open' : 'closed'}
         onClick={openSearch}
       >
@@ -321,7 +320,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
           <path d="m21 21-4.3-4.3" />
         </svg>
         <span className="hidden md:inline">{t('layout.header.search')}</span>
-        <kbd className="hidden rounded border border-gray-300 bg-white px-1.5 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700 md:inline">
+        <kbd className="hidden md:inline">
           {shortcutText}
         </kbd>
       </button>
@@ -331,13 +330,10 @@ export const GlobalSearch = memo(function GlobalSearch() {
           <div className="fixed inset-0 z-9999 flex items-start justify-center px-4 pt-20" data-state="open">
             <div className="fixed inset-0 bg-black/50" onClick={closeSearch} />
 
-            <div
-              className="relative w-full max-w-xl overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-800"
-              onKeyDown={handleKeydown}
-            >
-              <div className="flex items-center border-b px-4 dark:border-gray-700">
+            <div className="header-search-modal" onKeyDown={handleKeydown}>
+              <div className="header-search-modal__input-wrapper">
                 <svg
-                  className="h-5 w-5 text-gray-400"
+                  className="h-5 w-5 text-muted-foreground"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -353,92 +349,83 @@ export const GlobalSearch = memo(function GlobalSearch() {
                   type="text"
                   value={keyword}
                   onChange={handleKeywordChange}
-                  className="flex-1 border-0 bg-transparent px-3 py-4 text-base outline-none placeholder:text-gray-400"
+                  className="header-search-modal__input"
                   placeholder={t('layout.search.placeholder')}
                 />
-                <kbd className="rounded border border-gray-300 bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-500 dark:border-gray-600 dark:bg-gray-700">
-                  ESC
-                </kbd>
+                <kbd className="header-search-modal__kbd">ESC</kbd>
               </div>
 
               <div
                 ref={resultListRef}
-                className="layout-scroll-container max-h-80 overflow-y-auto"
+                className="header-search-modal__results layout-scroll-container"
                 style={{ height: `${viewportHeight}px`, position: 'relative' }}
                 onScroll={handleScroll}
                 onWheel={handleWheel}
               >
                 {keyword && searchResults.length === 0 ? (
-                  <div className="py-12 text-center text-gray-400">{t('layout.search.noResults')}</div>
+                  <div className="py-12 text-center text-muted-foreground">{t('layout.search.noResults')}</div>
                 ) : searchResults.length > 0 ? (
                   <>
                     <div style={{ height: `${totalHeight}px`, pointerEvents: 'none' }} />
                     {visibleResults.map((item, index) => {
                       const actualIndex = startIndex + index;
+                      const isSelected = actualIndex === selectedIndex;
                       return (
                         <div
                           key={item.key}
                           data-index={actualIndex}
-                          className={`layout-list-item flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors ${
-                            actualIndex === selectedIndex
-                              ? 'bg-primary/10 text-primary'
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50'
-                          }`}
-                          data-selected={actualIndex === selectedIndex ? 'true' : undefined}
+                          className="header-search-modal__item"
+                          data-selected={isSelected ? 'true' : undefined}
                           onClick={handleResultClick}
                           onMouseEnter={handleResultMouseEnter}
                           style={{
                             position: 'absolute',
                             top: `${actualIndex * itemHeight}px`,
-                            left: 0,
-                            right: 0,
+                            left: '0.5rem',
+                            right: '0.5rem',
                             height: `${itemHeight}px`,
                           }}
                         >
-                          <div
-                            className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                              actualIndex === selectedIndex ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-700'
-                            }`}
-                          >
+                          <div className="header-search-modal__item-icon">
                             {item.icon ? (
-                              <span className="text-lg">{item.icon}</span>
+                              <span>{item.icon}</span>
                             ) : (
-                              <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                              <svg className="h-4 w-4 opacity-60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                                 <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
                                 <path d="M9 18c-4.51 2-5-2-7-2" />
                               </svg>
                             )}
                           </div>
-                          <div className="flex-1 overflow-hidden">
-                            <div className="truncate font-medium">{item.name}</div>
+                          <div className="header-search-modal__item-content">
+                            <div className="header-search-modal__item-title">{item.name}</div>
                             {item.parentPath && (
-                              <div className="truncate text-xs text-gray-400">{item.parentPath.join(' / ')}</div>
+                              <div className="header-search-modal__item-path">{item.parentPath.join(' / ')}</div>
                             )}
                           </div>
-                          {actualIndex === selectedIndex && <span className="text-xs text-gray-400">↵</span>}
+                          {isSelected && <span className="text-xs opacity-40">↵</span>}
                         </div>
                       );
                     })}
                   </>
                 ) : (
-                  <div className="py-8 text-center text-gray-400">{t('layout.search.tips')}</div>
+                  <div className="py-12 text-center text-muted-foreground">{t('layout.search.tips')}</div>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 border-t px-4 py-2 text-xs text-gray-400 dark:border-gray-700">
-                <span className="flex items-center gap-1">
-                  <kbd className="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">↑</kbd>
-                  <kbd className="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">↓</kbd>
-                  {t('layout.search.navigate')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">↵</kbd>
-                  {t('layout.search.select')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <kbd className="rounded border border-gray-300 bg-gray-100 px-1 py-0.5 dark:border-gray-600 dark:bg-gray-700">esc</kbd>
-                  {t('layout.search.close')}
-                </span>
+              <div className="header-search-modal__footer">
+                <div className="header-search-modal__footer-item">
+                  <kbd className="header-search-modal__kbd">↑</kbd>
+                  <kbd className="header-search-modal__kbd">↓</kbd>
+                  <span>{t('layout.search.navigate')}</span>
+                </div>
+                <div className="header-search-modal__footer-item">
+                  <kbd className="header-search-modal__kbd">↵</kbd>
+                  <span>{t('layout.search.select')}</span>
+                </div>
+                <div className="header-search-modal__footer-item">
+                  <kbd className="header-search-modal__kbd">esc</kbd>
+                  <span>{t('layout.search.close')}</span>
+                </div>
               </div>
             </div>
           </div>,

@@ -46,11 +46,10 @@ const closeDropdown = () => {
 </script>
 
 <template>
-  <div class="header-widget-dropdown relative" :data-state="isOpen ? 'open' : 'closed'" @mouseleave="closeDropdown">
+  <div class="header-widget-dropdown relative" :data-state="isOpen ? 'open' : 'closed'">
     <button
       type="button"
       class="header-widget-btn"
-      :title="context.t('layout.header.toggleLanguage')"
       :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
     >
@@ -65,24 +64,36 @@ const closeDropdown = () => {
     <Transition name="dropdown">
       <div
         v-if="isOpen"
-        class="header-widget-dropdown__menu absolute right-0 top-full z-50 mt-1 min-w-[140px] rounded-lg border bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        class="header-widget-dropdown__menu header-widget-dropdown__menu--compact absolute right-0 top-full pt-1"
         data-state="open"
+        @mouseleave="closeDropdown"
       >
-        <button
-          v-for="option in languageOptions"
-          :key="option.value"
-          type="button"
-          class="flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-          :class="{ 'text-primary bg-primary/10': currentLocale === option.value }"
-          :data-selected="currentLocale === option.value ? 'true' : undefined"
-          :data-value="option.value"
-          @click="handleLocaleOptionClick"
-        >
-          <span>{{ option.label }}</span>
-        </button>
+        <!-- 内容区域 -->
+        <div class="header-widget-dropdown__content">
+          <button
+            v-for="option in languageOptions"
+            :key="option.value"
+            type="button"
+            class="header-widget-dropdown__item"
+            :data-selected="currentLocale === option.value ? 'true' : undefined"
+            :data-value="option.value"
+            @click="handleLocaleOptionClick"
+          >
+            <span>{{ option.label }}</span>
+          </button>
+        </div>
       </div>
     </Transition>
   </div>
+
+  <!-- 点击外部关闭 -->
+  <Teleport to="body">
+    <div
+      v-if="isOpen"
+      class="fixed inset-0 z-40"
+      @click="closeDropdown"
+    />
+  </Teleport>
 </template>
 
 <style scoped>
@@ -94,6 +105,6 @@ const closeDropdown = () => {
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(0.98);
 }
 </style>
