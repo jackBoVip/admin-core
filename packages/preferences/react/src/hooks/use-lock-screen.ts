@@ -1,6 +1,6 @@
+import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
 import { useEffect, useRef, useCallback } from 'react';
 import { usePreferences } from './use-preferences';
-import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
 
 /**
  * 锁屏 Hook

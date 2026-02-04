@@ -4,8 +4,8 @@
  */
 
 import { BREAKPOINTS } from '../constants';
-import type { TabItem } from '../types';
 import { TabManager } from './layout';
+import type { TabItem } from '../types';
 
 /**
  * 类名参数类型
@@ -278,7 +278,7 @@ export const THEME_CLASSES = {
 /**
  * 防抖函数
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
@@ -298,7 +298,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * 节流函数
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {

@@ -189,12 +189,12 @@ html {
     --sidebar-extra: oklch(0.16 0.02 250);
     --sidebar-extra-light: var(--background);
     
-    /* 顶栏颜色 */
-    --header-light: oklch(1 0 0);
-    --header-light-foreground: oklch(0.15 0.02 250);
-    --header-dark: oklch(0.12 0.02 250);
-    --header-dark-foreground: oklch(0.98 0 0);
-    --header-dark-border: oklch(0.2 0.02 250);
+    /* 顶栏颜色 - 支持背景跟随主题色 */
+    --header-light: var(--header-bg-light, oklch(1 0 0));
+    --header-light-foreground: var(--header-fg-light, oklch(0.15 0.02 250));
+    --header-dark: var(--header-bg-dark, oklch(0.12 0.02 250));
+    --header-dark-foreground: var(--header-fg-dark, oklch(0.98 0 0));
+    --header-dark-border: var(--header-border-dark, oklch(0.2 0.02 250));
     
     /* 标签栏颜色 */
     --tabbar-light: oklch(1 0 0);

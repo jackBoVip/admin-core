@@ -2,8 +2,8 @@
  * 输入框设置项组件
  * @description 用于文本输入，支持防抖
  */
-import React, { memo, useState, useCallback, useRef, useEffect, useId } from 'react';
 import { INPUT_DEBOUNCE_MS, INPUT_MAX_LENGTH, type InputItemBaseProps } from '@admin-core/preferences';
+import React, { memo, useState, useCallback, useRef, useEffect, useId } from 'react';
 
 export interface InputItemProps extends InputItemBaseProps {
   /** 当前值 */

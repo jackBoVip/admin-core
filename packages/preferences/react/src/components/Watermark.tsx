@@ -2,14 +2,14 @@
  * 水印组件
  * @description 根据偏好设置渲染全局水印，带缓存优化
  */
-import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { usePreferences } from '../hooks';
 import {
   createWatermarkGenerator,
   getWatermarkText,
   type WatermarkConfig,
 } from '@admin-core/preferences';
+import React, { memo, useMemo, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { usePreferences } from '../hooks';
 
 export const Watermark: React.FC = memo(() => {
   const { preferences } = usePreferences();

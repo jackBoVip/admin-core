@@ -2,8 +2,8 @@
  * 国际化导出
  */
 
-import zhCN from './zh-CN';
 import enUS from './en-US';
+import zhCN from './zh-CN';
 
 export { zhCN, enUS };
 

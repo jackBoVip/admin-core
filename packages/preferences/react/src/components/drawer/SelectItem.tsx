@@ -2,8 +2,8 @@
  * 选择设置项组件 - 自定义下拉菜单版本
  * @description 完全自定义样式，解决原生 select 无法自定义下拉菜单的问题
  */
-import { memo, useCallback, useId, useState, useRef, useEffect, useMemo } from 'react';
 import { getIcon, type SelectItemBaseProps } from '@admin-core/preferences';
+import { memo, useCallback, useId, useState, useRef, useEffect, useMemo } from 'react';
 
 export interface SelectItemProps extends SelectItemBaseProps {
   /** 当前值 */

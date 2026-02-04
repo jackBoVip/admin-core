@@ -1,8 +1,8 @@
 /**
  * 设置区块组件
  */
-import type { ReactNode } from 'react';
 import { memo } from 'react';
+import type { ReactNode } from 'react';
 
 export interface BlockProps {
   /** 区块标题 */

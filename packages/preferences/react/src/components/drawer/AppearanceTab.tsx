@@ -2,8 +2,6 @@
  * 外观设置标签页
  * @description 主题模式、内置主题、圆角、字体大小等设置
  */
-import React, { memo, useRef, useCallback, useMemo, useEffect, useState } from 'react';
-import { usePreferences, useTheme } from '../../hooks';
 import {
   BUILT_IN_THEME_PRESETS,
   RADIUS_OPTIONS,
@@ -18,9 +16,11 @@ import {
   type AppearanceTabConfig,
   type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
+import React, { memo, useRef, useCallback, useMemo, useEffect, useState } from 'react';
+import { usePreferences, useTheme } from '../../hooks';
 import { Block } from './Block';
-import { SwitchItem } from './SwitchItem';
 import { SliderItem } from './SliderItem';
+import { SwitchItem } from './SwitchItem';
 
 // 图标缓存（移到组件外部避免重复获取）
 const ICONS = {

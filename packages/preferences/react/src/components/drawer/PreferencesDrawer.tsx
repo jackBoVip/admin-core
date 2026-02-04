@@ -2,9 +2,6 @@
  * 偏好设置抽屉组件
  * @description 完整的偏好设置面板
  */
-import React, { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
-import { usePreferences } from '../../hooks';
-import { createPortal } from 'react-dom';
 import {
   getIcon,
   getLocaleByPreferences,
@@ -23,10 +20,13 @@ import {
   type DrawerHeaderActionType,
   type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences';
+import React, { useState, useMemo, useCallback, useEffect, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
+import { usePreferences } from '../../hooks';
 import { AppearanceTab } from './AppearanceTab';
+import { GeneralTab } from './GeneralTab';
 import { LayoutTab } from './LayoutTab';
 import { ShortcutKeysTab } from './ShortcutKeysTab';
-import { GeneralTab } from './GeneralTab';
 
 // 图标缓存（移到组件外部避免重复获取）
 const ICONS = {

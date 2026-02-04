@@ -3,6 +3,13 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
+  flattenMenus,
+  filterHiddenMenus,
+  generateBreadcrumbsFromMenus,
+  findMenuByPath,
+  getMenuPathByPath,
+} from '../utils/layout';
+import {
   findMenuByKey,
   findFirstActivatableChild,
   getMenuParentKeys,
@@ -11,13 +18,6 @@ import {
   hasActiveChild,
   getMenuItemClassName,
 } from '../utils/menu';
-import {
-  flattenMenus,
-  filterHiddenMenus,
-  generateBreadcrumbsFromMenus,
-  findMenuByPath,
-  getMenuPathByPath,
-} from '../utils/layout';
 import type { MenuItem } from '../types';
 
 // 测试用菜单数据

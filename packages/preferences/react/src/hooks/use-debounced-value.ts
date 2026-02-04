@@ -2,8 +2,8 @@
  * 防抖值管理 Hook
  * @description 用于 InputItem、SliderItem 等组件，避免频繁更新
  */
-import { useState, useCallback, useRef, useEffect } from 'react';
 import { createDebouncedCallback } from '@admin-core/preferences';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export interface UseDebouncedValueOptions<T> {
   /** 初始值 */

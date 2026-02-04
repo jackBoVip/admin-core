@@ -2,25 +2,25 @@
  * 通用设置标签页
  * @description 语言、动态标题、水印、动画、小部件等设置
  */
-import React, { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
-import { usePreferences } from '../../hooks';
 import {
   PAGE_TRANSITION_OPTIONS,
   supportedLocales,
   translateOptions,
   getFeatureItemConfig,
   type LocaleMessages,
+  type PageTransitionType,
   type SupportedLanguagesType,
   type GeneralTabConfig,
   type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
+import React, { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
+import { usePreferences } from '../../hooks';
 import { Block } from './Block';
-import { SwitchItem } from './SwitchItem';
+import { InputItem } from './InputItem';
 import { SelectItem } from './SelectItem';
 import { SliderItem } from './SliderItem';
-import { InputItem } from './InputItem';
+import { SwitchItem } from './SwitchItem';
 import { TransitionPreview } from './TransitionPreview';
-import type { PageTransitionType } from '@admin-core/preferences';
 
 export interface GeneralTabProps {
   /** 当前语言包 */

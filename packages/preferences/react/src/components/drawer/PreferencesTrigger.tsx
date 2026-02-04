@@ -1,8 +1,8 @@
 /**
  * 偏好设置触发按钮
  */
-import React, { memo } from 'react';
 import { getIcon } from '@admin-core/preferences';
+import React, { memo } from 'react';
 
 // 图标缓存（移到组件外部，避免每次渲染重复获取）
 const settingsIcon = getIcon('settings');

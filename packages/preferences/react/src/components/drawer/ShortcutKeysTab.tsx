@@ -2,8 +2,6 @@
  * 快捷键设置标签页
  * @description 全局快捷键、搜索、锁屏等设置，显示快捷键组合
  */
-import React, { memo, useCallback, useMemo } from 'react';
-import { usePreferences } from '../../hooks';
 import { 
   getShortcutKeys, 
   isMacOs, 
@@ -12,6 +10,8 @@ import {
   type ShortcutKeysTabConfig,
   type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
+import React, { memo, useCallback, useMemo } from 'react';
+import { usePreferences } from '../../hooks';
 import { Block } from './Block';
 
 export interface ShortcutKeysTabProps {

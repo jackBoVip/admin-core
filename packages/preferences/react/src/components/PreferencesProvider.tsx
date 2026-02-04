@@ -3,13 +3,13 @@
  * @description 自动集成锁屏、快捷键等功能，用户无需手动添加
  * 自动初始化偏好设置管理器，用户无需手动调用 initPreferences
  */
-import React, { memo, useCallback, useState, createContext, useContext, useMemo, useRef, useEffect } from 'react';
 import { logger, type PreferencesDrawerUIConfig } from '@admin-core/preferences';
+import React, { memo, useCallback, useState, createContext, useContext, useMemo, useRef, useEffect } from 'react';
 import { usePreferences, useLockScreen, useShortcutKeys, initPreferences, isPreferencesInitialized } from '../hooks';
-import { LockScreen } from './lock-screen';
-import { LockPasswordModal } from './lock-screen/LockPasswordModal';
 import { PreferencesDrawer, type PreferencesDrawerProps } from './drawer';
 import { PreferencesTrigger, type PreferencesTriggerProps } from './drawer/PreferencesTrigger';
+import { LockScreen } from './lock-screen';
+import { LockPasswordModal } from './lock-screen/LockPasswordModal';
 import { Watermark } from './Watermark';
 
 // 自动初始化偏好设置管理器（确保在 usePreferences 调用前初始化）

@@ -2,8 +2,8 @@
  * 滑动条设置项组件
  * @description 用于数值范围选择，性能优化：使用 debounce 避免频繁更新
  */
-import React, { memo, useState, useCallback, useRef, useEffect, useId, useMemo } from 'react';
 import { SLIDER_DEBOUNCE_MS, type SliderItemBaseProps } from '@admin-core/preferences';
+import React, { memo, useState, useCallback, useRef, useEffect, useId, useMemo } from 'react';
 
 export interface SliderItemProps extends SliderItemBaseProps {
   /** 当前值 */

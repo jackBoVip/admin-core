@@ -192,23 +192,21 @@ async function main() {
         const content = readFileSync(file, 'utf-8');
         const pkg = JSON.parse(content);
         
-        // 检查是否有 catalog 中的依赖需要恢复
-        let hasCatalogDeps = false;
-        if (pkg.dependencies) {
-          hasCatalogDeps = Object.values(pkg.dependencies).some(v => 
-            typeof v === 'string' && catalog[Object.keys(pkg.dependencies).find(k => pkg.dependencies[k] === v)] && v === catalog[Object.keys(pkg.dependencies).find(k => pkg.dependencies[k] === v)]
-          );
-        }
-        if (!hasCatalogDeps && pkg.devDependencies) {
-          hasCatalogDeps = Object.values(pkg.devDependencies).some(v => 
-            typeof v === 'string' && catalog[Object.keys(pkg.devDependencies).find(k => pkg.devDependencies[k] === v)] && v === catalog[Object.keys(pkg.devDependencies).find(k => pkg.devDependencies[k] === v)]
-          );
-        }
-        if (!hasCatalogDeps && pkg.peerDependencies) {
-          hasCatalogDeps = Object.values(pkg.peerDependencies).some(v => 
-            typeof v === 'string' && catalog[Object.keys(pkg.peerDependencies).find(k => pkg.peerDependencies[k] === v)] && v === catalog[Object.keys(pkg.peerDependencies).find(k => pkg.peerDependencies[k] === v)]
-          );
-        }
+        // 检查是否有 catalog 中的依赖需要恢复（当前为具体版本且与 catalog 一致）
+        const hasCatalogDeps = [
+          pkg.dependencies,
+          pkg.devDependencies,
+          pkg.peerDependencies,
+        ].some(
+          (deps) =>
+            deps &&
+            Object.keys(deps).some(
+              (dep) =>
+                catalog[dep] &&
+                typeof deps[dep] === 'string' &&
+                deps[dep] === catalog[dep]
+            )
+        );
         
         if (!hasCatalogDeps) {
           continue;

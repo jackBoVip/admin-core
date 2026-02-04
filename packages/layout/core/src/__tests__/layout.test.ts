@@ -2,6 +2,7 @@
  * 布局工具函数测试
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { DEFAULT_SIDEBAR_CONFIG, DEFAULT_HEADER_CONFIG, DEFAULT_LAYOUT_STATE } from '../constants';
 import {
   getActualThemeMode,
   isLayoutInCategory,
@@ -23,7 +24,6 @@ import {
   generateWatermarkContent,
   shouldShowLockScreen,
 } from '../utils/layout';
-import { DEFAULT_SIDEBAR_CONFIG, DEFAULT_HEADER_CONFIG, DEFAULT_LAYOUT_STATE } from '../constants';
 
 // ============================================================
 // 1. 布局类型判断测试

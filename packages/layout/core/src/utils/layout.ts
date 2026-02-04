@@ -44,19 +44,6 @@ import {
   generateThemeClasses,
   mapPreferencesToLayoutProps,
 } from '@admin-core/preferences';
-import type { LayoutType } from '@admin-core/preferences';
-import { logger } from './logger';
-import type { 
-  BasicLayoutProps, 
-  BreadcrumbItem, 
-  CheckUpdatesConfig,
-  LayoutComputed, 
-  LayoutState, 
-  LockScreenConfig,
-  MenuItem, 
-  TabItem,
-  WatermarkConfig,
-} from '../types';
 import {
   CSS_VAR_NAMES,
   DEFAULT_HEADER_CONFIG,
@@ -70,6 +57,19 @@ import {
   DEFAULT_CHECK_UPDATES_CONFIG,
   LAYOUT_CATEGORIES,
 } from '../constants';
+import { logger } from './logger';
+import type { 
+  BasicLayoutProps, 
+  BreadcrumbItem, 
+  CheckUpdatesConfig,
+  LayoutComputed, 
+  LayoutState, 
+  LockScreenConfig,
+  MenuItem, 
+  TabItem,
+  WatermarkConfig,
+} from '../types';
+import type { LayoutType } from '@admin-core/preferences';
 
 export { getActualThemeMode, generateThemeCSSVariables, generateThemeClasses, mapPreferencesToLayoutProps };
 

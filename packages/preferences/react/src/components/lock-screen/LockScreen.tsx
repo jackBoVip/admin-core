@@ -2,21 +2,19 @@
  * 锁屏页面组件
  * @description 经典居中布局，极致毛玻璃质感，高级交互反馈
  */
+import { getLocaleByPreferences, verifyPasswordSync, defaultLockScreenBg } from '@admin-core/preferences';
 import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePreferences } from '../../hooks';
-import { getLocaleByPreferences, verifyPasswordSync, defaultLockScreenBg } from '@admin-core/preferences';
-import type { LocaleMessages, LockScreenComponentProps } from '@admin-core/preferences';
 import { LockScreenTime } from './LockScreenTime';
+import type { LocaleMessages, LockScreenComponentProps } from '@admin-core/preferences';
 
 export type LockScreenProps = LockScreenComponentProps;
 
 export const LockScreen: React.FC<LockScreenProps> = memo(({
   onLogout,
   // avatar/username 保留用于将来扩展
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   avatar: _avatar,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   username: _username = 'Admin',
   backgroundImage,
 }) => {

@@ -2,8 +2,6 @@
  * 布局设置标签页
  * @description 布局类型、内容宽度、侧边栏、顶栏、标签栏等设置
  */
-import React, { memo, useMemo, useCallback } from 'react';
-import { usePreferences } from '../../hooks';
 import {
   getContentWidthIcon,
   isHeaderMenuLayout,
@@ -18,9 +16,11 @@ import {
   type LayoutPreviewOptions,
   type LayoutTabConfig,
 } from '@admin-core/preferences';
+import React, { memo, useMemo, useCallback } from 'react';
+import { usePreferences } from '../../hooks';
 import { Block } from './Block';
-import { SwitchItem } from './SwitchItem';
 import { SelectItem } from './SelectItem';
+import { SwitchItem } from './SwitchItem';
 
 export interface LayoutTabProps {
   /** 当前语言包 */

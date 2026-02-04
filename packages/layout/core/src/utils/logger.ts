@@ -82,6 +82,7 @@ export const logger = {
    */
   debug(...args: unknown[]): void {
     if (shouldLog('debug')) {
+      // eslint-disable-next-line no-console -- logger API
       console.debug(...formatArgs(args));
     }
   },
@@ -91,6 +92,7 @@ export const logger = {
    */
   info(...args: unknown[]): void {
     if (shouldLog('info')) {
+      // eslint-disable-next-line no-console -- logger API
       console.info(...formatArgs(args));
     }
   },

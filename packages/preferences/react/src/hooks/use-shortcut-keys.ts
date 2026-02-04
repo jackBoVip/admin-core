@@ -2,11 +2,11 @@
  * 快捷键 Hook
  * @description 全局快捷键监听，支持打开设置、搜索、锁屏、退出等功能
  */
-import { useEffect, useRef } from 'react';
 import {
   createShortcutManager,
   type ShortcutKeyCallbacks,
 } from '@admin-core/preferences';
+import { useEffect, useRef } from 'react';
 import { usePreferences } from './use-preferences';
 
 export interface UseShortcutKeysOptions extends ShortcutKeyCallbacks {

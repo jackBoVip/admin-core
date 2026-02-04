@@ -3,8 +3,8 @@
  * @description 将 SVG 字符串渲染为组件
  */
 
-import React, { useMemo, memo } from 'react';
 import { getIcon, getIconSize, type IconName, type IconSize } from '@admin-core/preferences';
+import React, { useMemo, memo } from 'react';
 
 /**
  * 图标组件属性

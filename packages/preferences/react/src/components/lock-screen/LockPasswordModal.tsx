@@ -2,15 +2,15 @@
  * 锁屏密码设置弹窗
  * @description 极简高级风格，支持国际化、无障碍
  */
-import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { usePreferences } from '../../hooks';
 import {
   getLocaleByPreferences,
   getIcon,
   hashPasswordSync,
   PASSWORD_MIN_LENGTH,
 } from '@admin-core/preferences';
+import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { usePreferences } from '../../hooks';
 import type { LocaleMessages } from '@admin-core/preferences';
 
 export interface LockPasswordModalProps {

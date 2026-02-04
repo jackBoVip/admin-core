@@ -1,7 +1,7 @@
-import adminCoreConfig from '@admin-core/eslint-config';
+import adminCoreVueConfig from '@admin-core/eslint-config/vue';
 
 export default [
-  ...adminCoreConfig,
+  ...adminCoreVueConfig,
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
@@ -14,8 +14,6 @@ export default [
     files: ['**/*.vue'],
     languageOptions: {
       parserOptions: {
-        parser: '@typescript-eslint/parser',
-        extraFileExtensions: ['.vue'],
         project: './tsconfig.json',
       },
     },

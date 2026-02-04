@@ -3,7 +3,6 @@
  * @description 显示布局预览图标
  */
 
-import React, { useMemo, useCallback, memo } from 'react';
 import {
   getLayoutIcon,
   layoutIconTokens,
@@ -12,6 +11,7 @@ import {
   transitionTokens,
   type LayoutType,
 } from '@admin-core/preferences';
+import React, { useMemo, useCallback, memo } from 'react';
 
 /**
  * 布局图标组件属性

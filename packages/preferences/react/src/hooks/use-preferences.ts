@@ -3,7 +3,6 @@
  * @description 提供响应式的偏好设置状态
  */
 
-import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import {
   getDefaultLifecycle,
   createPreferencesActions,
@@ -17,6 +16,7 @@ import {
   type PreferencesInitOptions,
   type DeepPartial,
 } from '@admin-core/preferences';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 /**
  * 全局生命周期管理器（使用 core 的单例）

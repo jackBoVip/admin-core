@@ -2,6 +2,7 @@
  * 通用工具函数测试
  */
 import { describe, it, expect, vi } from 'vitest';
+import { BREAKPOINTS } from '../constants';
 import {
   classNames,
   getBreakpoint,
@@ -18,7 +19,6 @@ import {
   getOrCreateTabManager,
   clearTabManagerCache,
 } from '../utils/common';
-import { BREAKPOINTS } from '../constants';
 
 // ============================================================
 // 1. classNames 测试

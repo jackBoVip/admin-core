@@ -159,6 +159,9 @@ export function generateThemeColorVariables(
     ? generateDarkNeutralColors(colorFollowPrimary ? primaryColor : undefined)
     : generateLightNeutralColors(colorFollowPrimary ? primaryColor : undefined);
 
+  // 顶栏颜色变量（支持背景跟随主题色）
+  const headerVars = generateHeaderVariables(primaryColor, dark, colorFollowPrimary);
+
   // 其他变量
   const otherVars: Record<string, string> = {
     '--ring': colorVars['--primary'] || primaryColor,
@@ -167,6 +170,67 @@ export function generateThemeColorVariables(
   return {
     ...colorVars,
     ...neutralVars,
+    ...headerVars,
     ...otherVars,
   };
+}
+
+/**
+ * 生成顶栏颜色变量
+ * @param primaryColor - 主色
+ * @param isDark - 是否暗色模式
+ * @param colorFollowPrimary - 是否背景跟随主题色
+ * @returns 顶栏CSS变量
+ */
+function generateHeaderVariables(
+  primaryColor: string,
+  isDark: boolean,
+  colorFollowPrimary: boolean
+): Record<string, string> {
+  // 默认色相
+  let hue = 250;
+  let chroma = 0.01;
+
+  // 如果提供了主色，使用主色的色相
+  if (primaryColor) {
+    const parsed = parseToOklch(primaryColor);
+    if (parsed) {
+      hue = parsed.h;
+      chroma = Math.min(parsed.c * 0.1, 0.03);
+    }
+  }
+
+  if (isDark) {
+    // 深色模式顶栏
+    if (colorFollowPrimary) {
+      // 背景跟随主题色（较深的主色变体）
+      return {
+        '--header-bg-dark': createOklch(0.15, chroma * 1.5, hue),
+        '--header-fg-dark': createOklch(0.95, 0.01, hue),
+        '--header-border-dark': createOklch(0.25, chroma * 1.2, hue),
+      };
+    } else {
+      // 默认深色顶栏
+      return {
+        '--header-bg-dark': 'oklch(0.12 0.02 250)',
+        '--header-fg-dark': 'oklch(0.98 0 0)',
+        '--header-border-dark': 'oklch(0.2 0.02 250)',
+      };
+    }
+  } else {
+    // 浅色模式顶栏
+    if (colorFollowPrimary) {
+      // 背景跟随主题色（较浅的主色变体）
+      return {
+        '--header-bg-light': createOklch(0.95, chroma * 0.8, hue),
+        '--header-fg-light': createOklch(0.15, chroma * 2, hue),
+      };
+    } else {
+      // 默认浅色顶栏
+      return {
+        '--header-bg-light': 'oklch(1 0 0)',
+        '--header-fg-light': 'oklch(0.15 0.02 250)',
+      };
+    }
+  }
 }

@@ -22,7 +22,9 @@
     "eslint": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
-    "eslint-plugin-import-x": "catalog:"
+    "eslint-plugin-import-x": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "vue-eslint-parser": "catalog:"
   },
   "peerDependencies": {
     "eslint": "^9.0.0",
