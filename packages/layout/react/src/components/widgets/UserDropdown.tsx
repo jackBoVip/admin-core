@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useMemo, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
+import { renderLayoutIcon } from '../../utils';
 
 export const UserDropdown = memo(function UserDropdown() {
   const { props, events } = useLayoutContext();
@@ -67,15 +68,11 @@ export const UserDropdown = memo(function UserDropdown() {
         <span className="hidden max-w-24 truncate text-sm font-medium sm:inline">
           {userInfo?.displayName || userInfo?.username || ''}
         </span>
-        <svg
-          className={`hidden h-4 w-4 transition-transform sm:block ${isOpen ? 'rotate-180' : ''}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path d="M6 9l6 6 6-6" />
-        </svg>
+        {renderLayoutIcon(
+          'menu-arrow-down',
+          'sm',
+          `hidden transition-transform sm:block ${isOpen ? 'rotate-180' : ''}`
+        )}
       </button>
 
       {isOpen && (
@@ -108,10 +105,7 @@ export const UserDropdown = memo(function UserDropdown() {
               data-value="profile"
               onClick={handleMenuClick}
             >
-              <svg className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="8" r="5" />
-                <path d="M20 21a8 8 0 1 0-16 0" />
-              </svg>
+              {renderLayoutIcon('user', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
               <span>Profile</span>
             </button>
 
@@ -121,10 +115,7 @@ export const UserDropdown = memo(function UserDropdown() {
               data-value="settings"
               onClick={handleMenuClick}
             >
-              <svg className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+              {renderLayoutIcon('settings', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
               <span>Settings</span>
             </button>
 
@@ -134,10 +125,7 @@ export const UserDropdown = memo(function UserDropdown() {
               data-value="lock"
               onClick={handleMenuClick}
             >
-              <svg className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
+              {renderLayoutIcon('lock', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
               <span>Lock Screen</span>
             </button>
           </div>
@@ -149,11 +137,7 @@ export const UserDropdown = memo(function UserDropdown() {
               data-value="logout"
               onClick={handleMenuClick}
             >
-              <svg className="h-4 w-4 opacity-60 transition-opacity group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16,17 21,12 16,7" />
-                <line x1="21" x2="9" y1="12" y2="12" />
-              </svg>
+              {renderLayoutIcon('logout', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
               <span>Logout</span>
             </button>
           </div>

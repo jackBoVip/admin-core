@@ -19,6 +19,25 @@ export function mapPreferencesToLayoutProps(preferences: Partial<Preferences>): 
     lockScreen,
   } = preferences;
 
+  const isHeaderNavLayout = app?.layout === 'header-nav';
+  const isBreadcrumbDisabledLayout =
+    isHeaderNavLayout || app?.layout === 'mixed-nav' || app?.layout === 'header-mixed-nav';
+  const resolvedSidebar = sidebar ? { ...sidebar } : undefined;
+  const resolvedBreadcrumb = breadcrumb ? { ...breadcrumb } : undefined;
+  const resolvedHeader = header ? { ...header } : undefined;
+
+  if (isHeaderNavLayout) {
+    if (resolvedSidebar) {
+      resolvedSidebar.enable = false;
+    }
+  }
+  if (isBreadcrumbDisabledLayout && resolvedBreadcrumb) {
+    resolvedBreadcrumb.enable = false;
+  }
+  if (app?.layout === 'header-mixed-nav' && resolvedHeader) {
+    resolvedHeader.menuLauncher = false;
+  }
+
   return {
     // 应用配置
     appName: app?.name,
@@ -92,13 +111,13 @@ export function mapPreferencesToLayoutProps(preferences: Partial<Preferences>): 
       : undefined,
 
     // 各区域配置（创建浅拷贝确保响应式更新）
-    header: header ? { ...header } : undefined,
+    header: resolvedHeader,
     semiDarkHeader: theme?.semiDarkHeader,
-    sidebar: sidebar ? { ...sidebar } : undefined,
+    sidebar: resolvedSidebar,
     semiDarkSidebar: theme?.semiDarkSidebar,
     tabbar: tabbar ? { ...tabbar } : undefined,
     footer: footer ? { ...footer } : undefined,
-    breadcrumb: breadcrumb ? { ...breadcrumb } : undefined,
+    breadcrumb: resolvedBreadcrumb,
     navigation: navigation ? { ...navigation } : undefined,
     panel: panel ? { ...panel } : undefined,
     logo: logo ? { ...logo } : undefined,
@@ -106,11 +125,11 @@ export function mapPreferencesToLayoutProps(preferences: Partial<Preferences>): 
     transition: transition ? { ...transition } : undefined,
     shortcutKeys: shortcutKeys ? { ...shortcutKeys } : undefined,
     widgets:
-      widget || sidebar
+      widget || resolvedSidebar
         ? {
             ...widget,
             // 让“显示折叠按钮”同时控制顶部侧边栏切换按钮
-            ...(sidebar ? { sidebarToggle: sidebar.collapsedButton } : {}),
+            ...(resolvedSidebar ? { sidebarToggle: resolvedSidebar.collapsedButton } : {}),
           }
         : undefined,
   };

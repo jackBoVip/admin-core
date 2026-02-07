@@ -3,7 +3,6 @@
  * @description 显示布局预览图标
  */
 
-import { defineComponent, h, computed, type PropType, type ExtractPropTypes } from 'vue';
 import {
   getLayoutIcon,
   layoutIconTokens,
@@ -12,6 +11,7 @@ import {
   transitionTokens,
   type LayoutType,
 } from '@admin-core/preferences';
+import { defineComponent, h, computed, type PropType, type ExtractPropTypes } from 'vue';
 
 /**
  * LayoutIcon 组件 Props 定义

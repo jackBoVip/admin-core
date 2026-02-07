@@ -18,6 +18,7 @@ export { default as SwitchItem } from './SwitchItem.vue';
 export { default as SelectItem } from './SelectItem.vue';
 export { default as SliderItem } from './SliderItem.vue';
 export { default as InputItem } from './InputItem.vue';
+export { default as NumberItem } from './NumberItem.vue';
 
 // 类型
 export type {
@@ -32,4 +33,5 @@ export type {
   SelectItemProps,
   SliderItemProps,
   InputItemProps,
+  NumberItemProps,
 } from './types';

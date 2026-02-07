@@ -3,10 +3,10 @@
  * @description 框架无关的 Manager 生命周期逻辑
  */
 
-import { createPreferencesManager, type PreferencesManager } from './preferences-manager';
-import type { PreferencesInitOptions, Preferences } from '../types';
 import { WARN_MESSAGES, ERROR_MESSAGES } from '../constants/messages';
 import { logger } from '../utils/logger';
+import { createPreferencesManager, type PreferencesManager } from './preferences-manager';
+import type { PreferencesInitOptions, Preferences } from '../types';
 
 /**
  * Manager 生命周期管理器

@@ -11,10 +11,7 @@ import { computed, ref, watch, watchEffect, shallowRef, onMounted, onUnmounted }
 import { useLayoutContext, useSidebarState } from '../../composables';
 import { useMenuState } from '../../composables/use-layout-state';
 import type { MenuItem } from '@admin-core/layout';
-import {
-  getIconDefinition,
-  getIconRenderType,
-} from '@admin-core/layout';
+import { resolveIconMeta } from '@admin-core/layout';
 
 const context = useLayoutContext();
 const { extraVisible, layoutComputed } = useSidebarState();
@@ -24,6 +21,7 @@ const { activeKey, handleSelect } = useMenuState();
 const logoConfig = computed(() => context.props.logo || {});
 // 主题（考虑 semiDarkSidebar）
 const theme = computed(() => layoutComputed.value?.sidebarTheme || 'light');
+const isHeaderMixedNav = computed(() => layoutComputed.value.isHeaderMixedNav);
 
 // 定义事件
 const emit = defineEmits<{
@@ -32,9 +30,76 @@ const emit = defineEmits<{
 
 // 菜单数据
 const menus = computed<MenuItem[]>(() => context.props.menus || []);
-const rootMenus = computed(() => {
-  const result: MenuItem[] = [];
+const normalizeKey = (value: unknown) => {
+  if (value == null || value === '') return '';
+  return String(value);
+};
+const getMenuId = (menu: MenuItem) => {
+  const id = menu.key ?? menu.path ?? menu.name ?? '';
+  return id === '' ? '' : String(id);
+};
+const menuMatchesKey = (menu: MenuItem, key: string) => {
+  const target = normalizeKey(key);
+  if (!target) return false;
+  const menuKey = normalizeKey(menu.key ?? '');
+  const menuPath = normalizeKey(menu.path ?? '');
+  const menuId = normalizeKey(getMenuId(menu));
+  return (
+    (menuKey && menuKey === target) ||
+    (menuPath && menuPath === target) ||
+    (menuId && menuId === target)
+  );
+};
+const menuContainsKey = (menu: MenuItem, key: string) => {
+  if (menuMatchesKey(menu, key)) return true;
+  if (!menu.children?.length) return false;
+  const stack = [...menu.children];
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
+    if (menuMatchesKey(item, key)) return true;
+    if (item.children?.length) {
+      for (let i = item.children.length - 1; i >= 0; i -= 1) {
+        stack.push(item.children[i]);
+      }
+    }
+  }
+  return false;
+};
+const findRootMenuByKey = (key: string) => {
+  if (!key) return null;
   for (const item of menus.value) {
+    if (item.hidden) continue;
+    if (menuContainsKey(item, key)) return item;
+  }
+  return null;
+};
+const headerMixedRootMenu = computed(() => {
+  if (!isHeaderMixedNav.value) return null;
+  const candidateKey = context.state.mixedNavRootKey || activeKey.value;
+  let root = candidateKey ? findRootMenuByKey(candidateKey) : null;
+  if (!root) {
+    for (const item of menus.value) {
+      if (!item.hidden) {
+        root = item;
+        break;
+      }
+    }
+  }
+  return root;
+});
+watch(headerMixedRootMenu, (rootMenu) => {
+  if (!isHeaderMixedNav.value || !rootMenu) return;
+  const rootKey = normalizeKey(rootMenu.key ?? rootMenu.path ?? '');
+  if (!rootKey || rootKey === context.state.mixedNavRootKey) return;
+  context.state.mixedNavRootKey = rootKey;
+});
+const rootMenus = computed(() => {
+  const source = isHeaderMixedNav.value
+    ? headerMixedRootMenu.value?.children ?? []
+    : menus.value;
+  const result: MenuItem[] = [];
+  for (const item of source) {
     if (!item.hidden) result.push(item);
   }
   return result;
@@ -154,21 +219,25 @@ const lastSyncRef = ref<{ key: string | null; menus: MenuItem[] | null }>({
   key: null,
   menus: null,
 });
+
 const parentPathMap = computed(() => {
   const map = new Map<string, string | null>();
   const visit = (items: MenuItem[], parent: string | null) => {
     for (const menu of items) {
-      const keyPath = menu.key || '';
-      const path = menu.path || '';
-      const id = keyPath || path || '';
+      const rawKey = menu.key ?? '';
+      const keyPath = rawKey === '' ? '' : String(rawKey);
+      const rawPath = menu.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      const id = getMenuId(menu);
       if (keyPath) map.set(keyPath, parent);
       if (path && path !== keyPath) map.set(path, parent);
+      if (id && id !== keyPath && id !== path) map.set(id, parent);
       if (menu.children?.length) {
         visit(menu.children, id || parent);
       }
     }
   };
-  visit(menus.value, null);
+  visit(rootMenus.value, null);
   return map;
 });
 const activeParentSet = computed(() => {
@@ -193,27 +262,45 @@ watch(selectedRootMenu, (menu) => {
 
 // 根据当前路径自动选中一级菜单，并记录激活的子菜单
 watch(
-  [activeKey, menus],
+  [activeKey, rootMenus],
   ([key, menuList]) => {
-    if (!key || !menuList.length) return;
-
-    if (lastSyncRef.value.key === key && lastSyncRef.value.menus === menuList) {
+    if (!menuList.length) {
+      if (selectedRootMenu.value) {
+        selectedRootMenu.value = null;
+      }
+      if (extraVisible.value) {
+        extraVisible.value = false;
+      }
       return;
     }
-    lastSyncRef.value = { key, menus: menuList };
+
+    const syncKey = key || '';
+    if (lastSyncRef.value.key === syncKey && lastSyncRef.value.menus === menuList) {
+      return;
+    }
+    lastSyncRef.value = { key: syncKey, menus: menuList };
 
     let rootMenu: MenuItem | undefined;
     for (const item of menuList) {
-      const menuId = item.key || item.path || '';
-      const isActive = item.key === activeKey.value || item.path === activeKey.value;
+      const menuId = getMenuId(item);
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      const isActive = key === activeKey.value || path === activeKey.value;
       const hasActiveChild = menuId ? activeParentSet.value.has(menuId) : false;
       if (isActive || hasActiveChild) {
         rootMenu = item;
         break;
       }
     }
+    if (!rootMenu) {
+      rootMenu = menuList[0];
+    }
     if (rootMenu) {
-      if (selectedRootMenu.value?.key !== rootMenu.key) {
+      const currentId = selectedRootMenu.value ? getMenuId(selectedRootMenu.value) : '';
+      const nextId = getMenuId(rootMenu);
+      if (currentId !== nextId) {
         selectedRootMenu.value = rootMenu;
       }
       const nextExtraVisible = !!(rootMenu.children && rootMenu.children.length > 0);
@@ -221,8 +308,8 @@ watch(
         extraVisible.value = nextExtraVisible;
       }
       // 记录该一级菜单最后激活的子菜单
-      if (rootMenu.children?.length) {
-        lastActiveSubMenuMap.set(rootMenu.key, key);
+      if (rootMenu.children?.length && key) {
+        lastActiveSubMenuMap.set(getMenuId(rootMenu), key);
       }
     }
   },
@@ -231,7 +318,9 @@ watch(
 
 // 处理一级菜单悬停
 const onRootMenuEnter = (item: MenuItem) => {
-  if (selectedRootMenu.value?.key !== item.key) {
+  const currentId = selectedRootMenu.value ? getMenuId(selectedRootMenu.value) : '';
+  const nextId = getMenuId(item);
+  if (currentId !== nextId) {
     selectedRootMenu.value = item;
   }
   if (item.children?.length && !extraVisible.value) {
@@ -241,7 +330,9 @@ const onRootMenuEnter = (item: MenuItem) => {
 
 // 处理一级菜单点击
 const onRootMenuClick = (item: MenuItem) => {
-  if (selectedRootMenu.value?.key !== item.key) {
+  const currentId = selectedRootMenu.value ? getMenuId(selectedRootMenu.value) : '';
+  const nextId = getMenuId(item);
+  if (currentId !== nextId) {
     selectedRootMenu.value = item;
   }
   
@@ -252,15 +343,18 @@ const onRootMenuClick = (item: MenuItem) => {
     // 自动激活子菜单：优先使用上次记录的，否则使用第一个
     const autoActivateChild = context.props.sidebar?.autoActivateChild ?? true;
     if (autoActivateChild) {
-      const lastActivePath = lastActiveSubMenuMap.get(item.key);
+      const lastActivePath = lastActiveSubMenuMap.get(nextId);
       const firstChildPath = item.children[0]?.path || item.children[0]?.key;
       const targetPath = lastActivePath || firstChildPath;
-      if (targetPath && targetPath !== activeKey.value) {
-        handleSelect(targetPath);
+      const normalizedTarget = targetPath == null || targetPath === '' ? '' : String(targetPath);
+      if (normalizedTarget && normalizedTarget !== activeKey.value) {
+        handleSelect(normalizedTarget);
       }
     }
-  } else if (item.path) {
-    handleSelect(item.key);
+  } else if (item.path || item.key) {
+    const target = item.key || item.path;
+    const normalizedTarget = target == null || target === '' ? '' : String(target);
+    if (normalizedTarget) handleSelect(normalizedTarget);
   }
 };
 
@@ -268,13 +362,18 @@ const onRootMenuClick = (item: MenuItem) => {
 const updateRootActiveMap = () => {
   const map = new Map<string, boolean>();
   menus.value.forEach((item) => {
-    const menuId = item.key || item.path || '';
+    const menuId = getMenuId(item);
+    const rawKey = item.key ?? '';
+    const key = rawKey === '' ? '' : String(rawKey);
+    const rawPath = item.path ?? '';
+    const path = rawPath === '' ? '' : String(rawPath);
     const isActive =
-      selectedRootMenu.value?.key === item.key ||
-      item.key === activeKey.value ||
-      item.path === activeKey.value ||
+      (selectedRootMenu.value ? getMenuId(selectedRootMenu.value) : '') === menuId ||
+      menuId === activeKey.value ||
+      key === activeKey.value ||
+      path === activeKey.value ||
       (menuId ? activeParentSet.value.has(menuId) : false);
-    map.set(item.key, Boolean(isActive));
+    map.set(menuId, Boolean(isActive));
   });
   const prev = rootActiveMap.value;
   let isSame = prev.size === map.size;
@@ -294,17 +393,15 @@ const updateRootActiveMap = () => {
 watch([menus, activeKey, selectedRootMenu], updateRootActiveMap, { immediate: true });
 
 // 判断一级菜单是否选中
-const isRootActive = (item: MenuItem) => rootActiveMap.value.get(item.key) ?? false;
+const isRootActive = (item: MenuItem) => rootActiveMap.value.get(getMenuId(item)) ?? false;
 
-const iconMetaCache = new Map<string, { type: ReturnType<typeof getIconRenderType>; def?: ReturnType<typeof getIconDefinition> }>();
+const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
 
 const getIconMeta = (icon: string | undefined) => {
   if (!icon) return null;
   const cached = iconMetaCache.get(icon);
   if (cached) return cached;
-  const type = getIconRenderType(icon);
-  const def = type === 'svg' ? getIconDefinition(icon) : undefined;
-  const meta = { type, def };
+  const meta = resolveIconMeta(icon);
   iconMetaCache.set(icon, meta);
   return meta;
 };
@@ -323,7 +420,7 @@ const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.view
 <template>
   <div class="mixed-sidebar-menu">
     <!-- Logo 区域 -->
-    <div v-if="logoConfig.enable !== false" class="mixed-sidebar-menu__logo">
+    <div v-if="logoConfig.enable !== false && !isHeaderMixedNav" class="mixed-sidebar-menu__logo">
       <div class="flex h-header items-center justify-center">
         <img
           v-if="logoConfig.source"
@@ -341,7 +438,7 @@ const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.view
     <!-- 一级菜单（只显示图标） -->
     <nav ref="rootNavRef" class="mixed-sidebar-menu__root" :style="{ position: 'relative' }">
       <div :style="{ height: `${rootTotalHeight}px`, pointerEvents: 'none' }" />
-      <template v-for="(item, index) in visibleRootMenus" :key="item.key">
+      <template v-for="(item, index) in visibleRootMenus" :key="getMenuId(item) || item.name || index">
         <div
           v-if="!item.hidden"
           class="mixed-sidebar-menu__root-item data-active:text-foreground data-disabled:opacity-50"
@@ -386,8 +483,9 @@ const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.view
 
 <script lang="ts">
 // 导出子菜单组件供扩展区域使用
-import { defineComponent, h } from 'vue';
+import { defineComponent, h, Teleport, reactive } from 'vue';
 import type { PropType } from 'vue';
+import LayoutIcon from '../common/LayoutIcon.vue';
 
 export const MixedSidebarSubMenu = defineComponent({
   name: 'MixedSidebarSubMenu',
@@ -420,19 +518,38 @@ export const MixedSidebarSubMenu = defineComponent({
       type: Boolean,
       default: true,
     },
+    theme: {
+      type: String,
+      default: 'light',
+    },
   },
   emits: ['select', 'collapse', 'togglePin'],
   setup(props, { emit }) {
+    const context = useLayoutContext();
     const expandedKeys = ref<Set<string>>(new Set());
     const SUB_RENDER_CHUNK = 80;
     const renderCount = ref(SUB_RENDER_CHUNK);
     const navRef = ref<HTMLElement | null>(null);
+    const containerRef = ref<HTMLElement | null>(null);
+    const popupRef = ref<HTMLElement | null>(null);
+    const popupAnchorRef = ref<HTMLElement | null>(null);
+    const popupState = reactive({
+      visible: false,
+      item: null as MenuItem | null,
+      top: 0,
+      left: 0,
+    });
+    const popupTheme = computed(() => props.theme || 'light');
     const subItemResizeObserver = ref<ResizeObserver | null>(null);
     const subResizeObserver = ref<ResizeObserver | null>(null);
     const scrollTop = ref(0);
     const viewportHeight = ref(0);
     const subItemHeight = ref(40);
     const SUB_OVERSCAN = 4;
+    const getMenuId = (menu: MenuItem) => {
+      const id = menu.key ?? menu.path ?? menu.name ?? '';
+      return id === '' ? '' : String(id);
+    };
 
     watch(
       () => [props.menus, props.collapsed] as const,
@@ -493,7 +610,8 @@ export const MixedSidebarSubMenu = defineComponent({
       while (stack.length > 0) {
         const item = stack.pop();
         if (!item) continue;
-        if (item.key) set.add(item.key);
+        const id = getMenuId(item);
+        if (id) set.add(id);
         if (item.children?.length) {
           for (let i = item.children.length - 1; i >= 0; i -= 1) {
             stack.push(item.children[i]);
@@ -516,11 +634,14 @@ export const MixedSidebarSubMenu = defineComponent({
       const map = new Map<string, string | null>();
       const visit = (items: MenuItem[], parent: string | null) => {
         for (const menu of items) {
-          const keyPath = menu.key || '';
-          const path = menu.path || '';
-          const id = keyPath || path || '';
+          const rawKey = menu.key ?? '';
+          const keyPath = rawKey === '' ? '' : String(rawKey);
+          const rawPath = menu.path ?? '';
+          const path = rawPath === '' ? '' : String(rawPath);
+          const id = getMenuId(menu);
           if (keyPath) map.set(keyPath, parent);
           if (path && path !== keyPath) map.set(path, parent);
+          if (id && id !== keyPath && id !== path) map.set(id, parent);
           if (menu.children?.length) {
             visit(menu.children, id || parent);
           }
@@ -544,23 +665,82 @@ export const MixedSidebarSubMenu = defineComponent({
       return parentSet;
     });
 
-    const onClick = (item: MenuItem) => {
+    const hidePopupMenu = () => {
+      popupState.visible = false;
+      popupState.item = null;
+      popupAnchorRef.value = null;
+    };
+
+    const syncPopupExpandedKeys = (root: MenuItem) => {
+      const keys = new Set<string>();
+      if (!root.children?.length) return keys;
+      const stack = [...root.children].reverse();
+      while (stack.length > 0) {
+        const child = stack.pop();
+        if (!child) continue;
+        const childId = getMenuId(child);
+        const isActive = childId === props.activeKey;
+        if ((childId && activeParentSet.value.has(childId)) || isActive) {
+          keys.add(childId);
+          if (child.children?.length) {
+            for (let i = child.children.length - 1; i >= 0; i -= 1) {
+              stack.push(child.children[i]);
+            }
+          }
+        }
+      }
+      return keys;
+    };
+
+    const showPopupMenu = (item: MenuItem, event: MouseEvent) => {
+      const target = event.currentTarget as HTMLElement;
+      popupAnchorRef.value = target;
+      const rect = target.getBoundingClientRect();
+      const containerRect = containerRef.value?.getBoundingClientRect();
+      popupState.top = rect.top;
+      popupState.left = containerRect ? containerRect.right : rect.right;
+      expandedKeys.value = syncPopupExpandedKeys(item);
+      popupState.item = item;
+      popupState.visible = true;
+    };
+
+    const updatePopupPosition = () => {
+      if (!popupState.visible || !popupAnchorRef.value) return;
+      const rect = popupAnchorRef.value.getBoundingClientRect();
+      const containerRect = containerRef.value?.getBoundingClientRect();
+      popupState.top = rect.top;
+      popupState.left = containerRect ? containerRect.right : rect.right;
+    };
+
+    const onClick = (item: MenuItem, event?: MouseEvent) => {
+      const id = getMenuId(item);
       if (item.children?.length) {
-        toggleExpand(item.key);
+        if (props.collapsed && event) {
+          if (popupState.visible && popupState.item && getMenuId(popupState.item) === id) {
+            hidePopupMenu();
+            return;
+          }
+          showPopupMenu(item, event);
+          return;
+        }
+        toggleExpand(id);
       } else {
-        emit('select', item.key);
+        const target = item.path ?? item.key ?? id;
+        const normalizedTarget = target == null || target === '' ? '' : String(target);
+        if (normalizedTarget) {
+          emit('select', normalizedTarget);
+        }
+        hidePopupMenu();
       }
     };
 
-    const iconMetaCache = new Map<string, { type: ReturnType<typeof getIconRenderType>; def?: ReturnType<typeof getIconDefinition> }>();
+    const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
 
     const getIconMeta = (icon: string | undefined) => {
       if (!icon) return null;
       const cached = iconMetaCache.get(icon);
       if (cached) return cached;
-      const type = getIconRenderType(icon);
-      const def = type === 'svg' ? getIconDefinition(icon) : undefined;
-      const meta = { type, def };
+      const meta = resolveIconMeta(icon);
       iconMetaCache.set(icon, meta);
       return meta;
     };
@@ -572,10 +752,17 @@ export const MixedSidebarSubMenu = defineComponent({
     const renderMenuItem = (item: MenuItem, level: number, style?: Record<string, string>) => {
       if (item.hidden) return null;
 
-      const menuId = item.key || item.path || '';
-      const active = item.key === props.activeKey || item.path === props.activeKey;
+      const menuId = getMenuId(item);
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      const active =
+        menuId === props.activeKey ||
+        key === props.activeKey ||
+        path === props.activeKey;
       const hasChildren = Boolean(item.children?.length);
-      const expanded = expandedKeys.value.has(item.key);
+      const expanded = expandedKeys.value.has(menuId);
       const hasActive = menuId ? activeParentSet.value.has(menuId) : false;
 
       const itemClass = (() => {
@@ -610,13 +797,7 @@ export const MixedSidebarSubMenu = defineComponent({
             ? 'mixed-sidebar-submenu__arrow mixed-sidebar-submenu__arrow--expanded'
             : 'mixed-sidebar-submenu__arrow',
           'data-expanded': expanded ? 'true' : undefined,
-        }, h('svg', {
-          class: 'h-4 w-4',
-          viewBox: '0 0 24 24',
-          fill: 'none',
-          stroke: 'currentColor',
-          'stroke-width': '2',
-        }, h('path', { d: 'M9 18l6-6-6-6' }))),
+        }, h(LayoutIcon, { name: 'menu-arrow-right', size: 'sm' })),
       ];
 
       const elements = [
@@ -628,7 +809,7 @@ export const MixedSidebarSubMenu = defineComponent({
           'data-state': active ? 'active' : 'inactive',
           'data-disabled': item.disabled ? 'true' : undefined,
           'data-level': level,
-          onClick: () => onClick(item),
+          onClick: (event: MouseEvent) => onClick(item, event),
         }, children),
       ];
 
@@ -641,7 +822,91 @@ export const MixedSidebarSubMenu = defineComponent({
         );
       }
 
-      return h('div', { class: 'mixed-sidebar-submenu__group', key: item.key, style }, elements);
+      return h('div', { class: 'mixed-sidebar-submenu__group', key: menuId, style }, elements);
+    };
+
+    const renderPopupItem = (item: MenuItem, level: number) => {
+      if (item.hidden) return null;
+
+      const menuId = getMenuId(item);
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      const active =
+        menuId === props.activeKey ||
+        key === props.activeKey ||
+        path === props.activeKey;
+      const hasChildren = Boolean(item.children?.length);
+      const expanded = expandedKeys.value.has(menuId);
+      const hasActive = menuId ? activeParentSet.value.has(menuId) : false;
+
+      const itemClass = (() => {
+        const classes = [
+          'sidebar-menu__popup-item',
+          `sidebar-menu__popup-item--level-${level}`,
+        ];
+        if (active) classes.push('sidebar-menu__popup-item--active');
+        if (hasActive) classes.push('sidebar-menu__popup-item--has-active-child');
+        return classes.join(' ');
+      })();
+
+      const handlePopupClick = () => {
+        if (hasChildren) {
+          toggleExpand(menuId);
+          return;
+        }
+        const target = item.path ?? item.key ?? menuId;
+        const normalizedTarget = target == null || target === '' ? '' : String(target);
+        if (normalizedTarget) {
+          emit('select', normalizedTarget);
+        }
+        hidePopupMenu();
+      };
+
+      const popupChildren = [
+        item.icon && h('span', { class: 'sidebar-menu__popup-icon' }, 
+          getIconType(item.icon) === 'svg'
+            ? h('svg', {
+                class: 'h-4 w-4',
+                viewBox: '0 0 24 24',
+                fill: 'none',
+                stroke: 'currentColor',
+                'stroke-width': '2',
+              }, h('path', { d: getSvgPath(item.icon) }))
+            : item.icon
+        ),
+        h('span', { class: 'sidebar-menu__popup-name' }, item.name),
+        hasChildren && h('span', {
+          class: expanded
+            ? 'sidebar-menu__popup-arrow sidebar-menu__popup-arrow--expanded'
+            : 'sidebar-menu__popup-arrow',
+          'data-expanded': expanded ? 'true' : undefined,
+        }, h(LayoutIcon, { name: 'menu-arrow-right', size: 'sm' })),
+      ];
+
+      const elements = [
+        h('div', {
+          class: itemClass,
+          'data-state': active ? 'active' : 'inactive',
+          'data-disabled': item.disabled ? 'true' : undefined,
+          'data-has-active-child': hasActive ? 'true' : undefined,
+          'data-has-children': hasChildren ? 'true' : undefined,
+          'data-expanded': hasChildren && expanded ? 'true' : undefined,
+          'data-level': level,
+          onClick: handlePopupClick,
+        }, popupChildren),
+      ];
+
+      if (hasChildren && expanded) {
+        elements.push(
+          h('div', { class: 'sidebar-menu__popup-submenu' },
+            item.children!.map(child => renderPopupItem(child, level + 1))
+          )
+        );
+      }
+
+      return h('div', { class: 'sidebar-menu__popup-group', key: menuId }, elements);
     };
 
     onMounted(() => {
@@ -710,7 +975,39 @@ export const MixedSidebarSubMenu = defineComponent({
       });
     });
 
+    watch(
+      () => popupState.visible,
+      (visible) => {
+        if (!visible) return;
+        const handleDocClick = (event: MouseEvent) => {
+          const target = event.target as Node | null;
+          if (!target) return;
+          if (popupRef.value && popupRef.value.contains(target)) return;
+          if (popupAnchorRef.value && popupAnchorRef.value.contains(target)) return;
+          hidePopupMenu();
+        };
+        const handleKeydown = (event: KeyboardEvent) => {
+          if (event.key === 'Escape') hidePopupMenu();
+        };
+        const handleResize = () => updatePopupPosition();
+        const handleScroll = () => updatePopupPosition();
+        document.addEventListener('mousedown', handleDocClick);
+        document.addEventListener('keydown', handleKeydown);
+        window.addEventListener('resize', handleResize);
+        navRef.value?.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+          document.removeEventListener('mousedown', handleDocClick);
+          document.removeEventListener('keydown', handleKeydown);
+          window.removeEventListener('resize', handleResize);
+          navRef.value?.removeEventListener('scroll', handleScroll);
+        };
+      }
+    );
+
     watch(() => props.collapsed, (collapsed) => {
+      if (!collapsed && popupState.visible) {
+        hidePopupMenu();
+      }
       if (!collapsed) return;
       if (navRef.value) {
         navRef.value.scrollTop = 0;
@@ -727,45 +1024,44 @@ export const MixedSidebarSubMenu = defineComponent({
       const collapseBtn = props.showCollapseBtn && h('button', {
         class: 'mixed-sidebar-submenu__collapse-btn',
         onClick: () => emit('collapse'),
-        title: props.collapsed ? '展开' : '收起',
-      }, h('svg', {
-        class: 'h-4 w-4',
-        viewBox: '0 0 24 24',
-        fill: 'none',
-        stroke: 'currentColor',
-        'stroke-width': '2',
-      }, h('path', { d: props.collapsed ? 'M13 7l5 5-5 5M6 7l5 5-5 5' : 'M11 17l-5-5 5-5m7 10l-5-5 5-5' })));
+        title: props.collapsed ? context.t('layout.common.expand') : context.t('layout.common.collapse'),
+      }, h(LayoutIcon, {
+        name: props.collapsed ? 'submenu-expand' : 'submenu-collapse',
+        size: 'sm',
+      }));
       
       const pinBtn = props.showPinBtn && h('button', {
         class: 'mixed-sidebar-submenu__pin-btn',
         onClick: () => emit('togglePin'),
-        title: props.pinned ? '取消固定' : '固定',
-      }, h('svg', {
-        class: 'h-3.5 w-3.5',
-        viewBox: '0 0 24 24',
-        fill: 'none',
-        stroke: 'currentColor',
-        'stroke-width': '2',
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-      }, props.pinned 
-        ? [
-            h('line', { x1: '2', x2: '22', y1: '2', y2: '22' }),
-            h('line', { x1: '12', x2: '12', y1: '17', y2: '22' }),
-            h('path', { d: 'M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12' }),
-            h('path', { d: 'M15 9.34V6h1a2 2 0 0 0 0-4H7.89' }),
-          ]
-        : [
-            h('line', { x1: '12', x2: '12', y1: '17', y2: '22' }),
-            h('path', { d: 'M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z' }),
-          ]
-      ));
+        title: props.pinned ? context.t('layout.common.unpin') : context.t('layout.common.pin'),
+      }, h(LayoutIcon, {
+        name: props.pinned ? 'tabbar-unpin' : 'tabbar-pin',
+        size: 'sm',
+        className: 'h-3.5 w-3.5',
+      }));
       
       const containerClass = props.collapsed
         ? 'mixed-sidebar-submenu mixed-sidebar-submenu--collapsed'
         : 'mixed-sidebar-submenu';
+
+      const popupNode = popupState.visible && popupState.item
+        ? h(Teleport, { to: 'body' }, h('div', {
+            ref: popupRef,
+            class: `sidebar-menu__popup sidebar-menu__popup--${popupTheme.value}`,
+            'data-theme': popupTheme.value,
+            style: {
+              top: `${popupState.top}px`,
+              left: `${popupState.left}px`,
+            },
+          }, [
+            h('div', { class: 'sidebar-menu__popup-title' }, popupState.item.name),
+            h('div', { class: 'sidebar-menu__popup-content' },
+              (popupState.item.children ?? []).map(child => renderPopupItem(child, 0))
+            ),
+          ]))
+        : null;
       
-      return h('div', { class: containerClass, 'data-collapsed': props.collapsed ? 'true' : undefined }, [
+      return h('div', { ref: containerRef, class: containerClass, 'data-collapsed': props.collapsed ? 'true' : undefined }, [
         // 折叠按钮（左下角）
         collapseBtn,
         // 固定按钮（右下角）
@@ -794,6 +1090,7 @@ export const MixedSidebarSubMenu = defineComponent({
             return renderMenuItem(item, 0, itemStyle);
           }),
         ]),
+        popupNode,
       ]);
     };
   },

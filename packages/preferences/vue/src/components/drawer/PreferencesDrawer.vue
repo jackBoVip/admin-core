@@ -3,7 +3,7 @@
  * 偏好设置抽屉组件
  * @description 完整的偏好设置面板
  */
-import { ref, computed, watch, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { usePreferences } from '../../composables';
 import {
   getIcon,
@@ -17,6 +17,7 @@ import {
   getCopyButtonA11yProps,
   getFeatureConfig,
   mergeDrawerUIConfig,
+  setupPreferenceTooltip,
   logger,
   type DrawerHeaderActionType,
   type DrawerTabType,
@@ -124,7 +125,14 @@ watch(
 );
 
 // 清理
+let tooltipCleanup: (() => void) | null = null;
+
+onMounted(() => {
+  tooltipCleanup = setupPreferenceTooltip();
+});
+
 onUnmounted(() => {
+  tooltipCleanup?.();
   copyController.dispose();
 });
 

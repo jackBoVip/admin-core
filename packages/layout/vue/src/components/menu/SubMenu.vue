@@ -7,6 +7,7 @@ import { computed, ref, onUnmounted, getCurrentInstance, watch, watchEffect, nex
 import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue';
 import { useMenuContext, useSubMenuContext, createSubMenuContext } from './use-menu-context';
 import MenuItemComp from './MenuItem.vue';
+import LayoutIcon from '../common/LayoutIcon.vue';
 import type { MenuItem } from '@admin-core/layout';
 
 interface Props {
@@ -41,25 +42,27 @@ const popupResizeObserver = ref<ResizeObserver | null>(null);
 const popupItemResizeObserver = ref<ResizeObserver | null>(null);
 let popupWheelCleanup: (() => void) | null = null;
 
-// 路径
-const path = computed(() => props.item.key || props.item.path || '');
+const path = computed(() => {
+  const raw = props.item.key ?? props.item.path ?? '';
+  return raw === '' ? '' : String(raw);
+});
 
 // 父级路径（遍历父级子菜单上下文获取完整路径链）
 const parentPaths = computed(() => {
   const paths: string[] = [];
   let parent = parentSubMenu;
   while (parent) {
-    paths.unshift(parent.path);
+    paths.unshift(String(parent.path));
     parent = parent.parent;
   }
   return paths;
 });
 
 // 是否展开
-const opened = computed(() => menuContext.openedMenuSet.value.has(path.value));
+const opened = computed(() => (path.value ? menuContext.openedMenuSet.value.has(path.value) : false));
 
 // 是否激活（有子菜单激活）
-const active = computed(() => menuContext.activeParentSet.value.has(path.value));
+const active = computed(() => (path.value ? menuContext.activeParentSet.value.has(path.value) : false));
 
 // 是否为一级菜单
 const isFirstLevel = computed(() => props.level === 0);
@@ -119,6 +122,7 @@ const { floatingStyles } = useFloating(referenceRef, floatingRef, {
     flip({ fallbackPlacements: ['left-start', 'top-start', 'bottom-start'] }),
     shift({ padding: 8 }),
   ],
+  transform: computed(() => menuContext.props.mode !== 'horizontal'),
   whileElementsMounted: autoUpdate,
 });
 
@@ -427,11 +431,7 @@ watch(opened, (value, _, onCleanup) => {
         <!-- 更多按钮图标 -->
         <template v-if="isMore">
           <span class="menu__icon menu__more-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <circle cx="5" cy="12" r="2" />
-              <circle cx="12" cy="12" r="2" />
-              <circle cx="19" cy="12" r="2" />
-            </svg>
+            <LayoutIcon name="more-horizontal" size="sm" />
           </span>
         </template>
         
@@ -442,12 +442,8 @@ watch(opened, (value, _, onCleanup) => {
           </span>
           <span class="menu__name">{{ item.name }}</span>
           <span class="menu__arrow" :style="arrowStyle">
-            <svg v-if="arrowIcon === 'down'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            <LayoutIcon v-if="arrowIcon === 'down'" name="menu-arrow-down" size="sm" />
+            <LayoutIcon v-else name="menu-arrow-right" size="sm" />
           </span>
         </template>
       </div>
@@ -462,6 +458,7 @@ watch(opened, (value, _, onCleanup) => {
             :class="[
               `menu__popup--${menuContext.props.theme}`,
               `menu__popup--level-${level}`,
+              menuContext.props.mode === 'horizontal' ? 'menu__popup--slow' : '',
             ]"
             :data-theme="menuContext.props.theme"
             :data-level="level"
@@ -508,9 +505,7 @@ watch(opened, (value, _, onCleanup) => {
         </span>
         <span class="menu__name">{{ item.name }}</span>
         <span class="menu__arrow" :style="arrowStyle">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
+          <LayoutIcon name="menu-arrow-down" size="sm" />
         </span>
       </div>
       
@@ -540,6 +535,12 @@ watch(opened, (value, _, onCleanup) => {
 .menu-popup-enter-active,
 .menu-popup-leave-active {
   transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.menu__popup--slow.menu-popup-enter-active,
+.menu__popup--slow.menu-popup-leave-active {
+  transition: opacity var(--admin-duration-slow, 500ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    transform var(--admin-duration-slow, 500ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 .menu-popup-enter-from,

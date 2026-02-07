@@ -136,6 +136,8 @@ export interface RouterConfig {
   navigate: RouterNavigateFunction;
   /** 当前路径（支持响应式对象或普通字符串） */
   currentPath: string | { value: string };
+  /** 路由位置对象（可选，用于 KeepAlive 等高级功能） */
+  location?: unknown;
   /** 路由模式 */
   mode?: 'hash' | 'history';
 }
@@ -690,8 +692,16 @@ export interface LayoutState {
   isFullscreen: boolean;
   /** 当前展开的菜单 keys */
   openMenuKeys: string[];
+  /** 混合导航当前选中的一级菜单 key */
+  mixedNavRootKey: string;
   /** 内容区域滚动位置 */
   contentScrollTop: number;
+  /** 内容刷新 key（用于强制刷新当前内容） */
+  refreshKey: number;
+  /** keep-alive 包含的组件名称列表 */
+  keepAliveIncludes: string[];
+  /** keep-alive 排除的组件名称列表 */
+  keepAliveExcludes: string[];
 }
 
 /**

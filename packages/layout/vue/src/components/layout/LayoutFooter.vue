@@ -3,33 +3,43 @@
  * 页脚组件
  */
 import { computed } from 'vue';
-import { useLayoutContext, useLayoutComputed, useSidebarState } from '../../composables';
+import { useLayoutContext, useLayoutComputed } from '../../composables';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
-const { collapsed: sidebarCollapsed } = useSidebarState();
-
 // 配置
 const footerConfig = computed(() => context.props.footer || {});
 const copyrightConfig = computed(() => context.props.copyright || {});
+const show = computed(() => !layoutComputed.value.isFullContent);
+const isFixed = computed(() => !!footerConfig.value.fixed);
 
 // 类名
 const footerClass = computed(() => [
   'layout-footer',
   {
-    'layout-footer--fixed': footerConfig.value.fixed,
-    'layout-footer--with-sidebar': layoutComputed.value.showSidebar && !context.props.isMobile,
-    'layout-footer--collapsed': sidebarCollapsed.value && !context.props.isMobile,
+    'layout-footer--fixed': isFixed.value,
   },
 ]);
 
 // 样式
-const footerStyle = computed(() => ({
-  height: `${layoutComputed.value.footerHeight}px`,
-  left: footerConfig.value.fixed && layoutComputed.value.showSidebar && !context.props.isMobile
-    ? `${layoutComputed.value.sidebarWidth}px`
-    : '0',
-}));
+const footerStyle = computed(() => {
+  const { footerHeight, mainStyle } = layoutComputed.value;
+  const style: Record<string, string> = {
+    height: `${footerHeight}px`,
+    marginBottom: show.value ? '0' : `-${footerHeight}px`,
+    position: isFixed.value ? 'fixed' : 'static',
+  };
+
+  if (isFixed.value) {
+    style.left = mainStyle.marginLeft;
+    style.right = mainStyle.marginRight;
+  } else {
+    style.marginLeft = mainStyle.marginLeft;
+    style.marginRight = mainStyle.marginRight;
+  }
+
+  return style;
+});
 </script>
 
 <template>
@@ -37,8 +47,6 @@ const footerStyle = computed(() => ({
     :class="footerClass"
     :style="footerStyle"
     :data-fixed="footerConfig.fixed ? 'true' : undefined"
-    :data-with-sidebar="layoutComputed.showSidebar && !context.props.isMobile ? 'true' : undefined"
-    :data-collapsed="sidebarCollapsed && !context.props.isMobile ? 'true' : undefined"
   >
     <div class="layout-footer__inner flex h-full items-center justify-between px-4">
       <!-- 左侧 -->

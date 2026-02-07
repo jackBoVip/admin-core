@@ -6,6 +6,7 @@ import { getLocaleByPreferences, verifyPasswordSync, defaultLockScreenBg } from 
 import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { usePreferences } from '../../hooks';
+import { Icon } from '../Icon';
 import { LockScreenTime } from './LockScreenTime';
 import type { LocaleMessages, LockScreenComponentProps } from '@admin-core/preferences';
 
@@ -182,9 +183,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
               autoComplete="current-password"
             />
             <button className="preferences-lock-unlock-btn" onClick={handleUnlock} aria-label={locale.lockScreen.entry}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-              </svg>
+              <Icon name="arrowRight" size="sm" />
             </button>
           </div>
           {onLogout && <button className="preferences-lock-unlock-logout" onClick={onLogout}>{locale.lockScreen.backToLogin}</button>}

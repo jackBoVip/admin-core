@@ -19,6 +19,7 @@ import {
 import React, { memo, useMemo, useCallback } from 'react';
 import { usePreferences } from '../../hooks';
 import { Block } from './Block';
+import { NumberItem } from './NumberItem';
 import { SelectItem } from './SelectItem';
 import { SwitchItem } from './SwitchItem';
 
@@ -37,7 +38,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
   const configs = useMemo(() => getLayoutTabConfigs(uiConfig), [uiConfig]);
 
   // 布局选项（翻译后）
-  const { layoutOptions, tabsStyleOptions, headerModeOptions } = useMemo(
+  const { layoutOptions, tabsStyleOptions, headerModeOptions, headerMenuAlignOptions } = useMemo(
     () => getLayoutTabOptions(locale),
     [locale]
   );
@@ -70,13 +71,21 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
     header: {
       enable: updater.setHeaderEnable,
       mode: updater.setHeaderMode,
+      menuAlign: updater.setHeaderMenuAlign,
       menuLauncher: updater.setHeaderMenuLauncher,
     },
     // 标签栏
     tabbar: {
       enable: updater.setTabbarEnable,
+      persist: updater.setTabbarPersist,
+      keepAlive: updater.setTabbarKeepAlive,
+      maxCount: updater.setTabbarMaxCount,
       showIcon: updater.setTabbarShowIcon,
+      showMore: updater.setTabbarShowMore,
+      showMaximize: updater.setTabbarShowMaximize,
       draggable: updater.setTabbarDraggable,
+      wheelable: updater.setTabbarWheelable,
+      middleClickToClose: updater.setTabbarMiddleClickToClose,
       styleType: updater.setTabbarStyleType,
     },
     // 面包屑
@@ -98,6 +107,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
     // 小部件
     widget: {
       fullscreen: updater.setWidgetFullscreen,
+      globalSearch: updater.setWidgetGlobalSearch,
       themeToggle: updater.setWidgetThemeToggle,
       languageToggle: updater.setWidgetLanguageToggle,
     },
@@ -105,21 +115,47 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
 
   // 顶栏模式选项（memoized）
 
-  // 菜单启动器是否可用（顶栏启用 + 顶部菜单布局）
-  const menuLauncherEnabled = useMemo(() => {
+  // 菜单对齐/启动器是否可用（顶栏启用 + 顶部菜单布局）
+  const menuAlignEnabled = useMemo(() => {
     return preferences.header.enable && isHeaderMenuLayout(preferences.app.layout);
+  }, [preferences.header.enable, preferences.app.layout]);
+
+  const menuLauncherEnabled = useMemo(() => {
+    const isHeaderMixedNav = preferences.app.layout === 'header-mixed-nav';
+    return preferences.header.enable && isHeaderMenuLayout(preferences.app.layout) && !isHeaderMixedNav;
   }, [preferences.header.enable, preferences.app.layout]);
 
   // 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
   const isCollapseButtonAllowedLayout = useMemo(() => {
-    return preferences.app.layout === 'sidebar-nav' || preferences.app.layout === 'header-mixed-nav';
+    return preferences.app.layout === 'sidebar-nav';
   }, [preferences.app.layout]);
+  // 侧边栏折叠是否可用（sidebar-mixed-nav 下禁用）
+  const isSidebarCollapseDisabled = useMemo(
+    () => preferences.app.layout === 'sidebar-mixed-nav' || preferences.app.layout === 'header-mixed-nav',
+    [preferences.app.layout]
+  );
+  const isBreadcrumbDisabledLayout = useMemo(
+    () =>
+      preferences.app.layout === 'header-nav' ||
+      preferences.app.layout === 'mixed-nav' ||
+      preferences.app.layout === 'header-mixed-nav',
+    [preferences.app.layout]
+  );
+  const isHeaderNavLayout = useMemo(
+    () => preferences.app.layout === 'header-nav',
+    [preferences.app.layout]
+  );
+  const breadcrumbEnabled = isBreadcrumbDisabledLayout ? false : preferences.breadcrumb.enable;
 
   // 功能区位置选项
   const panelPositionOptions = useMemo(() => [
     { label: locale.panel.positionLeft, value: 'left' },
     { label: locale.panel.positionRight, value: 'right' },
   ], [locale.panel]);
+
+  const handleTabbarMaxCountChange = useCallback((value: number) => {
+    updater.setTabbarMaxCount(Math.max(0, value));
+  }, [updater]);
 
   // 动态预览图选项（根据当前偏好设置）
   const previewOptions: LayoutPreviewOptions = useMemo(
@@ -260,7 +296,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               label={locale.sidebar.collapsed}
               checked={preferences.sidebar.collapsed}
               onChange={handlers.sidebar.collapsed}
-              disabled={configs.sidebarCollapsed.disabled}
+              disabled={isHeaderNavLayout || configs.sidebarCollapsed.disabled || isSidebarCollapseDisabled}
             />
           )}
           {configs.sidebarCollapsedButton.visible && (
@@ -268,7 +304,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               label={locale.sidebar.collapsedButton}
               checked={isCollapseButtonAllowedLayout ? preferences.sidebar.collapsedButton : false}
               onChange={handlers.sidebar.collapsedButton}
-              disabled={configs.sidebarCollapsedButton.disabled || !isCollapseButtonAllowedLayout}
+              disabled={isHeaderNavLayout || configs.sidebarCollapsedButton.disabled || !isCollapseButtonAllowedLayout}
             />
           )}
           {configs.sidebarExpandOnHover.visible && (
@@ -276,7 +312,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               label={locale.sidebar.expandOnHover}
               checked={preferences.sidebar.expandOnHover}
               onChange={handlers.sidebar.expandOnHover}
-              disabled={configs.sidebarExpandOnHover.disabled}
+              disabled={isHeaderNavLayout || configs.sidebarExpandOnHover.disabled}
             />
           )}
         </Block>
@@ -333,6 +369,15 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               disabled={!preferences.header.enable || configs.headerMode.disabled}
             />
           )}
+          {configs.headerMenuAlign.visible && (
+            <SelectItem
+              label={locale.header.menuAlign}
+              value={preferences.header.menuAlign}
+              onChange={handlers.header.menuAlign}
+              options={headerMenuAlignOptions}
+              disabled={!menuAlignEnabled || configs.headerMenuAlign.disabled}
+            />
+          )}
           {configs.headerMenuLauncher.visible && (
             <SwitchItem
               label={locale.header.menuLauncher}
@@ -356,6 +401,33 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               disabled={configs.tabbarEnable.disabled}
             />
           )}
+          {configs.tabbarPersist.visible && (
+            <SwitchItem
+              label={locale.tabbar.persist}
+              checked={preferences.tabbar.persist}
+              onChange={handlers.tabbar.persist}
+              disabled={!preferences.tabbar.enable || configs.tabbarPersist.disabled}
+            />
+          )}
+          {configs.tabbarKeepAlive.visible && (
+            <SwitchItem
+              label={locale.tabbar.keepAlive}
+              checked={preferences.tabbar.keepAlive}
+              onChange={handlers.tabbar.keepAlive}
+              disabled={!preferences.tabbar.enable || configs.tabbarKeepAlive.disabled}
+            />
+          )}
+          {configs.tabbarMaxCount.visible && (
+            <NumberItem
+              label={locale.tabbar.maxCount}
+              tip={locale.tabbar.maxCountTip}
+              value={preferences.tabbar.maxCount ?? 0}
+              min={0}
+              step={1}
+              onChange={handleTabbarMaxCountChange}
+              disabled={!preferences.tabbar.enable || configs.tabbarMaxCount.disabled}
+            />
+          )}
           {configs.tabbarShowIcon.visible && (
             <SwitchItem
               label={locale.tabbar.showIcon}
@@ -364,12 +436,45 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               disabled={!preferences.tabbar.enable || configs.tabbarShowIcon.disabled}
             />
           )}
+          {configs.tabbarShowMore.visible && (
+            <SwitchItem
+              label={locale.tabbar.showMore}
+              checked={preferences.tabbar.showMore}
+              onChange={handlers.tabbar.showMore}
+              disabled={!preferences.tabbar.enable || configs.tabbarShowMore.disabled}
+            />
+          )}
+          {configs.tabbarShowMaximize.visible && (
+            <SwitchItem
+              label={locale.tabbar.showMaximize}
+              checked={preferences.tabbar.showMaximize}
+              onChange={handlers.tabbar.showMaximize}
+              disabled={!preferences.tabbar.enable || configs.tabbarShowMaximize.disabled}
+            />
+          )}
           {configs.tabbarDraggable.visible && (
             <SwitchItem
               label={locale.tabbar.draggable}
               checked={preferences.tabbar.draggable}
               onChange={handlers.tabbar.draggable}
               disabled={!preferences.tabbar.enable || configs.tabbarDraggable.disabled}
+            />
+          )}
+          {configs.tabbarWheelable.visible && (
+            <SwitchItem
+              label={locale.tabbar.wheelable}
+              checked={preferences.tabbar.wheelable}
+              onChange={handlers.tabbar.wheelable}
+              disabled={!preferences.tabbar.enable || configs.tabbarWheelable.disabled}
+              tip={locale.tabbar.wheelableTip}
+            />
+          )}
+          {configs.tabbarMiddleClickToClose.visible && (
+            <SwitchItem
+              label={locale.tabbar.middleClickClose}
+              checked={preferences.tabbar.middleClickToClose}
+              onChange={handlers.tabbar.middleClickToClose}
+              disabled={!preferences.tabbar.enable || configs.tabbarMiddleClickToClose.disabled}
             />
           )}
           {configs.tabbarStyleType.visible && (
@@ -390,17 +495,17 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
           {configs.breadcrumbEnable.visible && (
             <SwitchItem
               label={locale.breadcrumb.enable}
-              checked={preferences.breadcrumb.enable}
+              checked={breadcrumbEnabled}
               onChange={handlers.breadcrumb.enable}
-              disabled={configs.breadcrumbEnable.disabled}
+              disabled={isBreadcrumbDisabledLayout || configs.breadcrumbEnable.disabled}
             />
           )}
           {configs.breadcrumbShowIcon.visible && (
             <SwitchItem
               label={locale.breadcrumb.showIcon}
-              checked={preferences.breadcrumb.showIcon}
+              checked={breadcrumbEnabled ? preferences.breadcrumb.showIcon : false}
               onChange={handlers.breadcrumb.showIcon}
-              disabled={!preferences.breadcrumb.enable || configs.breadcrumbShowIcon.disabled}
+              disabled={isBreadcrumbDisabledLayout || !breadcrumbEnabled || configs.breadcrumbShowIcon.disabled}
             />
           )}
         </Block>
@@ -437,6 +542,14 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               checked={preferences.widget.fullscreen}
               onChange={handlers.widget.fullscreen}
               disabled={configs.widgetFullscreen.disabled}
+            />
+          )}
+          {configs.widgetGlobalSearch.visible && (
+            <SwitchItem
+              label={locale.widget.globalSearch}
+              checked={preferences.widget.globalSearch}
+              onChange={handlers.widget.globalSearch}
+              disabled={configs.widgetGlobalSearch.disabled}
             />
           )}
           {configs.widgetThemeToggle.visible && (

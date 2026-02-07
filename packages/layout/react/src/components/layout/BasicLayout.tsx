@@ -5,36 +5,42 @@
  * 自动响应偏好设置变化（布局类型、主题等）
  */
 
-import { useEffect, useState, useMemo, type ReactNode, type CSSProperties } from 'react';
-import type { BasicLayoutProps, LayoutEvents, RouterConfig, MenuItem, TabItem, NotificationItem, BreadcrumbItem } from '@admin-core/layout';
-import type { SupportedLocale } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps, buildMenuPathIndex } from '@admin-core/layout';
-import { LayoutProvider, useLayoutComputed, useLayoutCSSVars, useLayoutState, useLayoutContext } from '../../hooks';
-import { useResponsive } from '../../hooks/use-layout-state';
-import { logger } from '@admin-core/layout';
-import { 
-  PreferencesProvider, 
+import {
+  mapPreferencesToLayoutProps,
+  buildMenuPathIndex,
+  filterHiddenMenus,
+  logger,
+} from '@admin-core/layout';
+import {
+  PreferencesProvider,
   PreferencesDrawer,
   initPreferences,
   getPreferencesManager,
+  type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences-react';
-import { LayoutHeader } from './LayoutHeader';
-import { LayoutSidebar } from './LayoutSidebar';
-import { LayoutTabbar } from './LayoutTabbar';
-import { LayoutContent } from './LayoutContent';
-import { LayoutFooter } from './LayoutFooter';
-import { LayoutPanel } from './LayoutPanel';
-import { LayoutOverlay } from './LayoutOverlay';
+import { useEffect, useState, useMemo, useCallback, useRef, type ReactNode, type CSSProperties } from 'react';
+import { LayoutProvider, useLayoutComputed, useLayoutCSSVars, useLayoutState, useLayoutContext, useRouter } from '../../hooks';
+import { renderLayoutIcon } from '../../utils';
+import { useResponsive } from '../../hooks/use-layout-state';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { HorizontalMenu } from '../menu';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { LayoutContent } from './LayoutContent';
+import { LayoutFooter } from './LayoutFooter';
+import { LayoutHeader } from './LayoutHeader';
+import { LayoutOverlay } from './LayoutOverlay';
+import { LayoutPanel } from './LayoutPanel';
+import { LayoutProgress } from './LayoutProgress';
+import { LayoutSidebar } from './LayoutSidebar';
+import { LayoutTabbar } from './LayoutTabbar';
+import type { SupportedLocale, BasicLayoutProps, LayoutEvents, RouterConfig, MenuItem, TabItem, NotificationItem, BreadcrumbItem  } from '@admin-core/layout';
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
 let preferencesManager: ReturnType<typeof getPreferencesManager> | null = null;
 try {
   preferencesManager = getPreferencesManager();
-} catch (error) {
+} catch {
   try {
     initPreferences({ namespace: 'admin-core' });
     preferencesManager = getPreferencesManager();
@@ -107,6 +113,8 @@ export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots
   showPreferencesButton?: boolean;
   /** 偏好设置按钮位置 */
   preferencesButtonPosition?: 'header' | 'fixed' | 'auto';
+  /** 偏好设置 UI 配置（控制显示/禁用） */
+  preferencesUIConfig?: PreferencesDrawerUIConfig;
   /** 自定义偏好设置按钮图标 */
   preferencesButtonIcon?: ReactNode;
   // 事件
@@ -134,12 +142,7 @@ export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots
 }
 
 /** 默认设置图标 */
-const SettingsIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"></circle>
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-  </svg>
-);
+const SettingsIcon = () => renderLayoutIcon('settings', 'sm');
 
 /**
  * 内部布局组件
@@ -151,6 +154,7 @@ function LayoutInner({
   showPreferencesButton = true,
   preferencesButtonPosition = 'auto',
   preferencesButtonIcon,
+  preferencesUIConfig,
   onPreferencesOpen,
   onPreferencesClose,
   // 插槽
@@ -187,13 +191,198 @@ function LayoutInner({
   const cssVars = useLayoutCSSVars();
   const [state, setState] = useLayoutState();
   const { isMobile } = useResponsive();
-  const { props: contextProps } = useLayoutContext();
+  const context = useLayoutContext();
+  const contextProps = context.props;
+  const { currentPath, handleMenuItemClick } = useRouter();
 
   const resolvedPreferencesButtonPosition =
     preferencesButtonPosition ?? contextProps.preferencesButtonPosition ?? 'auto';
   
   // 偏好设置抽屉状态
   const [showPreferencesDrawer, setShowPreferencesDrawer] = useState(false);
+  const [menuLauncherOpen, setMenuLauncherOpen] = useState(false);
+  const [floatingPosition, setFloatingPosition] = useState<{ x: number; y: number } | null>(null);
+  const [floatingEdge, setFloatingEdge] = useState<'left' | 'right' | 'top' | 'bottom' | null>(null);
+  const [floatingDragging, setFloatingDragging] = useState(false);
+  const floatingDragRef = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  const floatingMovedRef = useRef(false);
+  const floatingButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const menuLauncherEnabled = useMemo(() => {
+    const isHeaderMenuLayout = computed.isHeaderNav || computed.isMixedNav;
+    return isHeaderMenuLayout && !computed.isHeaderMixedNav && contextProps.header?.menuLauncher;
+  }, [computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, contextProps.header?.menuLauncher]);
+
+  const menuLauncherLabel = useMemo(() => {
+    return context.t('layout.header.menuLauncher');
+  }, [context]);
+
+  const launcherMenus = useMemo(() => {
+    return filterHiddenMenus(contextProps.menus || []);
+  }, [contextProps.menus]);
+
+  const showFloatingPreferencesButton = showPreferencesButton && computed.isFullContent;
+  const showFixedPreferencesButton =
+    showPreferencesButton && resolvedPreferencesButtonPosition === 'fixed' && !computed.isFullContent;
+  const floatingStorageKey = 'admin-core:pref-fab-position';
+
+  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+  const getFloatingBounds = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+    }
+    const rect = floatingButtonRef.current?.getBoundingClientRect();
+    const width = rect?.width ?? 48;
+    const height = rect?.height ?? 48;
+    const inset = 8;
+    return {
+      minX: inset,
+      minY: inset,
+      maxX: Math.max(inset, window.innerWidth - width - inset),
+      maxY: Math.max(inset, window.innerHeight - height - inset),
+    };
+  }, [floatingButtonRef]);
+
+  const snapFloatingPosition = useCallback(
+    (pos: { x: number; y: number }) => {
+      const bounds = getFloatingBounds();
+      const x = clamp(pos.x, bounds.minX, bounds.maxX);
+      const y = clamp(pos.y, bounds.minY, bounds.maxY);
+      const distances = [
+        { edge: 'left', value: x - bounds.minX },
+        { edge: 'right', value: bounds.maxX - x },
+        { edge: 'top', value: y - bounds.minY },
+        { edge: 'bottom', value: bounds.maxY - y },
+      ];
+      distances.sort((a, b) => a.value - b.value);
+      const nearest = distances[0]?.edge as 'left' | 'right' | 'top' | 'bottom' | undefined;
+      if (nearest === 'left') return { x: bounds.minX, y, edge: 'left' as const };
+      if (nearest === 'right') return { x: bounds.maxX, y, edge: 'right' as const };
+      if (nearest === 'top') return { x, y: bounds.minY, edge: 'top' as const };
+      return { x, y: bounds.maxY, edge: 'bottom' as const };
+    },
+    [getFloatingBounds]
+  );
+
+  useEffect(() => {
+    if (!showFloatingPreferencesButton || floatingPosition) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = window.localStorage.getItem(floatingStorageKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { x?: number; y?: number; edge?: typeof floatingEdge };
+        if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          const bounds = getFloatingBounds();
+          setFloatingPosition({
+            x: clamp(parsed.x, bounds.minX, bounds.maxX),
+            y: clamp(parsed.y, bounds.minY, bounds.maxY),
+          });
+          setFloatingEdge(parsed.edge ?? null);
+          return;
+        }
+      }
+    } catch {}
+    const inset = 24;
+    const size = 48;
+    setFloatingPosition({
+      x: window.innerWidth - size - inset,
+      y: window.innerHeight - size - inset,
+    });
+  }, [showFloatingPreferencesButton, floatingPosition]);
+
+  useEffect(() => {
+    if (!showFloatingPreferencesButton) return;
+    const handleResize = () => {
+      setFloatingPosition((prev) => {
+        if (!prev) return prev;
+        const bounds = getFloatingBounds();
+        return {
+          x: clamp(prev.x, bounds.minX, bounds.maxX),
+          y: clamp(prev.y, bounds.minY, bounds.maxY),
+        };
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [showFloatingPreferencesButton, getFloatingBounds]);
+
+  useEffect(() => {
+    if (!showFloatingPreferencesButton || !floatingPosition) return;
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        floatingStorageKey,
+        JSON.stringify({ x: floatingPosition.x, y: floatingPosition.y, edge: floatingEdge })
+      );
+    } catch {}
+  }, [showFloatingPreferencesButton, floatingPosition, floatingEdge]);
+
+  const handleFloatingPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      if (!showFloatingPreferencesButton) return;
+      event.preventDefault();
+      const target = event.currentTarget;
+      target.setPointerCapture?.(event.pointerId);
+      setFloatingDragging(true);
+      setFloatingEdge(null);
+      floatingMovedRef.current = false;
+
+      const rect = target.getBoundingClientRect();
+      const originX = floatingPosition?.x ?? rect.left;
+      const originY = floatingPosition?.y ?? rect.top;
+      floatingDragRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        originX,
+        originY,
+      };
+
+      const handleMove = (moveEvent: PointerEvent) => {
+        if (!floatingDragRef.current) return;
+        const { startX, startY, originX: baseX, originY: baseY } = floatingDragRef.current;
+        const dx = moveEvent.clientX - startX;
+        const dy = moveEvent.clientY - startY;
+        if (Math.abs(dx) + Math.abs(dy) > 3) {
+          floatingMovedRef.current = true;
+        }
+        const bounds = getFloatingBounds();
+        setFloatingPosition({
+          x: clamp(baseX + dx, bounds.minX, bounds.maxX),
+          y: clamp(baseY + dy, bounds.minY, bounds.maxY),
+        });
+      };
+
+      const handleUp = () => {
+        floatingDragRef.current = null;
+        setFloatingPosition((prev) => {
+          if (!prev) return prev;
+          const snapped = snapFloatingPosition(prev);
+          setFloatingEdge(snapped.edge);
+          return { x: snapped.x, y: snapped.y };
+        });
+        setFloatingDragging(false);
+        window.removeEventListener('pointermove', handleMove);
+        window.removeEventListener('pointerup', handleUp);
+      };
+
+      window.addEventListener('pointermove', handleMove);
+      window.addEventListener('pointerup', handleUp);
+    },
+    [
+      showFloatingPreferencesButton,
+      floatingPosition,
+      floatingDragRef,
+      floatingMovedRef,
+      getFloatingBounds,
+      snapFloatingPosition,
+    ]
+  );
 
   // 移动端自动折叠侧边栏
   useEffect(() => {
@@ -214,18 +403,44 @@ function LayoutInner({
     onPreferencesClose?.();
   };
 
+  const handleFloatingClick = useCallback(() => {
+    if (floatingMovedRef.current) {
+      floatingMovedRef.current = false;
+      return;
+    }
+    openPreferences();
+  }, [openPreferences, floatingMovedRef]);
+
+  const floatingButtonStyle = useMemo(() => {
+    if (!floatingPosition) return undefined;
+    return {
+      left: `${floatingPosition.x}px`,
+      top: `${floatingPosition.y}px`,
+    } as CSSProperties;
+  }, [floatingPosition]);
+
+  const closeMenuLauncher = useCallback(() => {
+    setMenuLauncherOpen(false);
+  }, []);
+
+  const toggleMenuLauncher = useCallback(() => {
+    setMenuLauncherOpen((prev) => !prev);
+  }, []);
+
   // ============================================================
   // 水平菜单相关逻辑
   // ============================================================
   
+  const isHeaderSidebarNav = computed.currentLayout === 'header-sidebar-nav';
+
   // 是否显示顶部导航菜单
   const showHeaderMenu = useMemo(() => {
-    return computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav;
-  }, [computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav]);
+    return (computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav) && !isHeaderSidebarNav;
+  }, [computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]);
 
   // 顶部导航菜单数据
   const headerMenus = useMemo(() => {
-    if (!contextProps.menus) return [];
+    if (!contextProps.menus || isHeaderSidebarNav) return [];
     
     // header-nav 模式：显示完整菜单树
     if (computed.isHeaderNav) {
@@ -241,7 +456,7 @@ function LayoutInner({
     }
     
     return [];
-  }, [contextProps.menus, computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav]);
+  }, [contextProps.menus, computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]);
 
   const headerMenuIndex = useMemo(
     () => buildMenuPathIndex(contextProps.menus || []),
@@ -251,8 +466,11 @@ function LayoutInner({
   // 顶部导航菜单激活 key
   const headerActiveKey = useMemo(() => {
     if (contextProps.activeMenuKey) return contextProps.activeMenuKey;
+    if ((computed.isMixedNav || computed.isHeaderMixedNav) && state.mixedNavRootKey) {
+      return state.mixedNavRootKey;
+    }
     
-    const path = contextProps.currentPath;
+    const path = contextProps.currentPath ? contextProps.currentPath.split('?')[0] : '';
     if (!path || !headerMenus.length) return undefined;
     
     let menu =
@@ -275,13 +493,107 @@ function LayoutInner({
       return chain[0];
     }
     return menu.key;
-  }, [contextProps.activeMenuKey, contextProps.currentPath, headerMenuIndex, headerMenus.length, computed.isMixedNav, computed.isHeaderMixedNav]);
+  }, [contextProps.activeMenuKey, contextProps.currentPath, headerMenuIndex, headerMenus.length, computed.isMixedNav, computed.isHeaderMixedNav, state.mixedNavRootKey]);
+
+  const handleHeaderMenuSelect = useCallback(
+    (item: MenuItem, key: string) => {
+      if (!computed.isMixedNav && !computed.isHeaderMixedNav) return;
+      const nextKey = item.key ?? item.path ?? key;
+      if (!nextKey) return;
+      setState((prev) => {
+        if (prev.mixedNavRootKey === String(nextKey)) return prev;
+        return { ...prev, mixedNavRootKey: String(nextKey) };
+      });
+    },
+    [computed.isMixedNav, computed.isHeaderMixedNav, setState]
+  );
 
   // 菜单对齐方式
   const headerMenuAlign = contextProps.header?.menuAlign || 'start';
   
   // 菜单主题（转换 auto 为 light）
-  const headerMenuTheme = (contextProps.headerTheme === 'dark' ? 'dark' : 'light') as 'light' | 'dark';
+  const headerMenuTheme = (computed.headerTheme === 'dark' ? 'dark' : 'light') as 'light' | 'dark';
+
+  useEffect(() => {
+    if (!menuLauncherEnabled) {
+      setMenuLauncherOpen(false);
+    }
+  }, [menuLauncherEnabled]);
+
+  useEffect(() => {
+    if (menuLauncherOpen) {
+      setMenuLauncherOpen(false);
+    }
+  }, [currentPath]);
+
+  useEffect(() => {
+    if (!menuLauncherOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuLauncherOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [menuLauncherOpen]);
+
+  const handleLauncherItemClick = useCallback((item: MenuItem) => {
+    if (item.disabled) return;
+    handleMenuItemClick(item);
+    const rawKey = item.key ?? item.path ?? '';
+    if (rawKey !== '') {
+      context.events?.onMenuSelect?.(item, String(rawKey));
+    }
+    if (computed.isMixedNav || computed.isHeaderMixedNav) {
+      const chain =
+        (item.key ? headerMenuIndex.chainByKey.get(item.key) : undefined) ??
+        (item.path ? headerMenuIndex.chainByPath.get(item.path) : undefined) ??
+        [];
+      const rootKey = chain.length > 0 ? chain[0] : rawKey;
+      if (rootKey) {
+        setState((prev) => {
+          if (prev.mixedNavRootKey === String(rootKey)) return prev;
+          return { ...prev, mixedNavRootKey: String(rootKey) };
+        });
+      }
+    }
+    setMenuLauncherOpen(false);
+  }, [handleMenuItemClick, context.events, computed.isMixedNav, computed.isHeaderMixedNav, headerMenuIndex, setState]);
+
+  const renderLauncherItems = useCallback(function renderLauncherItems(items: MenuItem[], depth: number) {
+    if (!items.length) return null;
+    const listClass = depth > 0 ? 'layout-header__launcher-sublist' : 'layout-header__launcher-list';
+    return (
+      <ul className={listClass} data-depth={depth}>
+        {items
+          .filter((item) => !item.hidden)
+          .map((item) => {
+            const key = String(item.key ?? item.path ?? item.name ?? '');
+            const isActive = key !== '' && key === String(headerActiveKey ?? '');
+            return (
+              <li
+                key={key}
+                className={`layout-header__launcher-item${item.disabled ? ' is-disabled' : ''}`}
+                data-active={isActive ? 'true' : undefined}
+                data-disabled={item.disabled ? 'true' : undefined}
+              >
+                <button
+                  type="button"
+                  className="layout-header__launcher-item-btn"
+                  onClick={() => handleLauncherItemClick(item)}
+                  disabled={item.disabled}
+                  data-active={isActive ? 'true' : undefined}
+                >
+                  {item.icon && <span className="layout-header__launcher-icon">{item.icon}</span>}
+                  <span className="layout-header__launcher-text">{item.name}</span>
+                </button>
+                {item.children?.length ? renderLauncherItems(item.children, depth + 1) : null}
+              </li>
+            );
+          })}
+      </ul>
+    );
+  }, [handleLauncherItemClick, headerActiveKey]);
 
   // 根元素类名
   const rootClassName = (() => {
@@ -303,6 +615,7 @@ function LayoutInner({
   return (
     <>
       <div className={rootClassName} style={rootStyle}>
+        <LayoutProgress />
         {/* 侧边栏 */}
         {computed.showSidebar && (
           <LayoutSidebar
@@ -318,16 +631,34 @@ function LayoutInner({
         {computed.showHeader && (
           <LayoutHeader
             logo={headerLogo}
-            left={headerLeft || (contextProps.breadcrumb?.enable !== false ? <Breadcrumb showIcon={contextProps.breadcrumb?.showIcon} showHome={contextProps.breadcrumb?.showHome} /> : undefined)}
+            left={headerLeft || (computed.showBreadcrumb ? <Breadcrumb showIcon={contextProps.breadcrumb?.showIcon} showHome={contextProps.breadcrumb?.showHome} /> : undefined)}
             center={headerCenter}
-            menu={headerMenu || (showHeaderMenu && headerMenus.length > 0 ? (
-              <HorizontalMenu
-                menus={headerMenus}
-                activeKey={headerActiveKey}
-                align={headerMenuAlign}
-                theme={headerMenuTheme}
-              />
-            ) : undefined)}
+            menu={
+              menuLauncherEnabled ? (
+                <div className="layout-header__menu-launcher">
+                  <button
+                    type="button"
+                    className="layout-header__launcher-btn"
+                    onClick={toggleMenuLauncher}
+                    aria-expanded={menuLauncherOpen}
+                    aria-label={menuLauncherLabel}
+                  >
+                    {renderLayoutIcon('menu-launcher', 'sm')}
+                    <span>{menuLauncherLabel}</span>
+                  </button>
+                </div>
+              ) : (
+                headerMenu || (showHeaderMenu && headerMenus.length > 0 ? (
+                  <HorizontalMenu
+                    menus={headerMenus}
+                    activeKey={headerActiveKey}
+                    align={headerMenuAlign}
+                    theme={headerMenuTheme}
+                    onSelect={handleHeaderMenuSelect}
+                  />
+                ) : undefined)
+              )
+            }
             right={headerRight}
             actions={
               headerActions || (
@@ -340,6 +671,51 @@ function LayoutInner({
             }
             extra={headerExtra}
           />
+        )}
+
+        {menuLauncherEnabled && menuLauncherOpen && (
+          <div
+            className="layout-header__launcher-overlay"
+            onClick={closeMenuLauncher}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div
+              className="layout-header__launcher-panel"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {launcherMenus.length > 0 ? (
+                <div className="layout-header__launcher-grid">
+                  {launcherMenus.map((menu) => {
+                    const key = String(menu.key ?? menu.path ?? menu.name ?? '');
+                    const isActive = key !== '' && key === String(headerActiveKey ?? '');
+                    const hasChildren = Boolean(menu.children?.length);
+                    return (
+                      <div key={key} className="layout-header__launcher-group">
+                        <button
+                          type="button"
+                          className={`layout-header__launcher-title${hasChildren ? ' layout-header__launcher-title--group' : ' is-single'}`}
+                          onClick={() => handleLauncherItemClick(menu)}
+                          disabled={menu.disabled}
+                          data-active={isActive ? 'true' : undefined}
+                        >
+                          {menu.icon && (
+                            <span className="layout-header__launcher-icon">{menu.icon}</span>
+                          )}
+                          <span className="layout-header__launcher-text">{menu.name}</span>
+                        </button>
+                        {hasChildren ? renderLauncherItems(menu.children || [], 0) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="layout-header__launcher-empty">
+                  {context.t('layout.common.noData')}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {/* 标签栏 */}
@@ -388,7 +764,7 @@ function LayoutInner({
         {extra}
 
         {/* 内置偏好设置按钮（固定位置） */}
-        {showPreferencesButton && resolvedPreferencesButtonPosition === 'fixed' && (
+        {showFixedPreferencesButton && (
           <button
             className="layout-preferences-button"
             title="偏好设置"
@@ -397,10 +773,27 @@ function LayoutInner({
             {preferencesButtonIcon || <SettingsIcon />}
           </button>
         )}
+
+        {/* 全屏内容布局：可拖拽的偏好设置按钮 */}
+        {showFloatingPreferencesButton && (
+          <button
+            ref={floatingButtonRef}
+            type="button"
+            className={`layout-preferences-button layout-preferences-button--floating${floatingDragging ? ' layout-preferences-button--dragging' : ''}`}
+            title="偏好设置"
+            style={floatingButtonStyle}
+            data-edge={floatingEdge ?? undefined}
+            onPointerDown={handleFloatingPointerDown}
+            onClick={handleFloatingClick}
+          >
+            {preferencesButtonIcon || <SettingsIcon />}
+          </button>
+        )}
       </div>
 
       {/* 偏好设置抽屉（内置） */}
       <PreferencesDrawer
+        uiConfig={preferencesUIConfig}
         open={showPreferencesDrawer}
         onClose={closePreferences}
       />
@@ -432,7 +825,19 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     });
 
     return () => unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 标记平台类型（用于滚动条样式兼容）
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const platform =
+      (navigator as Navigator & { userAgentData?: { platform?: string } })?.userAgentData?.platform ||
+      navigator.platform ||
+      '';
+    const isMac = platform.toLowerCase().includes('mac');
+    const value = isMac ? 'macOs' : 'other';
+    document.documentElement.setAttribute('data-platform', value);
+    document.body?.setAttribute('data-platform', value);
   }, []);
 
   const {
@@ -644,7 +1049,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   ]);
 
   return (
-    <PreferencesProvider>
+    <PreferencesProvider showTrigger={false} uiConfig={props.preferencesUIConfig}>
       <LayoutProvider
         props={layoutProps}
         events={events}

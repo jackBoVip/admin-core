@@ -198,7 +198,12 @@ export type ContextMenuAction =
   | 'closeOther'
   | 'closeLeft'
   | 'closeRight'
-  | 'closeAll';
+  | 'closeAll'
+  | 'pin'
+  | 'unpin'
+  | 'openInNewWindow'
+  | 'maximize'
+  | 'restoreMaximize';
 
 /**
  * 右键菜单项配置
@@ -223,7 +228,10 @@ export function generateContextMenuItems(
   tabs: TabItem[],
   activeKey: string,
   t: (key: string) => string,
-  indexMap?: Map<string, number>
+  indexMap?: Map<string, number>,
+  options?: {
+    isMaximized?: boolean;
+  }
 ): ContextMenuItem[] {
   let currentIndex = indexMap?.get(tab.key) ?? -1;
   if (currentIndex < 0) {
@@ -235,79 +243,83 @@ export function generateContextMenuItems(
     }
   }
   const isActive = tab.key === activeKey;
-  const canClose = tab.closable !== false && !tab.affix;
-  let hasLeftTabs = false;
-  let hasRightTabs = false;
-  let hasOtherTabs = false;
-  let hasClosableTabs = false;
-  if (currentIndex > 0) {
-    for (let i = 0; i < currentIndex; i += 1) {
-      const item = tabs[i];
-      if (item.closable !== false && !item.affix) {
-        hasLeftTabs = true;
-        break;
-      }
-    }
-  }
-  if (currentIndex >= 0 && currentIndex < tabs.length - 1) {
-    for (let i = currentIndex + 1; i < tabs.length; i += 1) {
-      const item = tabs[i];
-      if (item.closable !== false && !item.affix) {
-        hasRightTabs = true;
-        break;
-      }
-    }
-  }
-  for (const item of tabs) {
-    if (item.closable !== false && !item.affix) {
-      hasClosableTabs = true;
-    }
-    if (item.key !== tab.key && item.closable !== false && !item.affix) {
-      hasOtherTabs = true;
-    }
-    if (hasOtherTabs && hasClosableTabs) {
-      break;
-    }
-  }
+  const isAffix = tab.affix === true;
+  const isMaximized = options?.isMaximized ?? false;
+  const affixCount = tabs.reduce((count, item) => (item.affix ? count + 1 : count), 0);
+  const disabled = tabs.length <= 1;
+  const disabledCloseCurrent = isAffix || disabled;
+  const disabledCloseLeft =
+    !isActive ||
+    currentIndex <= 0 ||
+    currentIndex - affixCount <= 0;
+  const disabledCloseRight =
+    !isActive ||
+    currentIndex === tabs.length - 1;
+  const disabledCloseOther =
+    disabled ||
+    !isActive ||
+    tabs.length - affixCount <= 1;
+  const disabledCloseAll = disabled;
+  const disabledRefresh = !isActive;
 
   return [
     {
-      key: 'refresh',
-      label: t('layout.tabbar.refresh'),
-      icon: 'refresh',
-      disabled: !isActive,
-    },
-    {
       key: 'close',
-      label: t('layout.tabbar.close'),
+      label: t('layout.tabbar.contextMenu.close'),
       icon: 'close',
-      disabled: !canClose,
-      divider: true,
+      disabled: disabledCloseCurrent,
     },
     {
-      key: 'closeOther',
-      label: t('layout.tabbar.closeOther'),
-      icon: 'close',
-      disabled: !hasOtherTabs,
+      key: isAffix ? 'unpin' : 'pin',
+      label: isAffix ? t('layout.tabbar.contextMenu.unpin') : t('layout.tabbar.contextMenu.pin'),
+      icon: isAffix ? 'pin-off' : 'pin',
+      disabled: false,
+    },
+    {
+      key: isMaximized ? 'restoreMaximize' : 'maximize',
+      label: isMaximized
+        ? t('layout.tabbar.contextMenu.restoreMaximize')
+        : t('layout.tabbar.contextMenu.maximize'),
+      icon: isMaximized ? 'minimize' : 'maximize',
+      disabled: false,
+    },
+    {
+      key: 'refresh',
+      label: t('layout.tabbar.contextMenu.reload'),
+      icon: 'refresh',
+      disabled: disabledRefresh,
+    },
+    {
+      key: 'openInNewWindow',
+      label: t('layout.tabbar.contextMenu.openInNewWindow'),
+      icon: 'external-link',
+      divider: true,
+      disabled: false,
     },
     {
       key: 'closeLeft',
-      label: t('layout.tabbar.closeLeft'),
+      label: t('layout.tabbar.contextMenu.closeLeft'),
       icon: 'chevron-left',
-      disabled: !hasLeftTabs,
+      disabled: disabledCloseLeft,
     },
     {
       key: 'closeRight',
-      label: t('layout.tabbar.closeRight'),
+      label: t('layout.tabbar.contextMenu.closeRight'),
       icon: 'chevron-right',
-      disabled: !hasRightTabs,
       divider: true,
+      disabled: disabledCloseRight,
+    },
+    {
+      key: 'closeOther',
+      label: t('layout.tabbar.contextMenu.closeOther'),
+      icon: 'close',
+      disabled: disabledCloseOther,
     },
     {
       key: 'closeAll',
-      label: t('layout.tabbar.closeAll'),
+      label: t('layout.tabbar.contextMenu.closeAll'),
       icon: 'close',
-      disabled: !hasClosableTabs,
+      disabled: disabledCloseAll,
     },
   ];
 }

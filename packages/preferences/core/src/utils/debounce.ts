@@ -8,6 +8,44 @@ export interface DebouncedCallback<T> {
   cancel: () => void;
 }
 
+/**
+ * 防抖函数
+ */
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  return (...args: Parameters<T>) => {
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      fn(...args);
+      timer = null;
+    }, delay);
+  };
+}
+
+/**
+ * 节流函数
+ */
+export function throttle<T extends (...args: unknown[]) => unknown>(
+  fn: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  let lastTime = 0;
+
+  return (...args: Parameters<T>) => {
+    const now = Date.now();
+    if (now - lastTime >= delay) {
+      fn(...args);
+      lastTime = now;
+    }
+  };
+}
+
 export function createDebouncedCallback<T>(
   callback: (value: T) => void,
   delay = 300

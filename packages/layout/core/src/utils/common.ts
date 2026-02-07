@@ -3,6 +3,7 @@
  * @description Vue 和 React 共用的工具函数
  */
 
+import { debounce as sharedDebounce, throttle as sharedThrottle } from '@admin-core/preferences';
 import { BREAKPOINTS } from '../constants';
 import { TabManager } from './layout';
 import type { TabItem } from '../types';
@@ -195,13 +196,13 @@ export function getTabContextMenuItems(options: {
   return [
     {
       key: 'reload',
-      label: t('layout.tabbar.reload'),
+      label: t('layout.tabbar.contextMenu.reload'),
       icon: 'refresh',
       disabled: !isActive,
     },
     {
       key: 'close',
-      label: t('layout.tabbar.close'),
+      label: t('layout.tabbar.contextMenu.close'),
       icon: 'close',
       disabled: isAffix,
     },
@@ -212,13 +213,13 @@ export function getTabContextMenuItems(options: {
     },
     {
       key: 'closeLeft',
-      label: t('layout.tabbar.closeLeft'),
+      label: t('layout.tabbar.contextMenu.closeLeft'),
       icon: 'chevron-left',
       disabled: !hasLeft,
     },
     {
       key: 'closeRight',
-      label: t('layout.tabbar.closeRight'),
+      label: t('layout.tabbar.contextMenu.closeRight'),
       icon: 'chevron-right',
       disabled: !hasRight,
     },
@@ -229,13 +230,13 @@ export function getTabContextMenuItems(options: {
     },
     {
       key: 'closeOther',
-      label: t('layout.tabbar.closeOther'),
+      label: t('layout.tabbar.contextMenu.closeOther'),
       icon: 'close',
       disabled: !hasOther,
     },
     {
       key: 'closeAll',
-      label: t('layout.tabbar.closeAll'),
+      label: t('layout.tabbar.contextMenu.closeAll'),
       icon: 'close',
       disabled: tabs.every(tab => tab.affix),
     },
@@ -246,7 +247,7 @@ export function getTabContextMenuItems(options: {
     },
     {
       key: 'pin',
-      label: isAffix ? t('layout.tabbar.unpin') : t('layout.tabbar.pin'),
+      label: isAffix ? t('layout.tabbar.contextMenu.unpin') : t('layout.tabbar.contextMenu.pin'),
       icon: 'pin',
     },
   ];
@@ -282,17 +283,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  
-  return (...args: Parameters<T>) => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => {
-      fn(...args);
-      timer = null;
-    }, delay);
-  };
+  return sharedDebounce(fn, delay);
 }
 
 /**
@@ -302,15 +293,7 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let lastTime = 0;
-  
-  return (...args: Parameters<T>) => {
-    const now = Date.now();
-    if (now - lastTime >= delay) {
-      fn(...args);
-      lastTime = now;
-    }
-  };
+  return sharedThrottle(fn, delay);
 }
 
 /**

@@ -45,26 +45,33 @@ const emit = defineEmits<{
   close: [path: string, parentPaths: string[]];
 }>();
 
+const normalizeKey = (value: unknown) => {
+  if (value == null || value === '') return '';
+  return String(value);
+};
+
 // 状态
-const activePath = ref(props.defaultActive);
+const activePath = ref(normalizeKey(props.defaultActive));
 const openedMenus = ref<string[]>(
-  props.defaultOpeneds && !props.collapse ? [...props.defaultOpeneds] : []
+  props.defaultOpeneds && !props.collapse
+    ? props.defaultOpeneds.map((key) => normalizeKey(key)).filter(Boolean)
+    : []
 );
 const openedMenuSet = computed(() => new Set(openedMenus.value));
 const parentPathMap = computed(() => {
   const map = new Map<string, string | null>();
   const visit = (items: MenuItem[], parent: string | null) => {
     for (const menu of items) {
-      const keyPath = menu.key || menu.path || '';
-      const path = menu.path || '';
-      if (keyPath) {
-        map.set(keyPath, parent);
-      }
-      if (path && path !== keyPath) {
-        map.set(path, parent);
-      }
+      const rawKey = menu.key ?? '';
+      const keyPath = normalizeKey(rawKey);
+      const rawPath = menu.path ?? '';
+      const path = normalizeKey(rawPath);
+      const id = normalizeKey(menu.key ?? menu.path ?? menu.name ?? '');
+      if (keyPath) map.set(keyPath, parent);
+      if (path && path !== keyPath) map.set(path, parent);
+      if (id && id !== keyPath && id !== path) map.set(id, parent);
       if (menu.children?.length) {
-        visit(menu.children, keyPath || path || parent);
+        visit(menu.children, id || parent);
       }
     }
   };
@@ -88,8 +95,9 @@ const activeParentSet = computed(() => {
 
 // 监听 defaultActive 变化
 watch(() => props.defaultActive, (val) => {
-  if (activePath.value !== val) {
-    activePath.value = val;
+  const nextActive = normalizeKey(val);
+  if (activePath.value !== nextActive) {
+    activePath.value = nextActive;
   }
 });
 
@@ -109,17 +117,19 @@ const isMenuPopup = computed(() => {
 
 // 打开菜单
 const openMenu = (path: string, parentPaths: string[] = []) => {
-  if (openedMenuSet.value.has(path)) return;
+  const target = normalizeKey(path);
+  if (!target || openedMenuSet.value.has(target)) return;
+  const normalizedParents = parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
   
   // 手风琴模式：关闭同级其他菜单
   if (props.accordion) {
-    if (parentPaths.length === 0) {
+    if (normalizedParents.length === 0) {
       openedMenus.value = [];
     } else {
       const nextMenus: string[] = [];
       for (const menu of openedMenus.value) {
         let keep = false;
-        for (const parent of parentPaths) {
+        for (const parent of normalizedParents) {
           if (menu.startsWith(parent)) {
             keep = true;
             break;
@@ -131,16 +141,18 @@ const openMenu = (path: string, parentPaths: string[] = []) => {
     }
   }
   
-  openedMenus.value.push(path);
-  emit('open', path, parentPaths);
+  openedMenus.value.push(target);
+  emit('open', target, normalizedParents);
 };
 
 // 关闭菜单
 const closeMenu = (path: string, parentPaths: string[] = []) => {
-  const index = openedMenus.value.indexOf(path);
+  const target = normalizeKey(path);
+  if (!target) return;
+  const index = openedMenus.value.indexOf(target);
   if (index !== -1) {
     openedMenus.value.splice(index, 1);
-    emit('close', path, parentPaths);
+    emit('close', target, parentPaths.map((p) => normalizeKey(p)).filter(Boolean));
   }
 };
 
@@ -153,7 +165,9 @@ const closeAllMenus = () => {
 
 // 处理菜单项点击
 const handleMenuItemClick = (data: MenuItemClicked) => {
-  const { path, parentPaths } = data;
+  const path = normalizeKey(data.path);
+  const parentPaths = data.parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
+  if (!path) return;
   
   // 弹出模式下点击菜单项关闭所有菜单
   if (isMenuPopup.value) {
@@ -273,44 +287,91 @@ const calcMenuItemWidth = (item: HTMLElement): number => {
   return item.offsetWidth + marginLeft + marginRight;
 };
 
-// 计算切片索引
+const getMenuKey = (item: MenuItem) => {
+  const raw = item.key ?? item.path ?? item.name ?? '';
+  return raw === '' ? '' : String(raw);
+};
+
+const menuWidthCache = new Map<string, number>();
+
+// 计算切片索引（避免更多按钮闪烁）
 const calcSliceIndex = (): number => {
   if (!menuRef.value) return -1;
-  
+
   const container = menuRef.value;
-  const items = Array.from(container.querySelectorAll(':scope > .menu__item, :scope > .menu__sub-menu')) as HTMLElement[];
-  
+  const children = Array.from(container.children) as HTMLElement[];
+  const items = children.filter((el) => {
+    if (!el) return false;
+    if (el.classList?.contains('menu__sub-menu--more')) return false;
+    if (el.getAttribute?.('data-more') === 'true') return false;
+    return true;
+  });
+
   if (items.length === 0) return -1;
-  
-  const moreButtonWidth = 50;
+
   const containerStyle = getComputedStyle(container);
   const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
   const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
   const availableWidth = container.clientWidth - paddingLeft - paddingRight;
-  
+
+  // 更新已渲染项的宽度缓存
+  for (const item of items) {
+    const key = item.getAttribute?.('data-key');
+    if (!key) continue;
+    menuWidthCache.set(key, calcMenuItemWidth(item));
+  }
+
+  const orderedKeys = props.menus.map(getMenuKey).filter(Boolean);
+  const cachedWidths = orderedKeys.map((key) => menuWidthCache.get(key));
+  const hasMissingWidth = cachedWidths.some((width) => width == null);
+  const isOverflowing = orderedKeys.length > items.length;
+
+  if (hasMissingWidth && isOverflowing) {
+    return sliceIndex.value;
+  }
+
   let totalWidth = 0;
+  for (const width of cachedWidths) {
+    totalWidth += width ?? 0;
+  }
+
+  // 全部可显示，无需溢出
+  if (totalWidth <= availableWidth) return -1;
+
+  const moreEl = container.querySelector(':scope > .menu__sub-menu--more, :scope > .menu__sub-menu[data-more="true"]') as HTMLElement | null;
+  const moreButtonWidth = moreEl ? calcMenuItemWidth(moreEl) : 50;
+  const maxWidth = Math.max(0, availableWidth - moreButtonWidth);
+
+  let visibleWidth = 0;
   let lastVisibleIndex = 0;
-  
-  for (let i = 0; i < items.length; i++) {
-    const itemWidth = calcMenuItemWidth(items[i]);
-    totalWidth += itemWidth;
-    
-    if (totalWidth <= availableWidth - moreButtonWidth) {
+  for (let i = 0; i < cachedWidths.length; i++) {
+    const width = cachedWidths[i];
+    if (width == null) {
+      return sliceIndex.value;
+    }
+    visibleWidth += width;
+    if (visibleWidth <= maxWidth) {
       lastVisibleIndex = i + 1;
     }
   }
-  
-  return lastVisibleIndex === items.length ? -1 : lastVisibleIndex;
+
+  return lastVisibleIndex === orderedKeys.length ? -1 : lastVisibleIndex;
 };
 
 const handleResize = () => {
   if (resizeRaf.value !== null) return;
   resizeRaf.value = requestAnimationFrame(() => {
     resizeRaf.value = null;
-    sliceIndex.value = -1;
-    nextTick(() => {
-      sliceIndex.value = calcSliceIndex();
-    });
+    if (props.mode !== 'horizontal') {
+      if (sliceIndex.value !== -1) {
+        sliceIndex.value = -1;
+      }
+      return;
+    }
+    const nextIndex = calcSliceIndex();
+    if (sliceIndex.value !== nextIndex) {
+      sliceIndex.value = nextIndex;
+    }
   });
 };
 
@@ -485,12 +546,14 @@ const menuClass = computed(() => [
         v-if="item.children && item.children.length > 0"
         :item="item"
         :level="0"
+        :data-key="getMenuKey(item)"
       />
       <!-- 无子菜单 -->
       <MenuItemComp
         v-else
         :item="item"
         :level="0"
+        :data-key="getMenuKey(item)"
       />
     </template>
     

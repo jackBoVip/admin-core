@@ -3,11 +3,19 @@
  * @description 框架无关的抽屉配置和工具函数
  */
 
-import type { Preferences } from '../types';
-import { zhCN, enUS, type LocaleMessages } from '../locales';
 import { ERROR_MESSAGES } from '../constants/messages';
 import { getIcon, type IconName } from '../icons/common';
+import { zhCN, enUS, type LocaleMessages } from '../locales';
 import { logger } from '../utils/logger';
+import type { Preferences,
+  PreferencesDrawerUIConfig,
+  FeatureItemConfig,
+  ResolvedFeatureConfig,
+  AppearanceTabConfig,
+  LayoutTabConfig,
+  GeneralTabConfig,
+  ShortcutKeysTabConfig,
+  FeatureBlockConfig } from '../types';
 
 /**
  * 标签页类型
@@ -393,11 +401,6 @@ function resolveLocaleKey(locale: LocaleMessages, key: string): string {
 
 // ========== UI 配置相关 ==========
 
-import type {
-  PreferencesDrawerUIConfig,
-  FeatureItemConfig,
-  ResolvedFeatureConfig,
-} from '../types';
 
 /**
  * 默认 UI 配置（所有功能都显示且启用）
@@ -544,13 +547,6 @@ function deepMergeUIConfig(
 
 // ========== Tab 配置解析辅助函数 ==========
 
-import type {
-  AppearanceTabConfig,
-  LayoutTabConfig,
-  GeneralTabConfig,
-  ShortcutKeysTabConfig,
-  FeatureBlockConfig,
-} from '../types';
 
 /** Tab UI 配置联合类型（用于 getFeatureItemConfig） */
 export type UITabConfig = AppearanceTabConfig | LayoutTabConfig | GeneralTabConfig | ShortcutKeysTabConfig;

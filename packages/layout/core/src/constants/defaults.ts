@@ -52,7 +52,7 @@ export const DEFAULT_SIDEBAR_CONFIG = {
 export const DEFAULT_TABBAR_CONFIG = {
   draggable: true,
   enable: true,
-  height: 38,
+  height: 40,
   keepAlive: true,
   maxCount: 0,
   middleClickToClose: true,
@@ -153,9 +153,9 @@ export const DEFAULT_VISIBILITY_CONFIG: LayoutVisibility = {
   header: true,
   sidebar: true,
   tabbar: true,
-  footer: false,
+  footer: true,
   breadcrumb: true,
-  panel: false,
+  panel: true,
   logo: true,
 };
 
@@ -288,12 +288,16 @@ export const DEFAULT_LAYOUT_STATE: LayoutState = {
   sidebarExpandOnHovering: false,
   sidebarExtraVisible: false,
   sidebarExtraCollapsed: false,
-  sidebarExpandOnHover: false, // 默认使用弹出菜单模式
+  sidebarExpandOnHover: false, // 默认固定子菜单面板（非悬停展开）
   headerHidden: false,
   panelCollapsed: false,
   isFullscreen: false,
   openMenuKeys: [],
+  mixedNavRootKey: '',
   contentScrollTop: 0,
+  refreshKey: 0,
+  keepAliveIncludes: [],
+  keepAliveExcludes: [],
 };
 
 /**
@@ -397,19 +401,21 @@ export const LAYOUT_CATEGORIES = {
  */
 export const CSS_VAR_NAMES = {
   // 尺寸
-  headerHeight: '--layout-header-height',
-  sidebarWidth: '--layout-sidebar-width',
-  sidebarCollapseWidth: '--layout-sidebar-collapse-width',
+  headerHeight: '--admin-header-height',
+  sidebarWidth: '--admin-sidebar-width',
+  sidebarCollapseWidth: '--admin-sidebar-collapsed-width',
   sidebarMixedWidth: '--layout-sidebar-mixed-width',
-  tabbarHeight: '--layout-tabbar-height',
-  footerHeight: '--layout-footer-height',
+  tabbarHeight: '--admin-tabbar-height',
+  footerHeight: '--admin-footer-height',
   panelWidth: '--layout-panel-width',
   panelCollapseWidth: '--layout-panel-collapse-width',
-  contentPadding: '--layout-content-padding',
-  contentPaddingTop: '--layout-content-padding-top',
-  contentPaddingBottom: '--layout-content-padding-bottom',
-  contentPaddingLeft: '--layout-content-padding-left',
-  contentPaddingRight: '--layout-content-padding-right',
+  panelOffsetLeft: '--layout-panel-offset-left',
+  panelOffsetRight: '--layout-panel-offset-right',
+  contentPadding: '--admin-content-padding',
+  contentPaddingTop: '--admin-content-padding-top',
+  contentPaddingBottom: '--admin-content-padding-bottom',
+  contentPaddingLeft: '--admin-content-padding-left',
+  contentPaddingRight: '--admin-content-padding-right',
   contentCompactWidth: '--layout-content-compact-width',
   // z-index
   zIndex: '--layout-z-index',

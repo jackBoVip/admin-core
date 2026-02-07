@@ -3,9 +3,9 @@
  * @description 定义各 Tab 的控件配置，Vue/React 可共享此配置进行渲染
  */
 
-import type { Preferences } from '../types';
-import type { LocaleMessages } from '../locales';
 import { get } from '../utils/helpers';
+import type { LocaleMessages } from '../locales';
+import type { Preferences } from '../types';
 
 /**
  * 控件类型
@@ -129,6 +129,11 @@ export const GENERAL_TAB_CONFIG: TabConfig = {
         },
         {
           type: 'switch',
+          labelKey: 'widget.globalSearch',
+          preferencePath: 'widget.globalSearch',
+        },
+        {
+          type: 'switch',
           labelKey: 'widget.themeToggle',
           preferencePath: 'widget.themeToggle',
         },
@@ -182,16 +187,19 @@ export const LAYOUT_TAB_CONFIG: TabConfig = {
           type: 'switch',
           labelKey: 'sidebar.collapsed',
           preferencePath: 'sidebar.collapsed',
+          disabledWhen: (p) => p.app.layout === 'header-nav',
         },
         {
           type: 'switch',
           labelKey: 'sidebar.collapsedButton',
           preferencePath: 'sidebar.collapsedShowTitle',
+          disabledWhen: (p) => p.app.layout === 'header-nav',
         },
         {
           type: 'switch',
           labelKey: 'sidebar.expandOnHover',
           preferencePath: 'sidebar.expandOnHover',
+          disabledWhen: (p) => p.app.layout === 'header-nav',
         },
       ],
     },
@@ -222,13 +230,55 @@ export const LAYOUT_TAB_CONFIG: TabConfig = {
         },
         {
           type: 'switch',
-          labelKey: 'tabbar.showIcon',
-          preferencePath: 'tabbar.showIcon',
+          labelKey: 'tabbar.persist',
+          preferencePath: 'tabbar.persist',
+        },
+        {
+          type: 'select',
+          labelKey: 'tabbar.maxCount',
+          preferencePath: 'tabbar.maxCount',
+          optionsSource: 'static',
+          options: [
+            { label: '0', value: 0 },
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '30', value: 30 },
+          ],
         },
         {
           type: 'switch',
           labelKey: 'tabbar.draggable',
           preferencePath: 'tabbar.draggable',
+        },
+        {
+          type: 'switch',
+          labelKey: 'tabbar.wheelable',
+          preferencePath: 'tabbar.wheelable',
+        },
+        {
+          type: 'switch',
+          labelKey: 'tabbar.middleClickClose',
+          preferencePath: 'tabbar.middleClickToClose',
+        },
+        {
+          type: 'switch',
+          labelKey: 'tabbar.showIcon',
+          preferencePath: 'tabbar.showIcon',
+        },
+        {
+          type: 'switch',
+          labelKey: 'tabbar.showMore',
+          preferencePath: 'tabbar.showMore',
+        },
+        {
+          type: 'switch',
+          labelKey: 'tabbar.showMaximize',
+          preferencePath: 'tabbar.showMaximize',
+        },
+        {
+          type: 'switch',
+          labelKey: 'tabbar.keepAlive',
+          preferencePath: 'tabbar.keepAlive',
         },
         {
           type: 'select',
@@ -246,11 +296,13 @@ export const LAYOUT_TAB_CONFIG: TabConfig = {
           type: 'switch',
           labelKey: 'breadcrumb.enable',
           preferencePath: 'breadcrumb.enable',
+          disabledWhen: (p) => p.app.layout === 'header-nav',
         },
         {
           type: 'switch',
           labelKey: 'breadcrumb.showIcon',
           preferencePath: 'breadcrumb.showIcon',
+          disabledWhen: (p) => p.app.layout === 'header-nav',
         },
       ],
     },

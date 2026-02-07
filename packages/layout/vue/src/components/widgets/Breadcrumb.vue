@@ -8,6 +8,7 @@ import { computed } from 'vue';
 import type { BreadcrumbItem } from '@admin-core/layout';
 import { useBreadcrumbState } from '../../composables/use-layout-state';
 import { useLayoutContext } from '../../composables/use-layout-context';
+import LayoutIcon from '../common/LayoutIcon.vue';
 
 interface Props {
   /** 面包屑数据（如果不传则自动从菜单生成） */
@@ -89,10 +90,7 @@ function isClickable(item: BreadcrumbItem, index: number): boolean {
           @click="handleItemClick"
         >
           <span v-if="showIcon && item.icon" class="breadcrumb__icon">
-            <svg v-if="item.icon === 'home'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9,22 9,12 15,12 15,22" />
-            </svg>
+            <LayoutIcon v-if="item.icon === 'home'" name="home" size="sm" />
             <span v-else class="text-xs">{{ item.icon }}</span>
           </span>
           <span>{{ item.name }}</span>
@@ -105,20 +103,15 @@ function isClickable(item: BreadcrumbItem, index: number): boolean {
           ]"
         >
           <span v-if="showIcon && item.icon" class="breadcrumb__icon">
-            <svg v-if="item.icon === 'home'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9,22 9,12 15,12 15,22" />
-            </svg>
+            <LayoutIcon v-if="item.icon === 'home'" name="home" size="sm" />
             <span v-else class="text-xs">{{ item.icon }}</span>
           </span>
           <span>{{ item.name }}</span>
         </span>
         
         <!-- 分隔符 -->
-        <span v-if="index < breadcrumbItems.length - 1" class="breadcrumb__separator mx-1.5">
-          <svg class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 6l6 6-6 6" />
-          </svg>
+        <span v-if="index < breadcrumbItems.length - 1" class="breadcrumb__separator mx-1.5 text-muted-foreground">
+          <LayoutIcon name="breadcrumb-separator" size="sm" />
         </span>
       </li>
     </ol>

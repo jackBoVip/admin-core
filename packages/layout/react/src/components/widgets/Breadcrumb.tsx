@@ -4,8 +4,9 @@
  */
 
 import { memo, useCallback, useMemo } from 'react';
-import type { BreadcrumbItem as BreadcrumbItemType } from '@admin-core/layout';
 import { useBreadcrumbState, useLayoutContext } from '../../hooks';
+import { renderLayoutIcon } from '../../utils';
+import type { BreadcrumbItem as BreadcrumbItemType } from '@admin-core/layout';
 
 export interface BreadcrumbProps {
   /** 面包屑数据（如果不传则自动从菜单生成） */
@@ -24,9 +25,9 @@ export interface BreadcrumbProps {
  * 默认分隔符
  */
 const DefaultSeparator = () => (
-  <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M9 6l6 6-6 6" />
-  </svg>
+  <span className="text-muted-foreground">
+    {renderLayoutIcon('breadcrumb-separator', 'sm')}
+  </span>
 );
 
 /**
@@ -104,10 +105,7 @@ export const Breadcrumb = memo(function Breadcrumb({
                   {showIcon && item.icon && (
                     <span className="breadcrumb__icon">
                       {item.icon === 'home' ? (
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                          <polyline points="9,22 9,12 15,12 15,22" />
-                        </svg>
+                        renderLayoutIcon('home', 'sm')
                       ) : (
                         <span className="text-xs">{item.icon}</span>
                       )}
@@ -124,10 +122,7 @@ export const Breadcrumb = memo(function Breadcrumb({
                   {showIcon && item.icon && (
                     <span className="breadcrumb__icon">
                       {item.icon === 'home' ? (
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                          <polyline points="9,22 9,12 15,12 15,22" />
-                        </svg>
+                        renderLayoutIcon('home', 'sm')
                       ) : (
                         <span className="text-xs">{item.icon}</span>
                       )}

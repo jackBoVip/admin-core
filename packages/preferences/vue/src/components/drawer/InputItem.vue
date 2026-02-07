@@ -4,6 +4,7 @@
  * @description 用于文本输入，支持防抖和长度限制
  */
 import { ref, watch, onUnmounted, getCurrentInstance } from 'vue';
+import { getIcon } from '@admin-core/preferences';
 import { INPUT_DEBOUNCE_MS, INPUT_MAX_LENGTH } from '@admin-core/preferences';
 
 const props = withDefaults(defineProps<{
@@ -17,12 +18,28 @@ const props = withDefaults(defineProps<{
   debounce?: number;
   /** 最大长度 */
   maxLength?: number;
+  /** 输入类型 */
+  type?: string;
+  /** 输入模式 */
+  inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+  /** 最小值 */
+  min?: number;
+  /** 最大值 */
+  max?: number;
+  /** 步进值 */
+  step?: number;
+  /** 行内布局 */
+  inline?: boolean;
+  /** 提示文本 */
+  tip?: string;
 }>(), {
   debounce: INPUT_DEBOUNCE_MS,
   maxLength: INPUT_MAX_LENGTH,
+  type: 'text',
 });
 
 const modelValue = defineModel<string>({ default: '' });
+const helpCircleIcon = getIcon('helpCircle');
 
 // 本地值用于即时响应UI
 const localValue = ref(modelValue.value);
@@ -73,15 +90,32 @@ const inputId = `input-${instance?.uid ?? Math.random().toString(36).slice(2, 9)
 </script>
 
 <template>
-  <div class="input-item" :class="{ disabled }" :data-disabled="disabled ? 'true' : undefined">
-    <label :id="`${inputId}-label`" class="input-item-label">{{ label }}</label>
+  <div
+    class="input-item"
+    :class="{ disabled, 'input-item--inline': inline }"
+    :data-disabled="disabled ? 'true' : undefined"
+  >
+    <label :id="`${inputId}-label`" class="input-item-label">
+      <span class="input-item-label-text">{{ label }}</span>
+      <span
+        v-if="tip"
+        class="help-icon"
+        :data-preference-tooltip="tip"
+        aria-label="help"
+        v-html="helpCircleIcon"
+      />
+    </label>
     <input
-      type="text"
+      :type="type"
+      :inputmode="inputMode"
       class="preferences-input"
       :value="localValue"
       :placeholder="placeholder"
       :disabled="disabled"
       :maxlength="maxLength"
+      :min="min"
+      :max="max"
+      :step="step"
       :aria-labelledby="`${inputId}-label`"
       @input="handleInput"
     />

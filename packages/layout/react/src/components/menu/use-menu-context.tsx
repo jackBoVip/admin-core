@@ -108,12 +108,19 @@ export function useSubMenuContext() {
  * 获取父级路径数组
  */
 export function getParentPaths(path: string, menus: MenuItem[], paths: string[] = []): string[] {
+  const target = path === '' ? '' : String(path);
   for (const menu of menus) {
-    if (menu.key === path || menu.path === path) {
+    const rawKey = menu.key ?? '';
+    const key = rawKey === '' ? '' : String(rawKey);
+    const rawPath = menu.path ?? '';
+    const menuPath = rawPath === '' ? '' : String(rawPath);
+    if ((key && key === target) || (menuPath && menuPath === target)) {
       return paths;
     }
     if (menu.children?.length) {
-      const found = getParentPaths(path, menu.children, [...paths, menu.key]);
+      const nextPath = key || menuPath;
+      const nextPaths = nextPath ? [...paths, nextPath] : paths;
+      const found = getParentPaths(target, menu.children, nextPaths);
       if (found.length > paths.length) {
         return found;
       }

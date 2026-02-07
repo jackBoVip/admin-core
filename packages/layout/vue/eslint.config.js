@@ -14,7 +14,7 @@ export default [
     files: ['**/*.vue'],
     languageOptions: {
       parserOptions: {
-        project: './tsconfig.json',
+        project: null, // .vue 文件跳过类型检查，避免 tsconfig 不包含
       },
     },
   },

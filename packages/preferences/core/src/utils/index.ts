@@ -41,7 +41,12 @@ export {
 } from './diff';
 
 // 防抖工具
-export { createDebouncedCallback, type DebouncedCallback } from './debounce';
+export {
+  createDebouncedCallback,
+  debounce,
+  throttle,
+  type DebouncedCallback,
+} from './debounce';
 
 // 平台检测
 export {
@@ -80,7 +85,9 @@ export { logger, type LogLevel } from './logger';
 
 // 锁屏管理
 export {
+  createAutoLockTimer,
   createLockScreenManager,
+  type AutoLockTimerOptions,
   type LockScreenManagerOptions,
 } from './lock-screen';
 
@@ -98,11 +105,16 @@ export {
 export {
   buildWatermarkCacheKey,
   createWatermarkGenerator,
+  formatWatermarkText,
   getWatermarkText,
   type WatermarkConfig,
   type WatermarkGenerator,
   type WatermarkGeneratorOptions,
+  type WatermarkTextConfig,
 } from './watermark';
+
+// Tooltip helpers
+export { setupPreferenceTooltip } from './tooltip';
 
 // 密码工具
 export {

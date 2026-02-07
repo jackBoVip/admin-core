@@ -3,9 +3,9 @@
  * @description 支持动态注册和自定义语言包
  */
 
-import { zhCN } from './zh-CN';
-import { enUS } from './en-US';
 import { get } from '../utils/helpers';
+import { enUS } from './en-US';
+import { zhCN } from './zh-CN';
 
 /**
  * 语言消息类型
@@ -23,7 +23,7 @@ const localeRegistry: Record<string, LocaleMessages> = {
 /**
  * 支持的语言列表
  */
-let registeredLocales: Array<{
+const registeredLocales: Array<{
   label: string;
   value: string;
   englishName: string;

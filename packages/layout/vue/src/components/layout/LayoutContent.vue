@@ -5,6 +5,7 @@
 import { computed } from 'vue';
 import { useLayoutContext, useLayoutComputed, useSidebarState, usePanelState } from '../../composables';
 import { DEFAULT_CONTENT_CONFIG } from '@admin-core/layout';
+import LayoutRefreshView from './LayoutRefreshView.vue';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -14,6 +15,14 @@ const { collapsed: panelCollapsed, position: panelPosition } = usePanelState();
 // 配置
 const contentCompact = computed(() => context.props.contentCompact || DEFAULT_CONTENT_CONFIG.contentCompact);
 const contentCompactWidth = computed(() => context.props.contentCompactWidth || DEFAULT_CONTENT_CONFIG.contentCompactWidth);
+const keepAliveEnabled = computed(() => context.props.tabbar?.keepAlive !== false);
+const keepAliveInclude = computed(() => context.state.keepAliveIncludes || []);
+const keepAliveExclude = computed(() => context.state.keepAliveExcludes || []);
+const footerOffset = computed(() => {
+  return layoutComputed.value.showFooter && context.props.footer?.fixed
+    ? layoutComputed.value.footerHeight
+    : 0;
+});
 
 // 类名
 const contentClass = computed(() => [
@@ -31,14 +40,16 @@ const contentClass = computed(() => [
 // 样式
 const contentStyle = computed(() => {
   const { mainStyle } = layoutComputed.value;
+  const paddingBase = context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding;
+  const paddingBottom = (context.props.contentPaddingBottom ?? paddingBase) + footerOffset.value;
   return {
     marginLeft: mainStyle.marginLeft,
     marginRight: mainStyle.marginRight,
     marginTop: mainStyle.marginTop,
-    paddingTop: `${context.props.contentPaddingTop ?? context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding}px`,
-    paddingBottom: `${context.props.contentPaddingBottom ?? context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding}px`,
-    paddingLeft: `${context.props.contentPaddingLeft ?? context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding}px`,
-    paddingRight: `${context.props.contentPaddingRight ?? context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding}px`,
+    paddingTop: `${context.props.contentPaddingTop ?? paddingBase}px`,
+    paddingBottom: `${paddingBottom}px`,
+    paddingLeft: `${context.props.contentPaddingLeft ?? paddingBase}px`,
+    paddingRight: `${context.props.contentPaddingRight ?? paddingBase}px`,
   };
 });
 
@@ -77,7 +88,12 @@ const innerStyle = computed(() => {
 
     <!-- 主内容 -->
     <div class="layout-content__inner" :style="innerStyle">
-      <slot />
+      <LayoutRefreshView>
+        <KeepAlive v-if="keepAliveEnabled" :include="keepAliveInclude" :exclude="keepAliveExclude">
+          <slot />
+        </KeepAlive>
+        <slot v-else />
+      </LayoutRefreshView>
     </div>
 
     <!-- 内容底部 -->

@@ -23,15 +23,30 @@ export interface WatermarkGenerator {
   clear: () => void;
 }
 
+export interface WatermarkTextConfig {
+  content?: string;
+  appendDate?: boolean;
+}
+
 /**
  * 生成水印文本
  */
-export function getWatermarkText(config: WatermarkConfig, now: Date = new Date()): string {
+export function formatWatermarkText(
+  config: WatermarkTextConfig,
+  now: Date = new Date()
+): string {
   if (!config.content) return '';
   if (config.appendDate) {
     return `${config.content} ${now.toLocaleDateString()}`;
   }
   return config.content;
+}
+
+/**
+ * 生成水印文本
+ */
+export function getWatermarkText(config: WatermarkConfig, now: Date = new Date()): string {
+  return formatWatermarkText(config, now);
 }
 
 /**

@@ -14,6 +14,7 @@ import {
   getCopyButtonA11yProps,
   getFeatureConfig,
   mergeDrawerUIConfig,
+  setupPreferenceTooltip,
   logger,
   type CopyButtonState,
   type DrawerTabType,
@@ -74,6 +75,11 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
 
   // 内容容器引用
   const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const cleanup = setupPreferenceTooltip();
+    return () => cleanup();
+  }, []);
 
   // 切换标签
   const handleTabChange = useCallback((tab: DrawerTabType) => {
@@ -342,7 +348,10 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
       )}
 
       {/* 抽屉 */}
-      <div className={`preferences-drawer ${open ? 'open' : ''}`} data-state={open ? 'open' : 'closed'}>
+      <div
+        className={`preferences-drawer ${open ? 'open' : ''}`}
+        data-state={open ? 'open' : 'closed'}
+      >
         {/* 头部（标题+副标题同行） */}
         <div className="preferences-drawer-header">
           <div className="preferences-drawer-title-wrapper">

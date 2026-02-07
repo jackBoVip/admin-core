@@ -3,8 +3,8 @@
  * @description 统一管理菜单图标的渲染逻辑
  */
 
+import { resolveIconMeta } from '@admin-core/layout';
 import React from 'react';
-import { getIconDefinition, getIconRenderType } from '@admin-core/layout';
 
 /**
  * 图标尺寸预设
@@ -19,15 +19,13 @@ export const ICON_SIZES = {
 
 export type IconSize = keyof typeof ICON_SIZES;
 
-const iconMetaCache = new Map<string, { type: ReturnType<typeof getIconRenderType>; def?: ReturnType<typeof getIconDefinition> }>();
+const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
 
 const getIconMeta = (icon: string | undefined) => {
   if (!icon) return null;
   const cached = iconMetaCache.get(icon);
   if (cached) return cached;
-  const type = getIconRenderType(icon);
-  const def = type === 'svg' ? getIconDefinition(icon) : undefined;
-  const meta = { type, def };
+  const meta = resolveIconMeta(icon);
   iconMetaCache.set(icon, meta);
   return meta;
 };

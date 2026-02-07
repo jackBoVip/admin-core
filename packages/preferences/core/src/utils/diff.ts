@@ -2,8 +2,8 @@
  * 对象差异计算工具
  */
 
-import type { DeepPartial } from '../types';
 import { isEqual, isObject } from './helpers';
+import type { DeepPartial } from '../types';
 
 /**
  * 差异计算结果

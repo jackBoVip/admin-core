@@ -18,6 +18,121 @@ export interface LockScreenManagerOptions {
 /** 节流延迟时间（毫秒） */
 const THROTTLE_DELAY = 1000;
 
+/** 自动锁屏事件列表 */
+const DEFAULT_AUTO_LOCK_EVENTS = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'wheel'];
+
+/** setTimeout 最大值（约 24.8 天） */
+const MAX_TIMEOUT_MS = 2147483647; // 2^31 - 1
+
+export interface AutoLockTimerOptions {
+  /** 获取自动锁屏时间（分钟） */
+  getAutoLockTime: () => number;
+  /** 锁定回调 */
+  onLock: () => void;
+  /** 是否已锁定（可选） */
+  isLocked?: () => boolean;
+  /** 监听的事件列表 */
+  events?: string[];
+  /** 节流时间（毫秒），<=0 表示不节流 */
+  throttleMs?: number;
+  /** 事件目标（默认 window/document） */
+  target?: EventTarget;
+}
+
+function resolveEventTarget(target?: EventTarget): EventTarget | null {
+  if (target) return target;
+  if (typeof window !== 'undefined') return window;
+  if (typeof document !== 'undefined') return document;
+  return null;
+}
+
+/**
+ * 创建自动锁屏定时器（通用）
+ * @returns 销毁函数
+ */
+export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
+  const {
+    getAutoLockTime,
+    onLock,
+    isLocked,
+    events = DEFAULT_AUTO_LOCK_EVENTS,
+    throttleMs = THROTTLE_DELAY,
+    target,
+  } = options;
+
+  const eventTarget = resolveEventTarget(target);
+  if (!eventTarget) return () => {};
+
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let lastActivityTime = 0;
+  let isDestroyed = false;
+
+  const getDelayMs = () => {
+    const autoLockTime = getAutoLockTime();
+    if (!autoLockTime || autoLockTime <= 0) return 0;
+    return Math.min(Math.round(autoLockTime * 60 * 1000), MAX_TIMEOUT_MS);
+  };
+
+  const canLock = () => {
+    if (!isLocked) return true;
+    try {
+      return !isLocked();
+    } catch {
+      return false;
+    }
+  };
+
+  const resetTimer = () => {
+    if (isDestroyed) return;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    const delayMs = getDelayMs();
+    if (!delayMs || !canLock()) return;
+
+    timer = setTimeout(() => {
+      if (isDestroyed) return;
+      if (!getDelayMs() || !canLock()) {
+        timer = null;
+        return;
+      }
+      onLock();
+      timer = null;
+    }, delayMs);
+  };
+
+  const handleActivity = () => {
+    if (throttleMs <= 0) {
+      resetTimer();
+      return;
+    }
+    const now = Date.now();
+    if (now - lastActivityTime >= throttleMs) {
+      lastActivityTime = now;
+      resetTimer();
+    }
+  };
+
+  events.forEach((event) => {
+    eventTarget.addEventListener(event, handleActivity, { passive: true });
+  });
+
+  resetTimer();
+
+  return () => {
+    isDestroyed = true;
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    events.forEach((event) => {
+      eventTarget.removeEventListener(event, handleActivity, { passive: true } as EventListenerOptions);
+    });
+  };
+}
+
 /**
  * 创建锁屏管理器
  * @param options - 配置选项
@@ -25,82 +140,24 @@ const THROTTLE_DELAY = 1000;
  */
 export function createLockScreenManager(options: LockScreenManagerOptions): () => void {
   const { getPreferences, onLock } = options;
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let lastActivityTime = 0;
-  let isDestroyed = false; // 标记是否已销毁
 
-  const resetTimer = () => {
-    // 如果已销毁，不再操作
-    if (isDestroyed) return;
-    
-    // 清除现有定时器
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-
-    let preferences;
-    try {
-      preferences = getPreferences();
-    } catch {
-      return; // getPreferences 失败时静默返回
-    }
-    
-    const { autoLockTime, isLocked } = preferences.lockScreen;
-
-    // 如果未锁定且开启了自动锁屏
-    if (!isLocked && autoLockTime > 0) {
-      // 计算精确的毫秒数（避免浮点数精度问题）
-      // 限制最大值防止 setTimeout 整数溢出（最大约 24.8 天）
-      const MAX_TIMEOUT_MS = 2147483647; // 2^31 - 1
-      const delayMs = Math.min(Math.round(autoLockTime * 60 * 1000), MAX_TIMEOUT_MS);
-      
-      timer = setTimeout(() => {
-        // 执行锁屏前再次检查状态和销毁标记
-        if (isDestroyed) return;
-        
-        try {
-          const currentPreferences = getPreferences();
-          if (!currentPreferences.lockScreen.isLocked) {
-            onLock();
-          }
-        } catch {
-          // 静默处理错误
-        }
-        timer = null;
-      }, delayMs);
-    }
-  };
-
-  // 带节流的活动处理器
-  const handleActivity = () => {
-    const now = Date.now();
-    // 节流：mousemove 等高频事件只在间隔超过阈值时才重置定时器
-    if (now - lastActivityTime >= THROTTLE_DELAY) {
-      lastActivityTime = now;
-      resetTimer();
-    }
-  };
-
-  // 监听用户活动（使用 passive 提升性能）
-  const events = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'wheel'];
-  events.forEach((event) => {
-    window.addEventListener(event, handleActivity, { passive: true });
+  return createAutoLockTimer({
+    getAutoLockTime: () => {
+      try {
+        return getPreferences().lockScreen.autoLockTime;
+      } catch {
+        return 0;
+      }
+    },
+    isLocked: () => {
+      try {
+        return getPreferences().lockScreen.isLocked;
+      } catch {
+        return true;
+      }
+    },
+    onLock,
+    throttleMs: THROTTLE_DELAY,
+    events: DEFAULT_AUTO_LOCK_EVENTS,
   });
-
-  // 初始化定时器
-  resetTimer();
-
-  // 返回销毁函数
-  return () => {
-    isDestroyed = true; // 标记为已销毁
-    if (timer) {
-      clearTimeout(timer);
-      timer = null;
-    }
-    // 移除事件监听器时传递相同的选项（passive），确保正确移除
-    events.forEach((event) => {
-      window.removeEventListener(event, handleActivity, { passive: true } as EventListenerOptions);
-    });
-  };
 }

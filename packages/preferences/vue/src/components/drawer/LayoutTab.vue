@@ -17,6 +17,7 @@ import {
   type LayoutType,
   type LocaleMessages,
   type LayoutHeaderModeType,
+  type LayoutHeaderMenuAlignType,
   type TabsStyleType,
   type ContentWidthType,
   type PanelPositionType,
@@ -27,6 +28,7 @@ import {
 import Block from './Block.vue';
 import SwitchItem from './SwitchItem.vue';
 import SelectItem from './SelectItem.vue';
+import NumberItem from './NumberItem.vue';
 
 const props = defineProps<{
   /** 当前语言包 */
@@ -78,6 +80,7 @@ function createPreferenceComputed<T>(
 const layoutTabOptions = computed(() => getLayoutTabOptions(props.locale));
 const layoutOptions = computed(() => layoutTabOptions.value.layoutOptions);
 const tabsStyleOptions = computed(() => layoutTabOptions.value.tabsStyleOptions);
+const headerMenuAlignOptions = computed(() => layoutTabOptions.value.headerMenuAlignOptions);
 
 // ========== 使用工厂函数简化 computed 定义 ==========
 
@@ -97,10 +100,21 @@ const handleSetContentCompact = () => {
   updater.setContentCompactMode();
 };
 
-// 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+// 是否允许显示折叠按钮的布局（仅 sidebar-nav）
 const isCollapseButtonAllowedLayout = computed(() => {
-  return layout.value === 'sidebar-nav' || layout.value === 'header-mixed-nav';
+  return layout.value === 'sidebar-nav';
 });
+// 侧边栏折叠是否可用（sidebar-mixed-nav 下禁用）
+const isSidebarCollapseDisabled = computed(() =>
+  layout.value === 'sidebar-mixed-nav' || layout.value === 'header-mixed-nav'
+);
+const isHeaderNavLayout = computed(() => layout.value === 'header-nav');
+const isBreadcrumbDisabledLayout = computed(
+  () =>
+    layout.value === 'header-nav' ||
+    layout.value === 'mixed-nav' ||
+    layout.value === 'header-mixed-nav'
+);
 
 // 侧边栏设置
 const sidebarCollapsed = createPreferenceComputed<boolean>('sidebar.collapsed', D.sidebar.collapsed);
@@ -119,22 +133,36 @@ const sidebarExpandOnHover = createPreferenceComputed<boolean>('sidebar.expandOn
 // 顶栏设置
 const headerEnable = createPreferenceComputed<boolean>('header.enable', D.header.enable);
 const headerMode = createPreferenceComputed<LayoutHeaderModeType>('header.mode', D.header.mode);
+const headerMenuAlign = createPreferenceComputed<LayoutHeaderMenuAlignType>('header.menuAlign', D.header.menuAlign);
 const headerMenuLauncher = createPreferenceComputed<boolean>('header.menuLauncher', D.header.menuLauncher);
 
 // 菜单启动器是否可用（顶栏启用 + 顶部菜单布局）
 const menuLauncherEnabled = computed(() => {
+  const isHeaderMixedNav = layout.value === 'header-mixed-nav';
+  return headerEnable.value && isHeaderMenuLayout(layout.value) && !isHeaderMixedNav;
+});
+const menuAlignEnabled = computed(() => {
   return headerEnable.value && isHeaderMenuLayout(layout.value);
 });
 
 // 标签栏设置
 const tabbarEnable = createPreferenceComputed<boolean>('tabbar.enable', D.tabbar.enable);
+const tabbarPersist = createPreferenceComputed<boolean>('tabbar.persist', D.tabbar.persist);
+const tabbarKeepAlive = createPreferenceComputed<boolean>('tabbar.keepAlive', D.tabbar.keepAlive);
+const tabbarMaxCount = createPreferenceComputed<number>('tabbar.maxCount', D.tabbar.maxCount);
 const tabbarShowIcon = createPreferenceComputed<boolean>('tabbar.showIcon', D.tabbar.showIcon);
+const tabbarShowMore = createPreferenceComputed<boolean>('tabbar.showMore', D.tabbar.showMore);
+const tabbarShowMaximize = createPreferenceComputed<boolean>('tabbar.showMaximize', D.tabbar.showMaximize);
 const tabbarDraggable = createPreferenceComputed<boolean>('tabbar.draggable', D.tabbar.draggable);
+const tabbarWheelable = createPreferenceComputed<boolean>('tabbar.wheelable', D.tabbar.wheelable);
+const tabbarMiddleClickToClose = createPreferenceComputed<boolean>('tabbar.middleClickToClose', D.tabbar.middleClickToClose);
 const tabbarStyleType = createPreferenceComputed<TabsStyleType>('tabbar.styleType', D.tabbar.styleType);
 
 // 面包屑设置
 const breadcrumbEnable = createPreferenceComputed<boolean>('breadcrumb.enable', D.breadcrumb.enable);
 const breadcrumbShowIcon = createPreferenceComputed<boolean>('breadcrumb.showIcon', D.breadcrumb.showIcon);
+const breadcrumbEnableDisplay = computed(() => isBreadcrumbDisabledLayout.value ? false : breadcrumbEnable.value);
+const breadcrumbShowIconDisplay = computed(() => isBreadcrumbDisabledLayout.value ? false : breadcrumbShowIcon.value);
 
 // 页脚设置
 const footerEnable = createPreferenceComputed<boolean>('footer.enable', D.footer.enable);
@@ -142,6 +170,7 @@ const footerFixed = createPreferenceComputed<boolean>('footer.fixed', D.footer.f
 
 // 小部件设置
 const widgetFullscreen = createPreferenceComputed<boolean>('widget.fullscreen', D.widget.fullscreen);
+const widgetGlobalSearch = createPreferenceComputed<boolean>('widget.globalSearch', D.widget.globalSearch);
 const widgetThemeToggle = createPreferenceComputed<boolean>('widget.themeToggle', D.widget.themeToggle);
 const widgetLanguageToggle = createPreferenceComputed<boolean>('widget.languageToggle', D.widget.languageToggle);
 
@@ -279,21 +308,21 @@ const handleContentWidthActivate = (e: Event) => {
       :model-value="sidebarCollapsed"
       @update:modelValue="updater.setSidebarCollapsed"
       :label="locale.sidebar.collapsed" 
-      :disabled="configs.sidebarCollapsed.disabled"
+      :disabled="isHeaderNavLayout || configs.sidebarCollapsed.disabled || isSidebarCollapseDisabled"
     />
     <SwitchItem 
       v-if="configs.sidebarCollapsedButton.visible"
       :model-value="sidebarCollapsedButton"
       @update:modelValue="updater.setSidebarCollapsedButton"
       :label="locale.sidebar.collapsedButton" 
-      :disabled="configs.sidebarCollapsedButton.disabled || !isCollapseButtonAllowedLayout"
+      :disabled="isHeaderNavLayout || configs.sidebarCollapsedButton.disabled || !isCollapseButtonAllowedLayout"
     />
     <SwitchItem 
       v-if="configs.sidebarExpandOnHover.visible"
       :model-value="sidebarExpandOnHover"
       @update:modelValue="updater.setSidebarExpandOnHover"
       :label="locale.sidebar.expandOnHover" 
-      :disabled="configs.sidebarExpandOnHover.disabled"
+      :disabled="isHeaderNavLayout || configs.sidebarExpandOnHover.disabled"
     />
   </Block>
 
@@ -348,6 +377,14 @@ const handleContentWidthActivate = (e: Event) => {
       ]"
       :disabled="!headerEnable || configs.headerMode.disabled"
     />
+    <SelectItem
+      v-if="configs.headerMenuAlign.visible"
+      :model-value="headerMenuAlign"
+      @update:modelValue="updater.setHeaderMenuAlign"
+      :label="locale.header.menuAlign"
+      :options="headerMenuAlignOptions"
+      :disabled="!menuAlignEnabled || configs.headerMenuAlign.disabled"
+    />
     <SwitchItem
       v-if="configs.headerMenuLauncher.visible"
       :model-value="headerMenuLauncher"
@@ -368,6 +405,29 @@ const handleContentWidthActivate = (e: Event) => {
       :disabled="configs.tabbarEnable.disabled"
     />
     <SwitchItem 
+      v-if="configs.tabbarPersist.visible"
+      :model-value="tabbarPersist"
+      @update:modelValue="updater.setTabbarPersist"
+      :label="locale.tabbar.persist" 
+      :disabled="!tabbarEnable || configs.tabbarPersist.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.tabbarKeepAlive.visible"
+      :model-value="tabbarKeepAlive"
+      @update:modelValue="updater.setTabbarKeepAlive"
+      :label="locale.tabbar.keepAlive" 
+      :disabled="!tabbarEnable || configs.tabbarKeepAlive.disabled"
+    />
+    <NumberItem
+      v-if="configs.tabbarMaxCount.visible"
+      v-model="tabbarMaxCount"
+      :label="locale.tabbar.maxCount"
+      :tip="locale.tabbar.maxCountTip"
+      :min="0"
+      :step="1"
+      :disabled="!tabbarEnable || configs.tabbarMaxCount.disabled"
+    />
+    <SwitchItem 
       v-if="configs.tabbarShowIcon.visible"
       :model-value="tabbarShowIcon"
       @update:modelValue="updater.setTabbarShowIcon"
@@ -375,11 +435,40 @@ const handleContentWidthActivate = (e: Event) => {
       :disabled="!tabbarEnable || configs.tabbarShowIcon.disabled" 
     />
     <SwitchItem 
+      v-if="configs.tabbarShowMore.visible"
+      :model-value="tabbarShowMore"
+      @update:modelValue="updater.setTabbarShowMore"
+      :label="locale.tabbar.showMore" 
+      :disabled="!tabbarEnable || configs.tabbarShowMore.disabled" 
+    />
+    <SwitchItem 
+      v-if="configs.tabbarShowMaximize.visible"
+      :model-value="tabbarShowMaximize"
+      @update:modelValue="updater.setTabbarShowMaximize"
+      :label="locale.tabbar.showMaximize" 
+      :disabled="!tabbarEnable || configs.tabbarShowMaximize.disabled" 
+    />
+    <SwitchItem 
       v-if="configs.tabbarDraggable.visible"
       :model-value="tabbarDraggable"
       @update:modelValue="updater.setTabbarDraggable"
       :label="locale.tabbar.draggable" 
       :disabled="!tabbarEnable || configs.tabbarDraggable.disabled" 
+    />
+    <SwitchItem 
+      v-if="configs.tabbarWheelable.visible"
+      :model-value="tabbarWheelable"
+      @update:modelValue="updater.setTabbarWheelable"
+      :label="locale.tabbar.wheelable" 
+      :tip="locale.tabbar.wheelableTip"
+      :disabled="!tabbarEnable || configs.tabbarWheelable.disabled" 
+    />
+    <SwitchItem 
+      v-if="configs.tabbarMiddleClickToClose.visible"
+      :model-value="tabbarMiddleClickToClose"
+      @update:modelValue="updater.setTabbarMiddleClickToClose"
+      :label="locale.tabbar.middleClickClose" 
+      :disabled="!tabbarEnable || configs.tabbarMiddleClickToClose.disabled" 
     />
     <SelectItem 
       v-if="configs.tabbarStyleType.visible"
@@ -395,17 +484,17 @@ const handleContentWidthActivate = (e: Event) => {
   <Block v-if="configs.breadcrumb.visible" :title="locale.breadcrumb.title">
     <SwitchItem 
       v-if="configs.breadcrumbEnable.visible"
-      :model-value="breadcrumbEnable"
+      :model-value="breadcrumbEnableDisplay"
       @update:modelValue="updater.setBreadcrumbEnable"
       :label="locale.breadcrumb.enable" 
-      :disabled="configs.breadcrumbEnable.disabled"
+      :disabled="isBreadcrumbDisabledLayout || configs.breadcrumbEnable.disabled"
     />
     <SwitchItem 
       v-if="configs.breadcrumbShowIcon.visible"
-      :model-value="breadcrumbShowIcon"
+      :model-value="breadcrumbShowIconDisplay"
       @update:modelValue="updater.setBreadcrumbShowIcon"
       :label="locale.breadcrumb.showIcon" 
-      :disabled="!breadcrumbEnable || configs.breadcrumbShowIcon.disabled" 
+      :disabled="isBreadcrumbDisabledLayout || !breadcrumbEnableDisplay || configs.breadcrumbShowIcon.disabled" 
     />
   </Block>
 
@@ -435,6 +524,13 @@ const handleContentWidthActivate = (e: Event) => {
       @update:modelValue="updater.setWidgetFullscreen"
       :label="locale.widget.fullscreen" 
       :disabled="configs.widgetFullscreen.disabled"
+    />
+    <SwitchItem 
+      v-if="configs.widgetGlobalSearch.visible"
+      :model-value="widgetGlobalSearch"
+      @update:modelValue="updater.setWidgetGlobalSearch"
+      :label="locale.widget.globalSearch" 
+      :disabled="configs.widgetGlobalSearch.disabled"
     />
     <SwitchItem 
       v-if="configs.widgetThemeToggle.visible"

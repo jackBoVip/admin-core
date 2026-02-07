@@ -156,6 +156,7 @@ const moonIcon = getIcon('moon');
 const monitorIcon = getIcon('monitor');
 const semiDarkSidebarIcon = getIcon('semiDarkSidebar');
 const semiDarkHeaderIcon = getIcon('semiDarkHeader');
+const pencilIcon = getIcon('pencil');
 
 // 颜色选择器引用
 const colorInputRef = ref<HTMLInputElement | null>(null);
@@ -292,18 +293,7 @@ const openColorPicker = () => {
         >
           <div class="theme-preset-custom" @click.stop="!configs.builtinTheme.disabled && openColorPicker()">
             <div class="theme-preset-custom-inner">
-              <svg
-                class="theme-preset-custom-icon"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-              </svg>
+              <span v-html="pencilIcon" class="theme-preset-custom-icon" />
               <input
                 ref="colorInputRef"
                 type="color"

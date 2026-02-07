@@ -57,6 +57,10 @@ export const icons: Record<string, IconDefinition> = {
     viewBox: '0 0 24 24',
     path: 'M15 18l-6-6 6-6',
   },
+  'chevrons-left': {
+    viewBox: '0 0 24 24',
+    path: 'M13 7l5 5-5 5M6 7l5 5-5 5',
+  },
   'chevron-down': {
     viewBox: '0 0 24 24',
     path: 'M6 9l6 6 6-6',
@@ -64,6 +68,10 @@ export const icons: Record<string, IconDefinition> = {
   'chevron-up': {
     viewBox: '0 0 24 24',
     path: 'M18 15l-6-6-6 6',
+  },
+  'chevrons-right': {
+    viewBox: '0 0 24 24',
+    path: 'M11 17l-5-5 5-5m7 10l-5-5 5-5',
   },
 
   // 菜单相关
@@ -115,16 +123,6 @@ export const icons: Record<string, IconDefinition> = {
     viewBox: '0 0 24 24',
     path: 'M2 2l20 20M12 17v5M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12M15 9.34V6h1a2 2 0 0 0 0-4H7.89',
   },
-  // 双箭头（用于折叠/展开子菜单面板）
-  'chevrons-left': {
-    viewBox: '0 0 24 24',
-    path: 'M11 17l-5-5 5-5M17 17l-5-5 5-5',
-  },
-  'chevrons-right': {
-    viewBox: '0 0 24 24',
-    path: 'M13 7l5 5-5 5M7 7l5 5-5 5',
-  },
-  
   // 侧边栏折叠/展开图标（带面板的箭头）
   'sidebar-collapse': {
     viewBox: '0 0 24 24',
@@ -139,6 +137,10 @@ export const icons: Record<string, IconDefinition> = {
   more: {
     viewBox: '0 0 24 24',
     path: 'M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z',
+  },
+  'more-horizontal': {
+    viewBox: '0 0 24 24',
+    path: 'M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z',
   },
 
   // 系统相关
@@ -185,6 +187,10 @@ export const icons: Record<string, IconDefinition> = {
   document: {
     viewBox: '0 0 24 24',
     path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+  },
+  'search-item': {
+    viewBox: '0 0 24 24',
+    path: 'M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4M9 18c-4.51 2-5-2-7-2',
   },
   folder: {
     viewBox: '0 0 24 24',
@@ -303,6 +309,27 @@ export function getIconExtra(icon: string): string | undefined {
 }
 
 // ============================================================
+// 通用图标解析（供 React/Vue 共用）
+// ============================================================
+
+export interface IconMeta {
+  type: IconRenderType;
+  def?: IconDefinition;
+}
+
+/**
+ * 解析图标元信息
+ * @description 统一处理 svg/emoji/custom 的判断逻辑
+ */
+export function resolveIconMeta(icon: string): IconMeta {
+  const type = getIconRenderType(icon);
+  if (type === 'svg') {
+    return { type, def: getIconDefinition(icon) || undefined };
+  }
+  return { type };
+}
+
+// ============================================================
 // 布局图标配置
 // ============================================================
 
@@ -381,4 +408,84 @@ export function getSvgIconProps(iconName: string, options?: {
       return classes.join(' ');
     })(),
   };
+}
+
+// ============================================================
+// Layout UI 图标（统一管理）
+// ============================================================
+
+export const LAYOUT_UI_ICONS = {
+  // Tabbar
+  'tabbar-scroll-left': icons['chevron-left'],
+  'tabbar-scroll-right': icons['chevron-right'],
+  'tabbar-pin': icons.pin,
+  'tabbar-unpin': icons['pin-off'],
+  'tabbar-close': icons.close,
+  'tabbar-maximize': icons.maximize,
+  'tabbar-restore': icons.minimize,
+  'tabbar-more': icons['more-horizontal'],
+
+  // Panel
+  'panel-collapse': icons['chevron-left'],
+  'panel-expand': icons['chevron-right'],
+  'submenu-collapse': icons['chevrons-left'],
+  'submenu-expand': icons['chevrons-right'],
+
+  // Breadcrumb
+  'breadcrumb-separator': icons['chevron-right'],
+  home: icons.home,
+
+  // Header / Widgets
+  refresh: icons.refresh,
+  search: icons.search,
+  'search-item': icons['search-item'],
+  notification: icons.notification,
+  user: icons.user,
+  settings: icons.settings,
+  lock: icons.lock,
+  logout: icons.logout,
+  globe: icons.globe,
+  fullscreen: icons.maximize,
+  'fullscreen-exit': icons.minimize,
+  'theme-sun': icons.sun,
+  'theme-moon': icons.moon,
+  'theme-system': icons.monitor,
+  'more-horizontal': icons['more-horizontal'],
+  'menu-launcher': icons.menu,
+  'sidebar-toggle': icons['indent-collapse'],
+  'sidebar-toggle-collapsed': icons['indent-expand'],
+  'sidebar-collapse': icons['indent-collapse'],
+  'sidebar-expand': icons['indent-expand'],
+
+  // Menu arrows
+  'menu-arrow-right': icons['chevron-right'],
+  'menu-arrow-down': icons['chevron-down'],
+  'menu-arrow-left': icons['chevron-left'],
+
+  // Status
+  'status-success': icons.check,
+  'status-warning': icons.alertTriangle,
+  'status-error': icons.alertCircle,
+  'status-info': icons.info,
+} as const;
+
+export type LayoutUiIconName = keyof typeof LAYOUT_UI_ICONS;
+
+export function getLayoutUiIconDefinition(name: LayoutUiIconName): IconDefinition | null {
+  return LAYOUT_UI_ICONS[name] || null;
+}
+
+export function getLayoutUiIconMeta(name: LayoutUiIconName): { type: 'svg'; def: IconDefinition } | null {
+  const def = getLayoutUiIconDefinition(name);
+  if (!def) return null;
+  return { type: 'svg', def };
+}
+
+export function getLayoutUiIconSvg(name: LayoutUiIconName): string {
+  const def = getLayoutUiIconDefinition(name);
+  if (!def) return '';
+  const fill = def.fill ? 'currentColor' : 'none';
+  const stroke = def.fill ? 'none' : 'currentColor';
+  const extra = def.extra ?? '';
+  return `<svg viewBox="${def.viewBox}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${extra}<path d="${def.path}"/></svg>`;
 }

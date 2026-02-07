@@ -28,6 +28,7 @@ export default {
     header: {
       title: '顶栏',
       toggleSidebar: '切换侧边栏',
+      menuLauncher: '菜单',
       search: '搜索',
       searchPlaceholder: '输入关键词搜索...',
       refresh: '刷新页面',
@@ -66,6 +67,8 @@ export default {
         closeAll: '关闭全部',
         closeLeft: '关闭左侧',
         closeRight: '关闭右侧',
+        maximize: '最大化',
+        restoreMaximize: '还原',
         pin: '固定',
         unpin: '取消固定',
         openInNewWindow: '在新窗口打开',

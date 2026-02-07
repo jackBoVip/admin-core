@@ -447,6 +447,8 @@ export {
   isEmpty,
   isEqual,
   isObject,
+  debounce,
+  throttle,
   // 布局判断工具
   LAYOUT_CATEGORIES,
   isHeaderMenuLayout,
@@ -460,7 +462,9 @@ export {
   logger,
   type LogLevel,
   // 锁屏管理
+  createAutoLockTimer,
   createLockScreenManager,
+  type AutoLockTimerOptions,
   type LockScreenManagerOptions,
   // 快捷键管理
   createShortcutManager,
@@ -472,10 +476,13 @@ export {
   // 水印工具
   buildWatermarkCacheKey,
   createWatermarkGenerator,
+  formatWatermarkText,
   getWatermarkText,
   type WatermarkConfig,
   type WatermarkGenerator,
   type WatermarkGeneratorOptions,
+  type WatermarkTextConfig,
+  setupPreferenceTooltip,
   // 密码工具
   PASSWORD_MIN_LENGTH,
   hashPassword,

@@ -2,9 +2,9 @@
  * 深度合并工具
  */
 
-import type { DeepPartial } from '../types';
 import { isObject } from './helpers';
 import { logger } from './logger';
+import type { DeepPartial } from '../types';
 
 /**
  * 检查是否为数组

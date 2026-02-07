@@ -43,13 +43,10 @@
  *    - useLayoutPreferences: 偏好设置集成
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useLayoutContext, useLayoutComputed, useLayoutState } from './use-layout-context';
 import {
   BREAKPOINTS,
   HEADER_TRIGGER_DISTANCE,
   TIMING,
-  TabManager,
   getOrCreateTabManager,
   generateThemeCSSVariables,
   generateThemeClasses,
@@ -61,11 +58,13 @@ import {
   generateAllCSSVariables,
   mapPreferencesToLayoutProps,
   logger,
+  getMenuId,
   getMenuPathIndex,
   resolveMenuNavigation,
   getTabNavigationPath,
   getBreadcrumbNavigationPath,
   getNextTabAfterClose,
+  type TabManager,
   type BasicLayoutProps,
   type TabItem,
   type BreadcrumbItem,
@@ -77,6 +76,8 @@ import {
   type RouterConfig,
 } from '@admin-core/layout';
 import { getPreferencesManager, type Preferences } from '@admin-core/preferences-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useLayoutContext, useLayoutComputed, useLayoutState } from './use-layout-context';
 
 // ============================================================
 // 1. 帮助函数
@@ -101,14 +102,14 @@ function unwrapCurrentPath(path: string | { value: string } | undefined): string
  */
 export function useReactRouterAdapter(
   navigate?: (path: string, options?: { replace?: boolean }) => void,
-  location?: { pathname: string }
+  location?: { pathname: string; search?: string }
 ): RouterConfig | undefined {
   if (!navigate || !location) {
     return undefined;
   }
 
   return {
-    navigate: (path: string, options?: { replace?: boolean; query?: Record<string, any> }) => {
+    navigate: (path: string, options?: { replace?: boolean; query?: Record<string, unknown> }) => {
       // React Router v6 处理
       if (options?.query) {
         const searchParams = new URLSearchParams();
@@ -120,7 +121,8 @@ export function useReactRouterAdapter(
         navigate(path, { replace: options?.replace });
       }
     },
-    currentPath: location.pathname,
+    currentPath: `${location.pathname}${location.search || ''}`,
+    location,
   };
 }
 
@@ -217,7 +219,8 @@ export function useSidebarState() {
   const computed = useLayoutComputed();
   const [state, setState] = useLayoutState();
 
-  const collapsed = state.sidebarCollapsed;
+  const isNonCollapsible = computed.isSidebarMixedNav || computed.isHeaderMixedNav;
+  const collapsed = isNonCollapsible ? false : state.sidebarCollapsed;
   const expandOnHovering = state.sidebarExpandOnHovering;
   const extraVisible = state.sidebarExtraVisible;
   const extraCollapsed = state.sidebarExtraCollapsed ?? false;
@@ -229,20 +232,28 @@ export function useSidebarState() {
     (value: boolean) => {
       let changed = false;
       setState((prev) => {
+        if (computed.isSidebarMixedNav || computed.isHeaderMixedNav) {
+          if (!prev.sidebarCollapsed) return prev;
+          changed = true;
+          return { ...prev, sidebarCollapsed: false };
+        }
         if (prev.sidebarCollapsed === value) return prev;
         changed = true;
         return { ...prev, sidebarCollapsed: value };
       });
       if (changed) {
-        context.events.onSidebarCollapse?.(value);
+        context.events.onSidebarCollapse?.(
+          (computed.isSidebarMixedNav || computed.isHeaderMixedNav) ? false : value
+        );
       }
     },
-    [setState, context.events]
+    [setState, context.events, computed.isSidebarMixedNav, computed.isHeaderMixedNav]
   );
 
   const toggle = useCallback(() => {
+    if (computed.isSidebarMixedNav || computed.isHeaderMixedNav) return;
     setCollapsed(!collapsed);
-  }, [collapsed, setCollapsed]);
+  }, [collapsed, setCollapsed, computed.isSidebarMixedNav, computed.isHeaderMixedNav]);
 
   const setExpandOnHovering = useCallback(
     (value: boolean) => {
@@ -298,10 +309,10 @@ export function useSidebarState() {
   const handleMouseLeave = useCallback(() => {
     if (expandOnHovering) {
       setExpandOnHovering(false);
-      // 非固定模式下，鼠标移出时隐藏子菜单面板
-      if (!expandOnHover) {
-        setExtraVisible(false);
-      }
+    }
+    // 悬停展开模式下，鼠标移出时隐藏子菜单面板
+    if (expandOnHover) {
+      setExtraVisible(false);
     }
   }, [expandOnHovering, expandOnHover, setExpandOnHovering, setExtraVisible]);
 
@@ -333,10 +344,11 @@ export function useHeaderState() {
   const computed = useLayoutComputed();
   const [state, setState] = useLayoutState();
 
-  const hidden = state.headerHidden;
+  const hidden = state.headerHidden || context.props.header?.hidden === true;
   const height = computed.headerHeight;
   const visible = computed.showHeader;
   const mode = context.props.header?.mode || 'fixed';
+  const hiddenRef = useRef(hidden);
 
   const setHidden = useCallback(
     (value: boolean) => {
@@ -346,48 +358,98 @@ export function useHeaderState() {
   );
 
   useEffect(() => {
-    if (mode !== 'auto' && mode !== 'auto-scroll') return;
+    hiddenRef.current = hidden;
+  }, [hidden]);
+
+  useEffect(() => {
+    if (mode !== 'auto' && mode !== 'auto-scroll') {
+      setHidden(false);
+      return;
+    }
 
     let mouseY = 0;
-    let lastScrollY = 0;
-    let animationFrame: number | null = null;
+    let lastScrollYWindow = typeof window !== 'undefined' ? window.scrollY : 0;
+    let lastScrollYElement = 0;
+    let scrollRafWindow: number | null = null;
+    let scrollRafElement: number | null = null;
+    let mouseMoveRaf: number | null = null;
+    const scrollTarget =
+      (typeof document !== 'undefined' &&
+        (document.querySelector('.layout-content') as HTMLElement | null)) ||
+      null;
+    if (scrollTarget) {
+      lastScrollYElement = scrollTarget.scrollTop;
+    }
+    const hideThreshold = HEADER_TRIGGER_DISTANCE;
+    const showThreshold = Math.max(0, HEADER_TRIGGER_DISTANCE - 20);
+
+    const updateHiddenByMouse = () => {
+      const currentHidden = hiddenRef.current;
+      if (mouseY > hideThreshold && !currentHidden) {
+        setHidden(true);
+        return;
+      }
+      if (mouseY < showThreshold && currentHidden) {
+        setHidden(false);
+      }
+    };
 
     const handleMouseMove = (e: MouseEvent) => {
       mouseY = e.clientY;
+      if (mode === 'auto') {
+        if (mouseMoveRaf) return;
+        mouseMoveRaf = requestAnimationFrame(() => {
+          updateHiddenByMouse();
+          mouseMoveRaf = null;
+        });
+      }
     };
 
-    const handleScroll = () => {
-      if (animationFrame) return;
-
-      animationFrame = requestAnimationFrame(() => {
-        const currentScrollY = window.scrollY;
-
-        if (mode === 'auto') {
-          setHidden(mouseY > HEADER_TRIGGER_DISTANCE);
-        } else if (mode === 'auto-scroll') {
-          if (currentScrollY > lastScrollY && currentScrollY > height) {
-            setHidden(true);
-          } else if (currentScrollY < lastScrollY) {
-            setHidden(false);
-          }
+    const updateHiddenByScroll = (currentScrollY: number, lastScrollY: number) => {
+      if (mode === 'auto') {
+        updateHiddenByMouse();
+        return currentScrollY;
+      }
+      if (mode === 'auto-scroll') {
+        if (currentScrollY > lastScrollY && currentScrollY > height) {
+          setHidden(true);
+        } else if (currentScrollY < lastScrollY) {
+          setHidden(false);
         }
+      }
+      return currentScrollY;
+    };
 
-        lastScrollY = currentScrollY;
-        animationFrame = null;
+    const handleScrollWindow = () => {
+      if (scrollRafWindow) return;
+      scrollRafWindow = requestAnimationFrame(() => {
+        lastScrollYWindow = updateHiddenByScroll(window.scrollY, lastScrollYWindow);
+        scrollRafWindow = null;
       });
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const handleScrollElement = () => {
+      if (!scrollTarget) return;
+      if (scrollRafElement) return;
+      scrollRafElement = requestAnimationFrame(() => {
+        lastScrollYElement = updateHiddenByScroll(scrollTarget.scrollTop, lastScrollYElement);
+        scrollRafElement = null;
+      });
+    };
+
+    window.addEventListener('scroll', handleScrollWindow, { passive: true });
+    scrollTarget?.addEventListener('scroll', handleScrollElement, { passive: true });
     if (mode === 'auto') {
       window.addEventListener('mousemove', handleMouseMove, { passive: true });
     }
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScrollWindow);
+      scrollTarget?.removeEventListener('scroll', handleScrollElement);
       window.removeEventListener('mousemove', handleMouseMove);
-      if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-      }
+      if (scrollRafWindow) cancelAnimationFrame(scrollRafWindow);
+      if (scrollRafElement) cancelAnimationFrame(scrollRafElement);
+      if (mouseMoveRaf) cancelAnimationFrame(mouseMoveRaf);
     };
   }, [mode, height, setHidden]);
 
@@ -562,9 +624,20 @@ export function useMenuState() {
   const context = useLayoutContext();
   const [state, setState] = useLayoutState();
   const { currentPath, handleMenuItemClick } = useRouter();
+  const normalizeKey = useCallback((value: unknown) => {
+    if (value == null || value === '') return '';
+    return String(value);
+  }, []);
 
   const openKeys = state.openMenuKeys;
-  const activeKey = context.props.activeMenuKey || currentPath;
+  const menuPath = useMemo(
+    () => (currentPath ? currentPath.split('?')[0] : ''),
+    [currentPath]
+  );
+  const activeKey = useMemo(() => {
+    const candidate = context.props.activeMenuKey ?? menuPath;
+    return normalizeKey(candidate);
+  }, [context.props.activeMenuKey, menuPath, normalizeKey]);
   const menus = context.props.menus || [];
   const menuIndex = useMemo(
     () => getMenuPathIndex(context.props.menus || []),
@@ -596,18 +669,21 @@ export function useMenuState() {
 
   // 根据当前路径自动展开菜单
   useEffect(() => {
-    if (!currentPath) return;
-    
-    const menu = menuIndex.byPath.get(currentPath) ?? menuIndex.byKey.get(currentPath);
+    if (!menuPath) return;
+
+    const menu = menuIndex.byPath.get(menuPath) ?? menuIndex.byKey.get(menuPath);
     if (menu) {
       const chain =
-        menuIndex.chainByPath.get(currentPath) ??
+        menuIndex.chainByPath.get(menuPath) ??
         (menu.key ? menuIndex.chainByKey.get(menu.key) : undefined) ??
         [];
       if (chain.length > 1) {
         const parentKeys = chain.slice(0, -1);
         if (isAccordion) {
-          setOpenKeys([parentKeys[parentKeys.length - 1]!]);
+          const lastParentKey = parentKeys[parentKeys.length - 1];
+          if (lastParentKey !== undefined) {
+            setOpenKeys([lastParentKey]);
+          }
         } else {
           // 使用函数式更新避免依赖 openKeys
           setState((prev) => {
@@ -627,23 +703,34 @@ export function useMenuState() {
         }
       }
     }
-  }, [currentPath, menuIndex, isAccordion, setOpenKeys, setState]);
+  }, [menuPath, menuIndex, isAccordion, setOpenKeys, setState]);
 
   const handleSelect = useCallback(
     (key: string) => {
-      const item = menuIndex.byKey.get(key);
+      const target = normalizeKey(key);
+      if (!target) return;
+      const item = menuIndex.byKey.get(target) ?? menuIndex.byPath.get(target);
       if (item) {
         handleMenuItemClick(item);
-        context.events.onMenuSelect?.(item, key);
+        context.events.onMenuSelect?.(item, target);
       }
     },
-    [menuIndex, handleMenuItemClick, context.events]
+    [menuIndex, handleMenuItemClick, context.events, normalizeKey]
   );
 
   const handleOpenChange = useCallback(
     (keys: string[]) => {
       if (context.props.navigation?.accordion) {
-        const nextKeys = keys.length > 0 ? [keys[keys.length - 1]!] : [];
+        const lastKey = keys[keys.length - 1];
+        let nextKeys: string[] = [];
+        if (lastKey !== undefined) {
+          const menu = menuIndex.byKey.get(lastKey) ?? menuIndex.byPath.get(lastKey);
+          const chain =
+            (menu?.key ? menuIndex.chainByKey.get(menu.key) : undefined) ??
+            (menu?.path ? menuIndex.chainByPath.get(menu.path) : undefined) ??
+            [];
+          nextKeys = chain.length > 0 ? chain : [lastKey];
+        }
         if (nextKeys.length !== openKeys.length || nextKeys[0] !== openKeys[0]) {
           setOpenKeys(nextKeys);
         }
@@ -686,17 +773,24 @@ export function useMenuState() {
  */
 export function useTabsState() {
   const context = useLayoutContext();
+  const [, setState] = useLayoutState();
   const { currentPath, handleTabClick, handleTabCloseNavigate } = useRouter();
 
   const [internalTabs, setInternalTabs] = useState<TabItem[]>([]);
 
   const isAutoMode = context.props.autoTab?.enabled !== false;
+  const tabbarConfig = context.props.tabbar || {};
+  const maxCount = tabbarConfig.maxCount ?? context.props.autoTab?.maxCount ?? 0;
+  const persistKey =
+    tabbarConfig.persist === false
+      ? undefined
+      : context.props.autoTab?.persistKey || 'tabs';
 
   const tabManagerRef = useRef<TabManager>(
     getOrCreateTabManager({
-      maxCount: context.props.autoTab?.maxCount || context.props.tabbar?.maxCount || 0,
+      maxCount,
       affixTabs: context.props.autoTab?.affixKeys,
-      persistKey: context.props.autoTab?.persistKey,
+      persistKey,
       onChange: setInternalTabs,
     })
   );
@@ -706,8 +800,47 @@ export function useTabsState() {
     setInternalTabs(tabManagerRef.current.getTabs());
   }, []);
 
+  useEffect(() => {
+    tabManagerRef.current.updateOptions({
+      maxCount,
+      persistKey,
+    });
+    if (!persistKey) {
+      tabManagerRef.current.clearStorage();
+    }
+  }, [maxCount, persistKey]);
+
+  const normalizePath = useCallback((path: string) => path.split('?')[0] || path, []);
+  const getPageKey = useCallback((fullPath: string) => {
+    if (!fullPath.includes('?')) return '';
+    const query = fullPath.split('?')[1]?.split('#')[0] || '';
+    if (!query) return '';
+    try {
+      const params = new URLSearchParams(query);
+      return params.get('pageKey') || '';
+    } catch {
+      return '';
+    }
+  }, []);
+  const resolveTabKey = useCallback(
+    (fullPath: string, menu?: MenuItem) => {
+      const basePath = normalizePath(fullPath);
+      const meta = menu?.meta as Record<string, unknown> | undefined;
+      const fullPathKey = meta?.fullPathKey;
+      const pageKey = getPageKey(fullPath);
+      const rawKey =
+        pageKey || (fullPathKey === false ? basePath : fullPath || basePath);
+      const fallbackKey = menu?.key || basePath;
+      try {
+        return decodeURIComponent(rawKey) || fallbackKey;
+      } catch {
+        return rawKey || fallbackKey;
+      }
+    },
+    [getPageKey, normalizePath]
+  );
+
   const tabs = isAutoMode ? internalTabs : (context.props.tabs || []);
-  const activeKey = context.props.activeTabKey || currentPath;
   const tabMap = useMemo(() => {
     const map = new Map<string, TabItem>();
     for (const tab of tabs) {
@@ -720,29 +853,66 @@ export function useTabsState() {
     [context.props.menus]
   );
 
+  const resolveMenuByPath = useCallback(
+    (path: string) => {
+      const basePath = normalizePath(path);
+      let menu =
+        menuIndex.byPath.get(basePath) ??
+        menuIndex.byKey.get(basePath);
+      if (!menu) {
+        for (const item of menuIndex.pathItems) {
+          if (item.path && basePath.startsWith(item.path)) {
+            menu = item;
+            break;
+          }
+        }
+      }
+      return menu;
+    },
+    [menuIndex, normalizePath]
+  );
+
+  const activeKey = useMemo(() => {
+    if (context.props.activeTabKey) return context.props.activeTabKey;
+    if (!isAutoMode || !currentPath) return currentPath;
+    const menu = resolveMenuByPath(currentPath);
+    if (!menu) return currentPath;
+    return resolveTabKey(currentPath, menu);
+  }, [context.props.activeTabKey, currentPath, isAutoMode, resolveMenuByPath, resolveTabKey]);
+
+  const buildTabFromMenu = useCallback(
+    (menu: MenuItem, fullPath: string): TabItem => {
+      const resolvedFullPath = fullPath || menu.path || '';
+      const basePath = normalizePath(resolvedFullPath || menu.path || '');
+      const key = resolveTabKey(resolvedFullPath || basePath, menu);
+      const baseTab = tabManagerRef.current.createTabFromMenu(menu, { affix: menu.affix });
+      return {
+        ...baseTab,
+        key,
+        path: resolvedFullPath || baseTab.path || basePath,
+        meta: {
+          ...(baseTab.meta || {}),
+          fullPath: resolvedFullPath || basePath,
+          fullPathKey: (menu.meta as Record<string, unknown> | undefined)?.fullPathKey,
+          pageKey: getPageKey(resolvedFullPath || basePath) || undefined,
+        },
+      };
+    },
+    [getPageKey, normalizePath, resolveTabKey]
+  );
+
   // 监听当前路径变化，自动添加标签
   useEffect(() => {
     if (!isAutoMode || !currentPath) return;
 
-    let menu =
-      menuIndex.byPath.get(currentPath) ??
-      menuIndex.byKey.get(currentPath);
-    if (!menu) {
-      for (const item of menuIndex.pathItems) {
-        if (item.path && currentPath.startsWith(item.path)) {
-          menu = item;
-          break;
-        }
-      }
-    }
+    const menu = resolveMenuByPath(currentPath);
 
     if (menu && menu.path && !menu.hideInTab) {
-      const newTabs = tabManagerRef.current.addTabFromMenu(menu, {
-        affix: menu.affix,
-      });
+      const tab = buildTabFromMenu(menu, currentPath);
+      const newTabs = tabManagerRef.current.addTab(tab);
       setInternalTabs(newTabs);
     }
-  }, [currentPath, isAutoMode, menuIndex]);
+  }, [currentPath, isAutoMode, resolveMenuByPath, buildTabFromMenu]);
 
   // 监听固定标签配置变化
   useEffect(() => {
@@ -752,6 +922,40 @@ export function useTabsState() {
       setInternalTabs(tabManagerRef.current.getTabs());
     }
   }, [context.props.autoTab?.affixKeys]);
+
+  const areArraysEqual = (a: string[], b: string[]) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (tabbarConfig.keepAlive === false) {
+      setState((prev) =>
+        prev.keepAliveIncludes.length === 0
+          ? prev
+          : { ...prev, keepAliveIncludes: [] }
+      );
+      return;
+    }
+    const includes = tabs
+      .filter((tab) => (tab.meta as Record<string, unknown> | undefined)?.keepAlive !== false)
+      .map((tab) => {
+        return (
+          tab.cacheName ||
+          ((tab.meta as Record<string, unknown> | undefined)?.cacheName as string | undefined) ||
+          tab.name
+        );
+      })
+      .filter(Boolean) as string[];
+    setState((prev) =>
+      areArraysEqual(prev.keepAliveIncludes, includes)
+        ? prev
+        : { ...prev, keepAliveIncludes: includes }
+    );
+  }, [tabs, tabbarConfig.keepAlive, setState]);
 
   const handleSelect = useCallback(
     (key: string) => {
@@ -768,15 +972,16 @@ export function useTabsState() {
     (key: string) => {
       const item = tabMap.get(key);
       if (item && item.closable !== false) {
+        const beforeTabs = tabs;
         if (isAutoMode) {
           const newTabs = tabManagerRef.current.removeTab(key);
           setInternalTabs(newTabs);
-          handleTabCloseNavigate(key, newTabs, activeKey);
         }
+        handleTabCloseNavigate(key, beforeTabs, activeKey);
         context.events.onTabClose?.(item, key);
       }
     },
-    [tabMap, isAutoMode, activeKey, handleTabCloseNavigate, context.events]
+    [tabMap, isAutoMode, tabs, activeKey, handleTabCloseNavigate, context.events]
   );
 
   const handleCloseAll = useCallback(() => {
@@ -824,12 +1029,15 @@ export function useTabsState() {
 
   const handleRefresh = useCallback(
     (key: string) => {
+      if (key === activeKey) {
+        setState((prev) => ({ ...prev, refreshKey: prev.refreshKey + 1 }));
+      }
       const item = tabMap.get(key);
       if (item) {
         context.events.onTabRefresh?.(item, key);
       }
     },
-    [tabMap, context.events]
+    [tabMap, context.events, setState, activeKey]
   );
 
   const handleToggleAffix = useCallback(
@@ -840,6 +1048,22 @@ export function useTabsState() {
       }
     },
     [isAutoMode]
+  );
+
+  const handleOpenInNewWindow = useCallback(
+    (key: string) => {
+      const item = tabMap.get(key);
+      if (!item) return;
+      const meta = item.meta as Record<string, unknown> | undefined;
+      const url =
+        (meta?.externalLink as string | undefined) ||
+        (meta?.fullPath as string | undefined) ||
+        item.path;
+      if (url) {
+        window.open(url, '_blank');
+      }
+    },
+    [tabMap]
   );
 
   const handleSort = useCallback(
@@ -864,6 +1088,7 @@ export function useTabsState() {
     handleCloseRight,
     handleRefresh,
     handleToggleAffix,
+    handleOpenInNewWindow,
     handleSort,
     tabManager: tabManagerRef.current,
   };
@@ -893,6 +1118,7 @@ export function useBreadcrumbState() {
     }
 
     const path = currentPath;
+    const basePath = path ? path.split('?')[0] : '';
     const config = context.props.autoBreadcrumb || {};
 
     if (!path || menuIndex.byKey.size === 0) {
@@ -909,11 +1135,11 @@ export function useBreadcrumbState() {
     const homeIcon = config.homeIcon || 'home';
 
     let menu =
-      menuIndex.byPath.get(path) ??
-      menuIndex.byKey.get(path);
+      menuIndex.byPath.get(basePath) ??
+      menuIndex.byKey.get(basePath);
     if (!menu) {
       for (const item of menuIndex.pathItems) {
-        if (item.path && path.startsWith(item.path)) {
+        if (item.path && basePath.startsWith(item.path)) {
           menu = item;
           break;
         }
@@ -936,15 +1162,16 @@ export function useBreadcrumbState() {
     }
 
     for (const key of chainKeys) {
-      const menuItem = menuIndex.byKey.get(key);
+      const menuItem = menuIndex.byKey.get(key) ?? menuIndex.byPath.get(key);
       if (!menuItem) continue;
       if (showHome && menuItem.path === homePath) continue;
+      const menuId = getMenuId(menuItem);
       items.push({
-        key: `__breadcrumb_${menuItem.key}__`,
+        key: `__breadcrumb_${menuId}__`,
         name: menuItem.name,
         icon: menuItem.icon,
         path: menuItem.path,
-        clickable: !!menuItem.path && menuItem.path !== path,
+        clickable: !!menuItem.path && menuItem.path !== basePath,
       });
     }
 
@@ -1266,12 +1493,13 @@ export function useDynamicTitle() {
   useEffect(() => {
     if (!enabled || !currentPath) return;
 
+    const basePath = currentPath.split('?')[0];
     let menu =
-      menuIndex.byPath.get(currentPath) ??
-      menuIndex.byKey.get(currentPath);
+      menuIndex.byPath.get(basePath) ??
+      menuIndex.byKey.get(basePath);
     if (!menu) {
       for (const item of menuIndex.pathItems) {
-        if (item.path && currentPath.startsWith(item.path)) {
+        if (item.path && basePath.startsWith(item.path)) {
           menu = item;
           break;
         }
@@ -1404,6 +1632,7 @@ export function useNotifications() {
  */
 export function useRefresh() {
   const context = useLayoutContext();
+  const [, setState] = useLayoutState();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const eventsRef = useRef(context.events);
@@ -1428,11 +1657,16 @@ export function useRefresh() {
     };
   }, []);
 
+  const triggerRefresh = useCallback(() => {
+    setState((prev) => ({ ...prev, refreshKey: prev.refreshKey + 1 }));
+  }, [setState]);
+
   const refresh = useCallback(async () => {
     if (isRefreshing) return;
 
     setIsRefreshing(true);
     try {
+      triggerRefresh();
       if (activeTab && eventsRef.current.onTabRefresh) {
         eventsRef.current.onTabRefresh(activeTab, activeTab.key);
       } else {
@@ -1447,7 +1681,7 @@ export function useRefresh() {
         timerRef.current = null;
       }, 500); // 与动画时长一致 --admin-duration-slow
     }
-  }, [isRefreshing, activeTab]);
+  }, [isRefreshing, activeTab, triggerRefresh]);
 
   return {
     isRefreshing,

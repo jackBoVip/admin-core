@@ -3,13 +3,13 @@
  * @description 根据偏好设置更新 CSS 变量
  */
 
-import type { Preferences, DOMSelectors } from '../types';
-import { getThemePrimaryColor } from '../constants';
 import { generateThemeColorVariables } from '../color';
-import { updateCSSVariables, toggleClass, hasDocument } from '../utils';
+import { getThemePrimaryColor } from '../constants';
 import { CSS_VAR_LAYOUT } from '../constants/css-variables';
 import { generateFontScaleVariables, clampFontScale } from '../helpers/font-scale';
 import { getActualThemeMode, clearThemeModeCache } from '../helpers/theme';
+import { updateCSSVariables, toggleClass, hasDocument } from '../utils';
+import type { Preferences, DOMSelectors } from '../types';
 
 /* ========== 默认选择器 ========== */
 
@@ -71,27 +71,29 @@ export function updateThemeCSSVariables(preferences: Preferences): void {
     primaryColor = getThemePrimaryColor(theme.builtinType, isDark);
   }
 
-  // 根据当前主题模式获取背景跟随主题设置
-  const colorFollowPrimary = isDark
-    ? preferences.app.colorFollowPrimaryDark
-    : preferences.app.colorFollowPrimaryLight;
+  // 浅色/深色模式下顶栏等背景是否跟随主题色（两套都传，以便同时生成 light/dark 顶栏变量）
+  const colorFollowPrimaryLight = preferences.app.colorFollowPrimaryLight ?? false;
+  const colorFollowPrimaryDark = preferences.app.colorFollowPrimaryDark ?? false;
+  const colorFollowPrimary = isDark ? colorFollowPrimaryDark : colorFollowPrimaryLight;
 
   // 字体缩放（确保在有效范围内）
   const fontScale = clampFontScale(theme.fontScale);
 
   // 缓存键（基于主色 + 暗色模式 + 圆角 + 字体缩放 + 背景跟随主题）
-  const cacheKey = `${primaryColor}-${isDark}-${theme.radius}-${fontScale}-${colorFollowPrimary}`;
+  const cacheKey = `${primaryColor}-${isDark}-${theme.radius}-${fontScale}-${colorFollowPrimaryLight}-${colorFollowPrimaryDark}`;
 
   // 检查缓存
   let colorVariables: Record<string, string>;
   if (colorVariablesCache && colorVariablesCache.key === cacheKey) {
     colorVariables = colorVariablesCache.variables;
   } else {
-    // 生成颜色变量
+    // 生成颜色变量（传入 light/dark 两套顶栏跟随设置，使顶栏背景能随主题切换）
     colorVariables = generateThemeColorVariables({
       primaryColor,
       isDark,
       colorFollowPrimary,
+      colorFollowPrimaryLight,
+      colorFollowPrimaryDark,
     });
 
     // 添加圆角（使用 px 单位，避免受字体缩放影响）

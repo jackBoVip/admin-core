@@ -3,8 +3,8 @@
  * @description 将 SVG 字符串渲染为组件
  */
 
-import { defineComponent, h, computed, type PropType, type ExtractPropTypes } from 'vue';
 import { getIcon, getIconSize, type IconName, type IconSize } from '@admin-core/preferences';
+import { defineComponent, h, computed, type PropType, type ExtractPropTypes } from 'vue';
 
 /**
  * Icon 组件 Props 定义

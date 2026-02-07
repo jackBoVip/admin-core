@@ -19,13 +19,15 @@ const props = defineProps<Props>();
 const menuContext = useMenuContext();
 const parentSubMenu = useSubMenuContext();
 
-// 路径
-const path = computed(() => props.item.key || props.item.path || '');
-
+const path = computed(() => {
+  const raw = props.item.key ?? props.item.path ?? '';
+  return raw === '' ? '' : String(raw);
+});
 
 // 是否激活
 const active = computed(() => {
-  return path.value === menuContext.activePath.value;
+  const activePath = menuContext.activePath.value === '' ? '' : String(menuContext.activePath.value);
+  return path.value !== '' && path.value === activePath;
 });
 
 // 图标（激活时使用 activeIcon）
@@ -41,7 +43,7 @@ function handleClick() {
   const parentPaths: string[] = [];
   let parent = parentSubMenu;
   while (parent) {
-    parentPaths.unshift(parent.path);
+    parentPaths.unshift(String(parent.path));
     parent = parent.parent;
   }
   

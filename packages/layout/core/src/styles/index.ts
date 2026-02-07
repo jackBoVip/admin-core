@@ -10,19 +10,19 @@ import { CSS_VAR_NAMES } from '../constants';
  */
 export const layoutThemeTokens = {
   // 尺寸变量
-  '--layout-header-height': '48px',
-  '--layout-sidebar-width': '210px',
-  '--layout-sidebar-collapse-width': '60px',
+  '--admin-header-height': '48px',
+  '--admin-sidebar-width': '210px',
+  '--admin-sidebar-collapsed-width': '60px',
   '--layout-sidebar-mixed-width': '80px',
-  '--layout-tabbar-height': '38px',
-  '--layout-footer-height': '32px',
+  '--admin-tabbar-height': '38px',
+  '--admin-footer-height': '32px',
   '--layout-panel-width': '280px',
   '--layout-panel-collapse-width': '0px',
-  '--layout-content-padding': '16px',
-  '--layout-content-padding-top': '16px',
-  '--layout-content-padding-bottom': '16px',
-  '--layout-content-padding-left': '16px',
-  '--layout-content-padding-right': '16px',
+  '--admin-content-padding': '16px',
+  '--admin-content-padding-top': '16px',
+  '--admin-content-padding-bottom': '16px',
+  '--admin-content-padding-left': '16px',
+  '--admin-content-padding-right': '16px',
   '--layout-content-compact-width': '1200px',
 
   // z-index
@@ -42,12 +42,12 @@ export const layoutThemeTokens = {
 export const tailwindThemeCSS = `
 @theme {
   /* 布局尺寸 */
-  --spacing-header: var(--layout-header-height, 48px);
-  --spacing-sidebar: var(--layout-sidebar-width, 210px);
-  --spacing-sidebar-collapsed: var(--layout-sidebar-collapse-width, 60px);
+  --spacing-header: var(--admin-header-height, 48px);
+  --spacing-sidebar: var(--admin-sidebar-width, 210px);
+  --spacing-sidebar-collapsed: var(--admin-sidebar-collapsed-width, 60px);
   --spacing-sidebar-mixed: var(--layout-sidebar-mixed-width, 80px);
-  --spacing-tabbar: var(--layout-tabbar-height, 38px);
-  --spacing-footer: var(--layout-footer-height, 32px);
+  --spacing-tabbar: var(--admin-tabbar-height, 38px);
+  --spacing-footer: var(--admin-footer-height, 32px);
   --spacing-panel: var(--layout-panel-width, 280px);
   --spacing-content-compact: var(--layout-content-compact-width, 1200px);
 
@@ -75,6 +75,35 @@ export const tailwindThemeCSS = `
  * 布局基础样式 CSS
  */
 export const layoutBaseCSS = `
+/* 主题切换过渡（View Transitions） */
+@supports (view-transition-name: root) {
+  :root {
+    view-transition-name: root;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  :root.dark::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  :root.dark::view-transition-new(root) {
+    z-index: 9999;
+  }
+
+  :root:not(.dark)::view-transition-old(root) {
+    z-index: 9999;
+  }
+
+  :root:not(.dark)::view-transition-new(root) {
+    z-index: 1;
+  }
+}
+
 /* 布局容器 */
 .layout-container {
   position: relative;
@@ -90,17 +119,17 @@ export const layoutBaseCSS = `
   right: 0;
   left: 0;
   z-index: var(--layout-z-index-header);
-  height: var(--layout-header-height);
+  height: var(--admin-header-height);
   transition: all var(--admin-duration-normal, 300ms)
     var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 :is(.layout-header--with-sidebar, .layout-header[data-with-sidebar="true"]) {
-  left: var(--layout-sidebar-width);
+  left: var(--admin-sidebar-width);
 }
 
 :is(.layout-header--collapsed, .layout-header[data-collapsed="true"]) {
-  left: var(--layout-sidebar-collapse-width);
+  left: var(--admin-sidebar-collapsed-width);
 }
 
 :is(.layout-header--hidden, .layout-header[data-hidden="true"]) {
@@ -114,13 +143,13 @@ export const layoutBaseCSS = `
   left: 0;
   bottom: 0;
   z-index: var(--layout-z-index-sidebar);
-  width: var(--layout-sidebar-width);
+  width: var(--admin-sidebar-width);
   transition: width var(--admin-duration-normal, 300ms)
     var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 :is(.layout-sidebar--collapsed, .layout-sidebar[data-collapsed="true"]) {
-  width: var(--layout-sidebar-collapse-width);
+  width: var(--admin-sidebar-collapsed-width);
 }
 
 :is(.layout-sidebar--mixed, .layout-sidebar[data-mixed="true"]) {
@@ -134,37 +163,37 @@ export const layoutBaseCSS = `
 /* 标签栏 */
 .layout-tabbar {
   position: fixed;
-  top: var(--layout-header-height);
+  top: var(--admin-header-height);
   right: 0;
   left: 0;
   z-index: var(--layout-z-index-tabbar);
-  height: var(--layout-tabbar-height);
+  height: var(--admin-tabbar-height);
   transition: all var(--admin-duration-normal, 300ms)
     var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 :is(.layout-tabbar--with-sidebar, .layout-tabbar[data-with-sidebar="true"]) {
-  left: var(--layout-sidebar-width);
+  left: var(--admin-sidebar-width);
 }
 
 :is(.layout-tabbar--collapsed, .layout-tabbar[data-collapsed="true"]) {
-  left: var(--layout-sidebar-collapse-width);
+  left: var(--admin-sidebar-collapsed-width);
 }
 
 /* 内容区 */
 .layout-content {
   position: relative;
-  min-height: calc(100vh - var(--layout-header-height) - var(--layout-tabbar-height));
-  min-height: calc(100dvh - var(--layout-header-height) - var(--layout-tabbar-height));
-  margin-left: var(--layout-sidebar-width);
-  margin-top: calc(var(--layout-header-height) + var(--layout-tabbar-height));
-  padding: var(--layout-content-padding);
+  min-height: calc(100vh - var(--admin-header-height) - var(--admin-tabbar-height));
+  min-height: calc(100dvh - var(--admin-header-height) - var(--admin-tabbar-height));
+  margin-left: var(--admin-sidebar-width);
+  margin-top: calc(var(--admin-header-height) + var(--admin-tabbar-height));
+  padding: var(--admin-content-padding);
   transition: margin var(--admin-duration-normal, 300ms)
     var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 :is(.layout-content--collapsed, .layout-content[data-collapsed="true"]) {
-  margin-left: var(--layout-sidebar-collapse-width);
+  margin-left: var(--admin-sidebar-collapsed-width);
 }
 
 :is(.layout-content--compact, .layout-content[data-compact="true"]) {
@@ -183,7 +212,7 @@ export const layoutBaseCSS = `
 }
 
 :is(.layout-content--panel-left, .layout-content[data-panel-position="left"]) {
-  margin-left: calc(var(--layout-sidebar-width) + var(--layout-panel-width));
+  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-width));
 }
 
 :is(.layout-content--panel-right, .layout-content[data-panel-position="right"]) {
@@ -197,33 +226,33 @@ export const layoutBaseCSS = `
 /* 页脚 */
 .layout-footer {
   position: relative;
-  height: var(--layout-footer-height);
-  margin-left: var(--layout-sidebar-width);
+  height: var(--admin-footer-height);
+  margin-left: var(--admin-sidebar-width);
   transition: margin var(--admin-duration-normal, 300ms)
     var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 :is(.layout-footer--with-sidebar, .layout-footer[data-with-sidebar="true"]) {
-  margin-left: var(--layout-sidebar-width);
+  margin-left: var(--admin-sidebar-width);
 }
 
 :is(.layout-footer--fixed, .layout-footer[data-fixed="true"]) {
   position: fixed;
   bottom: 0;
   right: 0;
-  left: var(--layout-sidebar-width);
+  left: var(--admin-sidebar-width);
   z-index: var(--layout-z-index);
 }
 
 :is(.layout-footer--collapsed, .layout-footer--sidebar-collapsed, .layout-footer[data-collapsed="true"]) {
-  margin-left: var(--layout-sidebar-collapse-width);
-  left: var(--layout-sidebar-collapse-width);
+  margin-left: var(--admin-sidebar-collapsed-width);
+  left: var(--admin-sidebar-collapsed-width);
 }
 
 /* 功能区 */
 .layout-panel {
   position: fixed;
-  top: var(--layout-header-height);
+  top: var(--admin-header-height);
   bottom: 0;
   z-index: var(--layout-z-index-panel);
   width: var(--layout-panel-width);
@@ -286,15 +315,15 @@ export const layoutBaseCSS = `
 export const layoutUtilitiesCSS = `
 /* 布局工具类 */
 @utility h-header {
-  height: var(--layout-header-height);
+  height: var(--admin-header-height);
 }
 
 @utility w-sidebar {
-  width: var(--layout-sidebar-width);
+  width: var(--admin-sidebar-width);
 }
 
 @utility w-sidebar-collapsed {
-  width: var(--layout-sidebar-collapse-width);
+  width: var(--admin-sidebar-collapsed-width);
 }
 
 @utility w-sidebar-mixed {
@@ -302,11 +331,11 @@ export const layoutUtilitiesCSS = `
 }
 
 @utility h-tabbar {
-  height: var(--layout-tabbar-height);
+  height: var(--admin-tabbar-height);
 }
 
 @utility h-footer {
-  height: var(--layout-footer-height);
+  height: var(--admin-footer-height);
 }
 
 @utility w-panel {
@@ -314,15 +343,15 @@ export const layoutUtilitiesCSS = `
 }
 
 @utility top-header {
-  top: var(--layout-header-height);
+  top: var(--admin-header-height);
 }
 
 @utility left-sidebar {
-  left: var(--layout-sidebar-width);
+  left: var(--admin-sidebar-width);
 }
 
 @utility left-sidebar-collapsed {
-  left: var(--layout-sidebar-collapse-width);
+  left: var(--admin-sidebar-collapsed-width);
 }
 
 @utility z-layout {
@@ -373,23 +402,23 @@ export const layoutUtilitiesCSS = `
 
 /* 内容区内边距工具类 */
 @utility p-content {
-  padding: var(--layout-content-padding);
+  padding: var(--admin-content-padding);
 }
 
 @utility pt-content {
-  padding-top: var(--layout-content-padding-top);
+  padding-top: var(--admin-content-padding-top);
 }
 
 @utility pb-content {
-  padding-bottom: var(--layout-content-padding-bottom);
+  padding-bottom: var(--admin-content-padding-bottom);
 }
 
 @utility pl-content {
-  padding-left: var(--layout-content-padding-left);
+  padding-left: var(--admin-content-padding-left);
 }
 
 @utility pr-content {
-  padding-right: var(--layout-content-padding-right);
+  padding-right: var(--admin-content-padding-right);
 }
 
 /* 滚动容器 */

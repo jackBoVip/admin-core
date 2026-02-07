@@ -11,9 +11,9 @@ import {
   useRef,
   memo,
 } from 'react';
-import { MenuProvider, type MenuContextValue, type MenuItemClicked } from './use-menu-context';
-import { SubMenu } from './SubMenu';
 import { MenuItem as MenuItemComp } from './MenuItem';
+import { SubMenu } from './SubMenu';
+import { MenuProvider, type MenuContextValue, type MenuItemClicked } from './use-menu-context';
 import type { MenuItem } from '@admin-core/layout';
 
 export interface MenuProps {
@@ -54,17 +54,25 @@ export const Menu = memo(function Menu({
   onOpen,
   onClose,
 }: MenuProps) {
+  const normalizeKey = useCallback((value: unknown) => {
+    if (value == null || value === '') return '';
+    return String(value);
+  }, []);
+
   // 状态
-  const [activePath, setActivePath] = useState(defaultActive);
+  const [activePath, setActivePath] = useState(() => normalizeKey(defaultActive));
   const [openedMenus, setOpenedMenus] = useState<string[]>(
-    defaultOpeneds && !collapse ? [...defaultOpeneds] : []
+    defaultOpeneds && !collapse
+      ? defaultOpeneds.map((key) => normalizeKey(key)).filter(Boolean)
+      : []
   );
   const openedMenuSet = useMemo(() => new Set(openedMenus), [openedMenus]);
 
   // 同步 defaultActive
   useEffect(() => {
-    setActivePath(prev => (prev === defaultActive ? prev : defaultActive));
-  }, [defaultActive]);
+    const nextActive = normalizeKey(defaultActive);
+    setActivePath(prev => (prev === nextActive ? prev : nextActive));
+  }, [defaultActive, normalizeKey]);
 
   // 折叠时关闭所有菜单
   useEffect(() => {
@@ -80,22 +88,22 @@ export const Menu = memo(function Menu({
     const map = new Map<string, string | null>();
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
-        const keyPath = menu.key || menu.path || '';
-        const path = menu.path || '';
-        if (keyPath) {
-          map.set(keyPath, parent);
-        }
-        if (path && path !== keyPath) {
-          map.set(path, parent);
-        }
+        const rawKey = menu.key ?? '';
+        const keyPath = normalizeKey(rawKey);
+        const rawPath = menu.path ?? '';
+        const path = normalizeKey(rawPath);
+        const id = normalizeKey(menu.key ?? menu.path ?? menu.name ?? '');
+        if (keyPath) map.set(keyPath, parent);
+        if (path && path !== keyPath) map.set(path, parent);
+        if (id && id !== keyPath && id !== path) map.set(id, parent);
         if (menu.children?.length) {
-          visit(menu.children, keyPath || path || parent);
+          visit(menu.children, id || parent);
         }
       }
     };
     visit(menus, null);
     return map;
-  }, [menus]);
+  }, [menus, normalizeKey]);
 
   const activeParentSet = useMemo(() => {
     const parentSet = new Set<string>();
@@ -114,20 +122,23 @@ export const Menu = memo(function Menu({
 
   // 打开菜单
   const openMenu = useCallback((path: string, parentPaths: string[] = []) => {
+    const target = normalizeKey(path);
+    if (!target) return;
+    const normalizedParents = parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
     setOpenedMenus(prev => {
-      if (prev.includes(path)) return prev;
+      if (prev.includes(target)) return prev;
       
       let newOpenedMenus = [...prev];
       
       // 手风琴模式：关闭同级其他菜单
       if (accordion) {
-        if (parentPaths.length === 0) {
+        if (normalizedParents.length === 0) {
           newOpenedMenus = [];
         } else {
           const filtered: string[] = [];
           for (const menu of newOpenedMenus) {
             let keep = false;
-            for (const parent of parentPaths) {
+            for (const parent of normalizedParents) {
               if (menu.startsWith(parent)) {
                 keep = true;
                 break;
@@ -139,23 +150,26 @@ export const Menu = memo(function Menu({
         }
       }
       
-      newOpenedMenus.push(path);
+      newOpenedMenus.push(target);
       return newOpenedMenus;
     });
-    onOpen?.(path, parentPaths);
-  }, [accordion, onOpen]);
+    onOpen?.(target, normalizedParents);
+  }, [accordion, onOpen, normalizeKey]);
 
   // 关闭菜单
   const closeMenu = useCallback((path: string, parentPaths: string[] = []) => {
+    const target = normalizeKey(path);
+    if (!target) return;
+    const normalizedParents = parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
     setOpenedMenus(prev => {
-      const index = prev.indexOf(path);
+      const index = prev.indexOf(target);
       if (index === -1) return prev;
       const newOpenedMenus = [...prev];
       newOpenedMenus.splice(index, 1);
       return newOpenedMenus;
     });
-    onClose?.(path, parentPaths);
-  }, [onClose]);
+    onClose?.(target, normalizedParents);
+  }, [onClose, normalizeKey]);
 
   // 关闭所有菜单
   const closeAllMenus = useCallback(() => {
@@ -164,16 +178,18 @@ export const Menu = memo(function Menu({
 
   // 处理菜单项点击
   const handleMenuItemClick = useCallback((data: MenuItemClicked) => {
-    const { path, parentPaths } = data;
+    const normalizedPath = normalizeKey(data.path);
+    const normalizedParents = data.parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
+    if (!normalizedPath) return;
     
     // 弹出模式下点击菜单项关闭所有菜单
     if (isMenuPopup) {
       setOpenedMenus((prev) => (prev.length > 0 ? [] : prev));
     }
     
-    setActivePath(prev => (prev === path ? prev : path));
-    onSelect?.(path, parentPaths);
-  }, [isMenuPopup, onSelect]);
+    setActivePath(prev => (prev === normalizedPath ? prev : normalizedPath));
+    onSelect?.(normalizedPath, normalizedParents);
+  }, [isMenuPopup, onSelect, normalizeKey]);
 
   // 溢出处理（仅水平模式）
   const menuRef = useRef<HTMLUListElement>(null);
@@ -283,7 +299,7 @@ export const Menu = memo(function Menu({
         resizeFrameRef.current = null;
       }
     };
-  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   // 监听菜单变化
   useEffect(() => {
@@ -291,7 +307,7 @@ export const Menu = memo(function Menu({
       isFirstRenderRef.current = true;
       handleResize();
     }
-  }, [menus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [menus]);
 
   useEffect(() => {
     const nextCount =

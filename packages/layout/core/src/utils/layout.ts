@@ -39,10 +39,16 @@
  */
 
 import {
+  CSS_VAR_LAYOUT,
+  createAutoLockTimer as createSharedAutoLockTimer,
+  createStorageManager,
+  formatWatermarkText,
   getActualThemeMode,
   generateThemeCSSVariables,
   generateThemeClasses,
   mapPreferencesToLayoutProps,
+  type LayoutType,
+  type StorageManager,
 } from '@admin-core/preferences';
 import {
   CSS_VAR_NAMES,
@@ -69,8 +75,6 @@ import type {
   TabItem,
   WatermarkConfig,
 } from '../types';
-import type { LayoutType } from '@admin-core/preferences';
-
 export { getActualThemeMode, generateThemeCSSVariables, generateThemeClasses, mapPreferencesToLayoutProps };
 
 // ============================================================
@@ -112,7 +116,7 @@ export function isHeaderNavLayout(layout: LayoutType): boolean {
  * 判断是否为混合导航
  */
 export function isMixedNavLayout(layout: LayoutType): boolean {
-  return layout === 'mixed-nav' || layout === 'header-sidebar-nav';
+  return layout === 'mixed-nav';
 }
 
 /**
@@ -169,9 +173,10 @@ export function calculateSidebarWidth(
   }
 
   // 混合导航模式（vben 风格）
-  // 侧边栏宽度 = 图标列宽度 + 子菜单面板宽度（如果固定模式且可见）
+  // 侧边栏宽度 = 图标列宽度 + 子菜单面板宽度（固定模式且可见时占用空间）
   if (isHeaderMixedNavLayout(layout) || isSidebarMixedNavLayout(layout)) {
-    if (state.sidebarCollapsed && !state.sidebarExpandOnHovering) {
+    const isSidebarMixed = isSidebarMixedNavLayout(layout);
+    if (!isSidebarMixed && state.sidebarCollapsed && !state.sidebarExpandOnHovering) {
       return sidebar.collapseWidth;
     }
     // 图标列宽度
@@ -180,8 +185,8 @@ export function calculateSidebarWidth(
     const extraCollapsedWidth = sidebar.extraCollapsedWidth || 60;
     const extraExpandedWidth = sidebar.width || 180;
     
-    // 固定模式下（expandOnHover=true），子菜单面板占用空间
-    if (state.sidebarExpandOnHover && state.sidebarExtraVisible) {
+    // 固定模式下（expandOnHover=false），子菜单面板占用空间
+    if (!state.sidebarExpandOnHover && state.sidebarExtraVisible) {
       const extraWidth = state.sidebarExtraCollapsed ? extraCollapsedWidth : extraExpandedWidth;
       return mixedWidth + extraWidth;
     }
@@ -208,6 +213,10 @@ export function calculateHeaderHeight(
   const header = { ...DEFAULT_HEADER_CONFIG, ...props.header };
 
   if (isFullContentLayout(layout)) {
+    return 0;
+  }
+
+  if (header.enable === false) {
     return 0;
   }
 
@@ -273,6 +282,8 @@ export function calculateLayoutComputed(
 ): LayoutComputed {
   const layout = props.isMobile ? 'sidebar-nav' : (props.layout || 'sidebar-nav');
   const visibility = props.visibility || {};
+  const header = { ...DEFAULT_HEADER_CONFIG, ...props.header };
+  const tabbar = { ...DEFAULT_TABBAR_CONFIG, ...props.tabbar };
 
   const sidebarWidth = calculateSidebarWidth(props, state);
   const headerHeight = calculateHeaderHeight(props, state);
@@ -282,28 +293,36 @@ export function calculateLayoutComputed(
   const panel = { ...DEFAULT_PANEL_CONFIG, ...props.panel };
 
   const showSidebar = shouldShowSidebar(layout, props.isMobile || false) && visibility.sidebar !== false;
-  const showHeader = shouldShowHeader(layout) && visibility.header !== false;
-  const showTabbar = (props.tabbar?.enable ?? true) && visibility.tabbar !== false;
+  const showHeader = shouldShowHeader(layout) && visibility.header !== false && header.enable !== false;
+  const showTabbar = tabbar.enable && visibility.tabbar !== false;
   const showFooter = (props.footer?.enable ?? false) && visibility.footer !== false;
-  const showBreadcrumb = (props.breadcrumb?.enable ?? true) && visibility.breadcrumb !== false;
+  const breadcrumbEnabled = (props.breadcrumb?.enable ?? true) && visibility.breadcrumb !== false;
+  const breadcrumbDisabledLayout =
+    isHeaderNavLayout(layout) || isMixedNavLayout(layout) || isHeaderMixedNavLayout(layout);
+  const showBreadcrumb = breadcrumbEnabled && !breadcrumbDisabledLayout;
   const showPanel = (props.panel?.enable ?? false) && visibility.panel !== false;
 
   // 计算主内容区域边距
-  const marginLeft = showSidebar && panel.position !== 'left' 
-    ? `${sidebarWidth}px` 
-    : showPanel && panel.position === 'left' 
-      ? `${panelWidth}px` 
-      : '0';
-  
-  const marginRight = showPanel && panel.position === 'right' 
-    ? `${panelWidth}px` 
-    : '0';
+  let marginLeftValue = 0;
+  if (showSidebar) {
+    marginLeftValue += sidebarWidth;
+  }
+  if (showPanel && panel.position === 'left') {
+    marginLeftValue += panelWidth;
+  }
+  const marginLeft = marginLeftValue > 0 ? `${marginLeftValue}px` : '0';
 
-  const marginTop = `${headerHeight + (showTabbar ? tabbarHeight : 0)}px`;
+  const marginRight = showPanel && panel.position === 'right' ? `${panelWidth}px` : '0';
+
+  const headerFixed = header.mode !== 'static';
+  const marginTop = headerFixed ? `${headerHeight + (showTabbar ? tabbarHeight : 0)}px` : '0';
 
   // 计算实际主题模式（处理 auto 模式）
   const rawThemeMode = props.theme?.mode || 'light';
-  const themeMode: 'light' | 'dark' = getActualThemeMode(rawThemeMode);
+  const rawHeaderThemeMode = props.headerTheme ?? rawThemeMode;
+  const rawSidebarThemeMode = props.sidebarTheme ?? rawThemeMode;
+  const headerThemeMode: 'light' | 'dark' = getActualThemeMode(rawHeaderThemeMode);
+  const sidebarThemeMode: 'light' | 'dark' = getActualThemeMode(rawSidebarThemeMode);
   
   const semiDarkSidebar = props.semiDarkSidebar ?? props.theme?.semiDarkSidebar ?? false;
   const semiDarkHeader = props.semiDarkHeader ?? props.theme?.semiDarkHeader ?? false;
@@ -313,19 +332,19 @@ export function calculateLayoutComputed(
   // 当 semiDarkSidebar 为 true 且全局为 light 时，侧边栏用 dark
   // 当 semiDarkSidebar 为 false 时，侧边栏跟随全局主题
   let sidebarTheme: 'light' | 'dark';
-  if (semiDarkSidebar && themeMode === 'light') {
+  if (semiDarkSidebar && sidebarThemeMode === 'light') {
     sidebarTheme = 'dark';
   } else {
-    sidebarTheme = themeMode;
+    sidebarTheme = sidebarThemeMode;
   }
   
   // 顶栏主题计算逻辑
   // 优先级：semiDarkHeader 设置 > 跟随全局主题
   let headerTheme: 'light' | 'dark';
-  if (semiDarkHeader && themeMode === 'light') {
+  if (semiDarkHeader && headerThemeMode === 'light') {
     headerTheme = 'dark';
   } else {
-    headerTheme = themeMode;
+    headerTheme = headerThemeMode;
   }
 
   return {
@@ -370,25 +389,35 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
   const tabbar = { ...DEFAULT_TABBAR_CONFIG, ...props.tabbar };
   const footer = { ...DEFAULT_FOOTER_CONFIG, ...props.footer };
   const panel = { ...DEFAULT_PANEL_CONFIG, ...props.panel };
+  const visibility = props.visibility || {};
+  const showPanel = (props.panel?.enable ?? false) && visibility.panel !== false;
   const zIndex = props.zIndex || 200;
 
   const sidebarWidth = calculateSidebarWidth(props, state);
   const panelWidth = calculatePanelWidth(props, state);
 
-  return {
-    [CSS_VAR_NAMES.headerHeight]: `${header.height}px`,
-    [CSS_VAR_NAMES.sidebarWidth]: `${sidebarWidth}px`,
-    [CSS_VAR_NAMES.sidebarCollapseWidth]: `${sidebar.collapseWidth}px`,
+  const adminVars: Record<string, string> = {
+    [CSS_VAR_LAYOUT.HEADER_HEIGHT]: `${header.height}px`,
+    [CSS_VAR_LAYOUT.SIDEBAR_WIDTH]: `${sidebarWidth}px`,
+    [CSS_VAR_LAYOUT.SIDEBAR_COLLAPSED_WIDTH]: `${sidebar.collapseWidth}px`,
+    [CSS_VAR_LAYOUT.TABBAR_HEIGHT]: `${tabbar.height}px`,
+    [CSS_VAR_LAYOUT.FOOTER_HEIGHT]: `${footer.height}px`,
+    [CSS_VAR_LAYOUT.CONTENT_PADDING]: `${props.contentPadding ?? 16}px`,
+    [CSS_VAR_LAYOUT.CONTENT_PADDING_TOP]: `${props.contentPaddingTop ?? props.contentPadding ?? 16}px`,
+    [CSS_VAR_LAYOUT.CONTENT_PADDING_BOTTOM]: `${props.contentPaddingBottom ?? props.contentPadding ?? 16}px`,
+    [CSS_VAR_LAYOUT.CONTENT_PADDING_LEFT]: `${props.contentPaddingLeft ?? props.contentPadding ?? 16}px`,
+    [CSS_VAR_LAYOUT.CONTENT_PADDING_RIGHT]: `${props.contentPaddingRight ?? props.contentPadding ?? 16}px`,
+  };
+
+  const panelOffsetLeft = showPanel && panel.position === 'left' ? panelWidth : 0;
+  const panelOffsetRight = showPanel && panel.position === 'right' ? panelWidth : 0;
+
+  const layoutOnlyVars: Record<string, string> = {
     [CSS_VAR_NAMES.sidebarMixedWidth]: `${sidebar.mixedWidth}px`,
-    [CSS_VAR_NAMES.tabbarHeight]: `${tabbar.height}px`,
-    [CSS_VAR_NAMES.footerHeight]: `${footer.height}px`,
     [CSS_VAR_NAMES.panelWidth]: `${panelWidth}px`,
     [CSS_VAR_NAMES.panelCollapseWidth]: `${panel.collapsedWidth}px`,
-    [CSS_VAR_NAMES.contentPadding]: `${props.contentPadding ?? 16}px`,
-    [CSS_VAR_NAMES.contentPaddingTop]: `${props.contentPaddingTop ?? props.contentPadding ?? 16}px`,
-    [CSS_VAR_NAMES.contentPaddingBottom]: `${props.contentPaddingBottom ?? props.contentPadding ?? 16}px`,
-    [CSS_VAR_NAMES.contentPaddingLeft]: `${props.contentPaddingLeft ?? props.contentPadding ?? 16}px`,
-    [CSS_VAR_NAMES.contentPaddingRight]: `${props.contentPaddingRight ?? props.contentPadding ?? 16}px`,
+    [CSS_VAR_NAMES.panelOffsetLeft]: `${panelOffsetLeft}px`,
+    [CSS_VAR_NAMES.panelOffsetRight]: `${panelOffsetRight}px`,
     [CSS_VAR_NAMES.contentCompactWidth]: `${props.contentCompactWidth ?? 1200}px`,
     [CSS_VAR_NAMES.zIndex]: `${zIndex}`,
     [CSS_VAR_NAMES.zIndexHeader]: `${zIndex + 10}`,
@@ -397,6 +426,8 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
     [CSS_VAR_NAMES.zIndexPanel]: `${zIndex + 15}`,
     [CSS_VAR_NAMES.zIndexOverlay]: `${zIndex + 50}`,
   };
+
+  return { ...adminVars, ...layoutOnlyVars };
 }
 
 // ============================================================
@@ -537,13 +568,17 @@ export function findMenuByPath(menus: MenuItem[], path: string): MenuItem | unde
 
   function traverse(items: MenuItem[]): boolean {
     for (const item of items) {
-      if (item.key === path || item.path === path) {
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const itemPath = rawPath === '' ? '' : String(rawPath);
+      if (key === path || itemPath === path) {
         exactMatch = item;
         return true;
       }
-      if (item.path && path.startsWith(item.path) && item.path.length > bestMatchLength) {
+      if (itemPath && path.startsWith(itemPath) && itemPath.length > bestMatchLength) {
         bestMatch = item;
-        bestMatchLength = item.path.length;
+        bestMatchLength = itemPath.length;
       }
       if (item.children?.length) {
         if (traverse(item.children)) {
@@ -571,7 +606,11 @@ export function getMenuPathByPath(menus: MenuItem[], targetPath: string): MenuIt
       stack.push(item);
       
       // 精确匹配或前缀匹配
-      if (item.path === targetPath) {
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const itemPath = rawPath === '' ? '' : String(rawPath);
+      if (itemPath === targetPath || key === targetPath) {
         path.push(...stack);
         stack.pop();
         return true;
@@ -604,6 +643,8 @@ export interface TabItemWithState extends TabItem {
   openTime?: number;
 }
 
+const TAB_STORAGE_PREFIX = 'layout-tabs';
+
 /**
  * 标签管理器
  * @description 自动管理标签的添加、删除、排序等
@@ -615,6 +656,7 @@ export class TabManager {
   private maxCount: number;
   private affixTabs: Set<string> = new Set();
   private persistKey: string | null = null;
+  private storage: StorageManager | null = null;
   private onChange?: (tabs: TabItem[]) => void;
   /** 防抖定时器，用于优化 localStorage 写入频率 */
   private saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -629,6 +671,7 @@ export class TabManager {
   }) {
     this.maxCount = options?.maxCount || 0;
     this.persistKey = options?.persistKey || null;
+    this.initStorage();
     this.onChange = options?.onChange;
     if (options?.affixTabs) {
       options.affixTabs.forEach((key) => this.affixTabs.add(key));
@@ -652,28 +695,64 @@ export class TabManager {
     );
   }
 
+  private initStorage(): void {
+    if (!this.persistKey || this.storage) return;
+    this.storage = createStorageManager({
+      prefix: TAB_STORAGE_PREFIX,
+      onError: (error) => {
+        if (
+          error.type === 'write' &&
+          typeof DOMException !== 'undefined' &&
+          error.error instanceof DOMException &&
+          error.error.name === 'QuotaExceededError'
+        ) {
+          logger.warn('Storage quota exceeded, clearing old data');
+          this.clearStorage();
+          return;
+        }
+        logger.warn(
+          `[TabManager] storage ${error.type} error${error.key ? ` for key "${error.key}"` : ''}:`,
+          error.error
+        );
+      },
+    });
+  }
+
   /**
    * 从持久化存储恢复标签
    */
   private restoreFromStorage(): void {
-    if (!this.persistKey || typeof localStorage === 'undefined') return;
-    
-    try {
-      const stored = localStorage.getItem(this.persistKey);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // 验证数据格式
-        if (this.isValidTabData(parsed)) {
-          this.setTabs(parsed);
-        } else {
-          logger.warn('Invalid tabs data format, clearing storage');
-          this.clearStorage();
-        }
+    if (!this.persistKey) return;
+    this.initStorage();
+    const storage = this.storage;
+    if (!storage) return;
+
+    const stored = storage.getItem<TabItem[]>(this.persistKey, null);
+    if (stored) {
+      if (this.isValidTabData(stored)) {
+        this.setTabs(stored);
+        return;
       }
+      logger.warn('Invalid tabs data format, clearing storage');
+      storage.removeItem(this.persistKey);
+    }
+
+    // 兼容旧的未包裹存储格式（直接 localStorage）
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const legacyStored = localStorage.getItem(this.persistKey);
+      if (!legacyStored) return;
+      const parsed = JSON.parse(legacyStored);
+      if (this.isValidTabData(parsed)) {
+        this.setTabs(parsed);
+        storage.setItem(this.persistKey, parsed);
+      } else {
+        logger.warn('Invalid legacy tabs data format, clearing legacy storage');
+      }
+      localStorage.removeItem(this.persistKey);
     } catch (error) {
-      logger.warn('Failed to restore tabs from storage:', error);
-      // 清除损坏的数据
-      this.clearStorage();
+      logger.warn('Failed to restore tabs from legacy storage:', error);
+      localStorage.removeItem(this.persistKey);
     }
   }
 
@@ -681,19 +760,9 @@ export class TabManager {
    * 保存到持久化存储
    */
   private saveToStorage(): void {
-    if (!this.persistKey || typeof localStorage === 'undefined') return;
-    
-    try {
-      localStorage.setItem(this.persistKey, JSON.stringify(this.tabs));
-    } catch (error) {
-      // 处理存储配额超出等错误
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        logger.warn('Storage quota exceeded, clearing old data');
-        this.clearStorage();
-      } else {
-        logger.warn('Failed to save tabs to storage:', error);
-      }
-    }
+    if (!this.persistKey) return;
+    this.initStorage();
+    this.storage?.setItem(this.persistKey, this.tabs);
   }
 
   /**
@@ -732,6 +801,15 @@ export class TabManager {
    * 从菜单创建标签
    */
   createTabFromMenu(menu: MenuItem, options?: { affix?: boolean }): TabItem {
+    const meta = {
+      ...(menu.meta || {}),
+      // 同步常用元数据，方便 tabbar 显示/控制
+      keepAlive: menu.keepAlive,
+      affixOrder: menu.affixOrder,
+      title: menu.title ?? menu.name,
+      externalLink: menu.externalLink,
+      menuKey: menu.key,
+    };
     return {
       key: menu.key,
       name: menu.name,
@@ -740,7 +818,7 @@ export class TabManager {
       closable: !options?.affix && !this.affixTabs.has(menu.key),
       affix: options?.affix || this.affixTabs.has(menu.key),
       cacheName: menu.meta?.cacheName as string | undefined,
-      meta: menu.meta,
+      meta,
     };
   }
 
@@ -766,7 +844,33 @@ export class TabManager {
       return this.getTabs();
     }
 
-    if (this.tabMap.has(tab.key)) {
+    const existingIndex = this.getTabIndex(tab.key);
+    if (existingIndex !== -1) {
+      const currentTab = this.tabs[existingIndex];
+      const mergedTab: TabItemWithState = {
+        ...currentTab,
+        ...tab,
+        meta: {
+          ...(currentTab?.meta || {}),
+          ...(tab.meta || {}),
+        },
+      };
+      // 保留固定/不可关闭状态
+      if (currentTab?.affix) {
+        mergedTab.affix = true;
+        mergedTab.closable = false;
+      }
+      // 保留自定义标题
+      if (currentTab?.meta && 'newTabTitle' in currentTab.meta) {
+        mergedTab.meta = {
+          ...mergedTab.meta,
+          newTabTitle: (currentTab.meta as Record<string, unknown>).newTabTitle,
+        };
+      }
+      this.tabs.splice(existingIndex, 1, mergedTab);
+      this.normalizeAffixOrder();
+      this.syncTabMaps();
+      this.notifyChange();
       return this.getTabs();
     }
 
@@ -776,29 +880,27 @@ export class TabManager {
       openTime: Date.now(),
     };
 
-    this.tabs.push(newTab);
-
-    // 检查是否超过最大数量（固定标签不计入）
-    if (this.maxCount > 0) {
-      let closableCount = 0;
-      let oldest: TabItemWithState | null = null;
-      for (const tabItem of this.tabs) {
-        if (tabItem.closable !== false && !tabItem.affix) {
-          closableCount += 1;
-          if (!oldest || (tabItem.openTime ?? 0) < (oldest.openTime ?? 0)) {
-            oldest = tabItem;
-          }
+    const maxNumOfOpenTab = Number(
+      (newTab.meta as Record<string, unknown> | undefined)?.maxNumOfOpenTab ?? -1
+    );
+    if (maxNumOfOpenTab > 0) {
+      const sameNameTabs = this.tabs.filter((item) => item.name === newTab.name);
+      if (sameNameTabs.length >= maxNumOfOpenTab) {
+        const index = this.tabs.findIndex((item) => item.name === newTab.name);
+        if (index !== -1) {
+          this.tabs.splice(index, 1);
         }
       }
-      if (closableCount > this.maxCount && oldest) {
-        // 关闭最早打开的可关闭标签
-        const nextTabs: TabItemWithState[] = [];
-        for (const item of this.tabs) {
-          if (item.key !== oldest.key) nextTabs.push(item);
-        }
-        this.tabs = nextTabs;
+    } else if (this.maxCount > 0 && this.tabs.length >= this.maxCount) {
+      const index = this.tabs.findIndex((item) => !item.affix && item.closable !== false);
+      if (index !== -1) {
+        this.tabs.splice(index, 1);
       }
     }
+
+    this.tabs.push(newTab);
+
+    this.normalizeAffixOrder();
 
     this.syncTabMaps();
     this.notifyChange();
@@ -909,10 +1011,13 @@ export class TabManager {
     this.affixTabs = new Set(keys);
     // 更新现有标签的 affix 状态
     for (const tab of this.tabs) {
-      const isAffix = this.affixTabs.has(tab.key);
+      const meta = tab.meta as Record<string, unknown> | undefined;
+      const menuKey = meta?.menuKey as string | undefined;
+      const isAffix = this.affixTabs.has(tab.key) || (menuKey ? this.affixTabs.has(menuKey) : false);
       tab.affix = isAffix;
       tab.closable = !isAffix;
     }
+    this.normalizeAffixOrder();
     this.syncTabMaps();
     this.notifyChange();
   }
@@ -923,8 +1028,14 @@ export class TabManager {
   toggleAffix(key: string): TabItem[] {
     const tab = this.findTab(key);
     if (tab) {
-      if (this.affixTabs.has(key)) {
+      const meta = tab.meta as Record<string, unknown> | undefined;
+      const menuKey = meta?.menuKey as string | undefined;
+      const isAffix = this.affixTabs.has(key) || (menuKey ? this.affixTabs.has(menuKey) : false);
+      if (isAffix) {
         this.affixTabs.delete(key);
+        if (menuKey) {
+          this.affixTabs.delete(menuKey);
+        }
         tab.affix = false;
         tab.closable = true;
       } else {
@@ -932,6 +1043,7 @@ export class TabManager {
         tab.affix = true;
         tab.closable = false;
       }
+      this.normalizeAffixOrder();
       this.syncTabMaps();
       this.notifyChange();
     }
@@ -945,6 +1057,7 @@ export class TabManager {
     const [removed] = this.tabs.splice(fromIndex, 1);
     if (removed) {
       this.tabs.splice(toIndex, 0, removed);
+      this.normalizeAffixOrder();
       this.syncTabMaps();
       this.notifyChange();
     }
@@ -955,7 +1068,9 @@ export class TabManager {
    * 清除持久化存储
    */
   clearStorage(): void {
-    if (this.persistKey && typeof localStorage !== 'undefined') {
+    if (!this.persistKey) return;
+    this.storage?.removeItem(this.persistKey);
+    if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(this.persistKey);
     }
   }
@@ -969,6 +1084,7 @@ export class TabManager {
     }
     if (options.persistKey !== undefined) {
       this.persistKey = options.persistKey;
+      this.initStorage();
     }
   }
 
@@ -995,7 +1111,27 @@ export class TabManager {
       });
     }
     this.tabs = nextTabs;
+    this.normalizeAffixOrder();
     this.syncTabMaps();
+  }
+
+  /**
+   * 确保固定标签靠前，并按 affixOrder 排序（稳定排序）
+   */
+  private normalizeAffixOrder(): void {
+    if (this.tabs.length === 0) return;
+    const withIndex = this.tabs.map((tab, index) => ({
+      tab,
+      index,
+      order: (() => {
+        const order = (tab.meta as Record<string, unknown> | undefined)?.affixOrder;
+        return typeof order === 'number' ? order : Number.MAX_SAFE_INTEGER;
+      })(),
+    }));
+    const affixTabs = withIndex.filter((item) => item.tab.affix);
+    const normalTabs = withIndex.filter((item) => !item.tab.affix);
+    affixTabs.sort((a, b) => (a.order === b.order ? a.index - b.index : a.order - b.order));
+    this.tabs = [...affixTabs.map((item) => item.tab), ...normalTabs.map((item) => item.tab)];
   }
 
   /**
@@ -1082,16 +1218,10 @@ export function generateWatermarkStyle(config: WatermarkConfig = DEFAULT_WATERMA
  * 生成水印内容
  */
 export function generateWatermarkContent(config: WatermarkConfig = DEFAULT_WATERMARK_CONFIG): string {
-  if (!config.content) return '';
-
-  let content = config.content;
-
-  if (config.appendDate) {
-    const date = new Date().toLocaleDateString();
-    content = `${content} ${date}`;
-  }
-
-  return content;
+  return formatWatermarkText({
+    content: config.content,
+    appendDate: config.appendDate,
+  });
 }
 
 // ============================================================
@@ -1117,45 +1247,15 @@ export function createAutoLockTimer(
     return () => {};
   }
 
-  // SSR 检查
-  if (typeof document === 'undefined') {
-    return () => {};
-  }
-
-  const timeout = config.autoLockTime * 60 * 1000; // 转换为毫秒
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let lastActivity = Date.now();
-
-  const resetTimer = () => {
-    lastActivity = Date.now();
-    if (timer) {
-      clearTimeout(timer);
-    }
-    timer = setTimeout(() => {
-      if (Date.now() - lastActivity >= timeout) {
-        onLock();
-      }
-    }, timeout);
-  };
-
-  // 监听用户活动
-  const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
-  events.forEach((event) => {
-    document.addEventListener(event, resetTimer, { passive: true });
+  return createSharedAutoLockTimer({
+    getAutoLockTime: () => config.autoLockTime ?? 0,
+    isLocked: () => config.isLocked === true,
+    onLock,
+    // 保持原有事件列表与无节流行为
+    events: ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'],
+    throttleMs: 0,
+    target: typeof document !== 'undefined' ? document : undefined,
   });
-
-  // 启动定时器
-  resetTimer();
-
-  // 返回清理函数
-  return () => {
-    if (timer) {
-      clearTimeout(timer);
-    }
-    events.forEach((event) => {
-      document.removeEventListener(event, resetTimer);
-    });
-  };
 }
 
 // ============================================================

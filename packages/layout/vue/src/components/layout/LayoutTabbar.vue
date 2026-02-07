@@ -1,21 +1,27 @@
 <script setup lang="ts">
 /**
  * 标签栏组件
- * @description 支持拖拽排序、中键关闭、滚轮切换、最大化等功能
+ * @description 支持拖拽排序、中键关闭、滚轮滚动、最大化、右键菜单等功能
  */
-import { computed, ref, onUnmounted, watch, watchEffect } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch, watchEffect, type ComponentPublicInstance } from 'vue';
 import { useLayoutContext, useLayoutComputed, useTabsState, useSidebarState } from '../../composables';
+import LayoutIcon from '../common/LayoutIcon.vue';
+import { generateContextMenuItems, type ContextMenuAction } from '@admin-core/layout';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
-const { 
-  tabs, 
-  activeKey, 
-  handleSelect, 
-  handleClose, 
-  handleCloseAll, 
-  handleCloseOther, 
+const {
+  tabs,
+  activeKey,
+  handleSelect,
+  handleClose,
+  handleCloseAll,
+  handleCloseOther,
+  handleCloseLeft,
+  handleCloseRight,
   handleRefresh,
+  handleToggleAffix,
+  handleOpenInNewWindow,
   handleSort,
 } = useTabsState();
 const { collapsed: sidebarCollapsed } = useSidebarState();
@@ -23,6 +29,10 @@ const { collapsed: sidebarCollapsed } = useSidebarState();
 // 配置
 const tabbarConfig = computed(() => context.props.tabbar || {});
 const styleType = computed(() => tabbarConfig.value.styleType || 'chrome');
+const headerMode = computed(() => context.props.header?.mode || 'fixed');
+const isHeaderFixed = computed(() => headerMode.value !== 'static');
+const leftOffset = computed(() => layoutComputed.value.mainStyle.marginLeft || '0');
+const panelRightOffset = computed(() => layoutComputed.value.mainStyle.marginRight || '0');
 
 // 拖拽相关状态
 const dragState = ref<{
@@ -40,12 +50,74 @@ const isMaximized = ref(false);
 
 // 标签列表容器引用
 const tabsContainerRef = ref<HTMLElement | null>(null);
-void tabsContainerRef;
+
+// 标签元素引用
+const tabRefs = new Map<string, HTMLElement>();
+const setTabRef = (key: string) => (el: Element | ComponentPublicInstance | null) => {
+  if (!el) {
+    tabRefs.delete(key);
+    return;
+  }
+  const node = el instanceof HTMLElement ? el : (el as ComponentPublicInstance).$el;
+  if (node instanceof HTMLElement) {
+    tabRefs.set(key, node);
+  }
+};
+
+const flipPending = ref(false);
+const flipPositions = ref(new Map<string, DOMRect>());
+
+const recordTabPositions = () => {
+  const map = new Map<string, DOMRect>();
+  tabRefs.forEach((el, key) => {
+    map.set(key, el.getBoundingClientRect());
+  });
+  flipPositions.value = map;
+  flipPending.value = true;
+};
+
+const animateTabPositions = () => {
+  if (!flipPending.value) return;
+  const prevPositions = flipPositions.value;
+  flipPending.value = false;
+  const animated: HTMLElement[] = [];
+  tabRefs.forEach((el, key) => {
+    const prevRect = prevPositions.get(key);
+    if (!prevRect) return;
+    const nextRect = el.getBoundingClientRect();
+    const dx = prevRect.left - nextRect.left;
+    const dy = prevRect.top - nextRect.top;
+    if (dx || dy) {
+      el.style.transition = 'transform 0s';
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+      animated.push(el);
+    }
+  });
+  if (!animated.length) return;
+  requestAnimationFrame(() => {
+    animated.forEach((el) => {
+      el.style.transition = 'transform 300ms var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1))';
+      el.style.transform = '';
+    });
+    window.setTimeout(() => {
+      animated.forEach((el) => {
+        el.style.transition = '';
+      });
+    }, 320);
+  });
+};
 
 // 右键菜单
 const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
 const contextMenuTargetKey = ref<string | null>(null);
+const contextMenuRef = ref<HTMLElement | null>(null);
+
+// 更多菜单
+const moreMenuVisible = ref(false);
+const moreMenuPosition = ref({ x: 0, y: 0 });
+const moreMenuAnchorRef = ref<HTMLElement | null>(null);
+const moreMenuRef = ref<HTMLElement | null>(null);
 
 // 悬停状态
 const hoveredKey = ref<string | null>(null);
@@ -54,6 +126,11 @@ const tabRenderCount = ref(TAB_RENDER_CHUNK);
 const tabIndexMap = computed(() => {
   const map = new Map<string, number>();
   tabs.value.forEach((tab, index) => map.set(tab.key, index));
+  return map;
+});
+const tabMap = computed(() => {
+  const map = new Map<string, (typeof tabs.value)[0]>();
+  tabs.value.forEach((tab) => map.set(tab.key, tab));
   return map;
 });
 
@@ -68,15 +145,38 @@ const tabbarClass = computed(() => [
 ]);
 
 const visibleTabs = computed(() => tabs.value.slice(0, tabRenderCount.value));
+const showScrollButtons = computed(() => canScrollLeft.value || canScrollRight.value);
 
 // 样式
-const tabbarStyle = computed(() => ({
-  height: `${layoutComputed.value.tabbarHeight}px`,
-  top: `${layoutComputed.value.headerHeight}px`,
-  left: layoutComputed.value.showSidebar && !context.props.isMobile
-    ? `${layoutComputed.value.sidebarWidth}px`
-    : '0',
-}));
+const tabbarStyle = computed(() => {
+  const style: Record<string, string> = {
+    height: `${layoutComputed.value.tabbarHeight}px`,
+  };
+
+  if (isHeaderFixed.value) {
+    style.position = 'fixed';
+    style.top = `${layoutComputed.value.headerHeight}px`;
+    style.left = leftOffset.value;
+    if (panelRightOffset.value !== '0') {
+      style.right = panelRightOffset.value;
+    }
+  } else {
+    style.position = 'static';
+    if (leftOffset.value !== '0') {
+      style.marginLeft = leftOffset.value;
+    }
+    if (panelRightOffset.value !== '0') {
+      style.marginRight = panelRightOffset.value;
+    }
+    if (leftOffset.value !== '0' || panelRightOffset.value !== '0') {
+      const leftValue = leftOffset.value !== '0' ? leftOffset.value : '0px';
+      const rightValue = panelRightOffset.value !== '0' ? panelRightOffset.value : '0px';
+      style.width = `calc(100% - ${leftValue} - ${rightValue})`;
+    }
+  }
+
+  return style;
+});
 
 watch([tabs, activeKey], () => {
   const activeIndex = tabIndexMap.value.get(activeKey.value) ?? -1;
@@ -87,12 +187,60 @@ watch([tabs, activeKey], () => {
   }
 }, { immediate: true });
 
+watch(tabs, () => {
+  animateTabPositions();
+}, { flush: 'post' });
+
 watchEffect((onCleanup) => {
   if (tabRenderCount.value >= tabs.value.length) return;
   const frame = requestAnimationFrame(() => {
     tabRenderCount.value = Math.min(tabRenderCount.value + TAB_RENDER_CHUNK, tabs.value.length);
   });
   onCleanup(() => cancelAnimationFrame(frame));
+});
+
+// 滚动状态
+const canScrollLeft = ref(false);
+const canScrollRight = ref(false);
+const updateScrollState = () => {
+  const container = tabsContainerRef.value;
+  if (!container) {
+    canScrollLeft.value = false;
+    canScrollRight.value = false;
+    return;
+  }
+  const { scrollLeft, scrollWidth, clientWidth } = container;
+  canScrollLeft.value = scrollLeft > 0;
+  canScrollRight.value = scrollLeft + clientWidth < scrollWidth - 1;
+};
+
+const scrollTabsBy = (direction: number) => {
+  const container = tabsContainerRef.value;
+  if (!container) return;
+  const offset = Math.max(container.clientWidth * 0.6, 120);
+  container.scrollBy({ left: offset * direction, behavior: 'smooth' });
+  requestAnimationFrame(updateScrollState);
+};
+
+watch([tabs, tabRenderCount], () => {
+  void nextTick(updateScrollState);
+}, { immediate: true });
+
+watch(activeKey, () => {
+  void nextTick(() => {
+    const el = tabRefs.get(activeKey.value);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  });
+});
+
+onMounted(() => {
+  window.addEventListener('resize', updateScrollState);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateScrollState);
 });
 
 // 处理标签点击
@@ -124,6 +272,7 @@ const onContextMenu = (e: MouseEvent, key: string) => {
   contextMenuTargetKey.value = key;
   contextMenuPosition.value = { x: e.clientX, y: e.clientY };
   contextMenuVisible.value = true;
+  moreMenuVisible.value = false;
 };
 
 // 关闭右键菜单
@@ -132,70 +281,159 @@ const closeContextMenu = () => {
   contextMenuTargetKey.value = null;
 };
 
-// 右键菜单操作
-const contextMenuActions = {
-  reload: () => {
-    if (contextMenuTargetKey.value) {
-      handleRefresh(contextMenuTargetKey.value);
-    }
-    closeContextMenu();
-  },
-  close: () => {
-    if (contextMenuTargetKey.value) {
-      handleClose(contextMenuTargetKey.value);
-    }
-    closeContextMenu();
-  },
-  closeOther: () => {
-    if (contextMenuTargetKey.value) {
-      handleCloseOther(contextMenuTargetKey.value);
-    }
-    closeContextMenu();
-  },
-  closeAll: () => {
-    handleCloseAll();
-    closeContextMenu();
-  },
+const closeMoreMenu = () => {
+  moreMenuVisible.value = false;
 };
 
-// 获取标签样式类 - 使用 computed 缓存避免重复计算
-const tabClassMap = computed(() => {
-  const map = new Map<string, (string | Record<string, boolean>)[]>();
-  visibleTabs.value.forEach((tab, index) => {
-    map.set(tab.key, [
-      'layout-tabbar__tab',
-      `layout-tabbar__tab--${styleType.value}`,
-      {
-        'layout-tabbar__tab--active': tab.key === activeKey.value,
-        'layout-tabbar__tab--affix': !!tab.affix,
-        'layout-tabbar__tab--dragging': dragState.value.isDragging && dragState.value.dragIndex === index,
-        'layout-tabbar__tab--drop-target': dragState.value.isDragging && dragState.value.dropIndex === index,
-      },
-    ]);
+const openMoreMenu = () => {
+  if (!moreMenuAnchorRef.value) return;
+  const rect = moreMenuAnchorRef.value.getBoundingClientRect();
+  moreMenuPosition.value = {
+    x: rect.left,
+    y: rect.bottom + 6,
+  };
+  moreMenuVisible.value = !moreMenuVisible.value;
+  contextMenuVisible.value = false;
+};
+
+const clampMenuPosition = (position: { x: number; y: number }, el: HTMLElement | null) => {
+  if (!el || typeof window === 'undefined') return position;
+  const margin = 8;
+  const rect = el.getBoundingClientRect();
+  let x = position.x;
+  let y = position.y;
+  const maxX = window.innerWidth - rect.width - margin;
+  const maxY = window.innerHeight - rect.height - margin;
+  if (rect.left < margin) x = margin;
+  if (rect.right > window.innerWidth - margin) x = Math.max(margin, maxX);
+  if (rect.top < margin) y = margin;
+  if (rect.bottom > window.innerHeight - margin) y = Math.max(margin, maxY);
+  return { x, y };
+};
+
+watch(
+  () => contextMenuVisible.value,
+  async (visible) => {
+    if (!visible) return;
+    await nextTick();
+    contextMenuPosition.value = clampMenuPosition(contextMenuPosition.value, contextMenuRef.value);
+  }
+);
+
+watch(
+  () => moreMenuVisible.value,
+  async (visible) => {
+    if (!visible) return;
+    await nextTick();
+    moreMenuPosition.value = clampMenuPosition(moreMenuPosition.value, moreMenuRef.value);
+  }
+);
+
+const handleMenuAction = (action: ContextMenuAction, targetKey: string | null) => {
+  if (!targetKey) return;
+  switch (action) {
+    case 'refresh':
+      handleRefresh(targetKey);
+      break;
+    case 'close':
+      handleClose(targetKey);
+      break;
+    case 'closeOther':
+      handleCloseOther(targetKey);
+      break;
+    case 'closeLeft':
+      handleCloseLeft(targetKey);
+      break;
+    case 'closeRight':
+      handleCloseRight(targetKey);
+      break;
+    case 'closeAll':
+      handleCloseAll();
+      break;
+    case 'pin':
+    case 'unpin':
+      handleToggleAffix(targetKey);
+      break;
+    case 'openInNewWindow':
+      handleOpenInNewWindow(targetKey);
+      break;
+    case 'maximize':
+      if (!isMaximized.value) {
+        if (targetKey !== activeKey.value) {
+          handleSelect(targetKey);
+        }
+        toggleMaximize();
+      }
+      break;
+    case 'restoreMaximize':
+      if (isMaximized.value) toggleMaximize();
+      break;
+    default:
+      break;
+  }
+};
+
+const contextMenuItems = computed(() => {
+  const key = contextMenuTargetKey.value;
+  if (!key) return [];
+  const tab = tabMap.value.get(key);
+  if (!tab) return [];
+  const items = generateContextMenuItems(
+    tab,
+    tabs.value,
+    activeKey.value,
+    context.t,
+    tabIndexMap.value,
+    { isMaximized: isMaximized.value }
+  );
+  return items.filter((item) => {
+    if (item.key === 'maximize' || item.key === 'restoreMaximize') {
+      return tabbarConfig.value.showMaximize !== false;
+    }
+    return true;
   });
-  return map;
 });
 
-// 获取标签样式类
-const getTabClass = (tab: typeof tabs.value[0]) => tabClassMap.value.get(tab.key) || [];
+const moreMenuItems = computed(() => {
+  const key = activeKey.value || tabs.value[0]?.key || '';
+  if (!key) return [];
+  const tab = tabMap.value.get(key);
+  if (!tab) return [];
+  const items = generateContextMenuItems(
+    tab,
+    tabs.value,
+    activeKey.value,
+    context.t,
+    tabIndexMap.value,
+    { isMaximized: isMaximized.value }
+  );
+  return items.filter((item) => {
+    if (item.key === 'maximize' || item.key === 'restoreMaximize') {
+      return tabbarConfig.value.showMaximize !== false;
+    }
+    return true;
+  });
+});
+
+const getTabTitle = (tab: typeof tabs.value[0]) => {
+  const meta = tab.meta as Record<string, unknown> | undefined;
+  const title = (meta?.newTabTitle as string | undefined) || (meta?.title as string | undefined) || tab.name;
+  return context.t(title);
+};
 
 // ==================== 拖拽排序功能 ====================
 const onDragStart = (e: DragEvent, index: number) => {
   if (!tabbarConfig.value.draggable) return;
-  
-  // 固定标签不可拖拽
   const tab = tabs.value[index];
   if (tab?.affix) {
     e.preventDefault();
     return;
   }
-  
   dragState.value = {
     isDragging: true,
     dragIndex: index,
     dropIndex: null,
   };
-  
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', String(index));
@@ -204,14 +442,24 @@ const onDragStart = (e: DragEvent, index: number) => {
 
 const onDragOver = (e: DragEvent, index: number) => {
   if (!tabbarConfig.value.draggable || !dragState.value.isDragging) return;
-  
   e.preventDefault();
-  
-  // 固定标签位置不可替换
   const tab = tabs.value[index];
   if (tab?.affix) return;
-  
+  const fromIndex = dragState.value.dragIndex;
   dragState.value.dropIndex = index;
+  if (fromIndex === null || fromIndex === index) return;
+  const targetKey = tab.key;
+  const targetEl = tabRefs.get(targetKey);
+  if (!targetEl) return;
+  const rect = targetEl.getBoundingClientRect();
+  const midpoint = rect.left + rect.width / 2;
+  const shouldMove =
+    (fromIndex < index && e.clientX > midpoint) ||
+    (fromIndex > index && e.clientX < midpoint);
+  if (!shouldMove) return;
+  recordTabPositions();
+  handleSort(fromIndex, index);
+  dragState.value.dragIndex = index;
 };
 
 const onDragLeave = () => {
@@ -220,18 +468,15 @@ const onDragLeave = () => {
 
 const onDrop = (e: DragEvent, toIndex: number) => {
   if (!tabbarConfig.value.draggable) return;
-  
   e.preventDefault();
-  
   const fromIndex = dragState.value.dragIndex;
   if (fromIndex !== null && fromIndex !== toIndex) {
-    // 固定标签位置不可替换
     const targetTab = tabs.value[toIndex];
     if (!targetTab?.affix) {
+      recordTabPositions();
       handleSort(fromIndex, toIndex);
     }
   }
-  
   dragState.value = {
     isDragging: false,
     dragIndex: null,
@@ -249,7 +494,6 @@ const onDragEnd = () => {
 
 // ==================== 中键关闭功能 ====================
 const onMouseDown = (e: MouseEvent, tab: typeof tabs.value[0]) => {
-  // 中键点击
   if (e.button === 1 && tabbarConfig.value.middleClickToClose !== false) {
     e.preventDefault();
     if (tab.closable !== false && !tab.affix) {
@@ -258,43 +502,22 @@ const onMouseDown = (e: MouseEvent, tab: typeof tabs.value[0]) => {
   }
 };
 
-// ==================== 滚轮切换功能 ====================
+// ==================== 滚轮滚动 ====================
 const onWheel = (e: WheelEvent) => {
   if (!tabbarConfig.value.wheelable) return;
-  const currentIndex = tabIndexMap.value.get(activeKey.value) ?? -1;
-  if (currentIndex === -1) return;
-  if (tabs.value.length < 2) return;
-  
+  const container = tabsContainerRef.value;
+  if (!container) return;
+  if (container.scrollWidth <= container.clientWidth) return;
   e.preventDefault();
-  
-  let nextIndex: number;
-  if (e.deltaY > 0 || e.deltaX > 0) {
-    // 向下/右滚动 - 下一个标签
-    nextIndex = currentIndex + 1;
-    if (nextIndex >= tabs.value.length) {
-      nextIndex = 0; // 循环到第一个
-    }
-  } else {
-    // 向上/左滚动 - 上一个标签
-    nextIndex = currentIndex - 1;
-    if (nextIndex < 0) {
-      nextIndex = tabs.value.length - 1; // 循环到最后一个
-    }
-  }
-  
-  const nextTab = tabs.value[nextIndex];
-  if (nextTab) {
-    handleSelect(nextTab.key);
-  }
+  const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  container.scrollLeft += delta;
+  updateScrollState();
 };
 
 // ==================== 最大化功能 ====================
 const toggleMaximize = () => {
   isMaximized.value = !isMaximized.value;
-  // 触发事件通知父组件
   context.events?.onTabMaximize?.(isMaximized.value);
-  
-  // 添加/移除 body class 来控制其他元素的显示
   if (isMaximized.value) {
     document.body.classList.add('layout-content-maximized');
     document.body.dataset.contentMaximized = 'true';
@@ -304,7 +527,6 @@ const toggleMaximize = () => {
   }
 };
 
-// 监听 ESC 键退出最大化（仅在最大化时绑定）
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     toggleMaximize();
@@ -324,7 +546,6 @@ watch(isMaximized, (value) => {
 
 onUnmounted(() => {
   syncKeydownListener(false);
-  // 确保退出时移除 class
   document.body.classList.remove('layout-content-maximized');
   delete document.body.dataset.contentMaximized;
 });
@@ -337,25 +558,52 @@ onUnmounted(() => {
     :data-with-sidebar="layoutComputed.showSidebar && !context.props.isMobile ? 'true' : undefined"
     :data-collapsed="sidebarCollapsed && !context.props.isMobile ? 'true' : undefined"
     :data-style="styleType"
-    @click="closeContextMenu"
+    @click="() => { closeContextMenu(); closeMoreMenu(); }"
   >
-    <div class="layout-tabbar__inner flex h-full items-end">
+    <div class="layout-tabbar__inner flex h-full">
       <!-- 左侧插槽 -->
       <div v-if="$slots.left" class="layout-tabbar__left shrink-0 px-2">
         <slot name="left" />
       </div>
 
+      <!-- 左侧滚动按钮 -->
+      <button
+        v-if="showScrollButtons"
+        type="button"
+        class="layout-tabbar__scroll-btn layout-tabbar__scroll-btn--left"
+        :data-disabled="canScrollLeft ? 'false' : 'true'"
+        :disabled="!canScrollLeft"
+        @click.stop="canScrollLeft && scrollTabsBy(-1)"
+      >
+        <LayoutIcon name="tabbar-scroll-left" size="sm" />
+      </button>
+
       <!-- 标签列表 -->
-      <div 
+      <div
         ref="tabsContainerRef"
-        class="layout-tabbar__tabs layout-scroll-container flex flex-1 items-end overflow-x-auto scrollbar-none"
+        class="layout-tabbar__tabs layout-scroll-container flex h-full flex-1 overflow-x-auto scrollbar-none"
+        :data-dragging="dragState.isDragging ? 'true' : undefined"
         @wheel="onWheel"
+        @scroll="updateScrollState"
       >
         <slot>
           <div
             v-for="(tab, index) in visibleTabs"
             :key="tab.key"
-            :class="['data-active:text-primary', getTabClass(tab)]"
+            :ref="setTabRef(tab.key)"
+            :class="[
+              'data-active:text-primary',
+              'group',
+              'layout-tabbar__tab',
+              `layout-tabbar__tab--${styleType}`,
+              {
+                'layout-tabbar__tab--active': tab.key === activeKey,
+                'layout-tabbar__tab--affix': !!tab.affix,
+                'layout-tabbar__tab--dragging': dragState.isDragging && dragState.dragIndex === index,
+                'layout-tabbar__tab--drop-target': dragState.isDragging && dragState.dropIndex === index,
+              },
+            ]"
+            :data-index="index"
             :data-state="tab.key === activeKey ? 'active' : 'inactive'"
             :data-style="styleType"
             :data-hovered="hoveredKey === tab.key ? 'true' : undefined"
@@ -374,33 +622,107 @@ onUnmounted(() => {
             @drop="onDrop($event, index)"
             @dragend="onDragEnd"
           >
-            <!-- 图标 -->
-            <span v-if="tabbarConfig.showIcon && tab.icon" class="layout-tabbar__tab-icon mr-1.5">
-              <slot name="tab-icon" :tab="tab">
-                <span class="text-sm">{{ tab.icon }}</span>
-              </slot>
-            </span>
-            
-            <!-- 名称 -->
-            <span class="layout-tabbar__tab-name truncate">
-              {{ tab.name }}
-            </span>
-            
-            <!-- 关闭按钮 -->
-            <button
-              v-if="tab.closable !== false && !tab.affix"
-              type="button"
-              class="layout-tabbar__tab-close ml-1.5 flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-opacity hover:bg-black/10 group-hover:opacity-100"
-              :class="{ 'opacity-100': tab.key === activeKey }"
-              @click="onTabClose($event, tab.key)"
-            >
-              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+            <template v-if="styleType === 'chrome'">
+              <div class="layout-tabbar__chrome">
+                <div class="layout-tabbar__chrome-divider" />
+                <div class="layout-tabbar__chrome-bg">
+                  <div class="layout-tabbar__chrome-bg-content" />
+                  <svg class="layout-tabbar__chrome-bg-before" height="7" width="7" viewBox="0 0 7 7">
+                    <path d="M 0 7 A 7 7 0 0 0 7 0 L 7 7 Z" />
+                  </svg>
+                  <svg class="layout-tabbar__chrome-bg-after" height="7" width="7" viewBox="0 0 7 7">
+                    <path d="M 0 0 A 7 7 0 0 0 7 7 L 0 7 Z" />
+                  </svg>
+                </div>
+                <div class="layout-tabbar__chrome-main">
+                  <!-- 图标 -->
+                  <span v-if="tabbarConfig.showIcon && tab.icon" class="layout-tabbar__tab-icon">
+                    <slot name="tab-icon" :tab="tab">
+                      <span class="text-sm">{{ tab.icon }}</span>
+                    </slot>
+                  </span>
+
+                  <!-- 名称 -->
+                  <span class="layout-tabbar__tab-name truncate">
+                    {{ getTabTitle(tab) }}
+                  </span>
+                </div>
+                <div class="layout-tabbar__chrome-extra">
+                  <!-- 固定图标 -->
+                  <button
+                    v-if="tab.affix"
+                    type="button"
+                    class="layout-tabbar__tab-pin"
+                    @click.stop="handleToggleAffix(tab.key)"
+                  >
+                    <LayoutIcon name="tabbar-pin" size="xs" />
+                  </button>
+
+                  <!-- 关闭按钮 -->
+                  <button
+                    v-if="tab.closable !== false && !tab.affix"
+                    type="button"
+                    class="layout-tabbar__tab-close"
+                    @click="onTabClose($event, tab.key)"
+                  >
+                    <LayoutIcon name="tabbar-close" size="xs" />
+                  </button>
+                </div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="layout-tabbar__tab-content">
+                <div class="layout-tabbar__tab-extra">
+                  <!-- 关闭按钮 -->
+                  <button
+                    v-if="tab.closable !== false && !tab.affix"
+                    type="button"
+                    class="layout-tabbar__tab-close"
+                    @click="onTabClose($event, tab.key)"
+                  >
+                    <LayoutIcon name="tabbar-close" size="xs" />
+                  </button>
+
+                  <!-- 固定图标 -->
+                  <button
+                    v-if="tab.affix"
+                    type="button"
+                    class="layout-tabbar__tab-pin"
+                    @click.stop="handleToggleAffix(tab.key)"
+                  >
+                    <LayoutIcon name="tabbar-pin" size="xs" />
+                  </button>
+                </div>
+                <div class="layout-tabbar__tab-main">
+                  <!-- 图标 -->
+                  <span v-if="tabbarConfig.showIcon && tab.icon" class="layout-tabbar__tab-icon">
+                    <slot name="tab-icon" :tab="tab">
+                      <span class="text-sm">{{ tab.icon }}</span>
+                    </slot>
+                  </span>
+
+                  <!-- 名称 -->
+                  <span class="layout-tabbar__tab-name truncate">
+                    {{ getTabTitle(tab) }}
+                  </span>
+                </div>
+              </div>
+            </template>
           </div>
         </slot>
       </div>
+
+      <!-- 右侧滚动按钮 -->
+      <button
+        v-if="showScrollButtons"
+        type="button"
+        class="layout-tabbar__scroll-btn layout-tabbar__scroll-btn--right"
+        :data-disabled="canScrollRight ? 'false' : 'true'"
+        :disabled="!canScrollRight"
+        @click.stop="canScrollRight && scrollTabsBy(1)"
+      >
+        <LayoutIcon name="tabbar-scroll-right" size="sm" />
+      </button>
 
       <!-- 右侧插槽 -->
       <div v-if="$slots.right" class="layout-tabbar__right shrink-0 px-2">
@@ -408,35 +730,28 @@ onUnmounted(() => {
       </div>
 
       <!-- 最大化按钮 -->
-      <div v-if="tabbarConfig.showMaximize" class="layout-tabbar__maximize shrink-0 px-1">
-        <button
-          type="button"
-          class="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-black/5"
-          :title="isMaximized ? context.t('layout.tabbar.restore') : context.t('layout.tabbar.maximize')"
-          @click="toggleMaximize"
-        >
-          <svg v-if="!isMaximized" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-          </svg>
-          <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" />
-          </svg>
-        </button>
-      </div>
+      <button
+        v-if="tabbarConfig.showMaximize"
+        type="button"
+        class="layout-tabbar__tool-btn"
+        :title="isMaximized ? context.t('layout.tabbar.restore') : context.t('layout.tabbar.maximize')"
+        @click.stop="toggleMaximize"
+      >
+        <LayoutIcon v-if="!isMaximized" name="tabbar-maximize" size="sm" />
+        <LayoutIcon v-else name="tabbar-restore" size="sm" />
+      </button>
 
       <!-- 更多操作 -->
-      <div v-if="tabbarConfig.showMore !== false" class="layout-tabbar__more shrink-0 px-2">
+      <div v-if="tabbarConfig.showMore !== false" class="layout-tabbar__more">
         <slot name="extra">
           <button
+            ref="moreMenuAnchorRef"
             type="button"
-            class="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-black/5"
+            class="layout-tabbar__tool-btn"
             :title="context.t('layout.common.more')"
+            @click.stop="openMoreMenu"
           >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="1" />
-              <circle cx="19" cy="12" r="1" />
-              <circle cx="5" cy="12" r="1" />
-            </svg>
+            <LayoutIcon name="tabbar-more" size="sm" />
           </button>
         </slot>
       </div>
@@ -446,37 +761,22 @@ onUnmounted(() => {
     <Teleport to="body">
       <div
         v-if="contextMenuVisible"
-        class="layout-tabbar__context-menu fixed z-layout-overlay min-w-32 rounded-md border border-border bg-white py-1 shadow-lg"
+        ref="contextMenuRef"
+        class="layout-tabbar__context-menu fixed z-layout-overlay min-w-40 rounded-md border border-border py-1 shadow-lg"
         :style="{ left: `${contextMenuPosition.x}px`, top: `${contextMenuPosition.y}px` }"
       >
-        <button
-          type="button"
-          class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100"
-          @click="contextMenuActions.reload"
-        >
-          {{ context.t('layout.tabbar.contextMenu.reload') }}
-        </button>
-        <button
-          type="button"
-          class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100"
-          @click="contextMenuActions.close"
-        >
-          {{ context.t('layout.tabbar.contextMenu.close') }}
-        </button>
-        <button
-          type="button"
-          class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100"
-          @click="contextMenuActions.closeOther"
-        >
-          {{ context.t('layout.tabbar.contextMenu.closeOther') }}
-        </button>
-        <button
-          type="button"
-          class="flex w-full items-center px-3 py-1.5 text-sm hover:bg-gray-100"
-          @click="contextMenuActions.closeAll"
-        >
-          {{ context.t('layout.tabbar.contextMenu.closeAll') }}
-        </button>
+        <template v-for="item in contextMenuItems" :key="item.key">
+          <div v-if="item.divider" class="my-1 h-px bg-border" />
+          <button
+            v-else
+            type="button"
+            class="layout-tabbar__menu-item flex w-full items-center px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="item.disabled"
+            @click="() => { handleMenuAction(item.key, contextMenuTargetKey); closeContextMenu(); }"
+          >
+            {{ item.label }}
+          </button>
+        </template>
       </div>
     </Teleport>
 
@@ -486,6 +786,37 @@ onUnmounted(() => {
         v-if="contextMenuVisible"
         class="fixed inset-0 z-layout-overlay"
         @click="closeContextMenu"
+      />
+    </Teleport>
+
+    <!-- 更多菜单 -->
+    <Teleport to="body">
+      <div
+        v-if="moreMenuVisible"
+        ref="moreMenuRef"
+        class="layout-tabbar__more-menu fixed z-layout-overlay min-w-40 rounded-md border border-border py-1 shadow-lg"
+        :style="{ left: `${moreMenuPosition.x}px`, top: `${moreMenuPosition.y}px` }"
+      >
+        <template v-for="item in moreMenuItems" :key="item.key">
+          <div v-if="item.divider" class="my-1 h-px bg-border" />
+          <button
+            v-else
+            type="button"
+            class="layout-tabbar__menu-item flex w-full items-center px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="item.disabled"
+            @click="() => { handleMenuAction(item.key, activeKey || tabs[0]?.key || null); closeMoreMenu(); }"
+          >
+            {{ item.label }}
+          </button>
+        </template>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="moreMenuVisible"
+        class="fixed inset-0 z-layout-overlay"
+        @click="closeMoreMenu"
       />
     </Teleport>
   </div>

@@ -3,22 +3,31 @@
  * @description 提供布局状态和方法的注入/获取
  */
 
-import { inject, provide, reactive, computed, watch, isRef, type InjectionKey, type ComputedRef } from 'vue';
-import type {
-  BasicLayoutProps,
-  LayoutContext,
-  LayoutState,
-  LayoutEvents,
-  LayoutComputed,
-} from '@admin-core/layout';
 import {
-  DEFAULT_LAYOUT_STATE,
   DEFAULT_LAYOUT_CONFIG,
+  DEFAULT_LAYOUT_STATE,
   calculateLayoutComputed,
+  createI18n,
   generateCSSVariables,
   mergeConfig,
+  type BasicLayoutProps,
+  type LayoutComputed,
+  type LayoutContext,
+  type LayoutEvents,
+  type LayoutState,
+  type SupportedLocale,
 } from '@admin-core/layout';
-import { createI18n, type SupportedLocale } from '@admin-core/layout';
+import {
+  computed,
+  inject,
+  isRef,
+  provide,
+  reactive,
+  ref,
+  watch,
+  type ComputedRef,
+  type InjectionKey,
+} from 'vue';
 
 /**
  * 布局上下文注入键
@@ -62,14 +71,28 @@ export function createLayoutContext(
   // 合并默认配置（响应式）
   const mergedProps = computed(() => mergeConfig(DEFAULT_LAYOUT_CONFIG, getProps()));
 
+  const resolveLayout = (props: BasicLayoutProps) =>
+    props.isMobile ? 'sidebar-nav' : (props.layout || 'sidebar-nav');
+
+  const isSidebarMixedLayout = (props: BasicLayoutProps) => {
+    const layout = resolveLayout(props);
+    return layout === 'sidebar-mixed-nav' || layout === 'header-mixed-nav';
+  };
+
   // 从 props 中获取初始状态值
   const initialProps = getProps();
+  const initialLocale =
+    (initialProps.locale as SupportedLocale | undefined) ??
+    options?.locale ??
+    'zh-CN';
   
   // 创建响应式状态（从 props 中读取初始值）
   const state = reactive<LayoutState>({
     ...DEFAULT_LAYOUT_STATE,
     // 从 sidebar 配置初始化折叠状态
-    sidebarCollapsed: initialProps.sidebar?.collapsed ?? DEFAULT_LAYOUT_STATE.sidebarCollapsed,
+    sidebarCollapsed: isSidebarMixedLayout(initialProps)
+      ? false
+      : (initialProps.sidebar?.collapsed ?? DEFAULT_LAYOUT_STATE.sidebarCollapsed),
     // 从 sidebar 配置初始化 expandOnHover
     sidebarExpandOnHover: initialProps.sidebar?.expandOnHover ?? DEFAULT_LAYOUT_STATE.sidebarExpandOnHover,
     // 从 panel 配置初始化折叠状态
@@ -77,10 +100,22 @@ export function createLayoutContext(
   });
 
   // 创建国际化实例
-  const i18n = createI18n(options?.locale || 'zh-CN', options?.customMessages);
+  const i18n = createI18n(initialLocale, options?.customMessages);
+  const localeRef = ref<SupportedLocale>(initialLocale);
+
+  const syncLocale = (nextLocale?: SupportedLocale) => {
+    if (!nextLocale) return;
+    if (localeRef.value !== nextLocale) {
+      localeRef.value = nextLocale;
+    }
+    if (i18n.getLocale() !== nextLocale) {
+      i18n.setLocale(nextLocale);
+    }
+  };
 
   // 切换侧边栏折叠
   const toggleSidebarCollapse = () => {
+    if (isSidebarMixedLayout(mergedProps.value)) return;
     state.sidebarCollapsed = !state.sidebarCollapsed;
     events.onSidebarCollapse?.(state.sidebarCollapsed);
   };
@@ -115,7 +150,11 @@ export function createLayoutContext(
     props: reactiveProps,
     state,
     events,
-    t: i18n.t,
+    t: (key, params) => {
+      // Touch localeRef to keep translations reactive in templates.
+      void localeRef.value;
+      return i18n.t(key, params);
+    },
     toggleSidebarCollapse,
     togglePanelCollapse,
     setOpenMenuKeys,
@@ -145,7 +184,15 @@ export function createLayoutContext(
       }
       
       // 同步 sidebar.collapsed 到 state（当 preferences 变化时）
-      if (newProps.sidebar?.collapsed !== undefined && state.sidebarCollapsed !== newProps.sidebar.collapsed) {
+      if (isSidebarMixedLayout(newProps)) {
+        if (state.sidebarCollapsed) {
+          state.sidebarCollapsed = false;
+          events.onSidebarCollapse?.(false);
+        }
+      } else if (
+        newProps.sidebar?.collapsed !== undefined &&
+        state.sidebarCollapsed !== newProps.sidebar.collapsed
+      ) {
         state.sidebarCollapsed = newProps.sidebar.collapsed;
       }
       // 同步 sidebar.expandOnHover 到 state
@@ -158,6 +205,15 @@ export function createLayoutContext(
       }
     },
     { immediate: true, deep: true }
+  );
+
+  // 监听 locale 变化并更新 i18n
+  watch(
+    () => mergedProps.value.locale,
+    (nextLocale) => {
+      syncLocale(nextLocale as SupportedLocale | undefined);
+    },
+    { immediate: true }
   );
 
   // 计算布局属性（直接依赖 mergedProps 确保响应式）

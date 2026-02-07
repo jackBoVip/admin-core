@@ -17,6 +17,14 @@ export interface MenuPathIndex {
 }
 
 /**
+ * 获取菜单项的唯一标识
+ */
+export function getMenuId(item: MenuItem): string {
+  const id = item.key ?? item.path ?? item.name ?? '';
+  return id === '' ? '' : String(id);
+}
+
+/**
  * 构建菜单路径索引
  */
 export function buildMenuPathIndex(menus: MenuItem[]): MenuPathIndex {
@@ -29,27 +37,32 @@ export function buildMenuPathIndex(menus: MenuItem[]): MenuPathIndex {
 
   const walk = (items: MenuItem[]) => {
     for (const item of items) {
-      if (item.key) {
-        byKey.set(item.key, item);
+      const id = getMenuId(item);
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      if (key) {
+        byKey.set(key, item);
       }
-      if (item.path) {
-        byPath.set(item.path, item);
+      if (path) {
+        byPath.set(path, item);
         pathItems.push(item);
       }
-      const chain = item.key ? [...stack, item.key] : [...stack];
-      if (item.key) {
-        chainByKey.set(item.key, chain);
+      const chain = id ? [...stack, id] : [...stack];
+      if (key) {
+        chainByKey.set(key, chain);
       }
-      if (item.path) {
-        chainByPath.set(item.path, chain);
+      if (path) {
+        chainByPath.set(path, chain);
       }
-      if (item.key) {
-        stack.push(item.key);
+      if (id) {
+        stack.push(id);
       }
       if (item.children?.length) {
         walk(item.children);
       }
-      if (item.key) {
+      if (id) {
         stack.pop();
       }
     }
@@ -84,7 +97,12 @@ export function hasChildren(item: MenuItem): boolean {
  * 判断菜单项是否激活
  */
 export function isMenuActive(item: MenuItem, activeKey: string): boolean {
-  return item.key === activeKey || item.path === activeKey;
+  const rawKey = item.key ?? '';
+  const key = rawKey === '' ? '' : String(rawKey);
+  if (key && key === activeKey) return true;
+  const rawPath = item.path ?? '';
+  const path = rawPath === '' ? '' : String(rawPath);
+  return path === activeKey;
 }
 
 /**
@@ -161,17 +179,28 @@ export function getMenuParentKeys(menus: MenuItem[], targetKey: string): string[
   
   function find(items: MenuItem[]): boolean {
     for (const item of items) {
-      if (item.key === targetKey) {
+      const id = getMenuId(item);
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      if (key === targetKey || path === targetKey || id === targetKey) {
         keys.push(...stack);
         return true;
       }
       if (item.children?.length) {
-        stack.push(item.key);
+        if (id) {
+          stack.push(id);
+        }
         if (find(item.children)) {
-          stack.pop();
+          if (id) {
+            stack.pop();
+          }
           return true;
         }
-        stack.pop();
+        if (id) {
+          stack.pop();
+        }
       }
     }
     return false;
@@ -189,7 +218,9 @@ export function findMenuByKey(menus: MenuItem[], key: string): MenuItem | null {
   while (stack.length > 0) {
     const item = stack.pop();
     if (!item) continue;
-    if (item.key === key) return item;
+    const rawKey = item.key ?? '';
+    const itemKey = rawKey === '' ? '' : String(rawKey);
+    if (itemKey === key) return item;
     if (item.children?.length) {
       for (let i = item.children.length - 1; i >= 0; i -= 1) {
         stack.push(item.children[i]);

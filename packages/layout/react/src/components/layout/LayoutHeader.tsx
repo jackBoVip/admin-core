@@ -3,11 +3,12 @@
  * @description 支持水平菜单显示
  */
 
-import { useMemo, memo, type ReactNode } from 'react';
+import { LAYOUT_ICONS, ANIMATION_CLASSES } from '@admin-core/layout';
+import { useMemo, memo, type ReactNode, type CSSProperties } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useHeaderState, useSidebarState } from '../../hooks/use-layout-state';
-import { LAYOUT_ICONS, ANIMATION_CLASSES, getIconPath, getIconViewBox } from '@admin-core/layout';
 import { RefreshButton } from '../widgets';
+import { renderLayoutIcon } from '../../utils';
 
 export interface LayoutHeaderProps {
   logo?: ReactNode;
@@ -35,43 +36,45 @@ export const LayoutHeader = memo(function LayoutHeader({
 
   const headerConfig = context.props.header || {};
   const logoConfig = context.props.logo || {};
-  const theme = context.props.headerTheme || 'light';
+  const theme = computed.headerTheme || 'light';
   const menuAlign = headerConfig.menuAlign || 'start';
 
   // 是否在顶栏显示 Logo
   const showLogoInHeader =
     computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav;
 
+  const isHeaderSidebarNav = computed.currentLayout === 'header-sidebar-nav';
+  const isHeaderFullWidth =
+    computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav || isHeaderSidebarNav;
+
   // 是否显示顶部菜单（顶部导航模式）
   const showHeaderMenu =
-    computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav;
+    (computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav) && !isHeaderSidebarNav;
 
-  // 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+  // 是否允许显示折叠按钮的布局（仅 sidebar-nav）
   const isCollapseButtonAllowedLayout =
-    computed.currentLayout === 'sidebar-nav' || computed.currentLayout === 'header-mixed-nav';
+    computed.currentLayout === 'sidebar-nav';
 
   // 是否显示侧边栏切换按钮（根据偏好设置开关控制）
   const showSidebarToggle =
     isCollapseButtonAllowedLayout &&
     computed.showSidebar && 
     context.props.widgets?.sidebarToggle !== false &&
-    !computed.isSidebarMixedNav;
+    !computed.isSidebarMixedNav &&
+    !computed.isHeaderMixedNav;
 
   // 是否显示刷新按钮（左侧）
   const showRefresh = context.props.widgets?.refresh !== false;
 
   // 折叠图标配置（根据状态显示不同图标）
-  const headerToggleIconName = useMemo(() => 
-    sidebarCollapsed 
-      ? (LAYOUT_ICONS.headerSidebarToggle.iconCollapsed || LAYOUT_ICONS.headerSidebarToggle.icon) 
-      : LAYOUT_ICONS.headerSidebarToggle.icon
-  , [sidebarCollapsed]);
-
-  const headerToggleIconProps = useMemo(() => ({
-    className: `${LAYOUT_ICONS.headerSidebarToggle.className} ${ANIMATION_CLASSES.iconRotate}`,
-    viewBox: getIconViewBox(headerToggleIconName),
-    path: getIconPath(headerToggleIconName),
-  }), [headerToggleIconName]);
+  const headerToggleIconName = useMemo(
+    () => (sidebarCollapsed ? 'sidebar-toggle-collapsed' : 'sidebar-toggle'),
+    [sidebarCollapsed]
+  );
+  const headerToggleIconClass = useMemo(
+    () => `${LAYOUT_ICONS.headerSidebarToggle.className} ${ANIMATION_CLASSES.iconRotate}`,
+    []
+  );
 
   // 类名
   const headerClassName = useMemo(() => {
@@ -86,14 +89,29 @@ export const LayoutHeader = memo(function LayoutHeader({
     return classes.join(' ');
   }, [theme, mode, hidden, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
 
+  const isHeaderFixed = mode !== 'static';
+  const sidebarOffset =
+    computed.showSidebar && !context.props.isMobile && !isHeaderFullWidth ? computed.sidebarWidth : 0;
+
   // 样式
-  const headerStyle = useMemo(() => ({
-    height: `${height}px`,
-    left:
-      computed.showSidebar && !context.props.isMobile
-        ? `${computed.sidebarWidth}px`
-        : '0',
-  }), [height, computed.showSidebar, context.props.isMobile, computed.sidebarWidth]);
+  const headerStyle = useMemo(() => {
+    const style: CSSProperties = {
+      height: `${height}px`,
+    };
+
+    if (isHeaderFixed) {
+      style.position = 'fixed';
+      style.left = sidebarOffset ? `${sidebarOffset}px` : '0';
+    } else {
+      style.position = 'static';
+      if (sidebarOffset) {
+        style.marginLeft = `${sidebarOffset}px`;
+        style.width = `calc(100% - ${sidebarOffset}px)`;
+      }
+    }
+
+    return style;
+  }, [height, isHeaderFixed, sidebarOffset]);
 
   // 菜单容器类名
   const menuContainerClassName = useMemo(
@@ -148,17 +166,7 @@ export const LayoutHeader = memo(function LayoutHeader({
               className="header-widget-btn"
               onClick={toggleSidebar}
             >
-              <svg
-                className={headerToggleIconProps.className}
-                viewBox={headerToggleIconProps.viewBox}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d={headerToggleIconProps.path} />
-              </svg>
+              {renderLayoutIcon(headerToggleIconName, 'md', headerToggleIconClass)}
             </button>
           )}
 

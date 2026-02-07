@@ -17,13 +17,13 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
   const menuContext = useMenuContext();
   const parentSubMenu = useSubMenuContext();
 
-  // 路径
-  const path = item.key || item.path || '';
-
+  const rawPath = item.key ?? item.path ?? '';
+  const path = rawPath === '' ? '' : String(rawPath);
   const parentPath = parentSubMenu?.path;
+  const activePath = menuContext.activePath === '' ? '' : String(menuContext.activePath);
 
   // 是否激活
-  const active = path === menuContext.activePath;
+  const active = path !== '' && path === activePath;
 
   // 图标（激活时使用 activeIcon）
   const menuIcon = useMemo(() => {

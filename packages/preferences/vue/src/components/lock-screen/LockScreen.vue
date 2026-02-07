@@ -7,6 +7,7 @@ import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import { usePreferences } from '../../composables';
 import { getLocaleByPreferences, verifyPasswordSync, defaultLockScreenBg, type LocaleMessages } from '@admin-core/preferences';
 import LockScreenTime from './LockScreenTime.vue';
+import Icon from '../Icon';
 
 const props = withDefaults(defineProps<{
   /** 返回登录页/退出登录回调 */
@@ -201,9 +202,7 @@ onUnmounted(() => {
               @input="error = ''"
             />
             <button class="preferences-lock-unlock-btn" @click="handleUnlock" :aria-label="locale.lockScreen?.entry">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-              </svg>
+              <Icon name="arrowRight" size="sm" />
             </button>
           </div>
           <button v-if="onLogout" class="preferences-lock-unlock-logout" @click="onLogout">

@@ -1,5 +1,5 @@
-import type { ThemeModeType } from '../types';
 import { isBrowser } from '../utils';
+import type { ThemeModeType } from '../types';
 
 export interface ThemeRuntimeConfig {
   mode?: ThemeModeType;

@@ -3,10 +3,10 @@
  * @description 从主色生成完整的 CSS 变量
  */
 
-import { deriveSemanticColors, type SemanticColors } from './semantic';
-import { generateColorScaleVariables } from './scales';
 import { getContrastColor } from './contrast';
 import { parseToOklch, createOklch } from './oklch';
+import { generateColorScaleVariables } from './scales';
+import { deriveSemanticColors, type SemanticColors } from './semantic';
 
 /**
  * 生成完整的颜色 CSS 变量
@@ -124,8 +124,12 @@ export interface ThemeColorOptions {
   primaryColor: string;
   /** 是否暗色模式 */
   isDark: boolean;
-  /** 背景跟随主题色 */
+  /** 背景跟随主题色（同时用于 light/dark 时兼容旧用法） */
   colorFollowPrimary?: boolean;
+  /** 浅色模式下降栏/顶栏背景是否跟随主题色 */
+  colorFollowPrimaryLight?: boolean;
+  /** 深色模式下降栏/顶栏背景是否跟随主题色 */
+  colorFollowPrimaryDark?: boolean;
 }
 
 /**
@@ -141,6 +145,8 @@ export function generateThemeColorVariables(
   let primaryColor: string;
   let dark: boolean;
   let colorFollowPrimary = false;
+  let colorFollowPrimaryLight = false;
+  let colorFollowPrimaryDark = false;
 
   if (typeof options === 'string') {
     primaryColor = options;
@@ -149,6 +155,8 @@ export function generateThemeColorVariables(
     primaryColor = options.primaryColor;
     dark = options.isDark;
     colorFollowPrimary = options.colorFollowPrimary ?? false;
+    colorFollowPrimaryLight = options.colorFollowPrimaryLight ?? colorFollowPrimary;
+    colorFollowPrimaryDark = options.colorFollowPrimaryDark ?? colorFollowPrimary;
   }
 
   // 语义色变量
@@ -159,8 +167,8 @@ export function generateThemeColorVariables(
     ? generateDarkNeutralColors(colorFollowPrimary ? primaryColor : undefined)
     : generateLightNeutralColors(colorFollowPrimary ? primaryColor : undefined);
 
-  // 顶栏颜色变量（支持背景跟随主题色）
-  const headerVars = generateHeaderVariables(primaryColor, dark, colorFollowPrimary);
+  // 顶栏颜色变量：同时生成 light/dark 两套，使顶栏在主题切换时能正确切换背景
+  const headerVars = generateHeaderVariablesBoth(primaryColor, colorFollowPrimaryLight, colorFollowPrimaryDark);
 
   // 其他变量
   const otherVars: Record<string, string> = {
@@ -176,22 +184,16 @@ export function generateThemeColorVariables(
 }
 
 /**
- * 生成顶栏颜色变量
- * @param primaryColor - 主色
- * @param isDark - 是否暗色模式
- * @param colorFollowPrimary - 是否背景跟随主题色
- * @returns 顶栏CSS变量
+ * 生成单侧顶栏颜色变量（仅 light 或仅 dark）
  */
-function generateHeaderVariables(
+function generateHeaderVariablesOne(
   primaryColor: string,
   isDark: boolean,
   colorFollowPrimary: boolean
 ): Record<string, string> {
-  // 默认色相
   let hue = 250;
   let chroma = 0.01;
 
-  // 如果提供了主色，使用主色的色相
   if (primaryColor) {
     const parsed = parseToOklch(primaryColor);
     if (parsed) {
@@ -201,36 +203,46 @@ function generateHeaderVariables(
   }
 
   if (isDark) {
-    // 深色模式顶栏
     if (colorFollowPrimary) {
-      // 背景跟随主题色（较深的主色变体）
       return {
         '--header-bg-dark': createOklch(0.15, chroma * 1.5, hue),
         '--header-fg-dark': createOklch(0.95, 0.01, hue),
         '--header-border-dark': createOklch(0.25, chroma * 1.2, hue),
       };
-    } else {
-      // 默认深色顶栏
-      return {
-        '--header-bg-dark': 'oklch(0.12 0.02 250)',
-        '--header-fg-dark': 'oklch(0.98 0 0)',
-        '--header-border-dark': 'oklch(0.2 0.02 250)',
-      };
     }
-  } else {
-    // 浅色模式顶栏
-    if (colorFollowPrimary) {
-      // 背景跟随主题色（较浅的主色变体）
-      return {
-        '--header-bg-light': createOklch(0.95, chroma * 0.8, hue),
-        '--header-fg-light': createOklch(0.15, chroma * 2, hue),
-      };
-    } else {
-      // 默认浅色顶栏
-      return {
-        '--header-bg-light': 'oklch(1 0 0)',
-        '--header-fg-light': 'oklch(0.15 0.02 250)',
-      };
-    }
+    return {
+      '--header-bg-dark': 'oklch(0.12 0.02 250)',
+      '--header-fg-dark': 'oklch(0.98 0 0)',
+      '--header-border-dark': 'oklch(0.2 0.02 250)',
+    };
   }
+
+  if (colorFollowPrimary) {
+    return {
+      '--header-bg-light': createOklch(0.95, chroma * 0.8, hue),
+      '--header-fg-light': createOklch(0.15, chroma * 2, hue),
+    };
+  }
+  return {
+    '--header-bg-light': 'oklch(1 0 0)',
+    '--header-fg-light': 'oklch(0.15 0.02 250)',
+  };
+}
+
+/**
+ * 同时生成顶栏浅色与深色两套 CSS 变量
+ * @description 确保主题切换时顶栏背景能正确随 light/dark 切换，避免只更新一侧导致顶栏不随主题变化
+ * @param primaryColor - 主色
+ * @param colorFollowPrimaryLight - 浅色模式下顶栏背景是否跟随主题色
+ * @param colorFollowPrimaryDark - 深色模式下顶栏背景是否跟随主题色
+ * @returns 顶栏 CSS 变量（含 --header-bg-light / --header-fg-light 与 --header-bg-dark / --header-fg-dark / --header-border-dark）
+ */
+function generateHeaderVariablesBoth(
+  primaryColor: string,
+  colorFollowPrimaryLight: boolean,
+  colorFollowPrimaryDark: boolean
+): Record<string, string> {
+  const lightVars = generateHeaderVariablesOne(primaryColor, false, colorFollowPrimaryLight);
+  const darkVars = generateHeaderVariablesOne(primaryColor, true, colorFollowPrimaryDark);
+  return { ...lightVars, ...darkVars };
 }

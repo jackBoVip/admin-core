@@ -2,8 +2,8 @@
  * 适配器相关类型定义
  */
 
-import type { DeepPartial, I18nAdapter, StorageAdapter } from './utils';
 import type { Preferences } from './preferences';
+import type { DeepPartial, I18nAdapter, StorageAdapter } from './utils';
 
 /**
  * DOM 选择器配置

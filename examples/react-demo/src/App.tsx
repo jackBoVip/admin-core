@@ -357,8 +357,7 @@ function AppLayout() {
   };
 
   const handleRefresh = () => {
-    console.log('Refresh page');
-    window.location.reload();
+    console.log('Refresh current tab');
   };
 
   const handleLockScreen = () => {
@@ -378,11 +377,6 @@ function AppLayout() {
       onGlobalSearch={handleSearch}
       onRefresh={handleRefresh}
       onLockScreen={handleLockScreen}
-      footerCenter={
-        <div className="text-center text-sm text-gray-500 py-4">
-          Copyright © 2024 Admin Core. All rights reserved.
-        </div>
-      }
     >
       <Routes>
         <Route path="/" element={<Home />} />

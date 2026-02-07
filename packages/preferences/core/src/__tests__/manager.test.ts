@@ -6,9 +6,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   createPreferencesManager,
   DEFAULT_PREFERENCES,
-  getDefaultPreferences,
 } from '../index';
-import type { PreferencesManager, Preferences } from '../types';
+import type { PreferencesManager } from '../types';
 
 // Mock localStorage
 const localStorageMock = (() => {

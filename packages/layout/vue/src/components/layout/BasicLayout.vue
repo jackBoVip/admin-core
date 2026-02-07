@@ -5,15 +5,16 @@
  * 内置偏好设置功能，无需用户单独配置
  * 自动响应偏好设置变化（布局类型、主题等）
  */
-import { computed, ref, shallowRef, watch, onUnmounted } from 'vue';
+import { computed, ref, shallowRef, watch, onUnmounted, onMounted, defineComponent, h, isRef, type PropType, type DefineComponent, type VNode } from 'vue';
 import type { BasicLayoutProps, LayoutEvents, MenuItem, TabItem, BreadcrumbItem, NotificationItem } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps, logger, buildMenuPathIndex } from '@admin-core/layout';
+import { mapPreferencesToLayoutProps, logger, buildMenuPathIndex, filterHiddenMenus, resolveMenuNavigation } from '@admin-core/layout';
 import { createLayoutContext, useResponsive } from '../../composables';
 import { 
   PreferencesProvider, 
   PreferencesDrawer,
   initPreferences,
   getPreferencesManager,
+  type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences-vue';
 import LayoutHeader from './LayoutHeader.vue';
 import LayoutSidebar from './LayoutSidebar.vue';
@@ -22,8 +23,10 @@ import LayoutContent from './LayoutContent.vue';
 import LayoutFooter from './LayoutFooter.vue';
 import LayoutPanel from './LayoutPanel.vue';
 import LayoutOverlay from './LayoutOverlay.vue';
+import LayoutProgress from './LayoutProgress.vue';
 import HorizontalMenu from './HorizontalMenu.vue';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
+import LayoutIcon from '../common/LayoutIcon.vue';
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
@@ -43,6 +46,18 @@ try {
 
 // 偏好设置抽屉状态
 const showPreferencesDrawer = ref(false);
+const floatingPosition = ref<{ x: number; y: number } | null>(null);
+const floatingEdge = ref<'left' | 'right' | 'top' | 'bottom' | null>(null);
+const floatingDragging = ref(false);
+const floatingStorageKey = 'admin-core:pref-fab-position';
+const floatingDragState = ref<{
+  startX: number;
+  startY: number;
+  originX: number;
+  originY: number;
+} | null>(null);
+const floatingMoved = ref(false);
+const floatingButtonRef = ref<HTMLButtonElement | null>(null);
 
 // 打开偏好设置
 const openPreferences = () => {
@@ -64,8 +79,9 @@ const props = withDefaults(defineProps<BasicLayoutProps & {
   showPreferencesButton?: boolean;
   /** 偏好设置按钮位置 */
   preferencesButtonPosition?: 'header' | 'fixed' | 'auto';
+  /** 偏好设置 UI 配置（控制显示/禁用） */
+  preferencesUIConfig?: PreferencesDrawerUIConfig;
 }>(), {
-  locale: 'zh-CN',
   showPreferencesButton: true,
   preferencesButtonPosition: 'auto',
 });
@@ -103,6 +119,19 @@ onUnmounted(() => {
   unsubscribeRef.value?.();
 });
 
+// 标记平台类型（用于滚动条样式兼容）
+onMounted(() => {
+  if (typeof document === 'undefined') return;
+  const platform =
+    (navigator as Navigator & { userAgentData?: { platform?: string } })?.userAgentData?.platform ||
+    navigator.platform ||
+    '';
+  const isMac = platform.toLowerCase().includes('mac');
+  const value = isMac ? 'macOs' : 'other';
+  document.documentElement.setAttribute('data-platform', value);
+  document.body?.setAttribute('data-platform', value);
+});
+
 // 合并后的配置（preferences 为底，用户 props 优先）
 const mergedProps = computed<BasicLayoutProps>(() => {
   // 访问 updateCounter 确保 preferences 变化时重新计算
@@ -123,7 +152,7 @@ const mergedProps = computed<BasicLayoutProps>(() => {
   if (props.router) result.router = props.router;
   if (props.userInfo) result.userInfo = props.userInfo;
   if (props.appName) result.appName = props.appName;
-  if (props.locale) result.locale = props.locale;
+  if (props.locale !== undefined) result.locale = props.locale;
   if (props.isMobile !== undefined) result.isMobile = props.isMobile;
   if (props.header) result.header = { ...preferencesProps.value.header, ...props.header };
   if (props.sidebar) result.sidebar = { ...preferencesProps.value.sidebar, ...props.sidebar };
@@ -223,8 +252,237 @@ const resolvedPreferencesButtonPosition = computed(() => {
 const { context, computed: layoutComputed, cssVars, state } = createLayoutContext(
   contextProps,
   events,
-  { locale: props.locale, customMessages: props.customMessages }
+  { locale: contextProps.value.locale, customMessages: props.customMessages }
 );
+
+const showFloatingPreferencesButton = computed(() => {
+  return props.showPreferencesButton !== false && layoutComputed.value.isFullContent;
+});
+
+const showFixedPreferencesButton = computed(() => {
+  return (
+    props.showPreferencesButton !== false &&
+    resolvedPreferencesButtonPosition.value === 'fixed' &&
+    !layoutComputed.value.isFullContent
+  );
+});
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const getFloatingBounds = () => {
+  if (typeof window === 'undefined') {
+    return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+  }
+  const rect = floatingButtonRef.value?.getBoundingClientRect();
+  const width = rect?.width ?? 48;
+  const height = rect?.height ?? 48;
+  const inset = 8;
+  return {
+    minX: inset,
+    minY: inset,
+    maxX: Math.max(inset, window.innerWidth - width - inset),
+    maxY: Math.max(inset, window.innerHeight - height - inset),
+  };
+};
+
+const snapFloatingPosition = (pos: { x: number; y: number }) => {
+  const bounds = getFloatingBounds();
+  const x = clamp(pos.x, bounds.minX, bounds.maxX);
+  const y = clamp(pos.y, bounds.minY, bounds.maxY);
+  const distances = [
+    { edge: 'left', value: x - bounds.minX },
+    { edge: 'right', value: bounds.maxX - x },
+    { edge: 'top', value: y - bounds.minY },
+    { edge: 'bottom', value: bounds.maxY - y },
+  ];
+  distances.sort((a, b) => a.value - b.value);
+  const nearest = distances[0]?.edge as 'left' | 'right' | 'top' | 'bottom' | undefined;
+  if (nearest === 'left') return { x: bounds.minX, y, edge: 'left' as const };
+  if (nearest === 'right') return { x: bounds.maxX, y, edge: 'right' as const };
+  if (nearest === 'top') return { x, y: bounds.minY, edge: 'top' as const };
+  return { x, y: bounds.maxY, edge: 'bottom' as const };
+};
+
+const initFloatingPosition = () => {
+  if (floatingPosition.value || typeof window === 'undefined') return;
+  try {
+    const stored = window.localStorage.getItem(floatingStorageKey);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { x?: number; y?: number; edge?: typeof floatingEdge.value };
+      if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+        const bounds = getFloatingBounds();
+        floatingPosition.value = {
+          x: clamp(parsed.x, bounds.minX, bounds.maxX),
+          y: clamp(parsed.y, bounds.minY, bounds.maxY),
+        };
+        floatingEdge.value = parsed.edge ?? null;
+        return;
+      }
+    }
+  } catch {}
+  const inset = 24;
+  const size = 48;
+  floatingPosition.value = {
+    x: window.innerWidth - size - inset,
+    y: window.innerHeight - size - inset,
+  };
+};
+
+watch(showFloatingPreferencesButton, (visible, _, onCleanup) => {
+  if (!visible) return;
+  initFloatingPosition();
+  if (typeof window === 'undefined') return;
+  const handleResize = () => {
+    if (!floatingPosition.value) return;
+    const bounds = getFloatingBounds();
+    floatingPosition.value = {
+      x: clamp(floatingPosition.value.x, bounds.minX, bounds.maxX),
+      y: clamp(floatingPosition.value.y, bounds.minY, bounds.maxY),
+    };
+  };
+  window.addEventListener('resize', handleResize);
+  onCleanup(() => {
+    window.removeEventListener('resize', handleResize);
+  });
+}, { immediate: true });
+
+watch(
+  [showFloatingPreferencesButton, floatingPosition, floatingEdge],
+  ([visible, pos, edge]) => {
+    if (!visible || !pos || typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        floatingStorageKey,
+        JSON.stringify({ x: pos.x, y: pos.y, edge })
+      );
+    } catch {}
+  }
+);
+
+const handleFloatingPointerMove = (event: PointerEvent) => {
+  if (!floatingDragState.value) return;
+  const { startX, startY, originX, originY } = floatingDragState.value;
+  const dx = event.clientX - startX;
+  const dy = event.clientY - startY;
+  if (Math.abs(dx) + Math.abs(dy) > 3) {
+    floatingMoved.value = true;
+  }
+  const bounds = getFloatingBounds();
+  floatingPosition.value = {
+    x: clamp(originX + dx, bounds.minX, bounds.maxX),
+    y: clamp(originY + dy, bounds.minY, bounds.maxY),
+  };
+};
+
+const handleFloatingPointerUp = () => {
+  if (floatingPosition.value) {
+    const snapped = snapFloatingPosition(floatingPosition.value);
+    floatingPosition.value = { x: snapped.x, y: snapped.y };
+    floatingEdge.value = snapped.edge;
+  }
+  floatingDragging.value = false;
+  floatingDragState.value = null;
+  window.removeEventListener('pointermove', handleFloatingPointerMove);
+  window.removeEventListener('pointerup', handleFloatingPointerUp);
+};
+
+const handleFloatingPointerDown = (event: PointerEvent) => {
+  if (!showFloatingPreferencesButton.value) return;
+  event.preventDefault();
+  floatingEdge.value = null;
+  floatingDragging.value = true;
+  const target = event.currentTarget as HTMLElement;
+  target.setPointerCapture?.(event.pointerId);
+  floatingMoved.value = false;
+  const rect = target.getBoundingClientRect();
+  const originX = floatingPosition.value?.x ?? rect.left;
+  const originY = floatingPosition.value?.y ?? rect.top;
+  floatingDragState.value = {
+    startX: event.clientX,
+    startY: event.clientY,
+    originX,
+    originY,
+  };
+  window.addEventListener('pointermove', handleFloatingPointerMove);
+  window.addEventListener('pointerup', handleFloatingPointerUp);
+};
+
+const handleFloatingClick = () => {
+  if (floatingMoved.value) {
+    floatingMoved.value = false;
+    return;
+  }
+  openPreferences();
+};
+
+const floatingButtonStyle = computed(() => {
+  if (!floatingPosition.value) return undefined;
+  return {
+    left: `${floatingPosition.value.x}px`,
+    top: `${floatingPosition.value.y}px`,
+  };
+});
+
+onUnmounted(() => {
+  window.removeEventListener('pointermove', handleFloatingPointerMove);
+  window.removeEventListener('pointerup', handleFloatingPointerUp);
+});
+
+
+
+const normalizePath = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && 'value' in value) {
+    const resolved = (value as { value?: unknown }).value;
+    return typeof resolved === 'string' ? resolved : '';
+  }
+  return '';
+};
+
+const currentPath = computed<string>(() => {
+  const router = context.props.router;
+  if (!router) {
+    return normalizePath(context.props.currentPath) || '';
+  }
+
+  const routerPath = router.currentPath;
+  if (isRef(routerPath)) {
+    return normalizePath(routerPath.value);
+  }
+  return normalizePath(routerPath) || normalizePath(context.props.currentPath);
+});
+
+const navigate = (
+  path: string,
+  options?: {
+    replace?: boolean;
+    params?: Record<string, string | number>;
+    query?: Record<string, string | number>;
+  }
+) => {
+  if (context.props.router?.navigate) {
+    context.props.router.navigate(path, options);
+  }
+};
+
+const handleMenuItemClick = (menu: MenuItem) => {
+  const action = resolveMenuNavigation(menu, {
+    autoActivateChild: context.props.sidebar?.autoActivateChild,
+  });
+
+  if (action.type === 'external' && action.url) {
+    window.open(action.url, action.target ?? '_blank');
+    return;
+  }
+
+  if (action.type === 'internal' && action.path) {
+    navigate(action.path, {
+      params: action.params,
+      query: action.query,
+    });
+  }
+};
+const menuLauncherOpen = ref(false);
 
 // 监听移动端状态变化
 watch(isMobile, (value) => {
@@ -242,33 +500,45 @@ const rootStyle = computed(() => ({
   ...cssVars.value,
 }));
 
+const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');
+
 // 顶部导航菜单数据（用于 header-nav、mixed-nav、header-mixed-nav 模式）
-const headerMenus = computed(() => {
-  if (!contextProps.value.menus) return [];
-  
-  // header-nav 模式：显示完整菜单树
-  if (layoutComputed.value.isHeaderNav) {
-    return contextProps.value.menus;
-  }
-  
-  // mixed-nav 模式：只显示一级菜单（子菜单在侧边栏显示）
-  if (layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) {
-    return contextProps.value.menus.map(item => ({
-      ...item,
-      children: [], // 移除子菜单，只在顶部显示一级
-    }));
-  }
-  
-  return [];
-});
+const headerMenus = shallowRef<MenuItem[]>([]);
+watch(
+  [() => contextProps.value.menus, () => layoutComputed.value.currentLayout],
+  ([menus, layout]) => {
+    if (!menus || layout === 'header-sidebar-nav') {
+      headerMenus.value = [];
+      return;
+    }
+    if (layout === 'header-nav') {
+      headerMenus.value = menus;
+      return;
+    }
+    if (layout === 'mixed-nav' || layout === 'header-mixed-nav') {
+      headerMenus.value = menus.map(item => ({
+        ...item,
+        children: undefined,
+      }));
+      return;
+    }
+    headerMenus.value = [];
+  },
+  { immediate: true }
+);
 
 const headerMenuIndex = computed(() => buildMenuPathIndex(contextProps.value.menus || []));
 
 // 顶部菜单激活的 key
 const headerActiveKey = computed(() => {
-  const path = typeof contextProps.value.router?.currentPath === 'object' 
+  if (isHeaderSidebarNav.value) return '';
+  if ((layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) && state.mixedNavRootKey) {
+    return state.mixedNavRootKey;
+  }
+  const rawPath = typeof contextProps.value.router?.currentPath === 'object' 
     ? contextProps.value.router.currentPath.value 
     : contextProps.value.router?.currentPath;
+  const path = rawPath ? String(rawPath).split('?')[0] : '';
   
   if (!path) return '';
   const index = headerMenuIndex.value;
@@ -294,11 +564,158 @@ const headerActiveKey = computed(() => {
   return menu.key || '';
 });
 
+const handleHeaderMenuSelect = (item: MenuItem, key: string) => {
+  if (!layoutComputed.value.isMixedNav && !layoutComputed.value.isHeaderMixedNav) return;
+  const nextKey = item.key ?? item.path ?? key;
+  if (!nextKey) return;
+  if (context.state.mixedNavRootKey !== String(nextKey)) {
+    context.state.mixedNavRootKey = String(nextKey);
+  }
+};
+
 // 是否显示顶部菜单
 const showHeaderMenu = computed(() => {
-  return layoutComputed.value.isHeaderNav || 
-         layoutComputed.value.isMixedNav || 
-         layoutComputed.value.isHeaderMixedNav;
+  return (layoutComputed.value.isHeaderNav ||
+         layoutComputed.value.isMixedNav ||
+         layoutComputed.value.isHeaderMixedNav) && !isHeaderSidebarNav.value;
+});
+
+const menuLauncherEnabled = computed(() => {
+  const isHeaderMenuLayout =
+    layoutComputed.value.isHeaderNav || layoutComputed.value.isMixedNav;
+  return (
+    isHeaderMenuLayout &&
+    !layoutComputed.value.isHeaderMixedNav &&
+    !!contextProps.value.header?.menuLauncher
+  );
+});
+
+const menuLauncherLabel = computed(() => {
+  return context.t('layout.header.menuLauncher');
+});
+
+const launcherMenus = computed(() => {
+  return filterHiddenMenus(contextProps.value.menus || []);
+});
+
+const closeMenuLauncher = () => {
+  menuLauncherOpen.value = false;
+};
+
+const toggleMenuLauncher = () => {
+  menuLauncherOpen.value = !menuLauncherOpen.value;
+};
+
+watch(menuLauncherEnabled, (enabled) => {
+  if (!enabled) {
+    menuLauncherOpen.value = false;
+  }
+});
+
+watch(currentPath, () => {
+  if (menuLauncherOpen.value) {
+    menuLauncherOpen.value = false;
+  }
+});
+
+const handleLauncherItemClick = (item: MenuItem) => {
+  if (item.disabled) return;
+  handleMenuItemClick(item);
+  const rawKey = item.key ?? item.path ?? '';
+  if (rawKey !== '') {
+    context.events?.onMenuSelect?.(item, String(rawKey));
+  }
+  if (layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) {
+    const chain =
+      (item.key ? headerMenuIndex.value.chainByKey.get(item.key) : undefined) ??
+      (item.path ? headerMenuIndex.value.chainByPath.get(item.path) : undefined) ??
+      [];
+    const rootKey = chain.length > 0 ? chain[0] : rawKey;
+    if (rootKey) {
+      context.state.mixedNavRootKey = String(rootKey);
+    }
+  }
+  menuLauncherOpen.value = false;
+};
+
+interface LauncherMenuListProps {
+  items?: MenuItem[];
+  depth?: number;
+  activeKey?: string;
+  onItemClick: (item: MenuItem) => void;
+}
+
+const LauncherMenuList: DefineComponent<LauncherMenuListProps> = defineComponent({
+  name: 'LauncherMenuList',
+  props: {
+    items: {
+      type: Array as PropType<MenuItem[]>,
+      default: () => [],
+    },
+    depth: {
+      type: Number,
+      default: 0,
+    },
+    activeKey: {
+      type: String,
+      default: '',
+    },
+    onItemClick: {
+      type: Function as PropType<(item: MenuItem) => void>,
+      required: true,
+    },
+  },
+  setup(props: LauncherMenuListProps) {
+    return (): VNode => {
+      const depth = props.depth ?? 0;
+      const listClass =
+        depth > 0 ? 'layout-header__launcher-sublist' : 'layout-header__launcher-list';
+      const items = props.items ?? [];
+      const children = items
+        .filter((item) => !item.hidden)
+        .map((item) => {
+          const key = String(item.key ?? item.path ?? item.name ?? '');
+          const isActive = key !== '' && key === props.activeKey;
+          return h(
+            'li',
+            {
+              key,
+              class: ['layout-header__launcher-item', item.disabled ? 'is-disabled' : ''],
+              'data-active': isActive ? 'true' : undefined,
+              'data-disabled': item.disabled ? 'true' : undefined,
+            },
+            [
+              h(
+                'button',
+                {
+                  type: 'button',
+                  class: 'layout-header__launcher-item-btn',
+                  onClick: () => props.onItemClick(item),
+                  disabled: item.disabled,
+                  'data-active': isActive ? 'true' : undefined,
+                },
+                [
+                  item.icon
+                    ? h('span', { class: 'layout-header__launcher-icon' }, item.icon)
+                    : null,
+                  h('span', { class: 'layout-header__launcher-text' }, item.name),
+                ]
+              ),
+              item.children?.length
+                ? h(LauncherMenuList, {
+                    items: item.children,
+                    depth: depth + 1,
+                    activeKey: props.activeKey,
+                    onItemClick: props.onItemClick,
+                  })
+                : null,
+            ]
+          );
+        });
+
+      return h('ul', { class: listClass, 'data-depth': depth }, children as VNode[]);
+    };
+  },
 });
 
 // 顶部菜单对齐方式
@@ -335,8 +752,9 @@ defineExpose({
 </script>
 
 <template>
-  <PreferencesProvider>
+  <PreferencesProvider :show-trigger="false" :ui-config="props.preferencesUIConfig">
     <div :class="rootClass" :style="rootStyle">
+      <LayoutProgress />
       <!-- 侧边栏 -->
       <LayoutSidebar v-if="layoutComputed.showSidebar">
       <template #logo>
@@ -365,7 +783,7 @@ defineExpose({
         <slot name="header-left">
           <!-- 默认面包屑 -->
           <Breadcrumb 
-            v-if="context.props.breadcrumb?.enable !== false"
+            v-if="layoutComputed.showBreadcrumb"
             :show-icon="context.props.breadcrumb?.showIcon"
             :show-home="context.props.breadcrumb?.showHome"
           />
@@ -376,13 +794,28 @@ defineExpose({
       </template>
       <template #menu>
         <slot name="header-menu">
+          <!-- 菜单启动器模式 -->
+          <div v-if="menuLauncherEnabled" class="layout-header__menu-launcher">
+            <button
+              type="button"
+              class="layout-header__launcher-btn"
+              :aria-expanded="menuLauncherOpen"
+              :aria-label="menuLauncherLabel"
+              @click="toggleMenuLauncher"
+            >
+              <LayoutIcon name="menu-launcher" size="sm" />
+              <span>{{ menuLauncherLabel }}</span>
+            </button>
+          </div>
+
           <!-- 默认水平菜单（顶部导航模式） -->
           <HorizontalMenu 
-            v-if="showHeaderMenu && headerMenus.length > 0"
+            v-else-if="showHeaderMenu && headerMenus.length > 0"
             :menus="headerMenus"
             :active-key="headerActiveKey"
             :align="headerMenuAlign"
             :theme="headerMenuTheme"
+            @select="handleHeaderMenuSelect"
           />
         </slot>
       </template>
@@ -403,6 +836,48 @@ defineExpose({
         <slot name="header-extra" />
       </template>
     </LayoutHeader>
+
+    <div
+      v-if="menuLauncherEnabled && menuLauncherOpen"
+      class="layout-header__launcher-overlay"
+      role="dialog"
+      aria-modal="true"
+      @click="closeMenuLauncher"
+    >
+      <div class="layout-header__launcher-panel" @click.stop>
+        <div v-if="launcherMenus.length > 0" class="layout-header__launcher-grid">
+          <div
+            v-for="menu in launcherMenus"
+            :key="String(menu.key ?? menu.path ?? menu.name ?? '')"
+            class="layout-header__launcher-group"
+          >
+            <button
+              type="button"
+              :class="[
+                'layout-header__launcher-title',
+                menu.children?.length ? 'layout-header__launcher-title--group' : 'is-single',
+              ]"
+              :disabled="menu.disabled"
+              :data-active="String(menu.key ?? menu.path ?? '') === String(headerActiveKey || '') ? 'true' : undefined"
+              @click="handleLauncherItemClick(menu)"
+            >
+              <span v-if="menu.icon" class="layout-header__launcher-icon">{{ menu.icon }}</span>
+              <span class="layout-header__launcher-text">{{ menu.name }}</span>
+            </button>
+            <LauncherMenuList
+              v-if="menu.children?.length"
+              :items="menu.children"
+              :depth="0"
+              :active-key="String(headerActiveKey || '')"
+              :on-item-click="handleLauncherItemClick"
+            />
+          </div>
+        </div>
+        <div v-else class="layout-header__launcher-empty">
+          {{ context.t('layout.common.noData') }}
+        </div>
+      </div>
+    </div>
 
     <!-- 标签栏 -->
     <LayoutTabbar v-if="layoutComputed.showTabbar">
@@ -475,16 +950,29 @@ defineExpose({
       
       <!-- 内置偏好设置按钮（固定位置） -->
       <button
-        v-if="showPreferencesButton && resolvedPreferencesButtonPosition === 'fixed'"
+        v-if="showFixedPreferencesButton"
         class="layout-preferences-button"
         title="偏好设置"
         @click="openPreferences"
       >
         <slot name="preferences-button-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
+          <LayoutIcon name="settings" size="md" />
+        </slot>
+      </button>
+
+      <!-- 全屏内容布局：可拖拽的偏好设置按钮 -->
+      <button
+        v-if="showFloatingPreferencesButton"
+        ref="floatingButtonRef"
+        :class="['layout-preferences-button', 'layout-preferences-button--floating', floatingDragging ? 'layout-preferences-button--dragging' : '']"
+        title="偏好设置"
+        :style="floatingButtonStyle"
+        :data-edge="floatingEdge || undefined"
+        @pointerdown="handleFloatingPointerDown"
+        @click="handleFloatingClick"
+      >
+        <slot name="preferences-button-icon">
+          <LayoutIcon name="settings" size="md" />
         </slot>
       </button>
     </div>
@@ -492,6 +980,7 @@ defineExpose({
     <!-- 偏好设置抽屉（内置） -->
     <PreferencesDrawer 
       v-model:open="showPreferencesDrawer"
+      :ui-config="props.preferencesUIConfig"
       @close="closePreferences(); emit('preferences-close')"
     />
   </PreferencesProvider>

@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
+import { renderLayoutIcon } from '../../utils';
 import type { NotificationItem } from '@admin-core/layout';
 
 export const NotificationButton = memo(function NotificationButton() {
@@ -60,32 +61,10 @@ export const NotificationButton = memo(function NotificationButton() {
 
   const iconMap = useMemo(
     () => ({
-      success: (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <path d="M20 6 9 17l-5-5" />
-        </svg>
-      ),
-      warning: (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
-      ),
-      error: (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <circle cx="12" cy="12" r="10" />
-          <path d="m15 9-6 6" />
-          <path d="m9 9 6 6" />
-        </svg>
-      ),
-      info: (
-        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 16v-4" />
-          <path d="M12 8h.01" />
-        </svg>
-      ),
+      success: renderLayoutIcon('status-success', 'sm'),
+      warning: renderLayoutIcon('status-warning', 'sm'),
+      error: renderLayoutIcon('status-error', 'sm'),
+      info: renderLayoutIcon('status-info', 'sm'),
     }),
     []
   );
@@ -214,18 +193,7 @@ export const NotificationButton = memo(function NotificationButton() {
         data-unread={hasUnread ? 'true' : undefined}
         onClick={handleToggleOpen}
       >
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-        </svg>
+        {renderLayoutIcon('notification', 'sm')}
         {hasUnread && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white">
             {unreadCount > 99 ? '99+' : unreadCount}

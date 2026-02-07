@@ -2,47 +2,65 @@
  * 全屏按钮组件
  * @description 切换浏览器全屏模式
  */
+import { logger } from '@admin-core/layout';
 import { useState, useEffect, useCallback, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
-import { logger } from '@admin-core/layout';
+import { renderLayoutIcon } from '../../utils';
+
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  mozFullScreenElement?: Element | null;
+  msFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void>;
+  mozCancelFullScreen?: () => Promise<void>;
+  msExitFullscreen?: () => Promise<void>;
+};
+
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void>;
+  mozRequestFullScreen?: () => Promise<void>;
+  msRequestFullscreen?: () => Promise<void>;
+};
 
 export const FullscreenButton = memo(function FullscreenButton() {
   const { events } = useLayoutContext();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const checkFullscreen = useCallback(() => {
+    const fullscreenDocument = document as FullscreenDocument;
     setIsFullscreen(
       !!(
         document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
+        fullscreenDocument.webkitFullscreenElement ||
+        fullscreenDocument.mozFullScreenElement ||
+        fullscreenDocument.msFullscreenElement
       )
     );
   }, []);
 
   const toggleFullscreen = useCallback(async () => {
     try {
+      const fullscreenDocument = document as FullscreenDocument;
       if (isFullscreen) {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
-        } else if ((document as any).mozCancelFullScreen) {
-          await (document as any).mozCancelFullScreen();
-        } else if ((document as any).msExitFullscreen) {
-          await (document as any).msExitFullscreen();
+        if (fullscreenDocument.exitFullscreen) {
+          await fullscreenDocument.exitFullscreen();
+        } else if (fullscreenDocument.webkitExitFullscreen) {
+          await fullscreenDocument.webkitExitFullscreen();
+        } else if (fullscreenDocument.mozCancelFullScreen) {
+          await fullscreenDocument.mozCancelFullScreen();
+        } else if (fullscreenDocument.msExitFullscreen) {
+          await fullscreenDocument.msExitFullscreen();
         }
       } else {
-        const element = document.documentElement;
+        const element = document.documentElement as FullscreenElement;
         if (element.requestFullscreen) {
           await element.requestFullscreen();
-        } else if ((element as any).webkitRequestFullscreen) {
-          await (element as any).webkitRequestFullscreen();
-        } else if ((element as any).mozRequestFullScreen) {
-          await (element as any).mozRequestFullScreen();
-        } else if ((element as any).msRequestFullscreen) {
-          await (element as any).msRequestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+          await element.webkitRequestFullscreen();
+        } else if (element.mozRequestFullScreen) {
+          await element.mozRequestFullScreen();
+        } else if (element.msRequestFullscreen) {
+          await element.msRequestFullscreen();
         }
       }
       events.onFullscreenToggle?.(!isFullscreen);
@@ -73,37 +91,7 @@ export const FullscreenButton = memo(function FullscreenButton() {
       data-fullscreen={isFullscreen ? 'true' : undefined}
       onClick={toggleFullscreen}
     >
-      {!isFullscreen ? (
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-          <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-          <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-          <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-        </svg>
-      ) : (
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M8 3v3a2 2 0 0 1-2 2H3" />
-          <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
-          <path d="M3 16h3a2 2 0 0 1 2 2v3" />
-          <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
-        </svg>
-      )}
+      {!isFullscreen ? renderLayoutIcon('fullscreen', 'sm') : renderLayoutIcon('fullscreen-exit', 'sm')}
     </button>
   );
 });

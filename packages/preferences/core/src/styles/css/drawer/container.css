@@ -93,8 +93,6 @@
     padding: 12px 24px;
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
-    content-visibility: auto;
-    contain-intrinsic-size: 360px 800px;
 
     /* Webkit 滚动条样式（使用嵌套） */
     &::-webkit-scrollbar {

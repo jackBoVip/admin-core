@@ -3,6 +3,21 @@
  * @description 框架无关的偏好设置核心逻辑
  */
 
+import { DEFAULT_PREFERENCES, getDefaultPreferences } from '../config/defaults';
+import { validatePreferencesConfig } from '../helpers/drawer-config';
+import {
+  deepMerge,
+  safeMerge,
+  deepClone,
+  diff,
+  diffWithKeys,
+  hasChanges,
+  createStorageManager,
+  isBrowser,
+  logger,
+} from '../utils';
+import { initThemeTransitionTracking, runThemeTransition } from '../utils/theme-transition';
+import { updateAllCSSVariables, getActualThemeMode, setDOMSelectors } from './css-updater';
 import type {
   DeepPartial,
   Preferences,
@@ -10,10 +25,6 @@ import type {
   PreferencesKeys,
   StorageAdapter,
 } from '../types';
-import { DEFAULT_PREFERENCES, getDefaultPreferences } from '../config/defaults';
-import { deepMerge, safeMerge, deepClone, diff, diffWithKeys, hasChanges, createStorageManager, isBrowser, logger } from '../utils';
-import { updateAllCSSVariables, getActualThemeMode, setDOMSelectors } from './css-updater';
-import { validatePreferencesConfig } from '../helpers/drawer-config';
 
 /**
  * 偏好设置变更监听器
@@ -113,6 +124,9 @@ export class PreferencesManager {
     // 监听系统主题变化
     this.watchSystemTheme();
 
+    // 初始化主题切换动画位置追踪
+    initThemeTransitionTracking();
+
     this.initialized = true;
   }
 
@@ -164,6 +178,7 @@ export class PreferencesManager {
    */
   setPreferences(updates: DeepPartial<Preferences>, persist = true): void {
     const prevState = this.state;
+    const prevActualTheme = getActualThemeMode(prevState.theme.mode);
 
     // 深度合并更新（safeMerge 不修改原对象）
     this.state = safeMerge(this.state, updates);
@@ -174,8 +189,16 @@ export class PreferencesManager {
     // 清除缓存的差异（状态已变化）
     this.cachedDiff = null;
 
-    // 应用 CSS 变量
-    this.applyPreferences();
+    const nextActualTheme = getActualThemeMode(this.state.theme.mode);
+
+    // 应用 CSS 变量（主题切换时执行扩散/收缩动画）
+    if (prevActualTheme !== nextActualTheme) {
+      runThemeTransition(nextActualTheme, () => {
+        this.applyPreferences();
+      });
+    } else {
+      this.applyPreferences();
+    }
 
     // 持久化（使用防抖）
     if (persist) {

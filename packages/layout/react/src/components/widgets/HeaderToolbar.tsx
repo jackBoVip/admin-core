@@ -4,12 +4,12 @@
  */
 import { useMemo, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
+import { FullscreenButton } from './FullscreenButton';
 import { GlobalSearch } from './GlobalSearch';
+import { LanguageToggle } from './LanguageToggle';
+import { NotificationButton } from './NotificationButton';
 import { PreferencesButton } from './PreferencesButton';
 import { ThemeToggle } from './ThemeToggle';
-import { LanguageToggle } from './LanguageToggle';
-import { FullscreenButton } from './FullscreenButton';
-import { NotificationButton } from './NotificationButton';
 import { UserDropdown } from './UserDropdown';
 
 export interface HeaderToolbarProps {

@@ -155,10 +155,18 @@ export const enUS = {
     title: 'Tabs',
     enable: 'Enable Tabs',
     showIcon: 'Show Icon',
+    showMore: 'Show More Button',
+    showMaximize: 'Show Maximize Button',
     draggable: 'Draggable',
+    wheelable: 'Enable Wheel Scroll',
+    wheelableTip: 'When enabled, vertical wheel scrolls the tabbar horizontally',
+    middleClickClose: 'Middle Click to Close',
     persist: 'Persist Tabs',
     keepAlive: 'Keep Alive',
     maxCount: 'Max Tab Count',
+    maxCountTip: 'When opening new tabs, if the maximum is exceeded,\n' +
+      'the oldest tab will be closed automatically.\n' +
+      'Set 0 for no limit',
     styleType: 'Tab Style',
     styleChrome: 'Chrome Style',
     styleCard: 'Card Style',
@@ -193,6 +201,17 @@ export const enUS = {
     title: 'Footer',
     enable: 'Enable Footer',
     fixed: 'Fixed Footer',
+  },
+
+  // ========== Copyright ==========
+  copyright: {
+    title: 'Copyright',
+    enable: 'Enable Copyright',
+    companyName: 'Company Name',
+    companySiteLink: 'Company Site Link',
+    date: 'Date',
+    icp: 'ICP License Number',
+    icpLink: 'ICP Site Link',
   },
 
   // ========== Transition ==========

@@ -92,6 +92,20 @@ export interface InputItemBaseProps extends DrawerItemBaseProps {
   debounce?: number;
   /** 最大长度 */
   maxLength?: number;
+  /** 输入类型 */
+  type?: string;
+  /** 输入模式 */
+  inputMode?: 'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search';
+  /** 最小值（number 类型时） */
+  min?: number;
+  /** 最大值（number 类型时） */
+  max?: number;
+  /** 步进值（number 类型时） */
+  step?: number;
+  /** 行内布局（标签左侧、输入右侧） */
+  inline?: boolean;
+  /** 提示文本 */
+  tip?: string;
 }
 
 /**

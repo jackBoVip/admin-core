@@ -460,7 +460,9 @@
       background: var(--tooltip-bg);
       border: 1px solid var(--tooltip-border);
       box-shadow: var(--tooltip-shadow);
-      white-space: nowrap;
+      white-space: pre-line;
+      min-width: 180px;
+      max-width: 240px;
       transform: translateX(-50%) translateY(0) scale(0.95);
     }
 
@@ -497,6 +499,92 @@
         opacity: 0;
       }
     }
+  }
+
+  /* 由 JS 管理的 tooltip，避免伪元素重复显示 */
+  [data-preference-tooltip][data-tooltip-managed="true"] {
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  /* 使用固定定位避免 tooltip 被容器裁剪 */
+  [data-preference-tooltip][data-tooltip-fixed="true"] {
+    &::before,
+    &::after {
+      position: fixed;
+      left: var(--pref-tooltip-left);
+    }
+
+    &::before {
+      top: var(--pref-tooltip-top);
+      transform: translateX(-50%) translateY(0) scale(0.95);
+    }
+
+    &::after {
+      top: var(--pref-tooltip-arrow-top);
+      transform: translateX(-50%) translateY(0) rotate(45deg) scale(0.95);
+    }
+
+    &:hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) {
+      &::before {
+        transform: translateX(-50%) translateY(4px) scale(1);
+      }
+
+      &::after {
+        transform: translateX(-50%) translateY(4px) rotate(45deg) scale(1);
+      }
+    }
+  }
+
+  /* 全局 tooltip（JS 注入） */
+  .preferences-tooltip,
+  .preferences-tooltip-arrow {
+    position: fixed;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: var(--pref-tooltip-z-index);
+    transition:
+      opacity var(--tooltip-enter-duration) var(--tooltip-ease),
+      transform var(--tooltip-enter-duration) var(--tooltip-ease);
+  }
+
+  .preferences-tooltip {
+    padding: var(--tooltip-padding-y) var(--tooltip-padding-x);
+    font-size: var(--tooltip-font-size);
+    line-height: 1.2;
+    border-radius: var(--tooltip-radius);
+    color: var(--tooltip-fg);
+    background: var(--tooltip-bg);
+    border: 1px solid var(--tooltip-border);
+    box-shadow: var(--tooltip-shadow);
+    white-space: pre-line;
+    min-width: 180px;
+    max-width: var(--pref-tooltip-max-width);
+    transform: translateX(-50%) translateY(0) scale(0.95);
+  }
+
+  .preferences-tooltip-arrow {
+    width: var(--tooltip-arrow-size);
+    height: var(--tooltip-arrow-size);
+    border-radius: calc(var(--tooltip-radius) - 2px);
+    background: var(--tooltip-bg);
+    border: 1px solid var(--tooltip-border);
+    z-index: calc(var(--pref-tooltip-z-index) - 1);
+    transform: translateX(-50%) translateY(0) rotate(45deg) scale(0.95);
+  }
+
+  .preferences-tooltip[data-state="open"] {
+    opacity: 1;
+    transform: translateX(-50%) translateY(4px) scale(1);
+  }
+
+  .preferences-tooltip-arrow[data-state="open"] {
+    opacity: 1;
+    transform: translateX(-50%) translateY(4px) rotate(45deg) scale(1);
   }
 
   /* ========== 动画预览网格（响应式） ========== */

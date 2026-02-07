@@ -37,6 +37,7 @@ export {
   SelectItem as PreferencesSelectItem,
   SliderItem as PreferencesSliderItem,
   InputItem as PreferencesInputItem,
+  NumberItem as PreferencesNumberItem,
   // 类型
   type PreferencesDrawerProps,
   type PreferencesTriggerProps,
@@ -49,6 +50,7 @@ export {
   type SelectItemProps as PreferencesSelectItemProps,
   type SliderItemProps as PreferencesSliderItemProps,
   type InputItemProps as PreferencesInputItemProps,
+  type NumberItemProps as PreferencesNumberItemProps,
 } from './drawer';
 
 // 内部组件（被 PreferencesProvider 使用）

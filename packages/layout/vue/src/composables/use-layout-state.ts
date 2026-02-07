@@ -49,23 +49,27 @@
  *    - useLayoutPreferences: 偏好设置集成
  */
 
-import { ref, computed, watch, onMounted, onUnmounted, isRef } from 'vue';
-import { getPreferencesManager } from '@admin-core/preferences-vue';
-import { useLayoutContext, useLayoutComputed } from './use-layout-context';
 import { 
   BREAKPOINTS, 
   HEADER_TRIGGER_DISTANCE,
   TIMING,
-  mapPreferencesToLayoutProps,
-  getResolvedLayoutProps,
+  createAutoLockTimer,
+  createCheckUpdatesTimer,
   generateAllCSSVariables,
-  getOrCreateTabManager,
-  logger,
+  generateThemeClasses,
+  generateThemeCSSVariables,
+  generateWatermarkContent,
+  getBreadcrumbNavigationPath,
+  getMenuId,
   getMenuPathIndex,
+  getNextTabAfterClose,
+  getOrCreateTabManager,
+  getResolvedLayoutProps,
+  mapPreferencesToLayoutProps,
+  logger,
   resolveMenuNavigation,
   getTabNavigationPath,
-  getBreadcrumbNavigationPath,
-  getNextTabAfterClose,
+  shouldShowLockScreen,
   type BasicLayoutProps,
   type TabItem,
   type BreadcrumbItem,
@@ -75,6 +79,9 @@ import {
   type WatermarkConfig,
   type LockScreenConfig,
 } from '@admin-core/layout';
+import { getPreferencesManager } from '@admin-core/preferences-vue';
+import { computed, isRef, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useLayoutContext, useLayoutComputed } from './use-layout-context';
 
 // ============================================================
 // 1. 区域状态管理
@@ -87,9 +94,20 @@ export function useSidebarState() {
   const context = useLayoutContext();
   const layoutComputed = useLayoutComputed();
 
+  const isNonCollapsible = computed(
+    () => layoutComputed.value.isSidebarMixedNav || layoutComputed.value.isHeaderMixedNav
+  );
+
   const collapsed = computed({
-    get: () => context.state.sidebarCollapsed,
+    get: () => (isNonCollapsible.value ? false : context.state.sidebarCollapsed),
     set: (value) => {
+      if (isNonCollapsible.value) {
+        if (context.state.sidebarCollapsed) {
+          context.state.sidebarCollapsed = false;
+          context.events.onSidebarCollapse?.(false);
+        }
+        return;
+      }
       if (context.state.sidebarCollapsed !== value) {
         context.state.sidebarCollapsed = value;
         context.events.onSidebarCollapse?.(value);
@@ -139,6 +157,7 @@ export function useSidebarState() {
   const visible = computed(() => layoutComputed.value.showSidebar);
 
   const toggle = () => {
+    if (isNonCollapsible.value) return;
     collapsed.value = !collapsed.value;
   };
 
@@ -152,10 +171,10 @@ export function useSidebarState() {
   const handleMouseLeave = () => {
     if (expandOnHovering.value) {
       expandOnHovering.value = false;
-      // 非固定模式下，鼠标移出时隐藏子菜单面板
-      if (!expandOnHover.value) {
-        extraVisible.value = false;
-      }
+    }
+    // 悬停展开模式下，鼠标移出时隐藏子菜单面板
+    if (expandOnHover.value) {
+      extraVisible.value = false;
     }
   };
 
@@ -181,8 +200,9 @@ export function useHeaderState() {
   const context = useLayoutContext();
   const layoutComputed = useLayoutComputed();
 
+  const configHidden = computed(() => context.props.header?.hidden === true);
   const hidden = computed({
-    get: () => context.state.headerHidden,
+    get: () => context.state.headerHidden || configHidden.value,
     set: (value) => {
       if (context.state.headerHidden !== value) {
         context.state.headerHidden = value;
@@ -196,47 +216,90 @@ export function useHeaderState() {
 
   // 自动隐藏逻辑
   let mouseY = 0;
-  let lastScrollY = 0;
-  let animationFrame: number | null = null;
-  let scrollHandler: (() => void) | null = null;
+  let lastScrollYWindow = 0;
+  let lastScrollYElement = 0;
+  let scrollRafWindow: number | null = null;
+  let scrollRafElement: number | null = null;
+  let mouseMoveRaf: number | null = null;
+  let scrollTarget: HTMLElement | null = null;
+  let scrollHandlerWindow: (() => void) | null = null;
+  let scrollHandlerElement: (() => void) | null = null;
   let mouseMoveHandler: ((e: MouseEvent) => void) | null = null;
+  const hideThreshold = HEADER_TRIGGER_DISTANCE;
+  const showThreshold = Math.max(0, HEADER_TRIGGER_DISTANCE - 20);
+
+  const updateHiddenByMouse = () => {
+    if (mouseY > hideThreshold && !hidden.value) {
+      hidden.value = true;
+      return;
+    }
+    if (mouseY < showThreshold && hidden.value) {
+      hidden.value = false;
+    }
+  };
 
   const ensureHandlers = () => {
     if (!mouseMoveHandler) {
       mouseMoveHandler = (e: MouseEvent) => {
         mouseY = e.clientY;
+        if (mode.value === 'auto') {
+          if (mouseMoveRaf) return;
+          mouseMoveRaf = requestAnimationFrame(() => {
+            updateHiddenByMouse();
+            mouseMoveRaf = null;
+          });
+        }
       };
     }
-    if (!scrollHandler) {
-      scrollHandler = () => {
-        if (animationFrame) return;
-
-        animationFrame = requestAnimationFrame(() => {
+    if (!scrollHandlerWindow) {
+      scrollHandlerWindow = () => {
+        if (scrollRafWindow) return;
+        scrollRafWindow = requestAnimationFrame(() => {
           const currentScrollY = window.scrollY;
           const headerMode = mode.value;
-
           if (headerMode === 'auto') {
-            // 鼠标靠近顶部时显示
-            hidden.value = mouseY > HEADER_TRIGGER_DISTANCE;
+            updateHiddenByMouse();
           } else if (headerMode === 'auto-scroll') {
-            // 向上滚动显示，向下滚动隐藏
-            if (currentScrollY > lastScrollY && currentScrollY > height.value) {
+            if (currentScrollY > lastScrollYWindow && currentScrollY > height.value) {
               hidden.value = true;
-            } else if (currentScrollY < lastScrollY) {
+            } else if (currentScrollY < lastScrollYWindow) {
               hidden.value = false;
             }
           }
-
-          lastScrollY = currentScrollY;
-          animationFrame = null;
+          lastScrollYWindow = currentScrollY;
+          scrollRafWindow = null;
+        });
+      };
+    }
+    if (!scrollHandlerElement) {
+      scrollHandlerElement = () => {
+        if (!scrollTarget) return;
+        if (scrollRafElement) return;
+        scrollRafElement = requestAnimationFrame(() => {
+          const currentScrollY = scrollTarget?.scrollTop ?? 0;
+          const headerMode = mode.value;
+          if (headerMode === 'auto') {
+            updateHiddenByMouse();
+          } else if (headerMode === 'auto-scroll') {
+            if (currentScrollY > lastScrollYElement && currentScrollY > height.value) {
+              hidden.value = true;
+            } else if (currentScrollY < lastScrollYElement) {
+              hidden.value = false;
+            }
+          }
+          lastScrollYElement = currentScrollY;
+          scrollRafElement = null;
         });
       };
     }
   };
 
   const removeListeners = () => {
-    if (scrollHandler) {
-      window.removeEventListener('scroll', scrollHandler);
+    if (scrollHandlerWindow) {
+      window.removeEventListener('scroll', scrollHandlerWindow);
+    }
+    if (scrollHandlerElement && scrollTarget) {
+      scrollTarget.removeEventListener('scroll', scrollHandlerElement);
     }
     if (mouseMoveHandler) {
       window.removeEventListener('mousemove', mouseMoveHandler);
@@ -246,13 +309,30 @@ export function useHeaderState() {
   const updateListeners = () => {
     if (mode.value !== 'auto' && mode.value !== 'auto-scroll') {
       removeListeners();
+      hidden.value = false;
       return;
     }
     ensureHandlers();
     removeListeners();
-    window.addEventListener('scroll', scrollHandler!, { passive: true });
+    scrollTarget = typeof document !== 'undefined'
+      ? (document.querySelector('.layout-content') as HTMLElement | null)
+      : null;
+    lastScrollYWindow = typeof window !== 'undefined' ? window.scrollY : 0;
+    lastScrollYElement = scrollTarget?.scrollTop ?? 0;
+
+    const currentScrollHandlerWindow = scrollHandlerWindow;
+    if (currentScrollHandlerWindow) {
+      window.addEventListener('scroll', currentScrollHandlerWindow, { passive: true });
+    }
+    const currentScrollHandlerElement = scrollHandlerElement;
+    if (currentScrollHandlerElement && scrollTarget) {
+      scrollTarget.addEventListener('scroll', currentScrollHandlerElement, { passive: true });
+    }
     if (mode.value === 'auto') {
-      window.addEventListener('mousemove', mouseMoveHandler!, { passive: true });
+      const currentMouseMoveHandler = mouseMoveHandler;
+      if (currentMouseMoveHandler) {
+        window.addEventListener('mousemove', currentMouseMoveHandler, { passive: true });
+      }
     }
   };
 
@@ -265,8 +345,14 @@ export function useHeaderState() {
 
   onUnmounted(() => {
     removeListeners();
-    if (animationFrame !== null) {
-      cancelAnimationFrame(animationFrame);
+    if (scrollRafWindow !== null) {
+      cancelAnimationFrame(scrollRafWindow);
+    }
+    if (scrollRafElement !== null) {
+      cancelAnimationFrame(scrollRafElement);
+    }
+    if (mouseMoveRaf !== null) {
+      cancelAnimationFrame(mouseMoveRaf);
     }
   });
 
@@ -444,6 +530,7 @@ export function useResponsive() {
 export function useMenuState() {
   const context = useLayoutContext();
   const { currentPath, handleMenuItemClick } = useRouter();
+  const normalizeKey = (value: unknown) => (value == null || value === '' ? '' : String(value));
 
   const openKeys = computed({
     get: () => context.state.openMenuKeys,
@@ -452,13 +539,17 @@ export function useMenuState() {
     },
   });
 
-  const activeKey = computed<string>(() => context.props.activeMenuKey || currentPath.value || '');
+  const menuPath = computed(() => currentPath.value.split('?')[0] || '');
+  const activeKey = computed<string>(() => {
+    const candidate = context.props.activeMenuKey ?? menuPath.value ?? '';
+    return normalizeKey(candidate);
+  });
   const menus = computed<MenuItem[]>(() => context.props.menus || []);
   const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
 
   // 根据当前路径自动展开菜单
   watch(
-    [currentPath, menuIndex],
+    [menuPath, menuIndex],
     ([path]) => {
       if (!path) return;
       const index = menuIndex.value;
@@ -472,7 +563,10 @@ export function useMenuState() {
         if (chain.length > 1) {
           const parentKeys = chain.slice(0, -1);
           if (context.props.navigation?.accordion) {
-            openKeys.value = [parentKeys[parentKeys.length - 1]!];
+            const lastParentKey = parentKeys[parentKeys.length - 1];
+            if (lastParentKey !== undefined) {
+              openKeys.value = [lastParentKey];
+            }
           } else {
             const merged = [...new Set([...openKeys.value, ...parentKeys])];
             if (merged.length !== openKeys.value.length) {
@@ -498,19 +592,30 @@ export function useMenuState() {
 
   // 选择菜单（内置路由跳转）
   const handleSelect = (key: string) => {
-    const item = menuIndex.value.byKey.get(key);
+    const target = normalizeKey(key);
+    if (!target) return;
+    const item = menuIndex.value.byKey.get(target) ?? menuIndex.value.byPath.get(target);
     if (item) {
       // 内置路由跳转
       handleMenuItemClick(item);
       // 触发外部事件（可选）
-      context.events.onMenuSelect?.(item, key);
+      context.events.onMenuSelect?.(item, target);
     }
   };
 
   const handleOpenChange = (keys: string[]) => {
     if (context.props.navigation?.accordion) {
-      // 手风琴模式：只保留最后一个展开的菜单
-      const nextKeys = keys.length > 0 ? [keys[keys.length - 1]!] : [];
+      // 手风琴模式：保留当前分支的父级路径
+      const lastKey = keys[keys.length - 1];
+      let nextKeys: string[] = [];
+      if (lastKey !== undefined) {
+        const menu = menuIndex.value.byKey.get(lastKey) ?? menuIndex.value.byPath.get(lastKey);
+        const chain =
+          (menu?.key ? menuIndex.value.chainByKey.get(menu.key) : undefined) ??
+          (menu?.path ? menuIndex.value.chainByPath.get(menu.path) : undefined) ??
+          [];
+        nextKeys = chain.length > 0 ? chain : [lastKey];
+      }
       if (nextKeys.length !== openKeys.value.length || nextKeys[0] !== openKeys.value[0]) {
         openKeys.value = nextKeys;
       }
@@ -556,11 +661,24 @@ export function useTabsState() {
   // 是否启用自动模式
   const isAutoMode = computed(() => context.props.autoTab?.enabled !== false);
 
+  // 标签栏配置
+  const tabbarConfig = computed(() => context.props.tabbar || {});
+  const maxCount = computed(() => {
+    if (tabbarConfig.value.maxCount !== undefined && tabbarConfig.value.maxCount !== null) {
+      return tabbarConfig.value.maxCount;
+    }
+    return context.props.autoTab?.maxCount ?? 0;
+  });
+  const persistKey = computed(() => {
+    if (tabbarConfig.value.persist === false) return undefined;
+    return context.props.autoTab?.persistKey || 'tabs';
+  });
+
   // 标签管理器（使用 core 缓存实例）
   const tabManager = getOrCreateTabManager({
-    maxCount: context.props.autoTab?.maxCount || context.props.tabbar?.maxCount || 0,
+    maxCount: maxCount.value,
     affixTabs: context.props.autoTab?.affixKeys,
-    persistKey: context.props.autoTab?.persistKey,
+    persistKey: persistKey.value,
     onChange: (tabs) => {
       internalTabs.value = tabs;
     },
@@ -568,6 +686,44 @@ export function useTabsState() {
 
   // 初始化标签
   internalTabs.value = tabManager.getTabs();
+
+  // 监听配置变化
+  watch([maxCount, persistKey], ([nextMax, nextPersist], [, prevPersist]) => {
+    tabManager.updateOptions({
+      maxCount: nextMax,
+      persistKey: nextPersist,
+    });
+    if (!nextPersist && prevPersist) {
+      tabManager.clearStorage();
+    }
+  });
+
+  const normalizePath = (path: string) => path.split('?')[0] || path;
+  const getPageKey = (fullPath: string) => {
+    if (!fullPath.includes('?')) return '';
+    const query = fullPath.split('?')[1]?.split('#')[0] || '';
+    if (!query) return '';
+    try {
+      const params = new URLSearchParams(query);
+      return params.get('pageKey') || '';
+    } catch {
+      return '';
+    }
+  };
+  const resolveTabKey = (fullPath: string, menu?: MenuItem) => {
+    const basePath = normalizePath(fullPath);
+    const meta = menu?.meta as Record<string, unknown> | undefined;
+    const fullPathKey = meta?.fullPathKey;
+    const pageKey = getPageKey(fullPath);
+    const rawKey =
+      pageKey || (fullPathKey === false ? basePath : fullPath || basePath);
+    const fallbackKey = menu?.key || basePath;
+    try {
+      return decodeURIComponent(rawKey) || fallbackKey;
+    } catch {
+      return rawKey || fallbackKey;
+    }
+  };
 
   // 实际标签数据
   const tabs = computed(() => {
@@ -577,7 +733,6 @@ export function useTabsState() {
     return context.props.tabs || [];
   });
 
-  const activeKey = computed<string>(() => context.props.activeTabKey || currentPath.value || '');
   const tabMap = computed(() => {
     const map = new Map<string, TabItem>();
     for (const tab of tabs.value) {
@@ -587,30 +742,62 @@ export function useTabsState() {
   });
   const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
 
+  const resolveMenuByPath = (path: string) => {
+    const basePath = normalizePath(path);
+    const index = menuIndex.value;
+    let menu =
+      index.byPath.get(basePath) ??
+      index.byKey.get(basePath);
+    if (!menu) {
+      for (const item of index.pathItems) {
+        if (item.path && basePath.startsWith(item.path)) {
+          menu = item;
+          break;
+        }
+      }
+    }
+    return menu;
+  };
+
+  const activeKey = computed<string>(() => {
+    if (context.props.activeTabKey) return context.props.activeTabKey;
+    const path = currentPath.value || '';
+    if (!isAutoMode.value || !path) return path;
+    const menu = resolveMenuByPath(path);
+    if (!menu) return path;
+    return resolveTabKey(path, menu);
+  });
+
+  const buildTabFromMenu = (menu: MenuItem, fullPath: string): TabItem => {
+    const resolvedFullPath = fullPath || menu.path || '';
+    const basePath = normalizePath(resolvedFullPath || menu.path || '');
+    const key = resolveTabKey(resolvedFullPath || basePath, menu);
+    const baseTab = tabManager.createTabFromMenu(menu, { affix: menu.affix });
+    return {
+      ...baseTab,
+      key,
+      path: resolvedFullPath || baseTab.path || basePath,
+      meta: {
+        ...(baseTab.meta || {}),
+        fullPath: resolvedFullPath || basePath,
+        fullPathKey: (menu.meta as Record<string, unknown> | undefined)?.fullPathKey,
+        pageKey: getPageKey(resolvedFullPath || basePath) || undefined,
+      },
+    };
+  };
+
   // 监听当前路径变化，自动添加标签
   watch(
     [currentPath, menuIndex],
     ([path]) => {
       if (!isAutoMode.value || !path) return;
 
-      const index = menuIndex.value;
-      let menu =
-        index.byPath.get(path) ??
-        index.byKey.get(path);
-      if (!menu) {
-        for (const item of index.pathItems) {
-          if (item.path && path.startsWith(item.path)) {
-            menu = item;
-            break;
-          }
-        }
-      }
+      const menu = resolveMenuByPath(path);
 
       // 检查菜单是否配置了隐藏标签
       if (menu && menu.path && !menu.hideInTab) {
-        internalTabs.value = tabManager.addTabFromMenu(menu, {
-          affix: menu.affix,
-        });
+        const tab = buildTabFromMenu(menu, path);
+        internalTabs.value = tabManager.addTab(tab);
       }
     },
     { immediate: true }
@@ -625,6 +812,29 @@ export function useTabsState() {
         internalTabs.value = tabManager.getTabs();
       }
     }
+  );
+
+  // keep-alive include 列表
+  watch(
+    [tabs, () => tabbarConfig.value.keepAlive],
+    ([nextTabs, keepAliveEnabled]) => {
+      if (keepAliveEnabled === false) {
+        context.state.keepAliveIncludes = [];
+        return;
+      }
+      const includes = nextTabs
+        .filter((tab) => (tab.meta as Record<string, unknown> | undefined)?.keepAlive !== false)
+        .map((tab) => {
+          return (
+            tab.cacheName ||
+            ((tab.meta as Record<string, unknown> | undefined)?.cacheName as string | undefined) ||
+            tab.name
+          );
+        })
+        .filter(Boolean);
+      context.state.keepAliveIncludes = includes;
+    },
+    { immediate: true }
   );
 
   // 选择标签（内置路由跳转）
@@ -642,12 +852,13 @@ export function useTabsState() {
   const handleClose = (key: string) => {
     const item = tabMap.value.get(key);
     if (item && item.closable !== false) {
+      const beforeTabs = tabs.value;
       if (isAutoMode.value) {
         internalTabs.value = tabManager.removeTab(key);
       }
       
       // 内置导航处理（关闭当前标签时跳转）
-      handleTabCloseNavigate(key, internalTabs.value, activeKey.value);
+      handleTabCloseNavigate(key, beforeTabs, activeKey.value);
       
       // 触发外部事件
       context.events.onTabClose?.(item, key);
@@ -687,6 +898,19 @@ export function useTabsState() {
 
   const handleRefresh = (key: string) => {
     const item = tabMap.value.get(key);
+    if (key === activeKey.value) {
+      context.state.refreshKey += 1;
+    }
+    if (tabbarConfig.value.keepAlive !== false && item) {
+      const meta = item.meta as Record<string, unknown> | undefined;
+      const cacheName = item.cacheName || (meta?.cacheName as string | undefined) || item.name;
+      if (cacheName) {
+        context.state.keepAliveExcludes = [cacheName];
+        nextTick(() => {
+          context.state.keepAliveExcludes = [];
+        });
+      }
+    }
     if (item) {
       context.events.onTabRefresh?.(item, key);
     }
@@ -695,6 +919,19 @@ export function useTabsState() {
   const handleToggleAffix = (key: string) => {
     if (isAutoMode.value) {
       internalTabs.value = tabManager.toggleAffix(key);
+    }
+  };
+
+  const handleOpenInNewWindow = (key: string) => {
+    const item = tabMap.value.get(key);
+    if (!item) return;
+    const meta = item.meta as Record<string, unknown> | undefined;
+    const url =
+      (meta?.externalLink as string | undefined) ||
+      (meta?.fullPath as string | undefined) ||
+      item.path;
+    if (url) {
+      window.open(url, '_blank');
     }
   };
 
@@ -716,6 +953,7 @@ export function useTabsState() {
     handleCloseRight,
     handleRefresh,
     handleToggleAffix,
+    handleOpenInNewWindow,
     handleSort,
     // 暴露 tabManager 供高级用法
     tabManager,
@@ -743,6 +981,7 @@ export function useBreadcrumbState() {
     }
 
     const path = currentPath.value;
+    const basePath = path.split('?')[0] || path;
     const config = context.props.autoBreadcrumb || {};
 
     if (!path || menuIndex.value.byKey.size === 0) {
@@ -760,11 +999,11 @@ export function useBreadcrumbState() {
 
     const index = menuIndex.value;
     let menu =
-      index.byPath.get(path) ??
-      index.byKey.get(path);
+      index.byPath.get(basePath) ??
+      index.byKey.get(basePath);
     if (!menu) {
       for (const item of index.pathItems) {
-        if (item.path && path.startsWith(item.path)) {
+        if (item.path && basePath.startsWith(item.path)) {
           menu = item;
           break;
         }
@@ -787,15 +1026,16 @@ export function useBreadcrumbState() {
     }
 
     for (const key of chainKeys) {
-      const menuItem = index.byKey.get(key);
+      const menuItem = index.byKey.get(key) ?? index.byPath.get(key);
       if (!menuItem) continue;
       if (showHome && menuItem.path === homePath) continue;
+      const menuId = getMenuId(menuItem);
       items.push({
-        key: `__breadcrumb_${menuItem.key}__`,
+        key: `__breadcrumb_${menuId}__`,
         name: menuItem.name,
         icon: menuItem.icon,
         path: menuItem.path,
-        clickable: !!menuItem.path && menuItem.path !== path,
+        clickable: !!menuItem.path && menuItem.path !== basePath,
       });
     }
 
@@ -964,13 +1204,14 @@ export function useDynamicTitle() {
     ([path]) => {
       if (!enabled.value || !path) return;
 
+      const basePath = String(path).split('?')[0] || String(path);
       const index = menuIndex.value;
       let menu =
-        index.byPath.get(path) ??
-        index.byKey.get(path);
+        index.byPath.get(basePath) ??
+        index.byKey.get(basePath);
       if (!menu) {
         for (const item of index.pathItems) {
-          if (item.path && path.startsWith(item.path)) {
+          if (item.path && basePath.startsWith(item.path)) {
             menu = item;
             break;
           }
@@ -991,17 +1232,6 @@ export function useDynamicTitle() {
   };
 }
 
-// 从核心包导入
-import { 
-  generateThemeCSSVariables,
-  generateThemeClasses,
-  generateWatermarkContent,
-  shouldShowLockScreen,
-  createAutoLockTimer,
-  createCheckUpdatesTimer,
-} from '@admin-core/layout';
-// 类型已从上面导入，无需重复导入
-
 /**
  * 创建 Vue Router 适配器
  * @description 在 setup 中调用，自动获取 vue-router 实例
@@ -1020,7 +1250,7 @@ interface VueRouterInstance {
 
 export function useVueRouterAdapter(
   routerInstance?: VueRouterInstance,
-  routeInstance?: { path: string }
+  routeInstance?: { path: string; fullPath?: string }
 ) {
   // 尝试自动获取 vue-router
   const router = ref(routerInstance);
@@ -1044,15 +1274,25 @@ export function useVueRouterAdapter(
   }
 
   return {
-    navigate: (path: string, options?: { replace?: boolean; query?: Record<string, any> }) => {
+    navigate: (path: string, options?: { replace?: boolean; query?: Record<string, unknown> }) => {
       if (!router.value) return;
+      const [rawPath, rawQuery] = path.split('?');
+      const query = options?.query ?? (() => {
+        if (!rawQuery) return undefined;
+        try {
+          const params = new URLSearchParams(rawQuery.split('#')[0]);
+          return Object.fromEntries(params.entries());
+        } catch {
+          return undefined;
+        }
+      })();
       router.value.push({
-        path,
-        query: options?.query,
+        path: rawPath,
+        query,
         replace: options?.replace,
       });
     },
-    currentPath: computed(() => route.value?.path || ''),
+    currentPath: computed(() => route.value?.fullPath || route.value?.path || ''),
   };
 }
 
@@ -1527,6 +1767,7 @@ export function useRefresh() {
 
     isRefreshing.value = true;
     try {
+      context.state.refreshKey += 1;
       if (activeTab.value && context.events.onTabRefresh) {
         context.events.onTabRefresh(activeTab.value, activeTab.value.key);
       } else {

@@ -5,7 +5,8 @@
  */
 import { computed } from 'vue';
 import { useLayoutContext, useLayoutComputed, useHeaderState, useSidebarState } from '../../composables';
-import { LAYOUT_ICONS, ANIMATION_CLASSES, getIconPath, getIconViewBox } from '@admin-core/layout';
+import { LAYOUT_ICONS, ANIMATION_CLASSES } from '@admin-core/layout';
+import LayoutIcon from '../common/LayoutIcon.vue';
 import { RefreshButton } from '../widgets';
 
 const context = useLayoutContext();
@@ -16,21 +17,17 @@ const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebarState()
 // 配置
 const headerConfig = computed(() => context.props.header || {});
 const logoConfig = computed(() => context.props.logo || {});
-const theme = computed(() => context.props.headerTheme || 'light');
+const theme = computed(() => layoutComputed.value.headerTheme || 'light');
 const menuAlign = computed(() => headerConfig.value.menuAlign || 'start');
+const isHeaderFixed = computed(() => mode.value !== 'static');
 
 // 折叠图标配置（根据状态显示不同图标）
-const headerToggleIconName = computed(() => 
-  sidebarCollapsed.value 
-    ? (LAYOUT_ICONS.headerSidebarToggle.iconCollapsed || LAYOUT_ICONS.headerSidebarToggle.icon) 
-    : LAYOUT_ICONS.headerSidebarToggle.icon
+const headerToggleIconName = computed(() =>
+  sidebarCollapsed.value ? 'sidebar-toggle-collapsed' : 'sidebar-toggle'
 );
-
-const headerToggleIconProps = computed(() => ({
-  className: `${LAYOUT_ICONS.headerSidebarToggle.className} ${ANIMATION_CLASSES.iconRotate}`,
-  viewBox: getIconViewBox(headerToggleIconName.value),
-  path: getIconPath(headerToggleIconName.value),
-}));
+const headerToggleIconClass = computed(
+  () => `${LAYOUT_ICONS.headerSidebarToggle.className} ${ANIMATION_CLASSES.iconRotate}`
+);
 
 // 是否在顶栏显示 Logo
 const showLogoInHeader = computed(() => {
@@ -39,10 +36,10 @@ const showLogoInHeader = computed(() => {
          layoutComputed.value.isHeaderMixedNav;
 });
 
-// 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+// 是否允许显示折叠按钮的布局（仅 sidebar-nav）
 const isCollapseButtonAllowedLayout = computed(() => {
   const layout = layoutComputed.value.currentLayout;
-  return layout === 'sidebar-nav' || layout === 'header-mixed-nav';
+  return layout === 'sidebar-nav';
 });
 
 // 是否显示侧边栏切换按钮（根据偏好设置开关控制）
@@ -50,17 +47,20 @@ const showSidebarToggle = computed(() => {
   return isCollapseButtonAllowedLayout.value &&
          layoutComputed.value.showSidebar && 
          context.props.widgets?.sidebarToggle !== false &&
-         !layoutComputed.value.isSidebarMixedNav;
+         !layoutComputed.value.isSidebarMixedNav &&
+         !layoutComputed.value.isHeaderMixedNav;
 });
 
 // 是否显示刷新按钮（左侧）
 const showRefresh = computed(() => context.props.widgets?.refresh !== false);
 
+const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');
+
 // 是否显示顶部菜单（顶部导航模式）
 const showHeaderMenu = computed(() => {
-  return layoutComputed.value.isHeaderNav || 
-         layoutComputed.value.isMixedNav || 
-         layoutComputed.value.isHeaderMixedNav;
+  return (layoutComputed.value.isHeaderNav ||
+         layoutComputed.value.isMixedNav ||
+         layoutComputed.value.isHeaderMixedNav) && !isHeaderSidebarNav.value;
 });
 
 // 类名
@@ -83,14 +83,30 @@ const headerStyle = computed(() => {
   // 顶部导航模式下，顶栏占满全宽
   const isFullWidth = layoutComputed.value.isHeaderNav || 
                       layoutComputed.value.isMixedNav || 
-                      layoutComputed.value.isHeaderMixedNav;
-  
-  return {
+                      layoutComputed.value.isHeaderMixedNav ||
+                      layoutComputed.value.currentLayout === 'header-sidebar-nav';
+
+  const sidebarOffset =
+    !isFullWidth && layoutComputed.value.showSidebar && !context.props.isMobile
+      ? layoutComputed.value.sidebarWidth
+      : 0;
+
+  const style: Record<string, string> = {
     height: `${height.value}px`,
-    left: !isFullWidth && layoutComputed.value.showSidebar && !context.props.isMobile
-      ? `${layoutComputed.value.sidebarWidth}px`
-      : '0',
   };
+
+  if (isHeaderFixed.value) {
+    style.position = 'fixed';
+    style.left = sidebarOffset ? `${sidebarOffset}px` : '0';
+  } else {
+    style.position = 'static';
+    if (sidebarOffset) {
+      style.marginLeft = `${sidebarOffset}px`;
+      style.width = `calc(100% - ${sidebarOffset}px)`;
+    }
+  }
+
+  return style;
 });
 
 // 菜单容器样式
@@ -140,17 +156,7 @@ const menuContainerClass = computed(() => [
           class="header-widget-btn"
           @click="toggleSidebar"
         >
-          <svg 
-            :class="headerToggleIconProps.className"
-            :viewBox="headerToggleIconProps.viewBox"
-            fill="none" 
-            stroke="currentColor" 
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path :d="headerToggleIconProps.path" />
-          </svg>
+          <LayoutIcon :name="headerToggleIconName" size="md" :className="headerToggleIconClass" />
         </button>
 
         <!-- 左侧刷新按钮（与 vben 保持一致位置） -->

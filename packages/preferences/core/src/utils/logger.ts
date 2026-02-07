@@ -2,6 +2,7 @@
  * Logger utility for preferences package
  * @description Configurable logging with log levels and optional prefix
  */
+/* eslint-disable no-console -- logger intentionally proxies console methods */
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'silent';
 

@@ -103,6 +103,16 @@ export {
   type ThemePreferences,
   type TransitionPreferences,
   type WidgetPreferences,
+  // Drawer UI Config Types
+  type FeatureItemConfig,
+  type FeatureBlockConfig,
+  type AppearanceTabConfig,
+  type LayoutTabConfig,
+  type GeneralTabConfig,
+  type ShortcutKeysTabConfig,
+  type HeaderActionsConfig,
+  type FooterActionsConfig,
+  type PreferencesDrawerUIConfig,
   // Constants
   BUILT_IN_THEME_PRESETS,
   COLOR_PRESETS,

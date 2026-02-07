@@ -4,13 +4,14 @@
  * 折叠状态下支持悬停弹出子菜单（类似 vben）
  */
 
+import { hasChildren, getMenuItemClassName, getMenuId, isMenuActive } from '@admin-core/layout';
 import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
-import { useLayoutContext, useLayoutComputed } from '../../hooks';
+import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
-import type { MenuItem } from '@admin-core/layout';
-import { hasChildren, getMenuItemClassName } from '@admin-core/layout';
 import { renderIcon } from '../../utils/icon-renderer';
+import { renderLayoutIcon } from '../../utils';
+import type { MenuItem } from '@admin-core/layout';
 
 interface MenuItemProps {
   item: MenuItem;
@@ -48,7 +49,8 @@ const MenuItemComponent = memo(function MenuItemComponent({
   onHidePopup,
   style,
 }: MenuItemProps) {
-  const isExpanded = expandedKeys.has(item.key);
+  const menuId = getMenuId(item);
+  const isExpanded = expandedKeys.has(menuId);
   const hasChildrenItems = hasChildren(item);
   
   const showName = !collapsed || expandOnHovering;
@@ -68,11 +70,11 @@ const MenuItemComponent = memo(function MenuItemComponent({
         // 折叠状态下，点击有子菜单的项不做任何操作（由悬停处理）
         return;
       }
-      onToggleExpand(item.key);
+      onToggleExpand(menuId);
     } else {
-      onSelect(item.key);
+      onSelect(menuId);
     }
-  }, [hasChildrenItems, item.key, onToggleExpand, onSelect, collapsed, expandOnHovering]);
+  }, [hasChildrenItems, menuId, onToggleExpand, onSelect, collapsed, expandOnHovering]);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
     if (collapsed && !expandOnHovering && hasChildrenItems) {
@@ -114,37 +116,21 @@ const MenuItemComponent = memo(function MenuItemComponent({
         {showName && <span className="sidebar-menu__name">{item.name}</span>}
 
         {/* 展开箭头（展开状态） */}
-      {hasChildrenItems && showName && (
+        {hasChildrenItems && showName && (
           <span
             className={`sidebar-menu__arrow ${
               isExpanded ? 'sidebar-menu__arrow--expanded' : ''
             }`}
             data-expanded={isExpanded ? 'true' : undefined}
           >
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            {renderLayoutIcon('menu-arrow-right', 'sm')}
           </span>
         )}
 
         {/* 折叠状态下有子菜单时显示右侧小箭头 */}
         {hasChildrenItems && collapsed && !expandOnHovering && (
           <span className="sidebar-menu__arrow-right">
-            <svg
-              className="h-3 w-3"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            {renderLayoutIcon('menu-arrow-right', 'xs')}
           </span>
         )}
       </div>
@@ -154,7 +140,7 @@ const MenuItemComponent = memo(function MenuItemComponent({
         <div className="sidebar-menu__submenu">
             {visibleChildren.map((child) => (
               <MenuItemComponent
-                key={child.key}
+                key={getMenuId(child)}
                 item={child}
                 level={level + 1}
                 collapsed={collapsed}
@@ -162,8 +148,8 @@ const MenuItemComponent = memo(function MenuItemComponent({
                 expandedKeys={expandedKeys}
                 activeKey={activeKey}
             activeParentSet={activeParentSet}
-            isActive={child.key === activeKey || child.path === activeKey}
-            hasActiveChild={activeParentSet.has(child.key || child.path || '')}
+            isActive={isMenuActive(child, activeKey)}
+            hasActiveChild={activeParentSet.has(getMenuId(child))}
                 onToggleExpand={onToggleExpand}
                 onSelect={onSelect}
                 onShowPopup={onShowPopup}
@@ -209,6 +195,7 @@ const PopupMenu = memo(function PopupMenu({
   const [viewportHeight, setViewportHeight] = useState(0);
   const popupResizeObserverRef = useRef<ResizeObserver | null>(null);
   const popupStyle = useMemo(() => ({ top: `${top}px`, left: `${left}px` }), [top, left]);
+  const itemId = useMemo(() => getMenuId(item), [item]);
   const buildExpandedKeys = useCallback(() => {
     const keys = new Set<string>();
     if (!item.children?.length) return keys;
@@ -216,10 +203,10 @@ const PopupMenu = memo(function PopupMenu({
     while (stack.length > 0) {
       const child = stack.pop();
       if (!child) continue;
-      const childId = child.key || child.path || '';
-      const isActive = child.key === activeKey || child.path === activeKey;
+      const childId = getMenuId(child);
+    const isActive = isMenuActive(child, activeKey);
       if ((childId && activeParentSet.has(childId)) || isActive) {
-        keys.add(child.key);
+        keys.add(childId);
         if (child.children?.length) {
           for (let i = child.children.length - 1; i >= 0; i -= 1) {
             stack.push(child.children[i]);
@@ -245,7 +232,7 @@ const PopupMenu = memo(function PopupMenu({
     if (!isSame) {
       setExpandedKeys(nextKeys);
     }
-  }, [buildExpandedKeys, expandedKeys]);
+  }, [buildExpandedKeys]);
 
   const menuItemMap = useMemo(() => {
     const map = new Map<string, MenuItem>();
@@ -253,8 +240,9 @@ const PopupMenu = memo(function PopupMenu({
     while (stack.length > 0) {
       const current = stack.pop();
       if (!current) continue;
-      if (current.key) {
-        map.set(current.key, current);
+      const id = getMenuId(current);
+      if (id) {
+        map.set(id, current);
       }
       if (current.children?.length) {
         for (let i = current.children.length - 1; i >= 0; i -= 1) {
@@ -264,6 +252,18 @@ const PopupMenu = memo(function PopupMenu({
     }
     return map;
   }, [item.children]);
+
+  const handleItemHover = useCallback((menuItem: MenuItem) => {
+    if (!hasChildren(menuItem)) return;
+    const id = getMenuId(menuItem);
+    if (!menuItemMap.has(id)) return;
+    setExpandedKeys((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }, [menuItemMap]);
 
   const toggleExpand = useCallback((key: string) => {
     if (!menuItemMap.has(key)) return;
@@ -290,9 +290,9 @@ const PopupMenu = memo(function PopupMenu({
 
   const handleItemClick = useCallback((menuItem: MenuItem) => {
     if (hasChildren(menuItem)) {
-      toggleExpand(menuItem.key);
+      toggleExpand(getMenuId(menuItem));
     } else {
-      onSelect(menuItem.key);
+      onSelect(getMenuId(menuItem));
     }
   }, [toggleExpand, onSelect]);
 
@@ -308,7 +308,8 @@ const PopupMenu = memo(function PopupMenu({
   const popupChildren = item.children ?? [];
   const [popupItemHeight, setPopupItemHeight] = useState(44);
   const POPUP_OVERSCAN = 4;
-  const shouldVirtualize = expandedKeys.size === 0;
+  const POPUP_VIRTUAL_MIN_ITEMS = 50;
+  const shouldVirtualize = expandedKeys.size === 0 && popupChildren.length >= POPUP_VIRTUAL_MIN_ITEMS;
   const contentScrollTop = Math.max(0, scrollTop - contentTop);
   const totalHeight = popupChildren.length * popupItemHeight;
   const startIndex = Math.max(0, Math.floor(contentScrollTop / popupItemHeight) - POPUP_OVERSCAN);
@@ -370,7 +371,7 @@ const PopupMenu = memo(function PopupMenu({
       container.scrollTop = 0;
     }
     setScrollTop((prev) => (prev === 0 ? prev : 0));
-  }, [shouldVirtualize, item.key]);
+  }, [shouldVirtualize, itemId]);
 
   useEffect(() => {
     if (!shouldVirtualize) return;
@@ -403,10 +404,10 @@ const PopupMenu = memo(function PopupMenu({
   ): React.ReactNode => {
     if (menuItem.hidden) return null;
 
-    const isActive = menuItem.key === activeKey || menuItem.path === activeKey;
-    const menuId = menuItem.key || menuItem.path || '';
+    const isActive = isMenuActive(menuItem, activeKey);
+    const menuId = getMenuId(menuItem);
     const hasActiveChild = menuId ? activeParentSet.has(menuId) : false;
-    const isExpanded = expandedKeys.has(menuItem.key);
+    const isExpanded = expandedKeys.has(menuId);
     const hasChildrenItems = hasChildren(menuItem);
 
     const itemClass = (() => {
@@ -418,7 +419,7 @@ const PopupMenu = memo(function PopupMenu({
     })();
 
     return (
-      <div key={menuItem.key} className="sidebar-menu__popup-group" style={style}>
+      <div key={menuId} className="sidebar-menu__popup-group" style={style}>
         <div
           className={`${itemClass} data-active:text-primary data-disabled:opacity-50`}
           data-state={isActive ? 'active' : 'inactive'}
@@ -427,8 +428,9 @@ const PopupMenu = memo(function PopupMenu({
           data-has-children={hasChildrenItems ? 'true' : undefined}
           data-expanded={hasChildrenItems && isExpanded ? 'true' : undefined}
           data-level={level}
-          data-key={menuItem.key}
+          data-key={menuId}
           onClick={handlePopupItemClick}
+          onMouseEnter={() => handleItemHover(menuItem)}
         >
           {menuItem.icon && (
             <span className="sidebar-menu__popup-icon">
@@ -441,15 +443,13 @@ const PopupMenu = memo(function PopupMenu({
               className={`sidebar-menu__popup-arrow ${isExpanded ? 'sidebar-menu__popup-arrow--expanded' : ''}`}
               data-expanded={isExpanded ? 'true' : undefined}
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+              {renderLayoutIcon('menu-arrow-right', 'sm')}
             </span>
           )}
         </div>
         {hasChildrenItems && isExpanded && (
           <div className="sidebar-menu__popup-submenu">
-            {menuItem.children!.map(child => renderPopupItem(child, level + 1))}
+            {menuItem.children?.map(child => renderPopupItem(child, level + 1))}
           </div>
         )}
       </div>
@@ -503,6 +503,7 @@ export function SidebarMenu() {
   const computed = useLayoutComputed();
   const { collapsed, expandOnHovering } = useSidebarState();
   const { openKeys, activeKey, handleSelect, handleOpenChange } = useMenuState();
+  const [layoutState, setLayoutState] = useLayoutState();
   
   // 侧边栏主题（用于弹出菜单）
   const sidebarTheme = computed.sidebarTheme || 'light';
@@ -551,9 +552,85 @@ export function SidebarMenu() {
   const scrollResizeObserverRef = useRef<ResizeObserver | null>(null);
   const menuItemResizeObserverRef = useRef<ResizeObserver | null>(null);
 
-  const menus = useMemo<MenuItem[]>(
+  const allMenus = useMemo<MenuItem[]>(
     () => context.props.menus || [],
     [context.props.menus]
+  );
+
+  const isMixedNav = computed.isMixedNav;
+
+  const normalizeKey = useCallback((value: unknown) => {
+    if (value == null || value === '') return '';
+    return String(value);
+  }, []);
+
+  const menuMatchesKey = useCallback((menu: MenuItem, key: string) => {
+    const target = normalizeKey(key);
+    if (!target) return false;
+    const menuKey = normalizeKey(menu.key ?? '');
+    const menuPath = normalizeKey(menu.path ?? '');
+    const menuId = normalizeKey(getMenuId(menu));
+    return (
+      (menuKey && menuKey === target) ||
+      (menuPath && menuPath === target) ||
+      (menuId && menuId === target)
+    );
+  }, [normalizeKey]);
+
+  const menuContainsKey = useCallback((menu: MenuItem, key: string) => {
+    if (menuMatchesKey(menu, key)) return true;
+    if (!menu.children?.length) return false;
+    const stack = [...menu.children];
+    while (stack.length > 0) {
+      const item = stack.pop();
+      if (!item) continue;
+      if (menuMatchesKey(item, key)) return true;
+      if (item.children?.length) {
+        for (let i = item.children.length - 1; i >= 0; i -= 1) {
+          stack.push(item.children[i]);
+        }
+      }
+    }
+    return false;
+  }, [menuMatchesKey]);
+
+  const findRootMenuByKey = useCallback((key: string) => {
+    if (!key) return null;
+    for (const item of allMenus) {
+      if (item.hidden) continue;
+      if (menuContainsKey(item, key)) return item;
+    }
+    return null;
+  }, [allMenus, menuContainsKey]);
+
+  const derivedRootMenu = useMemo(() => {
+    if (!isMixedNav) return null;
+    const candidateKey = layoutState.mixedNavRootKey || activeKey;
+    if (!candidateKey) return null;
+    return findRootMenuByKey(candidateKey);
+  }, [isMixedNav, layoutState.mixedNavRootKey, activeKey, findRootMenuByKey]);
+
+  const fallbackRootMenu = useMemo(() => {
+    if (!isMixedNav) return null;
+    for (const item of allMenus) {
+      if (!item.hidden) return item;
+    }
+    return null;
+  }, [isMixedNav, allMenus]);
+
+  const rootMenu = derivedRootMenu ?? fallbackRootMenu;
+
+  useEffect(() => {
+    if (!isMixedNav) return;
+    if (!rootMenu) return;
+    const rootKey = normalizeKey(rootMenu.key ?? rootMenu.path ?? '');
+    if (!rootKey || rootKey === layoutState.mixedNavRootKey) return;
+    setLayoutState((prev) => ({ ...prev, mixedNavRootKey: rootKey }));
+  }, [isMixedNav, rootMenu, normalizeKey, layoutState.mixedNavRootKey, setLayoutState]);
+
+  const menus = useMemo<MenuItem[]>(
+    () => (isMixedNav ? rootMenu?.children ?? [] : allMenus),
+    [isMixedNav, rootMenu, allMenus]
   );
   const visibleMenus = useMemo(() => {
     const result: MenuItem[] = [];
@@ -660,11 +737,14 @@ export function SidebarMenu() {
     const map = new Map<string, string | null>();
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
-        const keyPath = menu.key || '';
-        const path = menu.path || '';
-        const id = keyPath || path || '';
-        if (keyPath) map.set(keyPath, parent);
-        if (path && path !== keyPath) map.set(path, parent);
+        const rawKey = menu.key ?? '';
+        const key = rawKey === '' ? '' : String(rawKey);
+        const rawPath = menu.path ?? '';
+        const path = rawPath === '' ? '' : String(rawPath);
+        const id = getMenuId(menu);
+        if (key) map.set(key, parent);
+        if (path && path !== key) map.set(path, parent);
+        if (id && id !== key && id !== path) map.set(id, parent);
         if (menu.children?.length) {
           visit(menu.children, id || parent);
         }
@@ -882,7 +962,7 @@ export function SidebarMenu() {
             : undefined;
           return (
           <MenuItemComponent
-            key={item.key}
+            key={getMenuId(item)}
             item={item}
             level={0}
             collapsed={collapsed}
@@ -890,8 +970,8 @@ export function SidebarMenu() {
             expandedKeys={expandedKeys}
             activeKey={activeKey}
             activeParentSet={activeParentSet}
-            isActive={item.key === activeKey || item.path === activeKey}
-            hasActiveChild={activeParentSet.has(item.key || item.path || '')}
+            isActive={isMenuActive(item, activeKey)}
+            hasActiveChild={activeParentSet.has(getMenuId(item))}
             onToggleExpand={toggleExpand}
             onSelect={handleSelect}
             onShowPopup={showPopupMenu}

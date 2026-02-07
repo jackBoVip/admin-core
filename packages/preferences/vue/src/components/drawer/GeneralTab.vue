@@ -54,6 +54,14 @@ const configs = computed(() => ({
   // 基础设置
   language: getConfig('language'),
   dynamicTitle: getConfig('dynamicTitle'),
+  // 版权设置
+  copyright: getConfig('copyright'),
+  copyrightEnable: getConfig('copyright', 'enable'),
+  copyrightCompanyName: getConfig('copyright', 'companyName'),
+  copyrightCompanySiteLink: getConfig('copyright', 'companySiteLink'),
+  copyrightDate: getConfig('copyright', 'date'),
+  copyrightIcp: getConfig('copyright', 'icp'),
+  copyrightIcpLink: getConfig('copyright', 'icpLink'),
   // 锁屏设置
   lockScreen: getConfig('lockScreen'),
   lockScreenEnable: getConfig('lockScreen', 'enable'),
@@ -130,6 +138,42 @@ const dynamicTitle = computed({
   set: (value: boolean) => setPreferences({ app: { dynamicTitle: value } }),
 });
 
+const footerEnable = computed(() => preferences.value?.footer.enable ?? D.footer.enable);
+
+const copyrightSettingShow = computed(
+  () => preferences.value?.copyright.settingShow ?? D.copyright.settingShow
+);
+
+const copyrightEnable = computed({
+  get: () => preferences.value?.copyright.enable ?? D.copyright.enable,
+  set: (value: boolean) => setPreferences({ copyright: { enable: value } }),
+});
+
+const copyrightCompanyName = computed({
+  get: () => preferences.value?.copyright.companyName ?? D.copyright.companyName,
+  set: (value: string) => setPreferences({ copyright: { companyName: value } }),
+});
+
+const copyrightCompanySiteLink = computed({
+  get: () => preferences.value?.copyright.companySiteLink ?? D.copyright.companySiteLink,
+  set: (value: string) => setPreferences({ copyright: { companySiteLink: value } }),
+});
+
+const copyrightDate = computed({
+  get: () => preferences.value?.copyright.date ?? D.copyright.date,
+  set: (value: string) => setPreferences({ copyright: { date: value } }),
+});
+
+const copyrightIcp = computed({
+  get: () => preferences.value?.copyright.icp ?? D.copyright.icp,
+  set: (value: string) => setPreferences({ copyright: { icp: value } }),
+});
+
+const copyrightIcpLink = computed({
+  get: () => preferences.value?.copyright.icpLink ?? D.copyright.icpLink,
+  set: (value: string) => setPreferences({ copyright: { icpLink: value } }),
+});
+
 const watermark = computed({
   get: () => preferences.value?.app.watermark ?? D.app.watermark,
   set: (value: boolean) => setPreferences({ app: { watermark: value } }),
@@ -183,6 +227,7 @@ const autoLockTime = computed({
 });
 
 const hasPassword = computed(() => !!preferences.value?.lockScreen.password);
+const copyrightItemDisabled = computed(() => !footerEnable.value || !copyrightEnable.value);
 
 // 清空密码（带错误处理）
 const clearPassword = () => {
@@ -309,6 +354,49 @@ const handleTransitionOptionActivate = (e: Event) => {
         :disabled="configs.watermarkFontSize.disabled"
       />
     </template>
+  </Block>
+
+  <!-- 版权设置 -->
+  <Block
+    v-if="configs.copyright.visible && copyrightSettingShow"
+    :title="locale.copyright.title"
+  >
+    <SwitchItem
+      v-if="configs.copyrightEnable.visible"
+      v-model="copyrightEnable"
+      :label="locale.copyright.enable"
+      :disabled="!footerEnable || configs.copyrightEnable.disabled"
+    />
+    <InputItem
+      v-if="configs.copyrightCompanyName.visible"
+      v-model="copyrightCompanyName"
+      :label="locale.copyright.companyName"
+      :disabled="copyrightItemDisabled || configs.copyrightCompanyName.disabled"
+    />
+    <InputItem
+      v-if="configs.copyrightCompanySiteLink.visible"
+      v-model="copyrightCompanySiteLink"
+      :label="locale.copyright.companySiteLink"
+      :disabled="copyrightItemDisabled || configs.copyrightCompanySiteLink.disabled"
+    />
+    <InputItem
+      v-if="configs.copyrightDate.visible"
+      v-model="copyrightDate"
+      :label="locale.copyright.date"
+      :disabled="copyrightItemDisabled || configs.copyrightDate.disabled"
+    />
+    <InputItem
+      v-if="configs.copyrightIcp.visible"
+      v-model="copyrightIcp"
+      :label="locale.copyright.icp"
+      :disabled="copyrightItemDisabled || configs.copyrightIcp.disabled"
+    />
+    <InputItem
+      v-if="configs.copyrightIcpLink.visible"
+      v-model="copyrightIcpLink"
+      :label="locale.copyright.icpLink"
+      :disabled="copyrightItemDisabled || configs.copyrightIcpLink.disabled"
+    />
   </Block>
 
   <!-- 动画设置 -->

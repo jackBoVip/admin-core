@@ -30,6 +30,7 @@ const locale: LayoutLocale = {
     header: {
       title: 'Header',
       toggleSidebar: 'Toggle Sidebar',
+      menuLauncher: 'Menu',
       search: 'Search',
       searchPlaceholder: 'Enter keywords to search...',
       refresh: 'Refresh',
@@ -68,6 +69,8 @@ const locale: LayoutLocale = {
         closeAll: 'Close All',
         closeLeft: 'Close Left',
         closeRight: 'Close Right',
+        maximize: 'Maximize',
+        restoreMaximize: 'Restore',
         pin: 'Pin',
         unpin: 'Unpin',
         openInNewWindow: 'Open in New Window',

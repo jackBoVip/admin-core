@@ -2,8 +2,8 @@
  * 防抖值管理 Composable
  * @description 用于 InputItem、SliderItem 等组件，避免频繁更新
  */
-import { ref, watch, onUnmounted, type Ref } from 'vue';
 import { createDebouncedCallback } from '@admin-core/preferences';
+import { ref, watch, onUnmounted, type Ref } from 'vue';
 
 export interface UseDebouncedValueOptions<T> {
   /** 外部模型值 */

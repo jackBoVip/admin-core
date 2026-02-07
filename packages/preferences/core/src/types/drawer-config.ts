@@ -89,6 +89,8 @@ export interface LayoutTabConfig extends FeatureItemConfig {
       enable?: FeatureItemConfig;
       /** 顶栏模式 */
       mode?: FeatureItemConfig;
+      /** 菜单对齐 */
+      menuAlign?: FeatureItemConfig;
       /** 菜单启动器 */
       menuLauncher?: FeatureItemConfig;
     };
@@ -98,10 +100,24 @@ export interface LayoutTabConfig extends FeatureItemConfig {
     items?: {
       /** 启用标签栏 */
       enable?: FeatureItemConfig;
+      /** 持久化标签页 */
+      persist?: FeatureItemConfig;
+      /** 页面缓存 */
+      keepAlive?: FeatureItemConfig;
+      /** 最大标签数 */
+      maxCount?: FeatureItemConfig;
       /** 显示图标 */
       showIcon?: FeatureItemConfig;
+      /** 显示更多按钮 */
+      showMore?: FeatureItemConfig;
+      /** 显示最大化按钮 */
+      showMaximize?: FeatureItemConfig;
       /** 可拖拽排序 */
       draggable?: FeatureItemConfig;
+      /** 启用滚轮响应 */
+      wheelable?: FeatureItemConfig;
+      /** 中键关闭 */
+      middleClickToClose?: FeatureItemConfig;
       /** 标签样式 */
       styleType?: FeatureItemConfig;
     };
@@ -129,6 +145,8 @@ export interface LayoutTabConfig extends FeatureItemConfig {
     items?: {
       /** 全屏按钮 */
       fullscreen?: FeatureItemConfig;
+      /** 全局搜索 */
+      globalSearch?: FeatureItemConfig;
       /** 主题切换 */
       themeToggle?: FeatureItemConfig;
       /** 语言切换 */
@@ -145,6 +163,23 @@ export interface GeneralTabConfig extends FeatureItemConfig {
   language?: FeatureBlockConfig;
   /** 动态标题区块 */
   dynamicTitle?: FeatureBlockConfig;
+  /** 版权区块 */
+  copyright?: FeatureBlockConfig & {
+    items?: {
+      /** 启用版权 */
+      enable?: FeatureItemConfig;
+      /** 公司名称 */
+      companyName?: FeatureItemConfig;
+      /** 公司网站链接 */
+      companySiteLink?: FeatureItemConfig;
+      /** 版权年份 */
+      date?: FeatureItemConfig;
+      /** ICP 备案号 */
+      icp?: FeatureItemConfig;
+      /** ICP 链接 */
+      icpLink?: FeatureItemConfig;
+    };
+  };
   /** 锁屏区块 */
   lockScreen?: FeatureBlockConfig & {
     items?: {

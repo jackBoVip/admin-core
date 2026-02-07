@@ -45,7 +45,7 @@ export function useTimer() {
    * @param id - 定时器 ID
    */
   function clearTimeout_(id: ReturnType<typeof setTimeout> | null | undefined): void {
-    if (id != null) {
+    if (id !== null && id !== undefined) {
       clearTimeout(id);
       timers.value.delete(id);
     }
@@ -56,7 +56,7 @@ export function useTimer() {
    * @param id - 定时器 ID
    */
   function clearInterval_(id: ReturnType<typeof setInterval> | null | undefined): void {
-    if (id != null) {
+    if (id !== null && id !== undefined) {
       clearInterval(id);
       intervals.value.delete(id);
     }

@@ -3,10 +3,10 @@
  * @description 提供统一的 action 实例管理，避免 Vue/React 重复实现
  */
 
-import type { PreferencesManager } from '../manager';
+import { createLayoutActions, type LayoutActions } from './layout';
 import { createPreferencesActions, type PreferencesActions } from './preferences';
 import { createThemeActions, type ThemeActions } from './theme';
-import { createLayoutActions, type LayoutActions } from './layout';
+import type { PreferencesManager } from '../manager';
 
 /**
  * Action 工厂返回类型

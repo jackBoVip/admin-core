@@ -1,6 +1,6 @@
+import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
 import { computed, onMounted, onUnmounted } from 'vue';
 import { usePreferences } from './use-preferences';
-import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
 
 /**
  * 锁屏 Composable

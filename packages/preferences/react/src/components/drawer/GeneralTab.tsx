@@ -42,6 +42,14 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
     // 基础设置
     language: getConfig('language'),
     dynamicTitle: getConfig('dynamicTitle'),
+    // 版权设置
+    copyright: getConfig('copyright'),
+    copyrightEnable: getConfig('copyright', 'enable'),
+    copyrightCompanyName: getConfig('copyright', 'companyName'),
+    copyrightCompanySiteLink: getConfig('copyright', 'companySiteLink'),
+    copyrightDate: getConfig('copyright', 'date'),
+    copyrightIcp: getConfig('copyright', 'icp'),
+    copyrightIcpLink: getConfig('copyright', 'icpLink'),
     // 锁屏设置
     lockScreen: getConfig('lockScreen'),
     lockScreenEnable: getConfig('lockScreen', 'enable'),
@@ -125,6 +133,30 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
     setPreferences({ app: { watermarkFontSize: v } });
   }, [setPreferences]);
 
+  const handleSetCopyrightEnable = useCallback((v: boolean) => {
+    setPreferences({ copyright: { enable: v } });
+  }, [setPreferences]);
+
+  const handleSetCopyrightCompanyName = useCallback((v: string) => {
+    setPreferences({ copyright: { companyName: v } });
+  }, [setPreferences]);
+
+  const handleSetCopyrightCompanySiteLink = useCallback((v: string) => {
+    setPreferences({ copyright: { companySiteLink: v } });
+  }, [setPreferences]);
+
+  const handleSetCopyrightDate = useCallback((v: string) => {
+    setPreferences({ copyright: { date: v } });
+  }, [setPreferences]);
+
+  const handleSetCopyrightIcp = useCallback((v: string) => {
+    setPreferences({ copyright: { icp: v } });
+  }, [setPreferences]);
+
+  const handleSetCopyrightIcpLink = useCallback((v: string) => {
+    setPreferences({ copyright: { icpLink: v } });
+  }, [setPreferences]);
+
   // 动画设置处理器
   const handleSetTransitionEnable = useCallback((v: boolean) => {
     setPreferences({ transition: { enable: v } });
@@ -194,6 +226,9 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
     () => animationOptions.slice(0, transitionRenderCount),
     [animationOptions, transitionRenderCount]
   );
+  const footerEnable = preferences.footer.enable;
+  const copyrightSettingShow = preferences.copyright.settingShow;
+  const copyrightItemDisabled = !footerEnable || !preferences.copyright.enable;
 
   return (
     <>
@@ -312,6 +347,60 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
                 />
               )}
             </>
+          )}
+        </Block>
+      )}
+
+      {/* 版权设置 */}
+      {configs.copyright.visible && copyrightSettingShow && (
+        <Block title={locale.copyright.title}>
+          {configs.copyrightEnable.visible && (
+            <SwitchItem
+              label={locale.copyright.enable}
+              checked={preferences.copyright.enable}
+              onChange={handleSetCopyrightEnable}
+              disabled={!footerEnable || configs.copyrightEnable.disabled}
+            />
+          )}
+          {configs.copyrightCompanyName.visible && (
+            <InputItem
+              label={locale.copyright.companyName}
+              value={preferences.copyright.companyName}
+              onChange={handleSetCopyrightCompanyName}
+              disabled={copyrightItemDisabled || configs.copyrightCompanyName.disabled}
+            />
+          )}
+          {configs.copyrightCompanySiteLink.visible && (
+            <InputItem
+              label={locale.copyright.companySiteLink}
+              value={preferences.copyright.companySiteLink}
+              onChange={handleSetCopyrightCompanySiteLink}
+              disabled={copyrightItemDisabled || configs.copyrightCompanySiteLink.disabled}
+            />
+          )}
+          {configs.copyrightDate.visible && (
+            <InputItem
+              label={locale.copyright.date}
+              value={preferences.copyright.date}
+              onChange={handleSetCopyrightDate}
+              disabled={copyrightItemDisabled || configs.copyrightDate.disabled}
+            />
+          )}
+          {configs.copyrightIcp.visible && (
+            <InputItem
+              label={locale.copyright.icp}
+              value={preferences.copyright.icp}
+              onChange={handleSetCopyrightIcp}
+              disabled={copyrightItemDisabled || configs.copyrightIcp.disabled}
+            />
+          )}
+          {configs.copyrightIcpLink.visible && (
+            <InputItem
+              label={locale.copyright.icpLink}
+              value={preferences.copyright.icpLink}
+              onChange={handleSetCopyrightIcpLink}
+              disabled={copyrightItemDisabled || configs.copyrightIcpLink.disabled}
+            />
           )}
         </Block>
       )}

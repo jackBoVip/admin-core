@@ -101,6 +101,16 @@ export {
   type ThemePreferences,
   type TransitionPreferences,
   type WidgetPreferences,
+  // Drawer UI Config Types
+  type FeatureItemConfig,
+  type FeatureBlockConfig,
+  type AppearanceTabConfig,
+  type LayoutTabConfig,
+  type GeneralTabConfig,
+  type ShortcutKeysTabConfig,
+  type HeaderActionsConfig,
+  type FooterActionsConfig,
+  type PreferencesDrawerUIConfig,
   // Core Constants
   BUILT_IN_THEME_PRESETS,
   COLOR_PRESETS,
@@ -234,8 +244,8 @@ export {
 } from '@admin-core/layout';
 
 // Vue 插件
-import type { App } from 'vue';
 import { BasicLayout } from './components';
+import type { App } from 'vue';
 
 export interface LayoutPluginOptions {
   /** 组件前缀 */

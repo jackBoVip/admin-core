@@ -7,11 +7,13 @@
  * - 点击无子菜单项直接导航
  */
 
+import { createPortal } from 'react-dom';
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
-import { useLayoutContext } from '../../hooks';
+import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
-import type { MenuItem } from '@admin-core/layout';
 import { renderIcon as renderIconByType } from '../../utils/icon-renderer';
+import { renderLayoutIcon } from '../../utils';
+import type { MenuItem } from '@admin-core/layout';
 
 interface MixedSidebarMenuProps {
   onRootMenuChange?: (menu: MenuItem | null) => void;
@@ -22,6 +24,8 @@ interface MixedSidebarMenuProps {
  */
 export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   const context = useLayoutContext();
+  const computed = useLayoutComputed();
+  const [layoutState, setLayoutState] = useLayoutState();
   const { extraVisible, setExtraVisible, layoutComputed } = useSidebarState();
   const { activeKey, handleSelect } = useMenuState();
   
@@ -29,19 +33,86 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   const logoConfig = useMemo(() => context.props.logo || {}, [context.props.logo]);
   // 主题（考虑 semiDarkSidebar）
   const theme = useMemo(() => layoutComputed?.sidebarTheme || 'light', [layoutComputed?.sidebarTheme]);
+  const isHeaderMixedNav = computed.isHeaderMixedNav;
 
   // 菜单数据
   const menus = useMemo<MenuItem[]>(
     () => context.props.menus || [],
     [context.props.menus]
   );
-  const rootMenus = useMemo(() => {
-    const result: MenuItem[] = [];
+  const getMenuId = useCallback((menu: MenuItem) => {
+    const id = menu.key ?? menu.path ?? menu.name ?? '';
+    return id === '' ? '' : String(id);
+  }, []);
+  const normalizeKey = useCallback((value: unknown) => {
+    if (value == null || value === '') return '';
+    return String(value);
+  }, []);
+  const menuMatchesKey = useCallback((menu: MenuItem, key: string) => {
+    const target = normalizeKey(key);
+    if (!target) return false;
+    const menuKey = normalizeKey(menu.key ?? '');
+    const menuPath = normalizeKey(menu.path ?? '');
+    const menuId = normalizeKey(getMenuId(menu));
+    return (
+      (menuKey && menuKey === target) ||
+      (menuPath && menuPath === target) ||
+      (menuId && menuId === target)
+    );
+  }, [normalizeKey, getMenuId]);
+  const menuContainsKey = useCallback((menu: MenuItem, key: string) => {
+    if (menuMatchesKey(menu, key)) return true;
+    if (!menu.children?.length) return false;
+    const stack = [...menu.children];
+    while (stack.length > 0) {
+      const item = stack.pop();
+      if (!item) continue;
+      if (menuMatchesKey(item, key)) return true;
+      if (item.children?.length) {
+        for (let i = item.children.length - 1; i >= 0; i -= 1) {
+          stack.push(item.children[i]);
+        }
+      }
+    }
+    return false;
+  }, [menuMatchesKey]);
+  const findRootMenuByKey = useCallback((key: string) => {
+    if (!key) return null;
     for (const item of menus) {
+      if (item.hidden) continue;
+      if (menuContainsKey(item, key)) return item;
+    }
+    return null;
+  }, [menus, menuContainsKey]);
+  const headerMixedRootMenu = useMemo(() => {
+    if (!isHeaderMixedNav) return null;
+    const candidateKey = layoutState.mixedNavRootKey || activeKey;
+    let root = candidateKey ? findRootMenuByKey(candidateKey) : null;
+    if (!root) {
+      for (const item of menus) {
+        if (!item.hidden) {
+          root = item;
+          break;
+        }
+      }
+    }
+    return root;
+  }, [isHeaderMixedNav, layoutState.mixedNavRootKey, activeKey, findRootMenuByKey, menus]);
+  useEffect(() => {
+    if (!isHeaderMixedNav) return;
+    if (!headerMixedRootMenu) return;
+    const rootKey = normalizeKey(headerMixedRootMenu.key ?? headerMixedRootMenu.path ?? '');
+    if (!rootKey || rootKey === layoutState.mixedNavRootKey) return;
+    setLayoutState((prev) => ({ ...prev, mixedNavRootKey: rootKey }));
+  }, [isHeaderMixedNav, headerMixedRootMenu, normalizeKey, layoutState.mixedNavRootKey, setLayoutState]);
+  const rootMenus = useMemo(() => {
+    const source = isHeaderMixedNav ? (headerMixedRootMenu?.children ?? []) : menus;
+    const result: MenuItem[] = [];
+    for (const item of source) {
       if (!item.hidden) result.push(item);
     }
     return result;
-  }, [menus]);
+  }, [isHeaderMixedNav, headerMixedRootMenu, menus]);
   const rootNavRef = useRef<HTMLElement>(null);
   const [rootScrollTop, setRootScrollTop] = useState(0);
   const [rootViewportHeight, setRootViewportHeight] = useState(0);
@@ -80,19 +151,22 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     const map = new Map<string, string | null>();
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
-        const keyPath = menu.key || '';
-        const path = menu.path || '';
-        const id = keyPath || path || '';
+        const rawKey = menu.key ?? '';
+        const keyPath = rawKey === '' ? '' : String(rawKey);
+        const rawPath = menu.path ?? '';
+        const path = rawPath === '' ? '' : String(rawPath);
+        const id = getMenuId(menu);
         if (keyPath) map.set(keyPath, parent);
         if (path && path !== keyPath) map.set(path, parent);
+        if (id && id !== keyPath && id !== path) map.set(id, parent);
         if (menu.children?.length) {
           visit(menu.children, id || parent);
         }
       }
     };
-    visit(menus, null);
+    visit(rootMenus, null);
     return map;
-  }, [menus]);
+  }, [rootMenus, getMenuId]);
 
   const activeParentSet = useMemo(() => {
     const parentSet = new Set<string>();
@@ -114,22 +188,49 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     onRootMenuChange?.(selectedRootMenu);
   }, [selectedRootMenu, onRootMenuChange]);
 
+  const lastSyncRef = useRef<{ key: string | null; menus: MenuItem[] | null }>({
+    key: null,
+    menus: null,
+  });
+
   // 根据当前路径自动选中一级菜单，并记录激活的子菜单
   useEffect(() => {
-    if (!activeKey || !menus.length) return;
+    if (!rootMenus.length) {
+      if (selectedRootMenu) {
+        setSelectedRootMenu(null);
+      }
+      if (extraVisible) {
+        setExtraVisible(false);
+      }
+      return;
+    }
+    const syncKey = activeKey || '';
+    if (lastSyncRef.current.key === syncKey && lastSyncRef.current.menus === rootMenus) {
+      return;
+    }
+    lastSyncRef.current = { key: syncKey, menus: rootMenus };
 
     let rootMenu: MenuItem | undefined;
-    for (const item of menus) {
-      const menuId = item.key || item.path || '';
-      const isActive = item.key === activeKey || item.path === activeKey;
+    for (const item of rootMenus) {
+      const menuId = getMenuId(item);
+      const rawKey = item.key ?? '';
+      const key = rawKey === '' ? '' : String(rawKey);
+      const rawPath = item.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
+      const isActive = menuId === activeKey || key === activeKey || path === activeKey;
       const hasActiveChild = menuId ? activeParentSet.has(menuId) : false;
       if (isActive || hasActiveChild) {
         rootMenu = item;
         break;
       }
     }
+    if (!rootMenu) {
+      rootMenu = rootMenus[0];
+    }
     if (rootMenu) {
-      if (selectedRootMenu?.key !== rootMenu.key) {
+      const currentId = selectedRootMenu ? getMenuId(selectedRootMenu) : '';
+      const nextId = getMenuId(rootMenu);
+      if (currentId !== nextId) {
         setSelectedRootMenu(rootMenu);
       }
       const nextExtraVisible = !!(rootMenu.children && rootMenu.children.length > 0);
@@ -137,27 +238,29 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
         setExtraVisible(nextExtraVisible);
       }
       // 记录该一级菜单最后激活的子菜单
-      if (rootMenu.children?.length) {
-        lastActiveSubMenuMapRef.current.set(rootMenu.key, activeKey);
+      if (rootMenu.children?.length && activeKey) {
+        lastActiveSubMenuMapRef.current.set(getMenuId(rootMenu), activeKey);
       }
     }
-  }, [activeKey, menus, activeParentSet, selectedRootMenu?.key, extraVisible, setExtraVisible]);
-
-  const rootMenuMap = useMemo(() => {
-    const map = new Map<string, MenuItem>();
-    rootMenus.forEach((item) => map.set(item.key, item));
-    return map;
-  }, [rootMenus]);
+  }, [activeKey, rootMenus, activeParentSet, extraVisible, setExtraVisible, getMenuId, selectedRootMenu]);
 
   const handleRootMenuEnter = useCallback((item: MenuItem) => {
-    setSelectedRootMenu((prev) => (prev?.key === item.key ? prev : item));
+    setSelectedRootMenu((prev) => {
+      const prevId = prev ? getMenuId(prev) : '';
+      const nextId = getMenuId(item);
+      return prevId === nextId ? prev : item;
+    });
     if (item.children?.length && !extraVisible) {
       setExtraVisible(true);
     }
-  }, [extraVisible, setExtraVisible]);
+  }, [extraVisible, setExtraVisible, getMenuId]);
 
   const handleRootMenuClick = useCallback((item: MenuItem) => {
-    setSelectedRootMenu((prev) => (prev?.key === item.key ? prev : item));
+    setSelectedRootMenu((prev) => {
+      const prevId = prev ? getMenuId(prev) : '';
+      const nextId = getMenuId(item);
+      return prevId === nextId ? prev : item;
+    });
 
     if (item.children?.length) {
       if (!extraVisible) {
@@ -166,35 +269,28 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
       // 自动激活子菜单：优先使用上次记录的，否则使用第一个
       const autoActivateChild = context.props.sidebar?.autoActivateChild ?? true;
       if (autoActivateChild) {
-        const lastActivePath = lastActiveSubMenuMapRef.current.get(item.key);
-        const firstChildPath = item.children[0]?.path || item.children[0]?.key;
-        const targetPath = lastActivePath || firstChildPath;
-        if (targetPath && targetPath !== activeKey) {
-          handleSelect(targetPath);
+        const lastActivePath = lastActiveSubMenuMapRef.current.get(getMenuId(item));
+        const firstChildPath = item.children[0]?.path ?? item.children[0]?.key;
+        const targetPath = lastActivePath ?? firstChildPath;
+        const normalizedTarget = targetPath === '' || targetPath == null ? '' : String(targetPath);
+        if (normalizedTarget && normalizedTarget !== activeKey) {
+          handleSelect(normalizedTarget);
         }
       }
-    } else if (item.path) {
-      handleSelect(item.key);
+    } else if (item.path || item.key) {
+      const target = item.key ?? item.path;
+      const normalizedTarget = target === '' || target == null ? '' : String(target);
+      if (normalizedTarget) handleSelect(normalizedTarget);
     }
-  }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey]);
+  }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey, getMenuId]);
 
-  const handleRootMenuMouseEnter = useCallback((e: React.MouseEvent) => {
-    const key = (e.currentTarget as HTMLElement).dataset.key;
-    if (!key) return;
-    const item = rootMenuMap.get(key);
-    if (item) {
-      handleRootMenuEnter(item);
-    }
-  }, [rootMenuMap, handleRootMenuEnter]);
+  const handleRootMenuMouseEnter = useCallback((item: MenuItem) => {
+    handleRootMenuEnter(item);
+  }, [handleRootMenuEnter]);
 
-  const handleRootMenuItemClick = useCallback((e: React.MouseEvent) => {
-    const key = (e.currentTarget as HTMLElement).dataset.key;
-    if (!key) return;
-    const item = rootMenuMap.get(key);
-    if (item) {
-      handleRootMenuClick(item);
-    }
-  }, [rootMenuMap, handleRootMenuClick]);
+  const handleRootMenuItemClick = useCallback((item: MenuItem) => {
+    handleRootMenuClick(item);
+  }, [handleRootMenuClick]);
 
   useEffect(() => {
     const container = rootNavRef.current;
@@ -283,7 +379,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
 
   // 渲染 Logo
   const renderLogo = () => {
-    if (logoConfig.enable === false) return null;
+    if (logoConfig.enable === false || isHeaderMixedNav) return null;
     
     const logoSrc = theme === 'dark' && logoConfig.sourceDark 
       ? logoConfig.sourceDark 
@@ -320,24 +416,28 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
         <div style={{ height: `${rootTotalHeight}px`, pointerEvents: 'none' }} />
         {visibleRootMenus.map((item, index) => {
           const actualIndex = rootStartIndex + index;
-          const menuId = item.key || item.path || '';
+          const menuId = getMenuId(item);
+          const rawKey = item.key ?? '';
+          const key = rawKey === '' ? '' : String(rawKey);
+          const rawPath = item.path ?? '';
+          const path = rawPath === '' ? '' : String(rawPath);
           const isActive =
-            selectedRootMenu?.key === item.key ||
-            item.key === activeKey ||
-            item.path === activeKey ||
+            (selectedRootMenu ? getMenuId(selectedRootMenu) : '') === menuId ||
+            menuId === activeKey ||
+            key === activeKey ||
+            path === activeKey ||
             (menuId ? activeParentSet.has(menuId) : false);
           return (
             <div
-              key={item.key}
+              key={menuId || item.key || item.name}
               className={`mixed-sidebar-menu__root-item data-active:text-foreground data-disabled:opacity-50 ${
                 isActive ? 'mixed-sidebar-menu__root-item--active' : ''
               }`}
               data-state={isActive ? 'active' : 'inactive'}
               data-disabled={item.disabled ? 'true' : undefined}
-              data-key={item.key}
               title={item.name}
-              onMouseEnter={handleRootMenuMouseEnter}
-              onClick={handleRootMenuItemClick}
+              onMouseEnter={() => handleRootMenuMouseEnter(item)}
+              onClick={() => handleRootMenuItemClick(item)}
               style={{
                 position: 'absolute',
                 top: `${actualIndex * rootItemHeight}px`,
@@ -366,6 +466,7 @@ interface MixedSidebarSubMenuProps {
   pinned?: boolean;
   showCollapseBtn?: boolean;
   showPinBtn?: boolean;
+  theme?: string;
   onSelect?: (key: string) => void;
   onCollapse?: () => void;
   onTogglePin?: () => void;
@@ -379,19 +480,29 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   pinned = true,
   showCollapseBtn = true,
   showPinBtn = true,
+  theme,
   onSelect,
   onCollapse,
   onTogglePin,
 }: MixedSidebarSubMenuProps) {
+  const context = useLayoutContext();
   const SUB_RENDER_CHUNK = 80;
   const [subRenderCount, setSubRenderCount] = useState(SUB_RENDER_CHUNK);
   const navRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const popupAnchorRef = useRef<HTMLElement | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [subItemHeight, setSubItemHeight] = useState(40);
   const SUB_OVERSCAN = 4;
   const subResizeObserverRef = useRef<ResizeObserver | null>(null);
   const subItemResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const getMenuId = useCallback((menu: MenuItem) => {
+    const id = menu.key ?? menu.path ?? menu.name ?? '';
+    return id === '' ? '' : String(id);
+  }, []);
+  const popupTheme = theme || 'light';
 
   useEffect(() => {
     const nextCount = collapsed
@@ -427,7 +538,8 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     while (stack.length > 0) {
       const current = stack.pop();
       if (!current) continue;
-      map.set(current.key, current);
+      const id = getMenuId(current);
+      if (id) map.set(id, current);
       if (current.children?.length) {
         for (let i = current.children.length - 1; i >= 0; i -= 1) {
           stack.push(current.children[i]);
@@ -435,7 +547,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       }
     }
     return map;
-  }, [menus]);
+  }, [menus, getMenuId]);
 
   const toggleExpand = useCallback((key: string) => {
     if (!menuItemMap.has(key)) return;
@@ -464,11 +576,14 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     const map = new Map<string, string | null>();
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
-        const keyPath = menu.key || '';
-        const path = menu.path || '';
-        const id = keyPath || path || '';
+        const rawKey = menu.key ?? '';
+        const keyPath = rawKey === '' ? '' : String(rawKey);
+        const rawPath = menu.path ?? '';
+        const path = rawPath === '' ? '' : String(rawPath);
+        const id = getMenuId(menu);
         if (keyPath) map.set(keyPath, parent);
         if (path && path !== keyPath) map.set(path, parent);
+        if (id && id !== keyPath && id !== path) map.set(id, parent);
         if (menu.children?.length) {
           visit(menu.children, id || parent);
         }
@@ -493,15 +608,85 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     return parentSet;
   }, [activeKey, parentPathMap]);
 
-  const handleClick = useCallback(
-    (item: MenuItem) => {
-      if (item.children?.length) {
-        toggleExpand(item.key);
-      } else {
-        onSelect?.(item.key);
+  const [popupState, setPopupState] = useState<{
+    visible: boolean;
+    item: MenuItem | null;
+    top: number;
+    left: number;
+  }>({ visible: false, item: null, top: 0, left: 0 });
+
+  const hidePopupMenu = useCallback(() => {
+    setPopupState((prev) => (prev.visible ? { ...prev, visible: false, item: null } : prev));
+    popupAnchorRef.current = null;
+  }, []);
+
+  const buildPopupExpandedKeys = useCallback((root: MenuItem) => {
+    const keys = new Set<string>();
+    if (!root.children?.length) return keys;
+    const stack = [...root.children].reverse();
+    while (stack.length > 0) {
+      const child = stack.pop();
+      if (!child) continue;
+      const childId = getMenuId(child);
+      const isActive = childId === activeKey;
+      if ((childId && activeParentSet.has(childId)) || isActive) {
+        keys.add(childId);
+        if (child.children?.length) {
+          for (let i = child.children.length - 1; i >= 0; i -= 1) {
+            stack.push(child.children[i]);
+          }
+        }
       }
+    }
+    return keys;
+  }, [activeKey, activeParentSet, getMenuId]);
+
+  const showPopupMenu = useCallback((item: MenuItem, event: React.MouseEvent) => {
+    const target = event.currentTarget as HTMLElement;
+    popupAnchorRef.current = target;
+    const rect = target.getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    const left = containerRect ? containerRect.right : rect.right;
+    setExpandedKeys(buildPopupExpandedKeys(item));
+    setPopupState({
+      visible: true,
+      item,
+      top: rect.top,
+      left,
+    });
+  }, [buildPopupExpandedKeys]);
+
+  const updatePopupPosition = useCallback(() => {
+    if (!popupState.visible || !popupAnchorRef.current) return;
+    const rect = popupAnchorRef.current.getBoundingClientRect();
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    const left = containerRect ? containerRect.right : rect.right;
+    setPopupState((prev) => (prev.visible ? { ...prev, top: rect.top, left } : prev));
+  }, [popupState.visible]);
+
+  const handleClick = useCallback(
+    (item: MenuItem, event?: React.MouseEvent) => {
+      const id = getMenuId(item);
+      if (item.children?.length) {
+        if (collapsed && event) {
+          if (popupState.visible && popupState.item && getMenuId(popupState.item) === id) {
+            hidePopupMenu();
+            return;
+          }
+          showPopupMenu(item, event);
+          return;
+        }
+        toggleExpand(id);
+        return;
+      }
+      const target = item.path ?? item.key ?? id;
+      const normalizedTarget = target == null || target === '' ? '' : String(target);
+      if (normalizedTarget) {
+        onSelect?.(normalizedTarget);
+      }
+      hidePopupMenu();
     },
-    [toggleExpand, onSelect]
+    [collapsed, popupState.visible, popupState.item, getMenuId, toggleExpand, onSelect, hidePopupMenu, showPopupMenu]
   );
 
   const handleItemClick = useCallback((e: React.MouseEvent) => {
@@ -509,7 +694,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     if (!key) return;
     const item = menuItemMap.get(key);
     if (item) {
-      handleClick(item);
+      handleClick(item, e);
     }
   }, [menuItemMap, handleClick]);
 
@@ -517,6 +702,10 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   const renderSubIcon = (icon: string | undefined) => {
     if (!icon) return null;
     return <span className="mixed-sidebar-submenu__icon">{renderIconByType(icon, 'sm')}</span>;
+  };
+  const renderPopupIcon = (icon: string | undefined) => {
+    if (!icon) return null;
+    return <span className="sidebar-menu__popup-icon">{renderIconByType(icon, 'sm')}</span>;
   };
 
   // 递归渲染菜单项
@@ -527,10 +716,14 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   ): React.ReactNode => {
     if (item.hidden) return null;
 
-    const menuId = item.key || item.path || '';
-    const active = item.key === activeKey || item.path === activeKey;
+    const menuId = getMenuId(item);
+    const rawKey = item.key ?? '';
+    const key = rawKey === '' ? '' : String(rawKey);
+    const rawPath = item.path ?? '';
+    const path = rawPath === '' ? '' : String(rawPath);
+    const active = menuId === activeKey || key === activeKey || path === activeKey;
     const hasChildren = Boolean(item.children?.length);
-    const expanded = expandedKeys.has(item.key);
+    const expanded = expandedKeys.has(menuId);
     const hasActive = menuId ? activeParentSet.has(menuId) : false;
 
     const itemClassName = (() => {
@@ -544,7 +737,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     })();
 
     return (
-      <div key={item.key} className="mixed-sidebar-submenu__group" style={style}>
+      <div key={menuId || item.key || item.name} className="mixed-sidebar-submenu__group" style={style}>
         <div
           className={`${itemClassName} data-active:text-primary data-disabled:opacity-50`}
           data-state={active ? 'active' : 'inactive'}
@@ -553,7 +746,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
           data-has-children={hasChildren ? 'true' : undefined}
           data-expanded={hasChildren && expanded ? 'true' : undefined}
           data-level={level}
-          data-key={item.key}
+          data-key={menuId}
           onClick={handleItemClick}
         >
           {renderSubIcon(item.icon)}
@@ -569,22 +762,87 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
               }`}
               data-expanded={expanded ? 'true' : undefined}
             >
-              <svg
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M9 18l6-6-6-6" />
-              </svg>
+              {renderLayoutIcon('menu-arrow-right', 'sm')}
             </span>
           )}
         </div>
         {/* 子菜单（折叠时不显示） */}
         {!collapsed && hasChildren && expanded && (
           <div className="mixed-sidebar-submenu__children">
-            {item.children!.map((child) => renderMenuItem(child, level + 1))}
+            {item.children?.map((child) => renderMenuItem(child, level + 1))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPopupItem = (
+    item: MenuItem,
+    level: number
+  ): React.ReactNode => {
+    if (item.hidden) return null;
+    const menuId = getMenuId(item);
+    const rawKey = item.key ?? '';
+    const key = rawKey === '' ? '' : String(rawKey);
+    const rawPath = item.path ?? '';
+    const path = rawPath === '' ? '' : String(rawPath);
+    const active = menuId === activeKey || key === activeKey || path === activeKey;
+    const hasChildren = Boolean(item.children?.length);
+    const expanded = expandedKeys.has(menuId);
+    const hasActive = menuId ? activeParentSet.has(menuId) : false;
+
+    const itemClassName = (() => {
+      const classes = [
+        'sidebar-menu__popup-item',
+        `sidebar-menu__popup-item--level-${level}`,
+      ];
+      if (active) classes.push('sidebar-menu__popup-item--active');
+      if (hasActive) classes.push('sidebar-menu__popup-item--has-active-child');
+      return classes.join(' ');
+    })();
+
+    const handlePopupClick = () => {
+      if (hasChildren) {
+        toggleExpand(menuId);
+        return;
+      }
+      const target = item.path ?? item.key ?? menuId;
+      const normalizedTarget = target == null || target === '' ? '' : String(target);
+      if (normalizedTarget) {
+        onSelect?.(normalizedTarget);
+      }
+      hidePopupMenu();
+    };
+
+    return (
+      <div key={menuId || item.key || item.name} className="sidebar-menu__popup-group">
+        <div
+          className={itemClassName}
+          data-state={active ? 'active' : 'inactive'}
+          data-disabled={item.disabled ? 'true' : undefined}
+          data-has-active-child={hasActive ? 'true' : undefined}
+          data-has-children={hasChildren ? 'true' : undefined}
+          data-expanded={hasChildren && expanded ? 'true' : undefined}
+          data-level={level}
+          data-key={menuId}
+          onClick={handlePopupClick}
+        >
+          {renderPopupIcon(item.icon)}
+          <span className="sidebar-menu__popup-name">{item.name}</span>
+          {hasChildren && (
+            <span
+              className={`sidebar-menu__popup-arrow ${
+                expanded ? 'sidebar-menu__popup-arrow--expanded' : ''
+              }`}
+              data-expanded={expanded ? 'true' : undefined}
+            >
+              {renderLayoutIcon('menu-arrow-right', 'sm')}
+            </span>
+          )}
+        </div>
+        {hasChildren && expanded && (
+          <div className="sidebar-menu__popup-submenu">
+            {item.children?.map((child) => renderPopupItem(child, level + 1))}
           </div>
         )}
       </div>
@@ -685,14 +943,68 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
   }, [collapsed, virtualTotalHeight, viewportHeight, scrollTop]);
 
+  useEffect(() => {
+    if (!popupState.visible) return;
+    const handleResize = () => updatePopupPosition();
+    const handleScroll = () => updatePopupPosition();
+    window.addEventListener('resize', handleResize);
+    const container = navRef.current;
+    container?.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      container?.removeEventListener('scroll', handleScroll);
+    };
+  }, [popupState.visible, updatePopupPosition]);
+
+  useEffect(() => {
+    if (!popupState.visible) return;
+    const handleDocClick = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (popupRef.current?.contains(target)) return;
+      if (popupAnchorRef.current?.contains(target)) return;
+      hidePopupMenu();
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') hidePopupMenu();
+    };
+    document.addEventListener('mousedown', handleDocClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleDocClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [popupState.visible, hidePopupMenu]);
+
+  useEffect(() => {
+    if (!collapsed && popupState.visible) {
+      hidePopupMenu();
+    }
+  }, [collapsed, popupState.visible, hidePopupMenu]);
+
   const containerClassName = (() => {
     const classes = ['mixed-sidebar-submenu'];
     if (collapsed) classes.push('mixed-sidebar-submenu--collapsed');
     return classes.join(' ');
   })();
 
+  const popupNode = popupState.visible && popupState.item ? (
+    <div
+      ref={popupRef}
+      className={`sidebar-menu__popup sidebar-menu__popup--${popupTheme}`}
+      data-theme={popupTheme}
+      style={{ top: `${popupState.top}px`, left: `${popupState.left}px` }}
+    >
+      <div className="sidebar-menu__popup-title">{popupState.item.name}</div>
+      <div className="sidebar-menu__popup-content">
+        {(popupState.item.children ?? []).map((child) => renderPopupItem(child, 0))}
+      </div>
+    </div>
+  ) : null;
+
   return (
     <div
+      ref={containerRef}
       className={containerClassName}
       data-collapsed={collapsed ? 'true' : undefined}
     >
@@ -702,17 +1014,9 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
           type="button"
           className="mixed-sidebar-submenu__collapse-btn"
           onClick={onCollapse}
-          title={collapsed ? '展开' : '收起'}
+          title={collapsed ? context.t('layout.common.expand') : context.t('layout.common.collapse')}
         >
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d={collapsed ? 'M13 7l5 5-5 5M6 7l5 5-5 5' : 'M11 17l-5-5 5-5m7 10l-5-5 5-5'} />
-          </svg>
+          {renderLayoutIcon(collapsed ? 'submenu-expand' : 'submenu-collapse', 'sm')}
         </button>
       )}
       {/* 固定按钮 - 右下角 */}
@@ -721,31 +1025,9 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
           type="button"
           className="mixed-sidebar-submenu__pin-btn"
           onClick={onTogglePin}
-          title={pinned ? '取消固定' : '固定'}
+          title={pinned ? context.t('layout.common.unpin') : context.t('layout.common.pin')}
         >
-          <svg
-            className="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {pinned ? (
-              <>
-                <line x1="2" x2="22" y1="2" y2="22" />
-                <line x1="12" x2="12" y1="17" y2="22" />
-                <path d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12" />
-                <path d="M15 9.34V6h1a2 2 0 0 0 0-4H7.89" />
-              </>
-            ) : (
-              <>
-                <line x1="12" x2="12" y1="17" y2="22" />
-                <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z" />
-              </>
-            )}
-          </svg>
+          {renderLayoutIcon(pinned ? 'tabbar-unpin' : 'tabbar-pin', 'sm', 'h-3.5 w-3.5')}
         </button>
       )}
       {/* 标题（折叠时隐藏） */}
@@ -770,6 +1052,9 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
           return renderMenuItem(item, 0, itemStyle);
         })}
       </nav>
+      {popupState.visible && popupNode && typeof document !== 'undefined'
+        ? createPortal(popupNode, document.body)
+        : null}
     </div>
   );
 });

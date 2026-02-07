@@ -5,6 +5,7 @@
  */
 import { computed, ref, watch, onUnmounted, nextTick } from 'vue';
 import { useLayoutContext } from '../../composables';
+import LayoutIcon from '../common/LayoutIcon.vue';
 import type { NotificationItem } from '@admin-core/layout';
 
 const context = useLayoutContext();
@@ -207,10 +208,7 @@ const handleNotificationClick = (e: MouseEvent) => {
       :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
     >
-      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-      </svg>
+      <LayoutIcon name="notification" size="sm" />
       <!-- 未读红点 -->
       <span
         v-if="hasUnread"
@@ -273,24 +271,10 @@ const handleNotificationClick = (e: MouseEvent) => {
                   'bg-red-100 text-red-500 dark:bg-red-900/30': item.type === 'error',
                 }"
               >
-                <svg v-if="item.type === 'success'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-                <svg v-else-if="item.type === 'warning'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
-                </svg>
-                <svg v-else-if="item.type === 'error'" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="m15 9-6 6" />
-                  <path d="m9 9 6 6" />
-                </svg>
-                <svg v-else class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16v-4" />
-                  <path d="M12 8h.01" />
-                </svg>
+                <LayoutIcon v-if="item.type === 'success'" name="status-success" size="sm" />
+                <LayoutIcon v-else-if="item.type === 'warning'" name="status-warning" size="sm" />
+                <LayoutIcon v-else-if="item.type === 'error'" name="status-error" size="sm" />
+                <LayoutIcon v-else name="status-info" size="sm" />
               </div>
               
               <!-- 内容 -->

@@ -3,6 +3,14 @@
  * @description 支持弹出层模式（水平/折叠）和折叠模式（垂直展开）
  */
 import {
+  useFloating,
+  offset,
+  flip,
+  shift,
+  autoUpdate,
+  type Placement,
+} from '@floating-ui/react';
+import {
   useState,
   useRef,
   useEffect,
@@ -11,16 +19,9 @@ import {
   memo,
 } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  useFloating,
-  offset,
-  flip,
-  shift,
-  autoUpdate,
-  type Placement,
-} from '@floating-ui/react';
-import { useMenuContext, useSubMenuContext, SubMenuProvider } from './use-menu-context';
 import { MenuItem as MenuItemComp } from './MenuItem';
+import { useMenuContext, useSubMenuContext, SubMenuProvider } from './use-menu-context';
+import { renderLayoutIcon } from '../../utils';
 import type { MenuItem } from '@admin-core/layout';
 
 export interface SubMenuProps {
@@ -51,28 +52,35 @@ export const SubMenu = memo(function SubMenu({
   const [popupItemHeight, setPopupItemHeight] = useState(40);
   const popupResizeObserverRef = useRef<ResizeObserver | null>(null);
   const popupItemResizeObserverRef = useRef<ResizeObserver | null>(null);
+  const [popupMounted, setPopupMounted] = useState(false);
+  const [popupVisible, setPopupVisible] = useState(false);
+  const POPUP_SLOW_DURATION = 500;
 
-  // 路径
-  const path = item.key || item.path || '';
+  const rawPath = item.key ?? item.path ?? '';
+  const path = rawPath === '' ? '' : String(rawPath);
 
   // 父级路径
   const parentPaths = useMemo(() => {
     const paths: string[] = [];
     // 简化处理，从父级上下文获取
     if (parentSubMenu) {
-      paths.push(parentSubMenu.path);
+      paths.push(String(parentSubMenu.path));
     }
     return paths;
   }, [parentSubMenu]);
 
   // 是否展开
-  const opened = menuContext.openedMenuSet.has(path);
+  const opened = path ? menuContext.openedMenuSet.has(path) : false;
 
   // 是否为弹出模式
   const isPopup = menuContext.isMenuPopup;
+  const shouldAnimatePopup = menuContext.config.mode === 'horizontal';
 
   // 是否激活（有子菜单激活）
-  const active = useMemo(() => menuContext.activeParentSet.has(path), [menuContext.activeParentSet, path]);
+  const active = useMemo(
+    () => (path ? menuContext.activeParentSet.has(path) : false),
+    [menuContext.activeParentSet, path]
+  );
 
   useEffect(() => {
     const total = item.children?.length ?? 0;
@@ -177,15 +185,45 @@ export const SubMenu = memo(function SubMenu({
     return 'right-start';
   }, [menuContext.config.mode, isFirstLevel]);
 
-  const { refs, floatingStyles } = useFloating({
+  const { refs, floatingStyles, isPositioned } = useFloating({
     placement,
     middleware: [
       offset(menuContext.config.mode === 'horizontal' && isFirstLevel ? 4 : 8),
       flip({ fallbackPlacements: ['left-start', 'top-start', 'bottom-start'] }),
       shift({ padding: 8 }),
     ],
+    open: opened,
+    transform: !shouldAnimatePopup,
     whileElementsMounted: autoUpdate,
   });
+
+  useEffect(() => {
+    if (!isPopup) {
+      if (popupMounted) setPopupMounted(false);
+      if (popupVisible) setPopupVisible(false);
+      return;
+    }
+    if (!shouldAnimatePopup) {
+      setPopupMounted(opened);
+      setPopupVisible(opened);
+      return;
+    }
+    if (opened) {
+      setPopupMounted(true);
+      return;
+    }
+    if (popupVisible) setPopupVisible(false);
+    const timer = window.setTimeout(() => setPopupMounted(false), POPUP_SLOW_DURATION);
+    return () => window.clearTimeout(timer);
+  }, [opened, isPopup, shouldAnimatePopup]);
+
+  useEffect(() => {
+    if (!shouldAnimatePopup) return;
+    if (!popupMounted) return;
+    if (!isPositioned) return;
+    const frame = requestAnimationFrame(() => setPopupVisible(true));
+    return () => cancelAnimationFrame(frame);
+  }, [popupMounted, isPositioned, shouldAnimatePopup]);
 
   // 悬停事件处理
   const handleMouseenter = useCallback(() => {
@@ -407,11 +445,7 @@ export const SubMenu = memo(function SubMenu({
               {/* 更多按钮图标 */}
               {isMore ? (
                 <span className="menu__icon menu__more-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor" width={18} height={18}>
-                    <circle cx="5" cy="12" r="2" />
-                    <circle cx="12" cy="12" r="2" />
-                    <circle cx="19" cy="12" r="2" />
-                  </svg>
+                  {renderLayoutIcon('tabbar-more', 'sm', 'text-current')}
                 </span>
               ) : (
                 <>
@@ -420,30 +454,27 @@ export const SubMenu = memo(function SubMenu({
                   )}
                   <span className="menu__name">{item.name}</span>
                   <span className="menu__arrow" style={arrowStyle}>
-                    {arrowIcon === 'down' ? (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
-                    ) : (
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                        <path d="M9 18l6-6-6-6" />
-                      </svg>
-                    )}
+                    {arrowIcon === 'down'
+                      ? renderLayoutIcon('menu-arrow-down', 'sm')
+                      : renderLayoutIcon('menu-arrow-right', 'sm')}
                   </span>
                 </>
               )}
             </div>
             
             {/* 弹出层 */}
-            {opened && createPortal(
+            {(isPopup && (shouldAnimatePopup ? popupMounted : opened)) && createPortal(
               <div
                 ref={(node) => {
                   refs.setFloating(node);
                   popupRef.current = node;
                 }}
-                className={`menu__popup menu__popup--${menuContext.config.theme} menu__popup--level-${level}`}
+                className={`menu__popup menu__popup--${menuContext.config.theme} menu__popup--level-${level} ${
+                  shouldAnimatePopup ? 'menu__popup--slow' : ''
+                }`}
                 data-theme={menuContext.config.theme}
                 data-level={level}
+                data-state={shouldAnimatePopup ? (popupVisible ? 'open' : 'closed') : 'open'}
                 style={floatingStyles}
                 onMouseEnter={handlePopupMouseenter}
                 onMouseLeave={handlePopupMouseleave}
@@ -475,9 +506,7 @@ export const SubMenu = memo(function SubMenu({
               )}
               <span className="menu__name">{item.name}</span>
               <span className="menu__arrow" style={arrowStyle}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
+                {renderLayoutIcon('menu-arrow-down', 'sm')}
               </span>
             </div>
             

@@ -76,6 +76,14 @@ export interface InputItemProps extends InputItemBaseProps {
 }
 
 /**
+ * NumberItem Props
+ */
+export interface NumberItemProps extends InputItemBaseProps {
+  /** 当前值 */
+  modelValue: number;
+}
+
+/**
  * AppearanceTab Props
  */
 export type AppearanceTabProps = TabComponentProps;

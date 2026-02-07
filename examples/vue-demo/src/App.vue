@@ -387,8 +387,7 @@ const handleSearch = (keyword: string) => {
 };
 
 const handleRefresh = () => {
-  console.log('Refresh page');
-  window.location.reload();
+  console.log('Refresh current tab');
 };
 
 const handleLockScreen = () => {
@@ -428,12 +427,6 @@ const handleLockScreen = () => {
       </router-view>
     </template>
 
-    <!-- 页脚插槽 -->
-    <template #footer-center>
-      <div class="text-center text-sm text-gray-500 py-4">
-        Copyright © 2024 Admin Core. All rights reserved.
-      </div>
-    </template>
   </BasicLayout>
 </template>
 

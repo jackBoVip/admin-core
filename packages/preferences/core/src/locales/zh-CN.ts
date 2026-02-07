@@ -155,10 +155,16 @@ export const zhCN = {
     title: '标签栏',
     enable: '启用标签栏',
     showIcon: '显示图标',
+    showMore: '显示更多按钮',
+    showMaximize: '显示最大化按钮',
     draggable: '可拖拽排序',
+    wheelable: '启用滚轮响应',
+    wheelableTip: '开启后标签栏可响应纵向滚轮滚动进行横向滚动',
+    middleClickClose: '中键关闭标签页',
     persist: '持久化标签',
     keepAlive: '页面缓存',
     maxCount: '最大标签数',
+    maxCountTip: '每次打开新的标签时如果超过最大标签数，\n会自动关闭一个最先打开的标签\n设置为 0 则不限制',
     styleType: '标签样式',
     styleChrome: 'Chrome 风格',
     styleCard: '卡片风格',
@@ -193,6 +199,17 @@ export const zhCN = {
     title: '页脚',
     enable: '启用页脚',
     fixed: '固定页脚',
+  },
+
+  // ========== 版权 ==========
+  copyright: {
+    title: '版权',
+    enable: '启用版权',
+    companyName: '公司名',
+    companySiteLink: '公司主页',
+    date: '日期',
+    icp: 'ICP 备案号',
+    icpLink: 'ICP 网站链接',
   },
 
   // ========== 过渡动画 ==========

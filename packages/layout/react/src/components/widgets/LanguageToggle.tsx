@@ -5,6 +5,7 @@
 import { useState, useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext } from '../../hooks';
+import { renderLayoutIcon } from '../../utils';
 
 interface LanguageOption {
   value: string;
@@ -61,19 +62,7 @@ export const LanguageToggle = memo(function LanguageToggle() {
           data-state={isOpen ? 'open' : 'closed'}
           onClick={handleToggleOpen}
         >
-          <svg
-            className="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-            <path d="M2 12h20" />
-          </svg>
+          {renderLayoutIcon('globe', 'sm')}
         </button>
 
         {isOpen && (

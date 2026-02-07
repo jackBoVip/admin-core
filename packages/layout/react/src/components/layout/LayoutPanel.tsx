@@ -4,6 +4,7 @@
 
 import { memo, useMemo, type ReactNode } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
+import { renderLayoutIcon } from '../../utils';
 import { usePanelState } from '../../hooks/use-layout-state';
 
 export interface LayoutPanelProps {
@@ -32,10 +33,16 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
   }, [position, collapsed]);
 
   // 样式
-  const panelStyle = useMemo(() => ({
-    width: `${width}px`,
-    top: `${computed.headerHeight}px`,
-  }), [width, computed.headerHeight]);
+  const panelStyle = useMemo(() => {
+    const style: React.CSSProperties = {
+      width: `${width}px`,
+      top: `${computed.headerHeight}px`,
+    };
+    if (position === 'left' && computed.showSidebar && !context.props.isMobile) {
+      style.left = `${computed.sidebarWidth}px`;
+    }
+    return style;
+  }, [width, computed.headerHeight, position, computed.showSidebar, computed.sidebarWidth, context.props.isMobile]);
 
   return (
     <aside
@@ -62,17 +69,13 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
                 }
                 onClick={toggle}
               >
-                <svg
-                  className={`h-4 w-4 transition-transform duration-200 ${
+                {renderLayoutIcon(
+                  'panel-collapse',
+                  'sm',
+                  `transition-transform duration-200 ${
                     position === 'left' ? (!collapsed ? 'rotate-180' : '') : collapsed ? 'rotate-180' : ''
-                  }`}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
+                  }`
+                )}
               </button>
             )}
           </div>

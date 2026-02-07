@@ -18,3 +18,4 @@ export { SwitchItem, type SwitchItemProps } from './SwitchItem';
 export { SelectItem, type SelectItemProps } from './SelectItem';
 export { SliderItem, type SliderItemProps } from './SliderItem';
 export { InputItem, type InputItemProps } from './InputItem';
+export { NumberItem, type NumberItemProps } from './NumberItem';

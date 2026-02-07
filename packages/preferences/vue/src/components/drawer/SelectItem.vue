@@ -320,7 +320,7 @@ onUnmounted(() => {
         :aria-labelledby="selectId"
         tabindex="-1"
         ref="listRef"
-        :style="{ height: `${viewportHeight}px`, position: 'relative' }"
+        :style="{ height: `${viewportHeight}px` }"
         @scroll="handleScroll"
         @wheel="handleWheel"
       >

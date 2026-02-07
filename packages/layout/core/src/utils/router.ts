@@ -67,7 +67,10 @@ export function resolveMenuNavigation(
  * 获取标签点击的目标路径
  */
 export function getTabNavigationPath(tab: TabItem, currentPath: string): string | null {
-  if (tab.path && tab.path !== currentPath) return tab.path;
+  const meta = tab.meta as Record<string, unknown> | undefined;
+  const fullPath = meta?.fullPath as string | undefined;
+  const targetPath = fullPath || tab.path;
+  if (targetPath && targetPath !== currentPath) return targetPath;
   return null;
 }
 
@@ -89,19 +92,8 @@ export function getNextTabAfterClose(
 ): TabItem | null {
   if (closedKey !== activeKey || tabs.length === 0) return null;
 
-  let closedIndex = -1;
-  for (let i = 0; i < tabs.length; i += 1) {
-    if (tabs[i].key === closedKey) {
-      closedIndex = i;
-      break;
-    }
-  }
+  const closedIndex = tabs.findIndex((tab) => tab.key === closedKey);
+  if (closedIndex === -1) return null;
 
-  if (closedIndex >= 0 && closedIndex < tabs.length) {
-    return tabs[closedIndex];
-  }
-  if (closedIndex > 0) {
-    return tabs[closedIndex - 1];
-  }
-  return tabs[0] ?? null;
+  return tabs[closedIndex + 1] ?? tabs[closedIndex - 1] ?? null;
 }

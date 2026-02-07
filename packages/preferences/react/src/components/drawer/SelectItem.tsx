@@ -310,7 +310,7 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
             ref={listRef}
             onScroll={handleScroll}
             onWheel={handleWheel}
-            style={{ height: `${viewportHeight}px`, position: 'relative' }}
+            style={{ height: `${viewportHeight}px` }}
           >
             <li
               role="presentation"

@@ -2,9 +2,8 @@
  * 页脚组件
  */
 
-import { memo, useMemo, type ReactNode } from 'react';
+import { memo, useMemo, type ReactNode, type CSSProperties } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
-import { useSidebarState } from '../../hooks/use-layout-state';
 
 export interface LayoutFooterProps {
   left?: ReactNode;
@@ -15,40 +14,42 @@ export interface LayoutFooterProps {
 export const LayoutFooter = memo(function LayoutFooter({ left, center, right }: LayoutFooterProps) {
   const context = useLayoutContext();
   const computed = useLayoutComputed();
-  const { collapsed: sidebarCollapsed } = useSidebarState();
-
   const footerConfig = context.props.footer || {};
   const copyrightConfig = context.props.copyright || {};
+  const show = !computed.isFullContent;
+  const isFixed = footerConfig.fixed;
 
   // 类名
   const footerClassName = useMemo(() => {
     const classes = ['layout-footer'];
-    if (footerConfig.fixed) classes.push('layout-footer--fixed');
-    if (computed.showSidebar && !context.props.isMobile) {
-      classes.push('layout-footer--with-sidebar');
-    }
-    if (sidebarCollapsed && !context.props.isMobile) {
-      classes.push('layout-footer--collapsed');
-    }
+    if (isFixed) classes.push('layout-footer--fixed');
     return classes.join(' ');
-  }, [footerConfig.fixed, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
+  }, [isFixed]);
 
   // 样式
-  const footerStyle = useMemo(() => ({
-    height: `${computed.footerHeight}px`,
-    left:
-      footerConfig.fixed && computed.showSidebar && !context.props.isMobile
-        ? `${computed.sidebarWidth}px`
-        : '0',
-  }), [computed.footerHeight, footerConfig.fixed, computed.showSidebar, context.props.isMobile, computed.sidebarWidth]);
+  const footerStyle = useMemo(() => {
+    const style: CSSProperties = {
+      height: `${computed.footerHeight}px`,
+      marginBottom: show ? '0' : `-${computed.footerHeight}px`,
+      position: isFixed ? 'fixed' : 'static',
+    };
+
+    if (isFixed) {
+      style.left = computed.mainStyle.marginLeft;
+      style.right = computed.mainStyle.marginRight;
+    } else {
+      style.marginLeft = computed.mainStyle.marginLeft;
+      style.marginRight = computed.mainStyle.marginRight;
+    }
+
+    return style;
+  }, [computed.footerHeight, computed.mainStyle.marginLeft, computed.mainStyle.marginRight, isFixed, show]);
 
   return (
     <footer
       className={footerClassName}
       style={footerStyle}
-      data-fixed={footerConfig.fixed ? 'true' : undefined}
-      data-with-sidebar={computed.showSidebar && !context.props.isMobile ? 'true' : undefined}
-      data-collapsed={sidebarCollapsed && !context.props.isMobile ? 'true' : undefined}
+      data-fixed={isFixed ? 'true' : undefined}
     >
       <div className="layout-footer__inner flex h-full items-center justify-between px-4">
         {/* 左侧 */}

@@ -11,9 +11,11 @@ import type { MenuItem } from '@admin-core/layout';
 import {
   hasChildren,
   getMenuItemClassName,
-  getIconDefinition,
-  getIconRenderType,
+  resolveIconMeta,
+  getMenuId,
+  isMenuActive,
 } from '@admin-core/layout';
+import LayoutIcon from '../common/LayoutIcon.vue';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -24,7 +26,74 @@ const { openKeys, activeKey, handleSelect, handleOpenChange } = useMenuState();
 const sidebarTheme = computed(() => layoutComputed.value.sidebarTheme || 'light');
 
 // 菜单数据
-const menus = computed<MenuItem[]>(() => context.props.menus || []);
+const allMenus = computed<MenuItem[]>(() => context.props.menus || []);
+const isMixedNav = computed(() => layoutComputed.value.isMixedNav);
+const normalizeKey = (value: unknown) => (value == null || value === '' ? '' : String(value));
+const menuMatchesKey = (menu: MenuItem, key: string) => {
+  const target = normalizeKey(key);
+  if (!target) return false;
+  const menuKey = normalizeKey(menu.key ?? '');
+  const menuPath = normalizeKey(menu.path ?? '');
+  const menuId = normalizeKey(getMenuId(menu));
+  return (
+    (menuKey && menuKey === target) ||
+    (menuPath && menuPath === target) ||
+    (menuId && menuId === target)
+  );
+};
+const menuContainsKey = (menu: MenuItem, key: string): boolean => {
+  if (menuMatchesKey(menu, key)) return true;
+  if (!menu.children?.length) return false;
+  const stack = [...menu.children];
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
+    if (menuMatchesKey(item, key)) return true;
+    if (item.children?.length) {
+      for (let i = item.children.length - 1; i >= 0; i -= 1) {
+        stack.push(item.children[i]);
+      }
+    }
+  }
+  return false;
+};
+const findRootMenuByKey = (key: string) => {
+  if (!key) return null;
+  for (const item of allMenus.value) {
+    if (item.hidden) continue;
+    if (menuContainsKey(item, key)) return item;
+  }
+  return null;
+};
+const derivedRootMenu = computed(() => {
+  if (!isMixedNav.value) return null;
+  const candidateKey = context.state.mixedNavRootKey || activeKey.value;
+  if (!candidateKey) return null;
+  return findRootMenuByKey(candidateKey);
+});
+const fallbackRootMenu = computed(() => {
+  if (!isMixedNav.value) return null;
+  for (const item of allMenus.value) {
+    if (!item.hidden) return item;
+  }
+  return null;
+});
+const rootMenu = computed(() => derivedRootMenu.value || fallbackRootMenu.value);
+
+watch(
+  [isMixedNav, rootMenu],
+  ([mixed, root]) => {
+    if (!mixed || !root) return;
+    const rootKey = normalizeKey(root.key ?? root.path ?? '');
+    if (!rootKey || context.state.mixedNavRootKey === rootKey) return;
+    context.state.mixedNavRootKey = rootKey;
+  },
+  { immediate: true }
+);
+
+const menus = computed<MenuItem[]>(() => {
+  return isMixedNav.value ? (rootMenu.value?.children ?? []) : allMenus.value;
+});
 const filteredMenus = computed(() => {
   const result: MenuItem[] = [];
   for (const item of menus.value) {
@@ -51,6 +120,7 @@ const popupContentTop = ref(0);
 const popupViewportHeight = ref(0);
 const popupItemHeight = ref(44);
 const POPUP_OVERSCAN = 4;
+const POPUP_VIRTUAL_MIN_ITEMS = 50;
 const popupResizeObserver = ref<ResizeObserver | null>(null);
 let popupWheelCleanup: (() => void) | null = null;
 
@@ -143,7 +213,9 @@ const popupMenu = ref<{
 const popupExpandedKeys = ref<Set<string>>(new Set());
 
 const popupChildren = computed(() => popupMenu.value.item?.children ?? []);
-const popupShouldVirtualize = computed(() => popupExpandedKeys.value.size === 0);
+const popupShouldVirtualize = computed(
+  () => popupExpandedKeys.value.size === 0 && popupChildren.value.length >= POPUP_VIRTUAL_MIN_ITEMS
+);
 const popupContentScrollTop = computed(() =>
   Math.max(0, popupScrollTop.value - popupContentTop.value)
 );
@@ -266,6 +338,18 @@ const togglePopupExpand = (key: string) => {
   }
 };
 
+const expandPopupItem = (key: string) => {
+  if (!popupMenuItemMap.value.has(key)) return;
+  if (!popupExpandedKeys.value.has(key)) {
+    popupExpandedKeys.value.add(key);
+  }
+};
+
+const handlePopupItemHover = (item: MenuItem) => {
+  if (!hasChildren(item)) return;
+  expandPopupItem(getMenuId(item));
+};
+
 // 判断菜单是否展开
 const isExpanded = (key: string) => expandedKeys.value.has(key);
 const isPopupExpanded = (key: string) => popupExpandedKeys.value.has(key);
@@ -274,11 +358,14 @@ const parentPathMap = computed(() => {
   const map = new Map<string, string | null>();
   const visit = (items: MenuItem[], parent: string | null) => {
     for (const menu of items) {
-      const keyPath = menu.key || '';
-      const path = menu.path || '';
-      const id = keyPath || path || '';
+      const id = getMenuId(menu);
+      const rawKey = menu.key ?? '';
+      const keyPath = rawKey === '' ? '' : String(rawKey);
+      const rawPath = menu.path ?? '';
+      const path = rawPath === '' ? '' : String(rawPath);
       if (keyPath) map.set(keyPath, parent);
       if (path && path !== keyPath) map.set(path, parent);
+      if (id && id !== keyPath && id !== path) map.set(id, parent);
       if (menu.children?.length) {
         visit(menu.children, id || parent);
       }
@@ -303,12 +390,11 @@ const activeParentSet = computed(() => {
 });
 
 // 判断是否激活
-const isActive = (item: MenuItem) =>
-  item.key === activeKey.value || item.path === activeKey.value;
+const isActive = (item: MenuItem) => isMenuActive(item, activeKey.value);
 
 // 判断是否有激活的子菜单
 const hasActiveChildItem = (item: MenuItem) =>
-  activeParentSet.value.has(item.key || item.path || '');
+  activeParentSet.value.has(getMenuId(item));
 
 // 处理菜单点击
 const onMenuClick = (item: MenuItem) => {
@@ -317,9 +403,9 @@ const onMenuClick = (item: MenuItem) => {
       // 折叠状态下，点击有子菜单的项不做任何操作（由悬停处理）
       return;
     }
-    toggleExpand(item.key);
+    toggleExpand(getMenuId(item));
   } else {
-    handleSelect(item.key);
+    handleSelect(getMenuId(item));
     hidePopupMenu();
   }
 };
@@ -331,7 +417,7 @@ const popupMenuItemMap = computed(() => {
   while (stack.length > 0) {
     const current = stack.pop();
     if (!current) continue;
-    map.set(current.key, current);
+    map.set(getMenuId(current), current);
     if (current.children?.length) {
       for (let i = current.children.length - 1; i >= 0; i -= 1) {
         stack.push(current.children[i]);
@@ -343,9 +429,9 @@ const popupMenuItemMap = computed(() => {
 
 const onPopupMenuClick = (item: MenuItem) => {
   if (hasChildren(item)) {
-    togglePopupExpand(item.key);
+    togglePopupExpand(getMenuId(item));
   } else {
-    handleSelect(item.key);
+    handleSelect(getMenuId(item));
     hidePopupMenu();
   }
 };
@@ -400,10 +486,10 @@ const showPopupMenu = (item: MenuItem, event: MouseEvent) => {
     while (stack.length > 0) {
       const child = stack.pop();
       if (!child) continue;
-      const childId = child.key || child.path || '';
-      const isActiveItem = child.key === activeKey.value || child.path === activeKey.value;
+      const childId = getMenuId(child);
+      const isActiveItem = isMenuActive(child, activeKey.value);
       if ((childId && activeParentSet.value.has(childId)) || isActiveItem) {
-        nextKeys.add(child.key);
+        nextKeys.add(childId);
         if (child.children?.length) {
           for (let i = child.children.length - 1; i >= 0; i -= 1) {
             stack.push(child.children[i]);
@@ -451,7 +537,7 @@ const getItemClass = (item: MenuItem, level: number) => {
   return getMenuItemClassName(item, {
     level,
     isActive: isActive(item),
-    isExpanded: isExpanded(item.key),
+    isExpanded: isExpanded(getMenuId(item)),
     hasActiveChild: hasActiveChildItem(item),
   });
 };
@@ -465,15 +551,13 @@ const getPopupItemClass = (item: MenuItem, level: number) => {
   return classes.join(' ');
 };
 
-const iconMetaCache = new Map<string, { type: ReturnType<typeof getIconRenderType>; def?: ReturnType<typeof getIconDefinition> }>();
+const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
 
 const getIconMeta = (icon: string | undefined) => {
   if (!icon) return null;
   const cached = iconMetaCache.get(icon);
   if (cached) return cached;
-  const type = getIconRenderType(icon);
-  const def = type === 'svg' ? getIconDefinition(icon) : undefined;
-  const meta = { type, def };
+  const meta = resolveIconMeta(icon);
   iconMetaCache.set(icon, meta);
   return meta;
 };
@@ -672,7 +756,7 @@ watch(popupShouldVirtualize, (enabled) => {
 <template>
   <nav ref="menuRef" class="sidebar-menu" :style="menuStyle">
     <!-- 一级菜单 -->
-    <template v-for="(item, index) in renderMenus" :key="item.key">
+    <template v-for="(item, index) in renderMenus" :key="getMenuId(item)">
       <div
         class="sidebar-menu__group"
         :style="shouldVirtualize
@@ -691,7 +775,7 @@ watch(popupShouldVirtualize, (enabled) => {
           :data-disabled="item.disabled ? 'true' : undefined"
           :data-has-active-child="hasActiveChildItem(item) ? 'true' : undefined"
           :data-has-children="hasChildren(item) ? 'true' : undefined"
-          :data-expanded="hasChildren(item) && isExpanded(item.key) ? 'true' : undefined"
+          :data-expanded="hasChildren(item) && isExpanded(getMenuId(item)) ? 'true' : undefined"
           :data-level="0"
           @click="onMenuClick(item)"
           @mouseenter="showPopupMenu(item, $event)"
@@ -719,12 +803,10 @@ watch(popupShouldVirtualize, (enabled) => {
           <span
             v-if="hasChildren(item) && (!collapsed || expandOnHovering)"
             class="sidebar-menu__arrow"
-            :class="{ 'sidebar-menu__arrow--expanded': isExpanded(item.key) }"
-            :data-expanded="isExpanded(item.key) ? 'true' : undefined"
+            :class="{ 'sidebar-menu__arrow--expanded': isExpanded(getMenuId(item)) }"
+            :data-expanded="isExpanded(getMenuId(item)) ? 'true' : undefined"
           >
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            <LayoutIcon name="menu-arrow-right" size="sm" />
           </span>
 
           <!-- 折叠状态下有子菜单时显示箭头 -->
@@ -732,15 +814,13 @@ watch(popupShouldVirtualize, (enabled) => {
             v-if="hasChildren(item) && collapsed && !expandOnHovering"
             class="sidebar-menu__arrow-right"
           >
-            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            <LayoutIcon name="menu-arrow-right" size="xs" />
           </span>
         </div>
 
         <!-- 二级菜单（展开状态） -->
-        <div v-if="hasChildren(item) && (!collapsed || expandOnHovering) && isExpanded(item.key)" class="sidebar-menu__submenu">
-          <template v-for="child in getVisibleChildren(item.children)" :key="child.key">
+        <div v-if="hasChildren(item) && (!collapsed || expandOnHovering) && isExpanded(getMenuId(item))" class="sidebar-menu__submenu">
+          <template v-for="child in getVisibleChildren(item.children)" :key="getMenuId(child)">
             <div class="sidebar-menu__subgroup">
               <div
                 :class="['data-active:text-primary data-disabled:opacity-50', getItemClass(child, 1)]"
@@ -748,7 +828,7 @@ watch(popupShouldVirtualize, (enabled) => {
                 :data-disabled="child.disabled ? 'true' : undefined"
                 :data-has-active-child="hasActiveChildItem(child) ? 'true' : undefined"
                 :data-has-children="hasChildren(child) ? 'true' : undefined"
-                :data-expanded="hasChildren(child) && isExpanded(child.key) ? 'true' : undefined"
+                :data-expanded="hasChildren(child) && isExpanded(getMenuId(child)) ? 'true' : undefined"
                 :data-level="1"
                 @click="onMenuClick(child)"
               >
@@ -769,18 +849,16 @@ watch(popupShouldVirtualize, (enabled) => {
                 <span
                   v-if="hasChildren(child)"
                   class="sidebar-menu__arrow"
-                  :class="{ 'sidebar-menu__arrow--expanded': isExpanded(child.key) }"
-                  :data-expanded="isExpanded(child.key) ? 'true' : undefined"
+                  :class="{ 'sidebar-menu__arrow--expanded': isExpanded(getMenuId(child)) }"
+                  :data-expanded="isExpanded(getMenuId(child)) ? 'true' : undefined"
                 >
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
+                  <LayoutIcon name="menu-arrow-right" size="sm" />
                 </span>
               </div>
 
               <!-- 三级菜单 -->
-              <div v-if="hasChildren(child) && isExpanded(child.key)" class="sidebar-menu__submenu">
-                <template v-for="grandchild in getVisibleChildren(child.children)" :key="grandchild.key">
+              <div v-if="hasChildren(child) && isExpanded(getMenuId(child))" class="sidebar-menu__submenu">
+                <template v-for="grandchild in getVisibleChildren(child.children)" :key="getMenuId(grandchild)">
                   <div class="sidebar-menu__subgroup">
                     <div
                       :class="['data-active:text-primary data-disabled:opacity-50', getItemClass(grandchild, 2)]"
@@ -788,7 +866,7 @@ watch(popupShouldVirtualize, (enabled) => {
                       :data-disabled="grandchild.disabled ? 'true' : undefined"
                       :data-has-active-child="hasActiveChildItem(grandchild) ? 'true' : undefined"
                     :data-has-children="hasChildren(grandchild) ? 'true' : undefined"
-                    :data-expanded="hasChildren(grandchild) && isExpanded(grandchild.key) ? 'true' : undefined"
+                    :data-expanded="hasChildren(grandchild) && isExpanded(getMenuId(grandchild)) ? 'true' : undefined"
                       :data-level="2"
                       @click="onMenuClick(grandchild)"
                     >
@@ -809,25 +887,23 @@ watch(popupShouldVirtualize, (enabled) => {
                       <span
                         v-if="hasChildren(grandchild)"
                         class="sidebar-menu__arrow"
-                        :class="{ 'sidebar-menu__arrow--expanded': isExpanded(grandchild.key) }"
-                        :data-expanded="isExpanded(grandchild.key) ? 'true' : undefined"
+                        :class="{ 'sidebar-menu__arrow--expanded': isExpanded(getMenuId(grandchild)) }"
+                        :data-expanded="isExpanded(getMenuId(grandchild)) ? 'true' : undefined"
                       >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
+                        <LayoutIcon name="menu-arrow-right" size="sm" />
                       </span>
                     </div>
 
                     <!-- 四级菜单 -->
-                    <div v-if="hasChildren(grandchild) && isExpanded(grandchild.key)" class="sidebar-menu__submenu">
-                      <template v-for="item4 in getVisibleChildren(grandchild.children)" :key="item4.key">
+                    <div v-if="hasChildren(grandchild) && isExpanded(getMenuId(grandchild))" class="sidebar-menu__submenu">
+                      <template v-for="item4 in getVisibleChildren(grandchild.children)" :key="getMenuId(item4)">
                         <div
                           :class="['data-active:text-primary data-disabled:opacity-50', getItemClass(item4, 3)]"
                           :data-state="isActive(item4) ? 'active' : 'inactive'"
                           :data-disabled="item4.disabled ? 'true' : undefined"
                           :data-has-active-child="hasActiveChildItem(item4) ? 'true' : undefined"
                           :data-has-children="hasChildren(item4) ? 'true' : undefined"
-                          :data-expanded="hasChildren(item4) && isExpanded(item4.key) ? 'true' : undefined"
+                          :data-expanded="hasChildren(item4) && isExpanded(getMenuId(item4)) ? 'true' : undefined"
                           :data-level="3"
                           @click="onMenuClick(item4)"
                         >
@@ -881,7 +957,7 @@ watch(popupShouldVirtualize, (enabled) => {
             : undefined"
         >
           <div v-if="popupShouldVirtualize" :style="{ height: `${popupTotalHeight}px`, pointerEvents: 'none' }" />
-          <template v-for="(child, index) in visiblePopupChildren" :key="child.key">
+          <template v-for="(child, index) in visiblePopupChildren" :key="getMenuId(child)">
             <div
               class="sidebar-menu__popup-group"
               :style="popupShouldVirtualize
@@ -899,10 +975,11 @@ watch(popupShouldVirtualize, (enabled) => {
                 :data-disabled="child.disabled ? 'true' : undefined"
                 :data-has-active-child="hasActiveChildItem(child) ? 'true' : undefined"
                 :data-has-children="hasChildren(child) ? 'true' : undefined"
-                :data-expanded="hasChildren(child) && isPopupExpanded(child.key) ? 'true' : undefined"
+                :data-expanded="hasChildren(child) && isPopupExpanded(getMenuId(child)) ? 'true' : undefined"
                 :data-level="0"
-                :data-key="child.key"
+                :data-key="getMenuId(child)"
                 @click="handlePopupItemClick"
+                @mouseenter="handlePopupItemHover(child)"
               >
                 <span v-if="child.icon" class="sidebar-menu__popup-icon">
                   <svg
@@ -921,8 +998,8 @@ watch(popupShouldVirtualize, (enabled) => {
                 <span
                   v-if="hasChildren(child)"
                   class="sidebar-menu__popup-arrow"
-                  :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(child.key) }"
-                  :data-expanded="isPopupExpanded(child.key) ? 'true' : undefined"
+                  :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(getMenuId(child)) }"
+                  :data-expanded="isPopupExpanded(getMenuId(child)) ? 'true' : undefined"
                 >
                   <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 18l6-6-6-6" />
@@ -931,8 +1008,8 @@ watch(popupShouldVirtualize, (enabled) => {
               </div>
               
               <!-- 三级菜单 -->
-              <div v-if="hasChildren(child) && isPopupExpanded(child.key)" class="sidebar-menu__popup-submenu">
-                <template v-for="grandchild in getVisibleChildren(child.children)" :key="grandchild.key">
+              <div v-if="hasChildren(child) && isPopupExpanded(getMenuId(child))" class="sidebar-menu__popup-submenu">
+                <template v-for="grandchild in getVisibleChildren(child.children)" :key="getMenuId(grandchild)">
                   <div class="sidebar-menu__popup-group">
                     <div
                       :class="['data-active:text-primary data-disabled:opacity-50', getPopupItemClass(grandchild, 1)]"
@@ -940,10 +1017,11 @@ watch(popupShouldVirtualize, (enabled) => {
                       :data-disabled="grandchild.disabled ? 'true' : undefined"
                       :data-has-active-child="hasActiveChildItem(grandchild) ? 'true' : undefined"
                     :data-has-children="hasChildren(grandchild) ? 'true' : undefined"
-                    :data-expanded="hasChildren(grandchild) && isPopupExpanded(grandchild.key) ? 'true' : undefined"
+                    :data-expanded="hasChildren(grandchild) && isPopupExpanded(getMenuId(grandchild)) ? 'true' : undefined"
                       :data-level="1"
-                      :data-key="grandchild.key"
+                      :data-key="getMenuId(grandchild)"
                       @click="handlePopupItemClick"
+                      @mouseenter="handlePopupItemHover(grandchild)"
                     >
                       <span v-if="grandchild.icon" class="sidebar-menu__popup-icon">
                         <svg
@@ -962,8 +1040,8 @@ watch(popupShouldVirtualize, (enabled) => {
                       <span
                         v-if="hasChildren(grandchild)"
                         class="sidebar-menu__popup-arrow"
-                        :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(grandchild.key) }"
-                        :data-expanded="isPopupExpanded(grandchild.key) ? 'true' : undefined"
+                        :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(getMenuId(grandchild)) }"
+                        :data-expanded="isPopupExpanded(getMenuId(grandchild)) ? 'true' : undefined"
                       >
                         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M9 18l6-6-6-6" />
@@ -972,15 +1050,15 @@ watch(popupShouldVirtualize, (enabled) => {
                     </div>
                     
                     <!-- 四级菜单 -->
-                    <div v-if="hasChildren(grandchild) && isPopupExpanded(grandchild.key)" class="sidebar-menu__popup-submenu">
-                      <template v-for="item4 in getVisibleChildren(grandchild.children)" :key="item4.key">
+                    <div v-if="hasChildren(grandchild) && isPopupExpanded(getMenuId(grandchild))" class="sidebar-menu__popup-submenu">
+                      <template v-for="item4 in getVisibleChildren(grandchild.children)" :key="getMenuId(item4)">
                         <div
                           :class="['data-active:text-primary data-disabled:opacity-50', getPopupItemClass(item4, 2)]"
                           :data-state="isActive(item4) ? 'active' : 'inactive'"
                           :data-disabled="item4.disabled ? 'true' : undefined"
                           :data-has-active-child="hasActiveChildItem(item4) ? 'true' : undefined"
                           :data-has-children="hasChildren(item4) ? 'true' : undefined"
-                          :data-expanded="hasChildren(item4) && isPopupExpanded(item4.key) ? 'true' : undefined"
+                          :data-expanded="hasChildren(item4) && isPopupExpanded(getMenuId(item4)) ? 'true' : undefined"
                           :data-level="2"
                           @click="onPopupMenuClick(item4)"
                         >

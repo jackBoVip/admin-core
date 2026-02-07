@@ -311,7 +311,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     /** 启用标签栏 */
     enable: true,
     /** 标签栏高度 (px) */
-    height: 38,
+    height: 40,
     /** 页面缓存 (keep-alive) */
     keepAlive: true,
     /** 最大标签数量，0 表示不限制 */

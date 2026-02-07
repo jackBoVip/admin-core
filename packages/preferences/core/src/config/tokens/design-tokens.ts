@@ -23,8 +23,8 @@
  * ```
  */
 
-import type { DeepPartial } from '../../types';
 import { safeMerge } from '../../utils/merge';
+import type { DeepPartial } from '../../types';
 
 /* ========== 类型定义 ========== */
 

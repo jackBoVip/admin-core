@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue';
 import { useLayoutContext, useLayoutComputed, usePanelState } from '../../composables';
+import LayoutIcon from '../common/LayoutIcon.vue';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -28,10 +29,16 @@ const panelClass = computed(() => [
 ]);
 
 // 样式
-const panelStyle = computed(() => ({
-  width: `${width.value}px`,
-  top: `${layoutComputed.value.headerHeight}px`,
-}));
+const panelStyle = computed(() => {
+  const style: Record<string, string> = {
+    width: `${width.value}px`,
+    top: `${layoutComputed.value.headerHeight}px`,
+  };
+  if (position.value === 'left' && layoutComputed.value.showSidebar && !context.props.isMobile) {
+    style.left = `${layoutComputed.value.sidebarWidth}px`;
+  }
+  return style;
+});
 </script>
 
 <template>
@@ -56,16 +63,11 @@ const panelStyle = computed(() => ({
           :title="collapsed ? context.t('layout.panel.expand') : context.t('layout.panel.collapse')"
           @click="toggle"
         >
-          <svg
-            class="h-4 w-4 transition-transform duration-layout-normal"
-            :class="{ 'rotate-180': position === 'left' ? !collapsed : collapsed }"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
+          <LayoutIcon
+            name="panel-collapse"
+            size="sm"
+            :class-name="`transition-transform duration-layout-normal ${position === 'left' ? (!collapsed ? 'rotate-180' : '') : collapsed ? 'rotate-180' : ''}`"
+          />
         </button>
       </div>
 

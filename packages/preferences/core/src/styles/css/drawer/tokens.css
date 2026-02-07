@@ -72,6 +72,8 @@
   --pref-modal-header-padding: 16px 20px;
   --pref-modal-z-index: 10001;
   --pref-tooltip-z-index: 99999;
+  --pref-tooltip-max-width: 240px;
+  --pref-tooltip-margin: 12px;
 
   /* ========== 8. 动画令牌 ========== */
   --pref-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);

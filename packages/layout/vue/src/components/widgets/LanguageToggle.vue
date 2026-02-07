@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { useLayoutContext } from '../../composables';
+import LayoutIcon from '../common/LayoutIcon.vue';
 
 const context = useLayoutContext();
 
@@ -53,11 +54,7 @@ const closeDropdown = () => {
       :data-state="isOpen ? 'open' : 'closed'"
       @click="toggleDropdown"
     >
-      <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
-        <path d="M2 12h20" />
-      </svg>
+      <LayoutIcon name="globe" size="sm" />
     </button>
 
     <!-- 下拉菜单 -->

@@ -3,8 +3,8 @@
  * @description 封装 Menu 组件，用于顶栏水平导航
  */
 import { useCallback, useMemo, memo } from 'react';
-import { Menu } from './Menu';
 import { useLayoutContext } from '../../hooks';
+import { Menu } from './Menu';
 import type { MenuItem } from '@admin-core/layout';
 
 export interface HorizontalMenuProps {
@@ -33,8 +33,8 @@ export const HorizontalMenu = memo(function HorizontalMenu({
     const map = new Map<string, MenuItem>();
     const walk = (items: MenuItem[]) => {
       items.forEach((item) => {
-        if (item.key) map.set(item.key, item);
-        if (item.path) map.set(item.path, item);
+        if (item.key) map.set(String(item.key), item);
+        if (item.path) map.set(String(item.path), item);
         if (item.children?.length) walk(item.children);
       });
     };
@@ -44,10 +44,11 @@ export const HorizontalMenu = memo(function HorizontalMenu({
 
   // 处理菜单选择
   const handleSelect = useCallback((path: string, _parentPaths: string[]) => {
-    const item = menuIndex.get(path);
+    const key = path === '' ? '' : String(path);
+    const item = menuIndex.get(key);
     if (item) {
-      onSelect?.(item, path);
-      context.events?.onMenuSelect?.(item, path);
+      onSelect?.(item, key);
+      context.events?.onMenuSelect?.(item, key);
       
       // 路由导航
       if (context.props.router && item.path) {
@@ -69,7 +70,7 @@ export const HorizontalMenu = memo(function HorizontalMenu({
     <div className={containerClassName} data-align={align}>
       <Menu
         menus={menus}
-        defaultActive={activeKey}
+        defaultActive={activeKey === '' ? '' : String(activeKey)}
         theme={theme}
         mode="horizontal"
         rounded

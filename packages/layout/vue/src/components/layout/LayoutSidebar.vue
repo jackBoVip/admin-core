@@ -5,22 +5,22 @@
  * 
  * 状态说明：
  * - extraVisible: 子菜单面板是否可见（由是否有子菜单决定）
- * - expandOnHover: 是否固定模式（true=固定，false=悬停显示）
+ * - expandOnHover: 是否悬停展开（true=悬停显示，false=固定）
  * - extraCollapsed: 子菜单面板是否折叠（折叠后只显示图标列）
  */
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useLayoutContext, useLayoutComputed, useSidebarState } from '../../composables';
 import { useMenuState } from '../../composables/use-layout-state';
 import SidebarMenu from './SidebarMenu.vue';
 import MixedSidebarMenu, { MixedSidebarSubMenu } from './MixedSidebarMenu.vue';
+import LayoutIcon from '../common/LayoutIcon.vue';
 import { 
   DEFAULT_SIDEBAR_CONFIG, 
   LAYOUT_ICONS, 
   ANIMATION_CLASSES, 
-  getIconPath, 
-  getIconViewBox,
   type MenuItem,
 } from '@admin-core/layout';
+import { getPreferencesManager } from '@admin-core/preferences-vue';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -45,25 +45,91 @@ const sidebarConfig = computed(() => {
 const logoConfig = computed(() => context.props.logo || {});
 // 使用 layoutComputed 中计算的主题（考虑 semiDarkSidebar）
 const theme = computed(() => layoutComputed.value.sidebarTheme || 'light');
+const preferencesManager = ref<ReturnType<typeof getPreferencesManager> | null>(null);
+
+onMounted(() => {
+  try {
+    preferencesManager.value = getPreferencesManager();
+  } catch {
+    preferencesManager.value = null;
+  }
+});
 
 // 是否是混合侧边栏模式（sidebar-mixed-nav 或 header-mixed-nav）
 const isMixedMode = computed(() => 
   layoutComputed.value.isSidebarMixedNav || layoutComputed.value.isHeaderMixedNav
 );
 
-// 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+// 是否允许显示折叠按钮的布局（仅 sidebar-nav）
 const isCollapseButtonAllowedLayout = computed(() => {
   const layout = layoutComputed.value.currentLayout;
-  return layout === 'sidebar-nav' || layout === 'header-mixed-nav';
+  return layout === 'sidebar-nav';
 });
 
 // 当前选中的一级菜单（用于混合模式）
 const selectedRootMenu = ref<MenuItem | null>(null);
+const lastActiveKey = ref('');
+const menus = computed<MenuItem[]>(() => context.props.menus || []);
+const normalizeKey = (value: unknown) => (value == null || value === '' ? '' : String(value));
+const getMenuId = (menu: MenuItem | null) =>
+  menu ? normalizeKey(menu.key ?? menu.path ?? menu.name ?? '') : '';
+
+const menuMatchesKey = (menu: MenuItem, key: string) => {
+  const target = normalizeKey(key);
+  if (!target) return false;
+  return normalizeKey(menu.key ?? '') === target || normalizeKey(menu.path ?? '') === target;
+};
+const menuContainsKey = (menu: MenuItem, key: string): boolean => {
+  if (menuMatchesKey(menu, key)) return true;
+  if (!menu.children?.length) return false;
+  const stack = [...menu.children];
+  while (stack.length > 0) {
+    const item = stack.pop();
+    if (!item) continue;
+    if (menuMatchesKey(item, key)) return true;
+    if (item.children?.length) {
+      for (let i = item.children.length - 1; i >= 0; i -= 1) {
+        stack.push(item.children[i]);
+      }
+    }
+  }
+  return false;
+};
+
+const findRootMenuByKey = (key: string) => {
+  if (!key) return null;
+  for (const item of menus.value) {
+    if (item.hidden) continue;
+    if (menuContainsKey(item, key)) return item;
+  }
+  return null;
+};
 
 // 处理 MixedSidebarMenu 的根菜单变化
 const onRootMenuChange = (menu: MenuItem | null) => {
   selectedRootMenu.value = menu;
 };
+
+// 同步路由激活的一级菜单，确保混合模式子菜单可见
+watch(
+  [() => activeKey.value, menus, isMixedMode],
+  ([key, menuList, mixed]) => {
+    if (!mixed || !key || !menuList.length) return;
+    const shouldSync = !selectedRootMenu.value || lastActiveKey.value !== key;
+    if (!shouldSync) return;
+    lastActiveKey.value = key;
+    const root = findRootMenuByKey(key);
+    if (!root) return;
+    if (getMenuId(selectedRootMenu.value) !== getMenuId(root)) {
+      selectedRootMenu.value = root;
+    }
+    const hasChildren = !!root.children?.length;
+    if (extraVisible.value !== hasChildren) {
+      extraVisible.value = hasChildren;
+    }
+  },
+  { immediate: true }
+);
 
 // 子菜单（选中一级菜单的children）
 const subMenus = computed(() => selectedRootMenu.value?.children || []);
@@ -72,11 +138,10 @@ const subMenuTitle = computed(() => selectedRootMenu.value?.name || '');
 // 是否显示子菜单面板（固定模式下始终显示，折叠时显示图标）
 const showExtraContent = computed(() => {
   if (!subMenus.value.length) return false;
-  // 固定模式下始终显示（折叠时显示图标列，展开时显示完整菜单）
-  if (expandOnHover.value) return extraVisible.value;
-  // 非固定模式下，只有悬停时才显示
-  return extraVisible.value && !extraCollapsed.value;
+  return extraVisible.value;
 });
+
+const effectiveExtraCollapsed = computed(() => (expandOnHover.value ? false : extraCollapsed.value));
 
 // 处理子菜单面板折叠/展开切换（vben 风格：点击同一个按钮切换）
 const handleExtraCollapseToggle = () => {
@@ -85,8 +150,28 @@ const handleExtraCollapseToggle = () => {
 
 // 处理固定/取消固定
 const handleTogglePin = () => {
-  expandOnHover.value = !expandOnHover.value;
+  const nextHoverMode = !expandOnHover.value;
+  expandOnHover.value = nextHoverMode;
+  if (!nextHoverMode && subMenus.value.length) {
+    extraVisible.value = true;
+  }
+  extraCollapsed.value = false;
+  // 同步偏好设置（避免下一次渲染被覆盖）
+  preferencesManager.value?.setPreferences({ sidebar: { expandOnHover: nextHoverMode } });
 };
+
+// 固定模式下确保子菜单面板可见，避免内容区与侧边栏重叠
+watch(
+  [() => isMixedMode.value, () => expandOnHover.value, subMenus],
+  ([mixed, hover, menus]) => {
+    if (!mixed || hover) return;
+    const nextVisible = menus.length > 0;
+    if (extraVisible.value !== nextVisible) {
+      extraVisible.value = nextVisible;
+    }
+  },
+  { immediate: true }
+);
 
 // 类名
 const sidebarClass = computed(() => [
@@ -110,7 +195,7 @@ const extraCollapsedWidth = computed(() => sidebarConfig.value.extraCollapsedWid
 // 子菜单面板宽度（vben: sidebarExtraWidth）
 const extraWidthValue = computed(() => {
   if (!showExtraContent.value) return 0;
-  return extraCollapsed.value ? extraCollapsedWidth.value : (sidebarConfig.value.width || DEFAULT_SIDEBAR_CONFIG.width);
+  return effectiveExtraCollapsed.value ? extraCollapsedWidth.value : (sidebarConfig.value.width || DEFAULT_SIDEBAR_CONFIG.width);
 });
 
 // 侧边栏宽度（混合模式下只是图标列宽度，子菜单面板是独立的 fixed 元素）
@@ -127,10 +212,13 @@ const extraStyle = computed(() => ({
   width: showExtraContent.value ? `${extraWidthValue.value}px` : '0px',
 }));
 
-// 折叠按钮 - 仅在 sidebar-nav 和 mixed-nav 布局下显示
+const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');
+const isMixedNavLayout = computed(() => layoutComputed.value.currentLayout === 'mixed-nav');
+
+// 折叠按钮 - 仅在 sidebar-nav / header-sidebar-nav 布局下显示
 const showCollapseButton = computed(() => {
-  // 只有 sidebar-nav 和 mixed-nav 布局才允许显示折叠按钮
-  const allowedLayout = isCollapseButtonAllowedLayout.value;
+  const allowedLayout =
+    isCollapseButtonAllowedLayout.value || isHeaderSidebarNav.value || isMixedNavLayout.value;
   if (!allowedLayout) {
     return false;
   }
@@ -143,15 +231,13 @@ const showCollapseButton = computed(() => {
 });
 
 // 折叠图标配置（根据状态显示不同图标）
-const collapseIconName = computed(() => 
-  collapsed.value ? (LAYOUT_ICONS.sidebarCollapse.iconCollapsed || LAYOUT_ICONS.sidebarCollapse.icon) : LAYOUT_ICONS.sidebarCollapse.icon
+const collapseIconName = computed(() =>
+  collapsed.value ? 'sidebar-toggle-collapsed' : 'sidebar-toggle'
 );
 
-const collapseIconProps = computed(() => ({
-  className: `${LAYOUT_ICONS.sidebarCollapse.className} ${ANIMATION_CLASSES.iconRotate}`,
-  viewBox: getIconViewBox(collapseIconName.value),
-  path: getIconPath(collapseIconName.value),
-}));
+const collapseIconClass = computed(() =>
+  `${LAYOUT_ICONS.sidebarCollapse.className} ${ANIMATION_CLASSES.iconRotate}`
+);
 
 const toggleCollapse = () => {
   context.toggleSidebarCollapse();
@@ -173,7 +259,10 @@ const toggleCollapse = () => {
   >
     <div class="layout-sidebar__inner flex h-full flex-col">
       <!-- Logo 区域 -->
-      <div v-if="logoConfig.enable !== false && !isMixedMode" class="layout-sidebar__logo shrink-0">
+      <div
+        v-if="logoConfig.enable !== false && !isMixedMode && !isHeaderSidebarNav && !isMixedNavLayout && !layoutComputed.isHeaderMixedNav"
+        class="layout-sidebar__logo shrink-0"
+      >
         <slot name="logo">
           <div class="flex h-header items-center justify-center px-3">
             <img
@@ -220,17 +309,7 @@ const toggleCollapse = () => {
             :title="collapsed ? context.t('layout.sidebar.expand') : context.t('layout.sidebar.collapse')"
             @click="toggleCollapse"
           >
-            <svg
-              :class="collapseIconProps.className"
-              :viewBox="collapseIconProps.viewBox"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path :d="collapseIconProps.path" />
-            </svg>
+            <LayoutIcon :name="collapseIconName" size="md" :className="collapseIconClass" />
           </button>
         </slot>
       </div>
@@ -250,10 +329,11 @@ const toggleCollapse = () => {
           :menus="subMenus"
           :active-key="activeKey"
           :title="subMenuTitle"
-          :collapsed="extraCollapsed"
-          :pinned="expandOnHover"
-          :show-collapse-btn="expandOnHover"
-          :show-pin-btn="!extraCollapsed"
+          :collapsed="effectiveExtraCollapsed"
+          :pinned="!expandOnHover"
+          :show-collapse-btn="!expandOnHover"
+          :show-pin-btn="!effectiveExtraCollapsed"
+          :theme="theme"
           @select="handleSelect"
           @collapse="handleExtraCollapseToggle"
           @toggle-pin="handleTogglePin"
