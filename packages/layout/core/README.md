@@ -102,6 +102,58 @@ import {
 } from '@admin-core/layout';
 ```
 
+## 插槽与扩展点（React / Vue）
+
+以下为 **BasicLayout** 对外暴露的插槽/扩展点中，与“顶栏左右侧 / 标签栏右侧 / 功能区”相关的关键接口。  
+如果你需要更多扩展点（比如 `header-menu`、`tabbar-left`、`content-*` 等），可参考源码中 **LayoutSlots / BasicLayout** 的完整定义。
+
+### React (BasicLayout props)
+
+| 区域 | 入口 |
+|------|------|
+| 顶栏左侧 | `headerLeft` |
+| 顶栏右侧 | `headerRight` |
+| 标签栏右侧 | `tabbarRight` |
+| 功能区内容 | `panelSlot` |
+| 功能区头部 | `panelHeader` |
+| 功能区底部 | `panelFooter` |
+
+**示例：**
+```tsx
+<BasicLayout
+  headerLeft={<MyHeaderLeft />}
+  headerRight={<MyHeaderRight />}
+  tabbarRight={<MyTabbarRight />}
+  panelHeader={<MyPanelHeader />}
+  panelSlot={<MyPanelBody />}
+  panelFooter={<MyPanelFooter />}>
+  {children}
+</BasicLayout>
+```
+
+### Vue (BasicLayout slots)
+
+| 区域 | 插槽 |
+|------|------|
+| 顶栏左侧 | `header-left` |
+| 顶栏右侧 | `header-right` |
+| 标签栏右侧 | `tabbar-right` |
+| 功能区内容 | `panel` |
+| 功能区头部 | `panel-header` |
+| 功能区底部 | `panel-footer` |
+
+**示例：**
+```vue
+<BasicLayout>
+  <template #header-left><MyHeaderLeft /></template>
+  <template #header-right><MyHeaderRight /></template>
+  <template #tabbar-right><MyTabbarRight /></template>
+  <template #panel-header><MyPanelHeader /></template>
+  <template #panel><MyPanelBody /></template>
+  <template #panel-footer><MyPanelFooter /></template>
+</BasicLayout>
+```
+
 ## 国际化
 
 ```typescript
