@@ -20,9 +20,10 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { MenuItem as MenuItemComp } from './MenuItem';
+import { MenuIcon } from './MenuIcon';
 import { useMenuContext, useSubMenuContext, SubMenuProvider } from './use-menu-context';
 import { renderLayoutIcon } from '../../utils';
-import type { MenuItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 
 export interface SubMenuProps {
   /** 菜单项数据 */
@@ -44,8 +45,8 @@ export const SubMenu = memo(function SubMenu({
   // 状态
   const [mouseInChild, setMouseInChild] = useState(false);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const CHILD_RENDER_CHUNK = 60;
-  const [childRenderCount, setChildRenderCount] = useState(CHILD_RENDER_CHUNK);
+  const CHILD_RENDER_CHUNK = LAYOUT_UI_TOKENS.SUB_MENU_RENDER_CHUNK;
+  const [childRenderCount, setChildRenderCount] = useState<number>(CHILD_RENDER_CHUNK);
   const popupRef = useRef<HTMLDivElement>(null);
   const [popupScrollTop, setPopupScrollTop] = useState(0);
   const [popupViewportHeight, setPopupViewportHeight] = useState(0);
@@ -118,10 +119,10 @@ export const SubMenu = memo(function SubMenu({
     setPopupScrollTop((prev) => (prev === 0 ? prev : 0));
     const nextHeight = popupEl.clientHeight;
     setPopupViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
-    const handleResize = () => {
+    const handleResize = rafThrottle(() => {
       const nextResizeHeight = popupEl.clientHeight;
       setPopupViewportHeight((prev) => (prev === nextResizeHeight ? prev : nextResizeHeight));
-    };
+    });
     const useWindowResize = typeof ResizeObserver === 'undefined';
     if (useWindowResize) {
       window.addEventListener('resize', handleResize);
@@ -450,7 +451,9 @@ export const SubMenu = memo(function SubMenu({
               ) : (
                 <>
                   {item.icon && (
-                    <span className="menu__icon">{item.icon}</span>
+                    <span className="menu__icon">
+                      <MenuIcon icon={item.icon} size="h-full w-full" />
+                    </span>
                   )}
                   <span className="menu__name">{item.name}</span>
                   <span className="menu__arrow" style={arrowStyle}>
@@ -502,7 +505,9 @@ export const SubMenu = memo(function SubMenu({
               onClick={handleClick}
             >
               {item.icon && (
-                <span className="menu__icon">{item.icon}</span>
+                <span className="menu__icon">
+                  <MenuIcon icon={item.icon} size="h-full w-full" />
+                </span>
               )}
               <span className="menu__name">{item.name}</span>
               <span className="menu__arrow" style={arrowStyle}>

@@ -42,6 +42,51 @@ export function classNames(...args: ClassValue[]): string {
 }
 
 /**
+ * rafThrottle
+ * @description requestAnimationFrame 节流（适用于滚动/resize 高频事件）
+ */
+export function rafThrottle<T extends (...args: any[]) => void>(fn: T) {
+  let rafId: number | null = null;
+  let lastArgs: Parameters<T> | null = null;
+  let lastThis: unknown = null;
+  const hasRaf = typeof requestAnimationFrame === 'function';
+  const hasCancel = typeof cancelAnimationFrame === 'function';
+
+  const invoke = () => {
+    rafId = null;
+    if (!lastArgs) return;
+    fn.apply(lastThis as any, lastArgs);
+    lastArgs = null;
+    lastThis = null;
+  };
+
+  const throttled = function (this: unknown, ...args: Parameters<T>) {
+    lastArgs = args;
+    lastThis = this;
+    if (rafId != null) return;
+    if (hasRaf) {
+      rafId = requestAnimationFrame(invoke);
+    } else {
+      rafId = (setTimeout(invoke, 16) as unknown) as number;
+    }
+  } as T & { cancel?: () => void };
+
+  throttled.cancel = () => {
+    if (rafId == null) return;
+    if (hasCancel) {
+      cancelAnimationFrame(rafId);
+    } else {
+      clearTimeout(rafId as unknown as number);
+    }
+    rafId = null;
+    lastArgs = null;
+    lastThis = null;
+  };
+
+  return throttled;
+}
+
+/**
  * 响应式断点类型
  */
 export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';

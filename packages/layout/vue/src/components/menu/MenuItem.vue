@@ -6,6 +6,7 @@
 import { computed } from 'vue';
 import { useMenuContext, useSubMenuContext } from './use-menu-context';
 import type { MenuItem } from '@admin-core/layout';
+import MenuIcon from '../common/MenuIcon.vue';
 
 interface Props {
   /** 菜单项数据 */
@@ -85,7 +86,9 @@ const indentStyle = computed(() => {
   >
     <!-- 图标 -->
     <span v-if="menuIcon" class="menu__icon">
-      <slot name="icon" :icon="menuIcon">{{ menuIcon }}</slot>
+      <slot name="icon" :icon="menuIcon">
+        <MenuIcon :icon="menuIcon" size="h-full w-full" />
+      </slot>
     </span>
     
     <!-- 名称 -->

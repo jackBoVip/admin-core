@@ -16,10 +16,10 @@ const currentLocale = computed(() => context.props.locale || 'zh-CN');
 const isOpen = ref(false);
 
 // 语言选项
-const languageOptions = [
-  { value: 'zh-CN', label: '简体中文', abbr: '中' },
-  { value: 'en-US', label: 'English', abbr: 'EN' },
-];
+const languageOptions = computed(() => [
+  { value: 'zh-CN', label: context.t('layout.widgetLegacy.locale.zh-CN'), abbr: 'ZH' },
+  { value: 'en-US', label: context.t('layout.widgetLegacy.locale.en-US'), abbr: 'EN' },
+]);
 
 // 切换语言
 const handleLocaleChange = (locale: string) => {

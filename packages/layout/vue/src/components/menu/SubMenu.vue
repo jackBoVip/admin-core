@@ -8,7 +8,8 @@ import { useFloating, offset, flip, shift, autoUpdate } from '@floating-ui/vue';
 import { useMenuContext, useSubMenuContext, createSubMenuContext } from './use-menu-context';
 import MenuItemComp from './MenuItem.vue';
 import LayoutIcon from '../common/LayoutIcon.vue';
-import type { MenuItem } from '@admin-core/layout';
+import MenuIcon from '../common/MenuIcon.vue';
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 
 interface Props {
   /** 菜单项数据 */
@@ -32,12 +33,12 @@ const instance = getCurrentInstance();
 // 状态
 const mouseInChild = ref(false);
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
-const CHILD_RENDER_CHUNK = 60;
-const renderCount = ref(CHILD_RENDER_CHUNK);
+const CHILD_RENDER_CHUNK = LAYOUT_UI_TOKENS.SUB_MENU_RENDER_CHUNK;
+const renderCount = ref<number>(CHILD_RENDER_CHUNK);
 const popupScrollTop = ref(0);
 const popupViewportHeight = ref(0);
 const popupItemHeight = ref(40);
-const POPUP_OVERSCAN = 4;
+const POPUP_OVERSCAN = LAYOUT_UI_TOKENS.POPUP_OVERSCAN;
 const popupResizeObserver = ref<ResizeObserver | null>(null);
 const popupItemResizeObserver = ref<ResizeObserver | null>(null);
 let popupWheelCleanup: (() => void) | null = null;
@@ -347,7 +348,7 @@ watch(opened, (value, _, onCleanup) => {
     }
     const container = floatingRef.value;
     if (!container) return;
-    const handleResize = () => updatePopupMetrics();
+    const handleResize = rafThrottle(() => updatePopupMetrics());
     if (typeof ResizeObserver !== 'undefined') {
       popupResizeObserver.value = new ResizeObserver(handleResize);
       popupResizeObserver.value.observe(container);
@@ -438,7 +439,9 @@ watch(opened, (value, _, onCleanup) => {
         <!-- 普通子菜单 -->
         <template v-else>
           <span v-if="item.icon" class="menu__icon">
-            <slot name="icon" :icon="item.icon">{{ item.icon }}</slot>
+            <slot name="icon" :icon="item.icon">
+              <MenuIcon :icon="item.icon" size="h-full w-full" />
+            </slot>
           </span>
           <span class="menu__name">{{ item.name }}</span>
           <span class="menu__arrow" :style="arrowStyle">
@@ -501,7 +504,9 @@ watch(opened, (value, _, onCleanup) => {
         @click="handleClick"
       >
         <span v-if="item.icon" class="menu__icon">
-          <slot name="icon" :icon="item.icon">{{ item.icon }}</slot>
+          <slot name="icon" :icon="item.icon">
+            <MenuIcon :icon="item.icon" size="h-full w-full" />
+          </slot>
         </span>
         <span class="menu__name">{{ item.name }}</span>
         <span class="menu__arrow" :style="arrowStyle">

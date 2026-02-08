@@ -11,11 +11,13 @@ import type { MenuItem } from '@admin-core/layout';
 import {
   hasChildren,
   getMenuItemClassName,
-  resolveIconMeta,
   getMenuId,
   isMenuActive,
+  LAYOUT_UI_TOKENS,
+  rafThrottle,
 } from '@admin-core/layout';
 import LayoutIcon from '../common/LayoutIcon.vue';
+import MenuIcon from '../common/MenuIcon.vue';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -101,13 +103,13 @@ const filteredMenus = computed(() => {
   }
   return result;
 });
-const RENDER_CHUNK = 80;
-const renderCount = ref(RENDER_CHUNK);
-const SUB_RENDER_CHUNK = 80;
-const subRenderCount = ref(SUB_RENDER_CHUNK);
-const menuItemHeight = ref(48);
+const RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+const renderCount = ref<number>(RENDER_CHUNK);
+const SUB_RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+const subRenderCount = ref<number>(SUB_RENDER_CHUNK);
+const menuItemHeight = ref<number>(LAYOUT_UI_TOKENS.MENU_ITEM_HEIGHT);
 const menuItemResizeObserver = ref<ResizeObserver | null>(null);
-const MENU_OVERSCAN = 4;
+const MENU_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
 const menuRef = ref<HTMLElement | null>(null);
 const scrollTop = ref(0);
 const viewportHeight = ref(0);
@@ -118,8 +120,8 @@ const popupContentRef = ref<HTMLElement | null>(null);
 const popupScrollTop = ref(0);
 const popupContentTop = ref(0);
 const popupViewportHeight = ref(0);
-const popupItemHeight = ref(44);
-const POPUP_OVERSCAN = 4;
+const popupItemHeight = ref<number>(LAYOUT_UI_TOKENS.POPUP_MENU_ITEM_HEIGHT);
+const POPUP_OVERSCAN = LAYOUT_UI_TOKENS.POPUP_OVERSCAN;
 const POPUP_VIRTUAL_MIN_ITEMS = 50;
 const popupResizeObserver = ref<ResizeObserver | null>(null);
 let popupWheelCleanup: (() => void) | null = null;
@@ -249,7 +251,7 @@ watch(
   }
 );
 
-const updatePopupMetrics = () => {
+const updatePopupMetrics = rafThrottle(() => {
   const container = popupRef.value;
   const content = popupContentRef.value;
   if (!container || !content) return;
@@ -263,7 +265,7 @@ const updatePopupMetrics = () => {
       popupItemHeight.value = height;
     }
   }
-};
+});
 
 const handlePopupScroll = (e: Event) => {
   const target = e.currentTarget as HTMLElement | null;
@@ -551,46 +553,29 @@ const getPopupItemClass = (item: MenuItem, level: number) => {
   return classes.join(' ');
 };
 
-const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
-
-const getIconMeta = (icon: string | undefined) => {
-  if (!icon) return null;
-  const cached = iconMetaCache.get(icon);
-  if (cached) return cached;
-  const meta = resolveIconMeta(icon);
-  iconMetaCache.set(icon, meta);
-  return meta;
-};
-
-// 判断图标类型
-const getIconType = (icon: string | undefined) => getIconMeta(icon)?.type ?? null;
-
-// 获取 SVG 图标路径
-const getSvgPath = (icon: string | undefined): string => getIconMeta(icon)?.def?.path || '';
-
-// 获取 SVG 图标 viewBox
-const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.viewBox || '0 0 24 24';
-
 onMounted(() => {
   const menuEl = menuRef.value;
   if (menuEl) {
     scrollContainer = menuEl.closest('.layout-scroll-container') as HTMLElement | null;
   }
   if (scrollContainer) {
-    const handleScroll = () => {
-    const nextTop = scrollContainer?.scrollTop ?? 0;
-    if (scrollTop.value !== nextTop) {
-      scrollTop.value = nextTop;
-    }
+    const syncScroll = () => {
+      const nextTop = scrollContainer?.scrollTop ?? 0;
+      if (scrollTop.value !== nextTop) {
+        scrollTop.value = nextTop;
+      }
     };
-    const updateHeight = () => {
+    const syncHeight = () => {
       const nextHeight = scrollContainer?.clientHeight ?? 0;
       if (viewportHeight.value !== nextHeight) {
         viewportHeight.value = nextHeight;
       }
     };
-    updateHeight();
-    handleScroll();
+    const handleScroll = rafThrottle(syncScroll);
+    const updateHeight = rafThrottle(syncHeight);
+
+    syncHeight();
+    syncScroll();
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     if (typeof ResizeObserver !== 'undefined') {
       scrollResizeObserver = new ResizeObserver(updateHeight);
@@ -606,6 +591,8 @@ onMounted(() => {
       } else {
         window.removeEventListener('resize', updateHeight);
       }
+      handleScroll.cancel?.();
+      updateHeight.cancel?.();
     });
   }
   updateSidebarRect();
@@ -783,17 +770,7 @@ watch(popupShouldVirtualize, (enabled) => {
         >
           <!-- 图标 -->
           <span v-if="item.icon" class="sidebar-menu__icon">
-            <svg
-              v-if="getIconType(item.icon) === 'svg'"
-              class="h-4.5 w-4.5"
-              :viewBox="getSvgViewBox(item.icon)"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path :d="getSvgPath(item.icon)" />
-            </svg>
-            <template v-else>{{ item.icon }}</template>
+            <MenuIcon :icon="item.icon" size="h-4.5 w-4.5" />
           </span>
 
           <!-- 名称 -->
@@ -833,17 +810,7 @@ watch(popupShouldVirtualize, (enabled) => {
                 @click="onMenuClick(child)"
               >
                 <span v-if="child.icon" class="sidebar-menu__icon">
-                  <svg
-                    v-if="getIconType(child.icon) === 'svg'"
-                    class="h-4.5 w-4.5"
-                    :viewBox="getSvgViewBox(child.icon)"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path :d="getSvgPath(child.icon)" />
-                  </svg>
-                  <template v-else>{{ child.icon }}</template>
+                  <MenuIcon :icon="child.icon" size="h-4.5 w-4.5" />
                 </span>
                 <span class="sidebar-menu__name">{{ child.name }}</span>
                 <span
@@ -871,17 +838,7 @@ watch(popupShouldVirtualize, (enabled) => {
                       @click="onMenuClick(grandchild)"
                     >
                       <span v-if="grandchild.icon" class="sidebar-menu__icon">
-                        <svg
-                          v-if="getIconType(grandchild.icon) === 'svg'"
-                          class="h-4.5 w-4.5"
-                          :viewBox="getSvgViewBox(grandchild.icon)"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <path :d="getSvgPath(grandchild.icon)" />
-                        </svg>
-                        <template v-else>{{ grandchild.icon }}</template>
+                        <MenuIcon :icon="grandchild.icon" size="h-4.5 w-4.5" />
                       </span>
                       <span class="sidebar-menu__name">{{ grandchild.name }}</span>
                       <span
@@ -908,17 +865,7 @@ watch(popupShouldVirtualize, (enabled) => {
                           @click="onMenuClick(item4)"
                         >
                           <span v-if="item4.icon" class="sidebar-menu__icon">
-                            <svg
-                              v-if="getIconType(item4.icon) === 'svg'"
-                                class="h-4.5 w-4.5"
-                              :viewBox="getSvgViewBox(item4.icon)"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
-                              <path :d="getSvgPath(item4.icon)" />
-                            </svg>
-                            <template v-else>{{ item4.icon }}</template>
+                            <MenuIcon :icon="item4.icon" size="h-4.5 w-4.5" />
                           </span>
                           <span class="sidebar-menu__name">{{ item4.name }}</span>
                         </div>
@@ -982,17 +929,7 @@ watch(popupShouldVirtualize, (enabled) => {
                 @mouseenter="handlePopupItemHover(child)"
               >
                 <span v-if="child.icon" class="sidebar-menu__popup-icon">
-                  <svg
-                    v-if="getIconType(child.icon) === 'svg'"
-                    class="h-4 w-4"
-                    :viewBox="getSvgViewBox(child.icon)"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path :d="getSvgPath(child.icon)" />
-                  </svg>
-                  <template v-else>{{ child.icon }}</template>
+                  <MenuIcon :icon="child.icon" size="h-4 w-4" />
                 </span>
                 <span class="sidebar-menu__popup-name">{{ child.name }}</span>
                 <span
@@ -1001,9 +938,7 @@ watch(popupShouldVirtualize, (enabled) => {
                   :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(getMenuId(child)) }"
                   :data-expanded="isPopupExpanded(getMenuId(child)) ? 'true' : undefined"
                 >
-                  <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 18l6-6-6-6" />
-                  </svg>
+                  <LayoutIcon name="menu-arrow-right" size="sm" />
                 </span>
               </div>
               
@@ -1024,30 +959,18 @@ watch(popupShouldVirtualize, (enabled) => {
                       @mouseenter="handlePopupItemHover(grandchild)"
                     >
                       <span v-if="grandchild.icon" class="sidebar-menu__popup-icon">
-                        <svg
-                          v-if="getIconType(grandchild.icon) === 'svg'"
-                          class="h-4 w-4"
-                          :viewBox="getSvgViewBox(grandchild.icon)"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <path :d="getSvgPath(grandchild.icon)" />
-                        </svg>
-                        <template v-else>{{ grandchild.icon }}</template>
+                        <MenuIcon :icon="grandchild.icon" size="h-4 w-4" />
                       </span>
                       <span class="sidebar-menu__popup-name">{{ grandchild.name }}</span>
                       <span
-                        v-if="hasChildren(grandchild)"
-                        class="sidebar-menu__popup-arrow"
-                        :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(getMenuId(grandchild)) }"
-                        :data-expanded="isPopupExpanded(getMenuId(grandchild)) ? 'true' : undefined"
-                      >
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
-                      </span>
-                    </div>
+                      v-if="hasChildren(grandchild)"
+                      class="sidebar-menu__popup-arrow"
+                      :class="{ 'sidebar-menu__popup-arrow--expanded': isPopupExpanded(getMenuId(grandchild)) }"
+                      :data-expanded="isPopupExpanded(getMenuId(grandchild)) ? 'true' : undefined"
+                    >
+                        <LayoutIcon name="menu-arrow-right" size="sm" />
+                    </span>
+                  </div>
                     
                     <!-- 四级菜单 -->
                     <div v-if="hasChildren(grandchild) && isPopupExpanded(getMenuId(grandchild))" class="sidebar-menu__popup-submenu">
@@ -1063,17 +986,7 @@ watch(popupShouldVirtualize, (enabled) => {
                           @click="onPopupMenuClick(item4)"
                         >
                           <span v-if="item4.icon" class="sidebar-menu__popup-icon">
-                            <svg
-                              v-if="getIconType(item4.icon) === 'svg'"
-                              class="h-4 w-4"
-                              :viewBox="getSvgViewBox(item4.icon)"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                            >
-                              <path :d="getSvgPath(item4.icon)" />
-                            </svg>
-                            <template v-else>{{ item4.icon }}</template>
+                            <MenuIcon :icon="item4.icon" size="h-4 w-4" />
                           </span>
                           <span class="sidebar-menu__popup-name">{{ item4.name }}</span>
                         </div>

@@ -6,7 +6,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, watchEffect, type ComponentPublicInstance } from 'vue';
 import { useLayoutContext, useLayoutComputed, useTabsState, useSidebarState } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
-import { generateContextMenuItems, type ContextMenuAction } from '@admin-core/layout';
+import { generateContextMenuItems, type ContextMenuAction, LAYOUT_UI_TOKENS, TABBAR_CHROME_SVG_PATHS, rafThrottle } from '@admin-core/layout';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -121,8 +121,9 @@ const moreMenuRef = ref<HTMLElement | null>(null);
 
 // 悬停状态
 const hoveredKey = ref<string | null>(null);
-const TAB_RENDER_CHUNK = 60;
-const tabRenderCount = ref(TAB_RENDER_CHUNK);
+const TAB_RENDER_CHUNK = LAYOUT_UI_TOKENS.TAB_RENDER_CHUNK;
+const tabRenderCount = ref<number>(TAB_RENDER_CHUNK);
+const chromeCornerSize = LAYOUT_UI_TOKENS.TABBAR_CHROME_CORNER_SIZE;
 const tabIndexMap = computed(() => {
   const map = new Map<string, number>();
   tabs.value.forEach((tab, index) => map.set(tab.key, index));
@@ -213,17 +214,18 @@ const updateScrollState = () => {
   canScrollLeft.value = scrollLeft > 0;
   canScrollRight.value = scrollLeft + clientWidth < scrollWidth - 1;
 };
+const updateScrollStateThrottled = rafThrottle(updateScrollState);
 
 const scrollTabsBy = (direction: number) => {
   const container = tabsContainerRef.value;
   if (!container) return;
   const offset = Math.max(container.clientWidth * 0.6, 120);
   container.scrollBy({ left: offset * direction, behavior: 'smooth' });
-  requestAnimationFrame(updateScrollState);
+  updateScrollStateThrottled();
 };
 
 watch([tabs, tabRenderCount], () => {
-  void nextTick(updateScrollState);
+  void nextTick(() => updateScrollStateThrottled());
 }, { immediate: true });
 
 watch(activeKey, () => {
@@ -236,11 +238,12 @@ watch(activeKey, () => {
 });
 
 onMounted(() => {
-  window.addEventListener('resize', updateScrollState);
+  window.addEventListener('resize', updateScrollStateThrottled);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('resize', updateScrollState);
+  window.removeEventListener('resize', updateScrollStateThrottled);
+  updateScrollStateThrottled.cancel?.();
 });
 
 // 处理标签点击
@@ -511,7 +514,7 @@ const onWheel = (e: WheelEvent) => {
   e.preventDefault();
   const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
   container.scrollLeft += delta;
-  updateScrollState();
+  updateScrollStateThrottled();
 };
 
 // ==================== 最大化功能 ====================
@@ -584,7 +587,7 @@ onUnmounted(() => {
         class="layout-tabbar__tabs layout-scroll-container flex h-full flex-1 overflow-x-auto scrollbar-none"
         :data-dragging="dragState.isDragging ? 'true' : undefined"
         @wheel="onWheel"
-        @scroll="updateScrollState"
+        @scroll="updateScrollStateThrottled"
       >
         <slot>
           <div
@@ -627,11 +630,21 @@ onUnmounted(() => {
                 <div class="layout-tabbar__chrome-divider" />
                 <div class="layout-tabbar__chrome-bg">
                   <div class="layout-tabbar__chrome-bg-content" />
-                  <svg class="layout-tabbar__chrome-bg-before" height="7" width="7" viewBox="0 0 7 7">
-                    <path d="M 0 7 A 7 7 0 0 0 7 0 L 7 7 Z" />
+                  <svg
+                    class="layout-tabbar__chrome-bg-before"
+                    :height="chromeCornerSize"
+                    :width="chromeCornerSize"
+                    viewBox="0 0 7 7"
+                  >
+                    <path :d="TABBAR_CHROME_SVG_PATHS.before" />
                   </svg>
-                  <svg class="layout-tabbar__chrome-bg-after" height="7" width="7" viewBox="0 0 7 7">
-                    <path d="M 0 0 A 7 7 0 0 0 7 7 L 0 7 Z" />
+                  <svg
+                    class="layout-tabbar__chrome-bg-after"
+                    :height="chromeCornerSize"
+                    :width="chromeCornerSize"
+                    viewBox="0 0 7 7"
+                  >
+                    <path :d="TABBAR_CHROME_SVG_PATHS.after" />
                   </svg>
                 </div>
                 <div class="layout-tabbar__chrome-main">

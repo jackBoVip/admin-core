@@ -21,13 +21,6 @@ export const LayoutOverlay = memo(function LayoutOverlay() {
       className="layout-overlay layout-overlay--visible"
       data-state="visible"
       onClick={toggle}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 250,
-        backgroundColor: 'rgba(0, 0, 0, 0.45)',
-        transition: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-      }}
     />,
     document.body
   );

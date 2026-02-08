@@ -14,7 +14,7 @@ import {
 import { MenuItem as MenuItemComp } from './MenuItem';
 import { SubMenu } from './SubMenu';
 import { MenuProvider, type MenuContextValue, type MenuItemClicked } from './use-menu-context';
-import type { MenuItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 
 export interface MenuProps {
   /** 菜单数据 */
@@ -39,6 +39,8 @@ export interface MenuProps {
   onOpen?: (path: string, parentPaths: string[]) => void;
   /** 关闭回调 */
   onClose?: (path: string, parentPaths: string[]) => void;
+  /** 更多菜单文本 */
+  moreLabel?: string;
 }
 
 export const Menu = memo(function Menu({
@@ -53,6 +55,7 @@ export const Menu = memo(function Menu({
   onSelect,
   onOpen,
   onClose,
+  moreLabel = 'More',
 }: MenuProps) {
   const normalizeKey = useCallback((value: unknown) => {
     if (value == null || value === '') return '';
@@ -197,13 +200,13 @@ export const Menu = memo(function Menu({
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const isFirstRenderRef = useRef(true);
   const resizeFrameRef = useRef<number | null>(null);
-  const RENDER_CHUNK = 80;
-  const [renderCount, setRenderCount] = useState(RENDER_CHUNK);
+  const RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+  const [renderCount, setRenderCount] = useState<number>(RENDER_CHUNK);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [itemHeight, setItemHeight] = useState(40);
-  const VIRTUAL_OVERSCAN = 4;
+  const VIRTUAL_OVERSCAN = LAYOUT_UI_TOKENS.VIRTUAL_OVERSCAN;
   const scrollResizeObserverRef = useRef<ResizeObserver | null>(null);
   const itemResizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -333,7 +336,7 @@ export const Menu = memo(function Menu({
     if (!container) return;
     scrollContainerRef.current = container;
 
-    const updateMetrics = () => {
+    const updateMetrics = rafThrottle(() => {
       const nextHeight = container.clientHeight;
       setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
       const computedStyle = getComputedStyle(menuEl);
@@ -348,11 +351,11 @@ export const Menu = memo(function Menu({
           setItemHeight((prev) => (prev === measuredHeight ? prev : measuredHeight));
         }
       }
-    };
-    const handleScroll = () => {
+    });
+    const handleScroll = rafThrottle(() => {
       const nextTop = container.scrollTop;
       setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-    };
+    });
 
     updateMetrics();
     handleScroll();
@@ -504,7 +507,7 @@ export const Menu = memo(function Menu({
         {/* 更多按钮（溢出菜单） */}
         {hasOverflow && (
           <SubMenu
-            item={{ key: '__more__', name: '更多', children: overflowMenus }}
+            item={{ key: '__more__', name: moreLabel, children: overflowMenus }}
             level={0}
             isMore
           />

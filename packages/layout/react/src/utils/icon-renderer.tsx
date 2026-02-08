@@ -3,32 +3,12 @@
  * @description 统一管理菜单图标的渲染逻辑
  */
 
-import { resolveIconMeta } from '@admin-core/layout';
+import { resolveMenuIconMeta, resolveLayoutIconSize, LAYOUT_ICON_SIZES } from '@admin-core/layout';
 import React from 'react';
 
-/**
- * 图标尺寸预设
- */
-export const ICON_SIZES = {
-  xs: 'h-3 w-3',
-  sm: 'h-4 w-4',
-  md: 'h-[1.125rem] w-[1.125rem]',
-  lg: 'h-5 w-5',
-  xl: 'h-6 w-6',
-} as const;
-
-export type IconSize = keyof typeof ICON_SIZES;
-
-const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
-
-const getIconMeta = (icon: string | undefined) => {
-  if (!icon) return null;
-  const cached = iconMetaCache.get(icon);
-  if (cached) return cached;
-  const meta = resolveIconMeta(icon);
-  iconMetaCache.set(icon, meta);
-  return meta;
-};
+export type IconSize = Parameters<typeof resolveLayoutIconSize>[0];
+// 兼容旧导出
+export const ICON_SIZES = LAYOUT_ICON_SIZES;
 
 /**
  * 渲染 SVG 图标
@@ -43,33 +23,32 @@ export function renderIcon(
 ): React.ReactNode {
   if (!icon) return null;
 
-  const meta = getIconMeta(icon);
+  const meta = resolveMenuIconMeta(icon);
   const type = meta?.type;
-  const sizeClass = size in ICON_SIZES ? ICON_SIZES[size as IconSize] : size;
+  const sizeClass = resolveLayoutIconSize(size);
 
   if (type === 'emoji' || type === 'custom') {
-    return <span className={className}>{icon}</span>;
+    return <span className={className}>{meta?.raw ?? icon}</span>;
   }
 
   if (type === 'svg') {
-    const svgDef = meta?.def;
-    if (svgDef) {
+    if (meta?.path) {
       return (
         <svg
           className={`${sizeClass}${className ? ` ${className}` : ''}`}
-          viewBox={svgDef.viewBox}
+          viewBox={meta.viewBox}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
         >
-          <path d={svgDef.path} />
+          <path d={meta.path} />
         </svg>
       );
     }
   }
 
   // 回退：显示原始内容
-  return <span className={className}>{icon}</span>;
+  return <span className={className}>{meta?.raw ?? icon}</span>;
 }
 
 /**
@@ -91,23 +70,22 @@ export function renderIconWithContainer(
 
   if (!icon) return null;
 
-  const meta = getIconMeta(icon);
+  const meta = resolveMenuIconMeta(icon);
   const type = meta?.type;
-  const sizeClass = iconSize in ICON_SIZES ? ICON_SIZES[iconSize as IconSize] : iconSize;
+  const sizeClass = resolveLayoutIconSize(iconSize);
 
   if (type === 'svg') {
-    const svgDef = meta?.def;
-    if (svgDef) {
+    if (meta?.path) {
       return (
         <span className={containerClassName}>
           <svg
             className={sizeClass}
-            viewBox={svgDef.viewBox}
+            viewBox={meta.viewBox}
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
           >
-            <path d={svgDef.path} />
+            <path d={meta.path} />
           </svg>
         </span>
       );
@@ -115,7 +93,7 @@ export function renderIconWithContainer(
   }
 
   // emoji 或自定义内容
-  return <span className={containerClassName}>{icon}</span>;
+  return <span className={containerClassName}>{meta?.raw ?? icon}</span>;
 }
 
 /**

@@ -127,8 +127,6 @@ export const icons = {
   user: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
 
   /** 登出 */
-  logOut: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
-  /** 登出（别名） */
   logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
 
   /** 语言 */
@@ -177,12 +175,28 @@ export const icons = {
 } as const;
 
 /**
+ * 图标别名映射（兼容历史命名）
+ */
+export const iconAliases = {
+  logOut: 'logout',
+} as const;
+
+/**
  * 图标名称类型
  */
 export type IconName = keyof typeof icons;
+export type IconAlias = keyof typeof iconAliases;
+export type IconNameOrAlias = IconName | IconAlias;
 
 /** 空 SVG 占位符（安全的默认值） */
 const EMPTY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>';
+
+const resolveIconName = (name: string) => {
+  if (Object.prototype.hasOwnProperty.call(iconAliases, name)) {
+    return iconAliases[name as IconAlias];
+  }
+  return name;
+};
 
 /**
  * 获取图标（带安全验证）
@@ -190,12 +204,16 @@ const EMPTY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><
  * @returns SVG 字符串，无效名称返回空 SVG
  * @security 仅返回预定义的 SVG，防止 XSS
  */
-export function getIcon(name: IconName | string): string {
+export function getIcon(name: IconNameOrAlias | string): string {
   // 类型守卫：确保只返回预定义的图标
-  if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(icons, name)) {
+  if (typeof name !== 'string') {
     return EMPTY_SVG;
   }
-  return icons[name as IconName] || EMPTY_SVG;
+  const resolved = resolveIconName(name);
+  if (!Object.prototype.hasOwnProperty.call(icons, resolved)) {
+    return EMPTY_SVG;
+  }
+  return icons[resolved as IconName] || EMPTY_SVG;
 }
 
 /**
@@ -203,6 +221,8 @@ export function getIcon(name: IconName | string): string {
  * @param name - 图标名称
  * @returns 是否存在
  */
-export function hasIcon(name: string): name is IconName {
-  return typeof name === 'string' && Object.prototype.hasOwnProperty.call(icons, name);
+export function hasIcon(name: string): name is IconName | IconAlias {
+  if (typeof name !== 'string') return false;
+  const resolved = resolveIconName(name);
+  return Object.prototype.hasOwnProperty.call(icons, resolved);
 }

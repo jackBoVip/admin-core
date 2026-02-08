@@ -5,7 +5,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
-import type { NotificationItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, type NotificationItem } from '@admin-core/layout';
 
 export const NotificationButton = memo(function NotificationButton() {
   const { props, events, t } = useLayoutContext();
@@ -84,7 +84,7 @@ export const NotificationButton = memo(function NotificationButton() {
 
   const [itemHeight, setItemHeight] = useState(72);
   const MAX_HEIGHT = 320;
-  const OVERSCAN = 4;
+  const OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
   const totalHeight = formattedNotifications.length * itemHeight;
   const viewportHeight = totalHeight === 0 ? MAX_HEIGHT : Math.min(totalHeight, MAX_HEIGHT);
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - OVERSCAN);

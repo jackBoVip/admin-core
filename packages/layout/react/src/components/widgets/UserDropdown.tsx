@@ -2,12 +2,16 @@
  * 用户下拉菜单组件
  * @description 显示用户信息和操作菜单
  */
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useState, useCallback, useMemo, memo, type ReactNode } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
 
-export const UserDropdown = memo(function UserDropdown() {
-  const { props, events } = useLayoutContext();
+export interface UserDropdownProps {
+  menuSlot?: ReactNode;
+}
+
+export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdownProps) {
+  const { props, events, t } = useLayoutContext();
   const [isOpen, setIsOpen] = useState(false);
 
   const userInfo = props.userInfo;
@@ -89,7 +93,7 @@ export const UserDropdown = memo(function UserDropdown() {
               />
               <div className="flex-1 overflow-hidden">
                 <div className="truncate font-medium">
-                  {userInfo?.displayName || userInfo?.username || 'Guest'}
+                  {userInfo?.displayName || userInfo?.username || t('layout.user.guest')}
                 </div>
                 {userInfo?.roles && userInfo.roles.length > 0 && (
                   <div className="truncate text-xs text-gray-500">{userInfo.roles.join(', ')}</div>
@@ -98,49 +102,53 @@ export const UserDropdown = memo(function UserDropdown() {
             </div>
           </div>
 
-          <div className="py-1">
-            <button
-              type="button"
-              className="header-widget-dropdown__item group"
-              data-value="profile"
-              onClick={handleMenuClick}
-            >
-              {renderLayoutIcon('user', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
-              <span>Profile</span>
-            </button>
+          {menuSlot ?? (
+            <>
+              <div className="py-1">
+                <button
+                  type="button"
+                  className="header-widget-dropdown__item group"
+                  data-value="profile"
+                  onClick={handleMenuClick}
+                >
+                  {renderLayoutIcon('user', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
+                  <span>{t('layout.user.profile')}</span>
+                </button>
 
-            <button
-              type="button"
-              className="header-widget-dropdown__item group"
-              data-value="settings"
-              onClick={handleMenuClick}
-            >
-              {renderLayoutIcon('settings', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
-              <span>Settings</span>
-            </button>
+                <button
+                  type="button"
+                  className="header-widget-dropdown__item group"
+                  data-value="settings"
+                  onClick={handleMenuClick}
+                >
+                  {renderLayoutIcon('settings', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
+                  <span>{t('layout.user.settings')}</span>
+                </button>
 
-            <button
-              type="button"
-              className="header-widget-dropdown__item group"
-              data-value="lock"
-              onClick={handleMenuClick}
-            >
-              {renderLayoutIcon('lock', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
-              <span>Lock Screen</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  className="header-widget-dropdown__item group"
+                  data-value="lock"
+                  onClick={handleMenuClick}
+                >
+                  {renderLayoutIcon('lock', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
+                  <span>{t('layout.user.lockScreen')}</span>
+                </button>
+              </div>
 
-          <div className="border-t py-1 dark:border-gray-700">
-            <button
-              type="button"
-              className="header-widget-dropdown__item group text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-              data-value="logout"
-              onClick={handleMenuClick}
-            >
-              {renderLayoutIcon('logout', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
-              <span>Logout</span>
-            </button>
-          </div>
+              <div className="border-t py-1 dark:border-gray-700">
+                <button
+                  type="button"
+                  className="header-widget-dropdown__item group text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  data-value="logout"
+                  onClick={handleMenuClick}
+                >
+                  {renderLayoutIcon('logout', 'sm', 'opacity-60 transition-opacity group-hover:opacity-100')}
+                  <span>{t('layout.user.logout')}</span>
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

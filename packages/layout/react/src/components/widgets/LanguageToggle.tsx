@@ -14,18 +14,19 @@ interface LanguageOption {
 }
 
 export const LanguageToggle = memo(function LanguageToggle() {
-  const { props, events } = useLayoutContext();
+  const { props, events, t } = useLayoutContext();
   const [isOpen, setIsOpen] = useState(false);
 
   const currentLocale = props.locale || 'zh-CN';
 
-  const languageOptions: LanguageOption[] = useMemo(
-    () => [
-      { value: 'zh-CN', label: '简体中文', abbr: '中' },
-      { value: 'en-US', label: 'English', abbr: 'EN' },
-    ],
-    []
-  );
+  const languageOptions: LanguageOption[] = useMemo(() => {
+    const zhLabel = t('layout.widgetLegacy.locale.zh-CN');
+    const enLabel = t('layout.widgetLegacy.locale.en-US');
+    return [
+      { value: 'zh-CN', label: zhLabel, abbr: 'ZH' },
+      { value: 'en-US', label: enLabel, abbr: 'EN' },
+    ];
+  }, [t]);
 
   const handleLocaleChange = useCallback(
     (locale: string) => {

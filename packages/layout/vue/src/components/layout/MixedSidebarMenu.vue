@@ -10,8 +10,8 @@
 import { computed, ref, watch, watchEffect, shallowRef, onMounted, onUnmounted } from 'vue';
 import { useLayoutContext, useSidebarState } from '../../composables';
 import { useMenuState } from '../../composables/use-layout-state';
-import type { MenuItem } from '@admin-core/layout';
-import { resolveIconMeta } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
+import MenuIcon from '../common/MenuIcon.vue';
 
 const context = useLayoutContext();
 const { extraVisible, layoutComputed } = useSidebarState();
@@ -108,7 +108,7 @@ const rootNavRef = ref<HTMLElement | null>(null);
 const rootScrollTop = ref(0);
 const rootViewportHeight = ref(0);
 const rootItemHeight = ref(72);
-const ROOT_OVERSCAN = 4;
+const ROOT_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
 const rootResizeObserver = ref<ResizeObserver | null>(null);
 const rootItemResizeObserver = ref<ResizeObserver | null>(null);
 const rootTotalHeight = computed(() => rootMenus.value.length * rootItemHeight.value);
@@ -144,13 +144,13 @@ onMounted(() => {
   const container = rootNavRef.value;
   if (!container) return;
 
-  const handleScroll = () => {
+  const handleScroll = rafThrottle(() => {
     const nextTop = container.scrollTop;
     if (rootScrollTop.value !== nextTop) {
       rootScrollTop.value = nextTop;
     }
-  };
-  const updateHeight = () => {
+  });
+  const updateHeight = rafThrottle(() => {
     const nextHeight = container.clientHeight;
     if (rootViewportHeight.value !== nextHeight) {
       rootViewportHeight.value = nextHeight;
@@ -162,7 +162,7 @@ onMounted(() => {
         rootItemHeight.value = height;
       }
     }
-  };
+  });
 
   updateHeight();
   handleScroll();
@@ -395,26 +395,6 @@ watch([menus, activeKey, selectedRootMenu], updateRootActiveMap, { immediate: tr
 // 判断一级菜单是否选中
 const isRootActive = (item: MenuItem) => rootActiveMap.value.get(getMenuId(item)) ?? false;
 
-const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
-
-const getIconMeta = (icon: string | undefined) => {
-  if (!icon) return null;
-  const cached = iconMetaCache.get(icon);
-  if (cached) return cached;
-  const meta = resolveIconMeta(icon);
-  iconMetaCache.set(icon, meta);
-  return meta;
-};
-
-// 判断图标类型
-const getIconType = (icon: string | undefined) => getIconMeta(icon)?.type ?? null;
-
-// 获取 SVG 图标路径
-const getSvgPath = (icon: string | undefined): string => getIconMeta(icon)?.def?.path || '';
-
-// 获取 SVG 图标 viewBox
-const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.viewBox || '0 0 24 24';
-
 </script>
 
 <template>
@@ -457,17 +437,7 @@ const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.view
         >
           <!-- 图标 -->
           <span v-if="item.icon" class="mixed-sidebar-menu__icon">
-            <svg
-              v-if="getIconType(item.icon) === 'svg'"
-              class="h-5 w-5"
-              :viewBox="getSvgViewBox(item.icon)"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path :d="getSvgPath(item.icon)" />
-            </svg>
-            <template v-else>{{ item.icon }}</template>
+            <MenuIcon :icon="item.icon" size="h-5 w-5" />
           </span>
           <span v-else class="mixed-sidebar-menu__icon">
             {{ item.name.charAt(0) }}
@@ -486,6 +456,7 @@ const getSvgViewBox = (icon: string | undefined) => getIconMeta(icon)?.def?.view
 import { defineComponent, h, Teleport, reactive } from 'vue';
 import type { PropType } from 'vue';
 import LayoutIcon from '../common/LayoutIcon.vue';
+import MenuIconView from '../common/MenuIcon.vue';
 
 export const MixedSidebarSubMenu = defineComponent({
   name: 'MixedSidebarSubMenu',
@@ -527,8 +498,8 @@ export const MixedSidebarSubMenu = defineComponent({
   setup(props, { emit }) {
     const context = useLayoutContext();
     const expandedKeys = ref<Set<string>>(new Set());
-    const SUB_RENDER_CHUNK = 80;
-    const renderCount = ref(SUB_RENDER_CHUNK);
+    const SUB_RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+    const renderCount = ref<number>(SUB_RENDER_CHUNK);
     const navRef = ref<HTMLElement | null>(null);
     const containerRef = ref<HTMLElement | null>(null);
     const popupRef = ref<HTMLElement | null>(null);
@@ -545,7 +516,7 @@ export const MixedSidebarSubMenu = defineComponent({
     const scrollTop = ref(0);
     const viewportHeight = ref(0);
     const subItemHeight = ref(40);
-    const SUB_OVERSCAN = 4;
+    const SUB_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
     const getMenuId = (menu: MenuItem) => {
       const id = menu.key ?? menu.path ?? menu.name ?? '';
       return id === '' ? '' : String(id);
@@ -734,21 +705,6 @@ export const MixedSidebarSubMenu = defineComponent({
       }
     };
 
-    const iconMetaCache = new Map<string, ReturnType<typeof resolveIconMeta>>();
-
-    const getIconMeta = (icon: string | undefined) => {
-      if (!icon) return null;
-      const cached = iconMetaCache.get(icon);
-      if (cached) return cached;
-      const meta = resolveIconMeta(icon);
-      iconMetaCache.set(icon, meta);
-      return meta;
-    };
-
-    const getIconType = (icon: string | undefined) => getIconMeta(icon)?.type ?? null;
-
-    const getSvgPath = (icon: string | undefined): string => getIconMeta(icon)?.def?.path || '';
-
     const renderMenuItem = (item: MenuItem, level: number, style?: Record<string, string>) => {
       if (item.hidden) return null;
 
@@ -778,16 +734,8 @@ export const MixedSidebarSubMenu = defineComponent({
 
       const children = [
         // 图标
-        item.icon && h('span', { class: 'mixed-sidebar-submenu__icon' }, 
-          getIconType(item.icon) === 'svg'
-            ? h('svg', {
-                class: 'h-4 w-4',
-                viewBox: '0 0 24 24',
-                fill: 'none',
-                stroke: 'currentColor',
-                'stroke-width': '2',
-              }, h('path', { d: getSvgPath(item.icon) }))
-            : item.icon
+        item.icon && h('span', { class: 'mixed-sidebar-submenu__icon' },
+          h(MenuIconView, { icon: item.icon, size: 'h-4 w-4' })
         ),
         // 名称（折叠时隐藏）
         !props.collapsed && h('span', { class: 'mixed-sidebar-submenu__name' }, item.name),
@@ -865,16 +813,8 @@ export const MixedSidebarSubMenu = defineComponent({
       };
 
       const popupChildren = [
-        item.icon && h('span', { class: 'sidebar-menu__popup-icon' }, 
-          getIconType(item.icon) === 'svg'
-            ? h('svg', {
-                class: 'h-4 w-4',
-                viewBox: '0 0 24 24',
-                fill: 'none',
-                stroke: 'currentColor',
-                'stroke-width': '2',
-              }, h('path', { d: getSvgPath(item.icon) }))
-            : item.icon
+        item.icon && h('span', { class: 'sidebar-menu__popup-icon' },
+          h(MenuIconView, { icon: item.icon, size: 'h-4 w-4' })
         ),
         h('span', { class: 'sidebar-menu__popup-name' }, item.name),
         hasChildren && h('span', {
@@ -913,13 +853,13 @@ export const MixedSidebarSubMenu = defineComponent({
       const container = navRef.value;
       if (!container) return;
 
-      const handleScroll = () => {
+      const handleScroll = rafThrottle(() => {
         const nextTop = container.scrollTop;
         if (scrollTop.value !== nextTop) {
           scrollTop.value = nextTop;
         }
-      };
-      const updateHeight = () => {
+      });
+      const updateHeight = rafThrottle(() => {
         viewportHeight.value = container.clientHeight;
         const firstItem = container.querySelector('.mixed-sidebar-submenu__item') as HTMLElement | null;
         if (firstItem) {
@@ -928,7 +868,7 @@ export const MixedSidebarSubMenu = defineComponent({
             subItemHeight.value = height;
           }
         }
-      };
+      });
 
       updateHeight();
       handleScroll();
@@ -989,8 +929,8 @@ export const MixedSidebarSubMenu = defineComponent({
         const handleKeydown = (event: KeyboardEvent) => {
           if (event.key === 'Escape') hidePopupMenu();
         };
-        const handleResize = () => updatePopupPosition();
-        const handleScroll = () => updatePopupPosition();
+        const handleResize = rafThrottle(() => updatePopupPosition());
+        const handleScroll = rafThrottle(() => updatePopupPosition());
         document.addEventListener('mousedown', handleDocClick);
         document.addEventListener('keydown', handleKeydown);
         window.addEventListener('resize', handleResize);

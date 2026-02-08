@@ -6,7 +6,7 @@
 import { computed, ref, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
-import type { MenuItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, type MenuItem } from '@admin-core/layout';
 
 interface SearchMenuItem extends MenuItem {
   parentPath?: string[];
@@ -80,7 +80,7 @@ const searchResults = computed(() => {
 const itemHeight = ref(56);
 const listResizeObserver = ref<ResizeObserver | null>(null);
 const RESULT_MAX_HEIGHT = 320;
-const RESULT_OVERSCAN = 4;
+const RESULT_OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
 const totalHeight = computed(() => searchResults.value.length * itemHeight.value);
 const viewportHeight = computed(() =>
   totalHeight.value === 0 ? RESULT_MAX_HEIGHT : Math.min(totalHeight.value, RESULT_MAX_HEIGHT)
@@ -335,7 +335,8 @@ onUnmounted(() => {
 
 // 获取快捷键显示文本
 const shortcutText = computed(() => {
-  const isMac = navigator.platform.toLowerCase().includes('mac');
+  const platform = typeof navigator === 'undefined' ? '' : navigator.platform;
+  const isMac = platform.toLowerCase().includes('mac');
   return isMac ? '⌘K' : 'Ctrl K';
 });
 </script>
@@ -366,7 +367,6 @@ const shortcutText = computed(() => {
         <!-- 遮罩 -->
         <div
           class="header-search-backdrop"
-          :style="{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }"
           @click="closeSearch"
         />
         
@@ -376,12 +376,6 @@ const shortcutText = computed(() => {
           role="dialog"
           aria-modal="true"
           @keydown="handleKeydown"
-          :style="{
-            backgroundColor: 'var(--header-search-modal-bg, var(--card, var(--background, #ffffff)))',
-            border: '1px solid var(--header-search-modal-border, var(--border, #e2e8f0))',
-            boxShadow:
-              'var(--header-search-modal-shadow, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1))',
-          }"
         >
           <!-- 搜索输入框 -->
           <div class="header-search-modal__input-wrapper">

@@ -6,7 +6,7 @@
 import { computed, ref, watch, onUnmounted, nextTick } from 'vue';
 import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
-import type { NotificationItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, type NotificationItem } from '@admin-core/layout';
 
 const context = useLayoutContext();
 
@@ -82,7 +82,7 @@ const scrollTop = ref(0);
 const itemHeight = ref(72);
 const listResizeObserver = ref<ResizeObserver | null>(null);
 const MAX_HEIGHT = 320;
-const OVERSCAN = 4;
+const OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
 const totalHeight = computed(() => formattedNotifications.value.length * itemHeight.value);
 const viewportHeight = computed(() =>
   totalHeight.value === 0 ? MAX_HEIGHT : Math.min(totalHeight.value, MAX_HEIGHT)

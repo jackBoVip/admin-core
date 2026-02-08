@@ -1,0 +1,17 @@
+/**
+ * UI 相关常量
+ * @description React/Vue 共享的 UI 令牌，避免硬编码漂移
+ */
+
+export const LAYOUT_UI_TOKENS = {
+  TAB_RENDER_CHUNK: 60,
+  MENU_RENDER_CHUNK: 80,
+  SUB_MENU_RENDER_CHUNK: 60,
+  MENU_OVERSCAN: 4,
+  POPUP_OVERSCAN: 4,
+  VIRTUAL_OVERSCAN: 4,
+  RESULT_OVERSCAN: 4,
+  MENU_ITEM_HEIGHT: 48,
+  POPUP_MENU_ITEM_HEIGHT: 44,
+  TABBAR_CHROME_CORNER_SIZE: 7,
+} as const;

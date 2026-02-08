@@ -133,9 +133,9 @@ const toggleUnlockForm = () => {
 };
 
 const handleUnlock = () => {
-  if (!password.value) { error.value = locale.value.lockScreen?.passwordPlaceholder || '请输入密码'; return; }
+  if (!password.value) { error.value = locale.value.lockScreen?.passwordPlaceholder ?? ''; return; }
   // 使用哈希验证密码
-  if (!verifyPasswordSync(password.value, savedPassword.value)) { error.value = locale.value.lockScreen?.passwordError || '密码错误'; return; }
+  if (!verifyPasswordSync(password.value, savedPassword.value)) { error.value = locale.value.lockScreen?.passwordError ?? ''; return; }
   setPreferences({ lockScreen: { isLocked: false } });
   showUnlockForm.value = false;
 };
@@ -151,7 +151,7 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isLocked" class="preferences-lock-screen" role="dialog" aria-modal="true" :aria-label="locale.lockScreen?.title || '锁屏'">
+    <div v-if="isLocked" class="preferences-lock-screen" role="dialog" aria-modal="true" :aria-label="locale.lockScreen?.title">
       <div class="preferences-lock-backdrop" aria-hidden="true">
         <div v-if="actualBgImage" class="preferences-lock-backdrop-image" :style="bgImageStyle" />
         <div class="preferences-lock-orb orb-1" data-orb="1" />

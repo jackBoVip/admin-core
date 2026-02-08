@@ -26,6 +26,7 @@ export const enUS = {
   preferences: {
     title: 'Preferences',
     description: 'Customize preferences & Live preview',
+    category: 'Categories',
     resetTip: 'Reset preferences',
     resetSuccess: 'Settings have been reset',
     copyConfig: 'Copy Configuration',

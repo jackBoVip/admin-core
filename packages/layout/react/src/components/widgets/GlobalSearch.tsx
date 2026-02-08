@@ -6,7 +6,7 @@ import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
-import type { MenuItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, type MenuItem } from '@admin-core/layout';
 
 interface FlatMenuItem extends MenuItem {
   parentPath?: string[];
@@ -76,7 +76,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
 
   const [itemHeight, setItemHeight] = useState(56);
   const RESULT_MAX_HEIGHT = 320;
-  const RESULT_OVERSCAN = 4;
+  const RESULT_OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
   const totalHeight = searchResults.length * itemHeight;
   const viewportHeight = totalHeight === 0 ? RESULT_MAX_HEIGHT : Math.min(totalHeight, RESULT_MAX_HEIGHT);
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - RESULT_OVERSCAN);
@@ -300,7 +300,8 @@ export const GlobalSearch = memo(function GlobalSearch() {
   }, [isOpen, totalHeight, viewportHeight, scrollTop]);
 
   const shortcutText = useMemo(() => {
-    const isMac = navigator.platform.toLowerCase().includes('mac');
+    const platform = typeof navigator === 'undefined' ? '' : navigator.platform;
+    const isMac = platform.toLowerCase().includes('mac');
     return isMac ? '⌘K' : 'Ctrl K';
   }, []);
 
@@ -325,7 +326,6 @@ export const GlobalSearch = memo(function GlobalSearch() {
             <div
               className="header-search-backdrop"
               onClick={closeSearch}
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
             />
 
             <div
@@ -333,12 +333,6 @@ export const GlobalSearch = memo(function GlobalSearch() {
               onKeyDown={handleKeydown}
               role="dialog"
               aria-modal="true"
-              style={{
-                backgroundColor: 'var(--header-search-modal-bg, var(--card, var(--background, #ffffff)))',
-                border: '1px solid var(--header-search-modal-border, var(--border, #e2e8f0))',
-                boxShadow:
-                  'var(--header-search-modal-shadow, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1))',
-              }}
             >
               <div className="header-search-modal__input-wrapper">
                 {renderLayoutIcon('search', 'lg', 'text-muted-foreground')}

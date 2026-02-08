@@ -5,6 +5,7 @@
 import { useMemo, useCallback, memo } from 'react';
 import { useMenuContext, useSubMenuContext } from './use-menu-context';
 import type { MenuItem as MenuItemType } from '@admin-core/layout';
+import { MenuIcon } from './MenuIcon';
 
 export interface MenuItemProps {
   /** 菜单项数据 */
@@ -70,7 +71,9 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
     >
       {/* 图标 */}
       {menuIcon && (
-        <span className="menu__icon">{menuIcon}</span>
+        <span className="menu__icon">
+          <MenuIcon icon={menuIcon} size="h-full w-full" />
+        </span>
       )}
       
       {/* 名称 */}

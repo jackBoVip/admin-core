@@ -12,6 +12,9 @@ import {
   generateContextMenuItems,
   type ContextMenuAction,
   type TabItem,
+  LAYOUT_UI_TOKENS,
+  rafThrottle,
+  TABBAR_CHROME_SVG_PATHS,
 } from '@admin-core/layout';
 
 export interface LayoutTabbarProps {
@@ -154,8 +157,9 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     return map;
   }, [tabs]);
 
-  const TAB_RENDER_CHUNK = 60;
-  const [tabRenderCount, setTabRenderCount] = useState(TAB_RENDER_CHUNK);
+  const TAB_RENDER_CHUNK = LAYOUT_UI_TOKENS.TAB_RENDER_CHUNK;
+  const [tabRenderCount, setTabRenderCount] = useState<number>(TAB_RENDER_CHUNK);
+  const chromeCornerSize = LAYOUT_UI_TOKENS.TABBAR_CHROME_CORNER_SIZE;
 
   // 类名
   const tabbarClassName = useMemo(() => {
@@ -235,15 +239,22 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     setCanScrollLeft(scrollLeft > 0);
     setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
   }, []);
+  const updateScrollStateThrottled = useMemo(
+    () => rafThrottle(updateScrollState),
+    [updateScrollState]
+  );
 
   useEffect(() => {
-    updateScrollState();
-  }, [tabs, tabRenderCount, updateScrollState]);
+    updateScrollStateThrottled();
+  }, [tabs, tabRenderCount, updateScrollStateThrottled]);
 
   useEffect(() => {
-    window.addEventListener('resize', updateScrollState);
-    return () => window.removeEventListener('resize', updateScrollState);
-  }, [updateScrollState]);
+    window.addEventListener('resize', updateScrollStateThrottled);
+    return () => {
+      window.removeEventListener('resize', updateScrollStateThrottled);
+      updateScrollStateThrottled.cancel?.();
+    };
+  }, [updateScrollStateThrottled]);
 
   useEffect(() => {
     const key = activeKey ?? '';
@@ -262,8 +273,8 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     if (!container) return;
     const offset = Math.max(container.clientWidth * 0.6, 120);
     container.scrollBy({ left: offset * direction, behavior: 'smooth' });
-    requestAnimationFrame(updateScrollState);
-  }, [updateScrollState]);
+    updateScrollStateThrottled();
+  }, [updateScrollStateThrottled]);
 
   const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false, targetKey: null }));
@@ -480,8 +491,8 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     e.preventDefault();
     const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     container.scrollLeft += delta;
-    updateScrollState();
-  }, [tabbarConfig.wheelable, updateScrollState]);
+    updateScrollStateThrottled();
+  }, [tabbarConfig.wheelable, updateScrollStateThrottled]);
 
   const onDragStart = useCallback((e: React.DragEvent, index: number) => {
     if (!tabbarConfig.draggable) return;
@@ -599,7 +610,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
           className="layout-tabbar__tabs layout-scroll-container flex h-full flex-1 overflow-x-auto scrollbar-none"
           data-dragging={dragState.isDragging ? 'true' : undefined}
           onWheel={handleWheel}
-          onScroll={updateScrollState}
+          onScroll={updateScrollStateThrottled}
         >
           {tabsSlot || (
             visibleTabs.map((tab, index) => {
@@ -648,11 +659,21 @@ export const LayoutTabbar = memo(function LayoutTabbar({
                       <div className="layout-tabbar__chrome-divider" />
                       <div className="layout-tabbar__chrome-bg">
                         <div className="layout-tabbar__chrome-bg-content" />
-                        <svg className="layout-tabbar__chrome-bg-before" height="7" width="7" viewBox="0 0 7 7">
-                          <path d="M 0 7 A 7 7 0 0 0 7 0 L 7 7 Z" />
+                        <svg
+                          className="layout-tabbar__chrome-bg-before"
+                          height={chromeCornerSize}
+                          width={chromeCornerSize}
+                          viewBox="0 0 7 7"
+                        >
+                          <path d={TABBAR_CHROME_SVG_PATHS.before} />
                         </svg>
-                        <svg className="layout-tabbar__chrome-bg-after" height="7" width="7" viewBox="0 0 7 7">
-                          <path d="M 0 0 A 7 7 0 0 0 7 7 L 0 7 Z" />
+                        <svg
+                          className="layout-tabbar__chrome-bg-after"
+                          height={chromeCornerSize}
+                          width={chromeCornerSize}
+                          viewBox="0 0 7 7"
+                        >
+                          <path d={TABBAR_CHROME_SVG_PATHS.after} />
                         </svg>
                       </div>
                       <div className="layout-tabbar__chrome-main">

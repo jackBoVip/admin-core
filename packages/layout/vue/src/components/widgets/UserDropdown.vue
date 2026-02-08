@@ -100,51 +100,53 @@ const handleMenuClick = (e: MouseEvent) => {
           </div>
         </div>
 
-        <!-- 菜单项 -->
-        <div class="py-1">
-          <button
-            type="button"
-            class="header-widget-dropdown__item group"
-            data-value="profile"
-            @click="handleMenuClick"
-          >
-            <LayoutIcon name="user" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
-            <span>{{ context.t('layout.user.profile') }}</span>
-          </button>
+        <slot name="menu">
+          <!-- 菜单项 -->
+          <div class="py-1">
+            <button
+              type="button"
+              class="header-widget-dropdown__item group"
+              data-value="profile"
+              @click="handleMenuClick"
+            >
+              <LayoutIcon name="user" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
+              <span>{{ context.t('layout.user.profile') }}</span>
+            </button>
 
-          <button
-            type="button"
-            class="header-widget-dropdown__item group"
-            data-value="settings"
-            @click="handleMenuClick"
-          >
-            <LayoutIcon name="settings" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
-            <span>{{ context.t('layout.user.settings') }}</span>
-          </button>
+            <button
+              type="button"
+              class="header-widget-dropdown__item group"
+              data-value="settings"
+              @click="handleMenuClick"
+            >
+              <LayoutIcon name="settings" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
+              <span>{{ context.t('layout.user.settings') }}</span>
+            </button>
 
-          <button
-            type="button"
-            class="header-widget-dropdown__item group"
-            data-value="lock"
-            @click="handleMenuClick"
-          >
-            <LayoutIcon name="lock" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
-            <span>{{ context.t('layout.user.lockScreen') }}</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              class="header-widget-dropdown__item group"
+              data-value="lock"
+              @click="handleMenuClick"
+            >
+              <LayoutIcon name="lock" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
+              <span>{{ context.t('layout.user.lockScreen') }}</span>
+            </button>
+          </div>
 
-        <!-- 登出 -->
-        <div class="border-t py-1 dark:border-gray-700">
-          <button
-            type="button"
-            class="header-widget-dropdown__item group text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-            data-value="logout"
-            @click="handleMenuClick"
-          >
-            <LayoutIcon name="logout" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
-            <span>{{ context.t('layout.user.logout') }}</span>
-          </button>
-        </div>
+          <!-- 登出 -->
+          <div class="border-t py-1 dark:border-gray-700">
+            <button
+              type="button"
+              class="header-widget-dropdown__item group text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+              data-value="logout"
+              @click="handleMenuClick"
+            >
+              <LayoutIcon name="logout" size="sm" className="opacity-60 transition-opacity group-hover:opacity-100" />
+              <span>{{ context.t('layout.user.logout') }}</span>
+            </button>
+          </div>
+        </slot>
       </div>
     </Transition>
   </div>

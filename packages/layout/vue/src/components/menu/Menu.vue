@@ -7,7 +7,7 @@ import { computed, ref, watch, watchEffect, onMounted, onUnmounted, nextTick } f
 import { createMenuContext, type MenuItemClicked } from './use-menu-context';
 import SubMenu from './SubMenu.vue';
 import MenuItemComp from './MenuItem.vue';
-import type { MenuItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 
 interface Props {
   /** 菜单数据 */
@@ -26,6 +26,8 @@ interface Props {
   defaultActive?: string;
   /** 默认展开的菜单 */
   defaultOpeneds?: string[];
+  /** 更多菜单文本 */
+  moreLabel?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -37,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
   theme: 'light',
   defaultActive: '',
   defaultOpeneds: () => [],
+  moreLabel: 'More',
 });
 
 const emit = defineEmits<{
@@ -206,13 +209,13 @@ createMenuContext({
 const menuRef = ref<HTMLElement | null>(null);
 const sliceIndex = ref(-1);
 const resizeRaf = ref<number | null>(null);
-const RENDER_CHUNK = 80;
-const renderCount = ref(RENDER_CHUNK);
+const RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+const renderCount = ref<number>(RENDER_CHUNK);
 const scrollContainer = ref<HTMLElement | null>(null);
 const scrollTop = ref(0);
 const viewportHeight = ref(0);
 const itemHeight = ref(40);
-const VIRTUAL_OVERSCAN = 4;
+const VIRTUAL_OVERSCAN = LAYOUT_UI_TOKENS.VIRTUAL_OVERSCAN;
 const scrollResizeObserver = ref<ResizeObserver | null>(null);
 const itemResizeObserver = ref<ResizeObserver | null>(null);
 
@@ -419,12 +422,12 @@ watchEffect((onCleanup) => {
   if (!container) return;
   scrollContainer.value = container;
 
-  const handleScroll = () => {
+  const handleScroll = rafThrottle(() => {
     const nextTop = container.scrollTop;
     if (scrollTop.value !== nextTop) {
       scrollTop.value = nextTop;
     }
-  };
+  });
   const updateItemHeight = () => {
     const computedStyle = getComputedStyle(menuEl);
     const heightValue = parseFloat(computedStyle.getPropertyValue('--menu-item-height'));
@@ -439,13 +442,13 @@ watchEffect((onCleanup) => {
       }
     }
   };
-  const updateMetrics = () => {
+  const updateMetrics = rafThrottle(() => {
     const nextHeight = container.clientHeight;
     if (viewportHeight.value !== nextHeight) {
       viewportHeight.value = nextHeight;
     }
     updateItemHeight();
-  };
+  });
 
   updateMetrics();
   handleScroll();
@@ -560,7 +563,7 @@ const menuClass = computed(() => [
     <!-- 更多按钮（溢出菜单） -->
     <SubMenu
       v-if="hasOverflow"
-      :item="{ key: '__more__', name: '更多', children: overflowMenus }"
+      :item="{ key: '__more__', name: props.moreLabel, children: overflowMenus }"
       :level="0"
       is-more
     />

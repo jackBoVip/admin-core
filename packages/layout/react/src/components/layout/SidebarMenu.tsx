@@ -4,14 +4,13 @@
  * 折叠状态下支持悬停弹出子菜单（类似 vben）
  */
 
-import { hasChildren, getMenuItemClassName, getMenuId, isMenuActive } from '@admin-core/layout';
+import { hasChildren, getMenuItemClassName, getMenuId, isMenuActive, LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderIcon } from '../../utils/icon-renderer';
 import { renderLayoutIcon } from '../../utils';
-import type { MenuItem } from '@admin-core/layout';
 
 interface MenuItemProps {
   item: MenuItem;
@@ -190,9 +189,9 @@ const PopupMenu = memo(function PopupMenu({
 }: PopupMenuProps) {
   const popupRef = useRef<HTMLDivElement>(null);
   const popupContentRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [contentTop, setContentTop] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const [scrollTop, setScrollTop] = useState<number>(0);
+  const [contentTop, setContentTop] = useState<number>(0);
+  const [viewportHeight, setViewportHeight] = useState<number>(0);
   const popupResizeObserverRef = useRef<ResizeObserver | null>(null);
   const popupStyle = useMemo(() => ({ top: `${top}px`, left: `${left}px` }), [top, left]);
   const itemId = useMemo(() => getMenuId(item), [item]);
@@ -306,8 +305,10 @@ const PopupMenu = memo(function PopupMenu({
   }, [menuItemMap, handleItemClick]);
 
   const popupChildren = item.children ?? [];
-  const [popupItemHeight, setPopupItemHeight] = useState(44);
-  const POPUP_OVERSCAN = 4;
+  const [popupItemHeight, setPopupItemHeight] = useState<number>(
+    LAYOUT_UI_TOKENS.POPUP_MENU_ITEM_HEIGHT,
+  );
+  const POPUP_OVERSCAN = LAYOUT_UI_TOKENS.POPUP_OVERSCAN;
   const POPUP_VIRTUAL_MIN_ITEMS = 50;
   const shouldVirtualize = expandedKeys.size === 0 && popupChildren.length >= POPUP_VIRTUAL_MIN_ITEMS;
   const contentScrollTop = Math.max(0, scrollTop - contentTop);
@@ -332,7 +333,7 @@ const PopupMenu = memo(function PopupMenu({
     const content = popupContentRef.current;
     if (!container || !content) return;
 
-    const update = () => {
+    const update = rafThrottle(() => {
       const offset = content.offsetTop;
       setContentTop(offset);
       setViewportHeight(Math.max(0, container.clientHeight - offset));
@@ -343,7 +344,7 @@ const PopupMenu = memo(function PopupMenu({
           setPopupItemHeight((prev) => (prev === height ? prev : height));
         }
       }
-    };
+    });
     update();
     const useWindowResize = typeof ResizeObserver === 'undefined';
     if (useWindowResize) {
@@ -547,8 +548,8 @@ export function SidebarMenu() {
   const sidebarRectFrameRef = useRef<number | null>(null);
   const menuRef = useRef<HTMLElement>(null);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const [viewportHeight, setViewportHeight] = useState(0);
+  const [scrollTop, setScrollTop] = useState<number>(0);
+  const [viewportHeight, setViewportHeight] = useState<number>(0);
   const scrollResizeObserverRef = useRef<ResizeObserver | null>(null);
   const menuItemResizeObserverRef = useRef<ResizeObserver | null>(null);
 
@@ -639,10 +640,10 @@ export function SidebarMenu() {
     }
     return result;
   }, [menus]);
-  const RENDER_CHUNK = 80;
-  const [renderCount, setRenderCount] = useState(RENDER_CHUNK);
-  const [menuItemHeight, setMenuItemHeight] = useState(48);
-  const MENU_OVERSCAN = 4;
+  const RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+  const [renderCount, setRenderCount] = useState<number>(RENDER_CHUNK);
+  const [menuItemHeight, setMenuItemHeight] = useState<number>(LAYOUT_UI_TOKENS.MENU_ITEM_HEIGHT);
+  const MENU_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
   const shouldVirtualize = collapsed && !expandOnHovering;
 
   useEffect(() => {
@@ -846,17 +847,19 @@ export function SidebarMenu() {
     scrollContainerRef.current = container;
     if (!container) return;
 
-    const handleScroll = () => {
+    const syncScroll = () => {
       const nextTop = container.scrollTop;
       setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
     };
-    const updateHeight = () => {
+    const syncHeight = () => {
       const nextHeight = container.clientHeight;
       setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
     };
+    const handleScroll = rafThrottle(syncScroll);
+    const updateHeight = rafThrottle(syncHeight);
 
-    updateHeight();
-    handleScroll();
+    syncHeight();
+    syncScroll();
     container.addEventListener('scroll', handleScroll, { passive: true });
     const useWindowResize = typeof ResizeObserver === 'undefined';
     if (useWindowResize) {
@@ -875,6 +878,8 @@ export function SidebarMenu() {
         scrollResizeObserverRef.current.disconnect();
         scrollResizeObserverRef.current = null;
       }
+      handleScroll.cancel?.();
+      updateHeight.cancel?.();
     };
   }, []);
 

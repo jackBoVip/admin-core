@@ -26,6 +26,7 @@ export const zhCN = {
   preferences: {
     title: '偏好设置',
     description: '自定义偏好设置 & 实时预览',
+    category: '设置分类',
     resetTip: '重置偏好设置',
     resetSuccess: '设置已重置',
     copyConfig: '复制配置',

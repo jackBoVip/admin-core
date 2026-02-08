@@ -54,17 +54,18 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
   const texts = useMemo(() => {
     const ls = locale.lockScreen || {};
     const common = locale.common || {};
+    const minLengthText = ls.passwordMinLength ?? '';
     return {
-      title: ls.setPassword || '设置锁屏密码',
-      subtitle: ls.setPasswordTip || '首次锁屏需要设置解锁密码',
-      passwordPlaceholder: ls.passwordPlaceholder || '请输入密码',
-      confirmPlaceholder: ls.confirmPasswordPlaceholder || '请再次输入密码',
-      submit: ls.confirmAndLock || '确认并锁定',
-      minLengthError: (ls.passwordMinLength || '密码至少 {0} 位').replace('{0}', String(PASSWORD_MIN_LENGTH)),
-      mismatchError: ls.passwordMismatch || '两次输入的密码不一致',
-      showPassword: ls.showPassword || '显示密码',
-      hidePassword: ls.hidePassword || '隐藏密码',
-      close: common.close || '关闭',
+      title: ls.setPassword ?? '',
+      subtitle: ls.setPasswordTip ?? '',
+      passwordPlaceholder: ls.passwordPlaceholder ?? '',
+      confirmPlaceholder: ls.confirmPasswordPlaceholder ?? '',
+      submit: ls.confirmAndLock ?? '',
+      minLengthError: minLengthText.replace('{0}', String(PASSWORD_MIN_LENGTH)),
+      mismatchError: ls.passwordMismatch ?? '',
+      showPassword: ls.showPassword ?? '',
+      hidePassword: ls.hidePassword ?? '',
+      close: common.close ?? '',
     };
   }, [locale]);
 

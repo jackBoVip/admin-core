@@ -113,17 +113,21 @@ For full slot/prop coverage, refer to the `LayoutSlots / BasicLayout` definition
 |------|------|
 | Header left | `headerLeft` |
 | Header right | `headerRight` |
+| Header user area | `headerUser` |
 | Tabbar right | `tabbarRight` |
 | Panel content | `panelSlot` |
 | Panel header | `panelHeader` |
 | Panel footer | `panelFooter` |
+| User dropdown menu | `userDropdownMenu` |
 
 **Example:**
 ```tsx
 <BasicLayout
   headerLeft={<MyHeaderLeft />}
   headerRight={<MyHeaderRight />}
+  headerUser={<MyHeaderUser />}
   tabbarRight={<MyTabbarRight />}
+  userDropdownMenu={<MyUserMenu />}
   panelHeader={<MyPanelHeader />}
   panelSlot={<MyPanelBody />}
   panelFooter={<MyPanelFooter />}>
@@ -137,17 +141,21 @@ For full slot/prop coverage, refer to the `LayoutSlots / BasicLayout` definition
 |------|------|
 | Header left | `header-left` |
 | Header right | `header-right` |
+| Header user area | `header-user` |
 | Tabbar right | `tabbar-right` |
 | Panel content | `panel` |
 | Panel header | `panel-header` |
 | Panel footer | `panel-footer` |
+| User dropdown menu | `user-dropdown-menu` |
 
 **Example:**
 ```vue
 <BasicLayout>
   <template #header-left><MyHeaderLeft /></template>
   <template #header-right><MyHeaderRight /></template>
+  <template #header-user><MyHeaderUser /></template>
   <template #tabbar-right><MyTabbarRight /></template>
+  <template #user-dropdown-menu><MyUserMenu /></template>
   <template #panel-header><MyPanelHeader /></template>
   <template #panel><MyPanelBody /></template>
   <template #panel-footer><MyPanelFooter /></template>

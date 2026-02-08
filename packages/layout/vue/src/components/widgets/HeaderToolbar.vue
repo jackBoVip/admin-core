@@ -67,6 +67,12 @@ const showUser = computed(() => widgets.value.userDropdown !== false);
     <NotificationButton v-if="showNotification" />
     
     <!-- 用户下拉菜单 -->
-    <UserDropdown v-if="showUser" />
+    <slot name="user">
+      <UserDropdown v-if="showUser">
+        <template v-if="$slots['user-menu']" #menu>
+          <slot name="user-menu" />
+        </template>
+      </UserDropdown>
+    </slot>
   </div>
 </template>

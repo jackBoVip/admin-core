@@ -113,17 +113,21 @@ import {
 |------|------|
 | 顶栏左侧 | `headerLeft` |
 | 顶栏右侧 | `headerRight` |
+| 顶栏用户区域 | `headerUser` |
 | 标签栏右侧 | `tabbarRight` |
 | 功能区内容 | `panelSlot` |
 | 功能区头部 | `panelHeader` |
 | 功能区底部 | `panelFooter` |
+| 用户下拉菜单 | `userDropdownMenu` |
 
 **示例：**
 ```tsx
 <BasicLayout
   headerLeft={<MyHeaderLeft />}
   headerRight={<MyHeaderRight />}
+  headerUser={<MyHeaderUser />}
   tabbarRight={<MyTabbarRight />}
+  userDropdownMenu={<MyUserMenu />}
   panelHeader={<MyPanelHeader />}
   panelSlot={<MyPanelBody />}
   panelFooter={<MyPanelFooter />}>
@@ -137,17 +141,21 @@ import {
 |------|------|
 | 顶栏左侧 | `header-left` |
 | 顶栏右侧 | `header-right` |
+| 顶栏用户区域 | `header-user` |
 | 标签栏右侧 | `tabbar-right` |
 | 功能区内容 | `panel` |
 | 功能区头部 | `panel-header` |
 | 功能区底部 | `panel-footer` |
+| 用户下拉菜单 | `user-dropdown-menu` |
 
 **示例：**
 ```vue
 <BasicLayout>
   <template #header-left><MyHeaderLeft /></template>
   <template #header-right><MyHeaderRight /></template>
+  <template #header-user><MyHeaderUser /></template>
   <template #tabbar-right><MyTabbarRight /></template>
+  <template #user-dropdown-menu><MyUserMenu /></template>
   <template #panel-header><MyPanelHeader /></template>
   <template #panel><MyPanelBody /></template>
   <template #panel-footer><MyPanelFooter /></template>

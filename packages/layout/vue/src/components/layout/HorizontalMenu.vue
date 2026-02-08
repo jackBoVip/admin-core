@@ -77,6 +77,7 @@ const containerClass = computed(() => [
       :theme="theme"
       mode="horizontal"
       :rounded="true"
+      :more-label="context.t('layout.common.more')"
       @select="handleSelect"
     />
   </div>

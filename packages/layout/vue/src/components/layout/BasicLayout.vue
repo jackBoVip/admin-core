@@ -14,6 +14,7 @@ import {
   PreferencesDrawer,
   initPreferences,
   getPreferencesManager,
+  usePreferencesContext,
   type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences-vue';
 import LayoutHeader from './LayoutHeader.vue';
@@ -58,6 +59,23 @@ const floatingDragState = ref<{
 } | null>(null);
 const floatingMoved = ref(false);
 const floatingButtonRef = ref<HTMLButtonElement | null>(null);
+
+const preferencesLock = ref<(() => void) | null>(null);
+const setPreferencesLock = (lock: () => void) => {
+  preferencesLock.value = lock;
+};
+
+const PreferencesLockBridge = defineComponent({
+  name: 'PreferencesLockBridge',
+  emits: ['ready'],
+  setup(_, { emit }) {
+    const context = usePreferencesContext();
+    onMounted(() => {
+      emit('ready', context.lock);
+    });
+    return () => null;
+  },
+});
 
 // 打开偏好设置
 const openPreferences = () => {
@@ -196,6 +214,14 @@ const emit = defineEmits<{
 const { isMobile } = useResponsive();
 
 // 构建事件对象（同步偏好设置）
+const handleLockScreen = () => {
+  if (preferencesLock.value) {
+    preferencesLock.value();
+    return;
+  }
+  emit('lock-screen');
+};
+
 const events: LayoutEvents = {
   onSidebarCollapse: (collapsed) => {
     // 同步更新偏好设置
@@ -223,7 +249,7 @@ const events: LayoutEvents = {
     preferencesManager?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
     emit('locale-change', locale);
   },
-  onLockScreen: () => emit('lock-screen'),
+  onLockScreen: handleLockScreen,
   onLogout: () => emit('logout'),
   onPanelCollapse: (collapsed) => {
     // 同步更新偏好设置
@@ -246,6 +272,13 @@ const resolvedPreferencesButtonPosition = computed(() => {
     contextProps.value.preferencesButtonPosition ??
     'auto'
   );
+});
+
+const resolvedLockScreenBackground = computed(() => {
+  const value = contextProps.value.lockScreen?.backgroundImage;
+  if (value == null) return undefined;
+  if (typeof value === 'string' && value.trim() === '') return undefined;
+  return value;
 });
 
 // 创建布局上下文（传入 ComputedRef 实现响应式）
@@ -594,6 +627,10 @@ const menuLauncherLabel = computed(() => {
   return context.t('layout.header.menuLauncher');
 });
 
+const preferencesTitle = computed(() => {
+  return context.t('layout.widgetLegacy.preferences.title');
+});
+
 const launcherMenus = computed(() => {
   return filterHiddenMenus(contextProps.value.menus || []);
 });
@@ -752,7 +789,17 @@ defineExpose({
 </script>
 
 <template>
-  <PreferencesProvider :show-trigger="false" :ui-config="props.preferencesUIConfig">
+  <PreferencesProvider
+    :show-trigger="false"
+    :ui-config="props.preferencesUIConfig"
+    :avatar="contextProps.userInfo?.avatar"
+    :username="contextProps.userInfo?.displayName || contextProps.userInfo?.username"
+    :lock-screen-background="resolvedLockScreenBackground"
+    @lock="emit('lock-screen')"
+    @logout="emit('logout')"
+    @search="emit('global-search', '')"
+  >
+    <PreferencesLockBridge @ready="setPreferencesLock" />
     <div :class="rootClass" :style="rootStyle">
       <LayoutProgress />
       <!-- 侧边栏 -->
@@ -829,7 +876,14 @@ defineExpose({
             :show-preferences-button="showPreferencesButton"
             :preferences-button-position="resolvedPreferencesButtonPosition"
             :on-open-preferences="openPreferences"
-          />
+          >
+            <template v-if="$slots['header-user']" #user>
+              <slot name="header-user" />
+            </template>
+            <template v-if="$slots['user-dropdown-menu']" #user-menu>
+              <slot name="user-dropdown-menu" />
+            </template>
+          </HeaderToolbar>
         </slot>
       </template>
       <template #extra>
@@ -952,7 +1006,7 @@ defineExpose({
       <button
         v-if="showFixedPreferencesButton"
         class="layout-preferences-button"
-        title="偏好设置"
+        :title="preferencesTitle"
         @click="openPreferences"
       >
         <slot name="preferences-button-icon">
@@ -965,7 +1019,7 @@ defineExpose({
         v-if="showFloatingPreferencesButton"
         ref="floatingButtonRef"
         :class="['layout-preferences-button', 'layout-preferences-button--floating', floatingDragging ? 'layout-preferences-button--dragging' : '']"
-        title="偏好设置"
+        :title="preferencesTitle"
         :style="floatingButtonStyle"
         :data-edge="floatingEdge || undefined"
         @pointerdown="handleFloatingPointerDown"

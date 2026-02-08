@@ -16,9 +16,10 @@ import {
   PreferencesDrawer,
   initPreferences,
   getPreferencesManager,
+  usePreferencesContext,
   type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences-react';
-import { useEffect, useState, useMemo, useCallback, useRef, type ReactNode, type CSSProperties } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo, type ReactNode, type CSSProperties } from 'react';
 import { LayoutProvider, useLayoutComputed, useLayoutCSSVars, useLayoutState, useLayoutContext, useRouter } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
 import { useResponsive } from '../../hooks/use-layout-state';
@@ -62,6 +63,8 @@ export interface LayoutSlots {
   headerMenu?: ReactNode;
   headerRight?: ReactNode;
   headerActions?: ReactNode;
+  headerUser?: ReactNode;
+  userDropdownMenu?: ReactNode;
   headerExtra?: ReactNode;
   // 侧边栏插槽
   sidebarLogo?: ReactNode;
@@ -144,6 +147,20 @@ export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots
 /** 默认设置图标 */
 const SettingsIcon = () => renderLayoutIcon('settings', 'sm');
 
+interface PreferencesLockBridgeProps {
+  onReady?: (lock: () => void) => void;
+}
+
+const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: PreferencesLockBridgeProps) {
+  const { lock } = usePreferencesContext();
+
+  useEffect(() => {
+    onReady?.(() => lock());
+  }, [lock, onReady]);
+
+  return null;
+});
+
 /**
  * 内部布局组件
  */
@@ -164,6 +181,8 @@ function LayoutInner({
   headerMenu,
   headerRight,
   headerActions,
+  headerUser,
+  userDropdownMenu,
   headerExtra,
   sidebarLogo,
   sidebarMenu,
@@ -197,7 +216,8 @@ function LayoutInner({
 
   const resolvedPreferencesButtonPosition =
     preferencesButtonPosition ?? contextProps.preferencesButtonPosition ?? 'auto';
-  
+  const preferencesTitle = context.t('layout.widgetLegacy.preferences.title');
+
   // 偏好设置抽屉状态
   const [showPreferencesDrawer, setShowPreferencesDrawer] = useState(false);
   const [menuLauncherOpen, setMenuLauncherOpen] = useState(false);
@@ -666,6 +686,8 @@ function LayoutInner({
                   onOpenPreferences={openPreferences}
                   showPreferencesButton={showPreferencesButton}
                   preferencesButtonPosition={resolvedPreferencesButtonPosition}
+                  userSlot={headerUser}
+                  userMenuSlot={userDropdownMenu}
                 />
               )
             }
@@ -767,7 +789,7 @@ function LayoutInner({
         {showFixedPreferencesButton && (
           <button
             className="layout-preferences-button"
-            title="偏好设置"
+            title={preferencesTitle}
             onClick={openPreferences}
           >
             {preferencesButtonIcon || <SettingsIcon />}
@@ -780,7 +802,7 @@ function LayoutInner({
             ref={floatingButtonRef}
             type="button"
             className={`layout-preferences-button layout-preferences-button--floating${floatingDragging ? ' layout-preferences-button--dragging' : ''}`}
-            title="偏好设置"
+            title={preferencesTitle}
             style={floatingButtonStyle}
             data-edge={floatingEdge ?? undefined}
             onPointerDown={handleFloatingPointerDown}
@@ -826,6 +848,8 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
 
     return () => unsubscribe();
   }, []);
+
+  const [preferencesLock, setPreferencesLock] = useState<(() => void) | null>(null);
 
   // 标记平台类型（用于滚动条样式兼容）
   useEffect(() => {
@@ -989,6 +1013,21 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     unreadCount,
   ]);
 
+  const resolvedLockScreenBackground = useMemo(() => {
+    const value = layoutProps.lockScreen?.backgroundImage;
+    if (value == null) return undefined;
+    if (typeof value === 'string' && value.trim() === '') return undefined;
+    return value;
+  }, [layoutProps.lockScreen?.backgroundImage]);
+
+  const handleLockScreen = useCallback(() => {
+    if (preferencesLock) {
+      preferencesLock();
+      return;
+    }
+    onLockScreen?.();
+  }, [preferencesLock, onLockScreen]);
+
   // 构建事件对象（同步偏好设置）
   const events: LayoutEvents = useMemo(() => ({
     onSidebarCollapse: (collapsed: boolean) => {
@@ -1017,7 +1056,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
       preferencesManager?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
       onLocaleChange?.(locale);
     },
-    onLockScreen,
+    onLockScreen: handleLockScreen,
     onLogout,
     onPanelCollapse: (collapsed: boolean) => {
       // 同步更新偏好设置
@@ -1041,7 +1080,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onFullscreenToggle,
     onThemeToggle,
     onLocaleChange,
-    onLockScreen,
+    handleLockScreen,
     onLogout,
     onPanelCollapse,
     onGlobalSearch,
@@ -1049,7 +1088,16 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   ]);
 
   return (
-    <PreferencesProvider showTrigger={false} uiConfig={props.preferencesUIConfig}>
+    <PreferencesProvider
+      showTrigger={false}
+      uiConfig={props.preferencesUIConfig}
+      onLogout={onLogout}
+      onLock={onLockScreen}
+      avatar={userInfo?.avatar}
+      username={userInfo?.displayName || userInfo?.username}
+      lockScreenBackground={resolvedLockScreenBackground}
+    >
+      <PreferencesLockBridge onReady={setPreferencesLock} />
       <LayoutProvider
         props={layoutProps}
         events={events}

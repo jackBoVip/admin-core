@@ -6,17 +6,10 @@ import {
   getLayoutUiIconDefinition,
   type LayoutUiIconName,
   type IconDefinition,
+  resolveLayoutIconSize,
 } from '@admin-core/layout';
 
-const LAYOUT_ICON_SIZES = {
-  xs: 'h-3 w-3',
-  sm: 'h-4 w-4',
-  md: 'h-[1.125rem] w-[1.125rem]',
-  lg: 'h-5 w-5',
-  xl: 'h-6 w-6',
-} as const;
-
-export type LayoutIconSize = keyof typeof LAYOUT_ICON_SIZES;
+export type LayoutIconSize = Parameters<typeof resolveLayoutIconSize>[0];
 
 function renderSvg(def: IconDefinition, className: string) {
   const fill = def.fill ? 'currentColor' : 'none';
@@ -34,7 +27,7 @@ function renderSvg(def: IconDefinition, className: string) {
       {def.extra ? (
         <g dangerouslySetInnerHTML={{ __html: def.extra }} />
       ) : null}
-      <path d={def.path} />
+      {def.path ? <path d={def.path} /> : null}
     </svg>
   );
 }
@@ -47,7 +40,7 @@ export function renderLayoutIcon(
 ) {
   const def = getLayoutUiIconDefinition(name);
   if (!def) return null;
-  const sizeClass = size in LAYOUT_ICON_SIZES ? LAYOUT_ICON_SIZES[size as LayoutIconSize] : size;
+  const sizeClass = resolveLayoutIconSize(size);
   const mergedClass = className ? `${sizeClass} ${className}` : sizeClass;
   const svg = renderSvg(def, mergedClass);
   if (!style) return svg;

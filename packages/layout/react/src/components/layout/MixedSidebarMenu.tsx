@@ -13,7 +13,7 @@ import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderIcon as renderIconByType } from '../../utils/icon-renderer';
 import { renderLayoutIcon } from '../../utils';
-import type { MenuItem } from '@admin-core/layout';
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 
 interface MixedSidebarMenuProps {
   onRootMenuChange?: (menu: MenuItem | null) => void;
@@ -117,7 +117,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   const [rootScrollTop, setRootScrollTop] = useState(0);
   const [rootViewportHeight, setRootViewportHeight] = useState(0);
   const [rootItemHeight, setRootItemHeight] = useState(72);
-  const ROOT_OVERSCAN = 4;
+  const ROOT_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
   const rootResizeObserverRef = useRef<ResizeObserver | null>(null);
   const rootItemResizeObserverRef = useRef<ResizeObserver | null>(null);
   const rootTotalHeight = rootMenus.length * rootItemHeight;
@@ -296,11 +296,11 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     const container = rootNavRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
+    const handleScroll = rafThrottle(() => {
       const nextTop = container.scrollTop;
       setRootScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-    };
-    const updateHeight = () => {
+    });
+    const updateHeight = rafThrottle(() => {
       const nextHeight = container.clientHeight;
       setRootViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
       const firstItem = container.querySelector('.mixed-sidebar-menu__root-item') as HTMLElement | null;
@@ -310,7 +310,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
           setRootItemHeight(height);
         }
       }
-    };
+    });
 
     updateHeight();
     handleScroll();
@@ -486,8 +486,8 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   onTogglePin,
 }: MixedSidebarSubMenuProps) {
   const context = useLayoutContext();
-  const SUB_RENDER_CHUNK = 80;
-  const [subRenderCount, setSubRenderCount] = useState(SUB_RENDER_CHUNK);
+  const SUB_RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+  const [subRenderCount, setSubRenderCount] = useState<number>(SUB_RENDER_CHUNK);
   const navRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -495,7 +495,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   const [scrollTop, setScrollTop] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [subItemHeight, setSubItemHeight] = useState(40);
-  const SUB_OVERSCAN = 4;
+  const SUB_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
   const subResizeObserverRef = useRef<ResizeObserver | null>(null);
   const subItemResizeObserverRef = useRef<ResizeObserver | null>(null);
   const getMenuId = useCallback((menu: MenuItem) => {
@@ -853,11 +853,11 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     const container = navRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
+    const handleScroll = rafThrottle(() => {
       const nextTop = container.scrollTop;
       setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-    };
-    const updateHeight = () => {
+    });
+    const updateHeight = rafThrottle(() => {
       const nextHeight = container.clientHeight;
       setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
       const firstItem = container.querySelector('.mixed-sidebar-submenu__item') as HTMLElement | null;
@@ -867,7 +867,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
           setSubItemHeight(height);
         }
       }
-    };
+    });
 
     updateHeight();
     handleScroll();
@@ -945,8 +945,8 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
 
   useEffect(() => {
     if (!popupState.visible) return;
-    const handleResize = () => updatePopupPosition();
-    const handleScroll = () => updatePopupPosition();
+    const handleResize = rafThrottle(() => updatePopupPosition());
+    const handleScroll = rafThrottle(() => updatePopupPosition());
     window.addEventListener('resize', handleResize);
     const container = navRef.current;
     container?.addEventListener('scroll', handleScroll, { passive: true });

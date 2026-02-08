@@ -342,7 +342,7 @@ const iconStyleSm = getIconStyleString('sm');
         <div 
           class="preferences-segmented" 
           role="tablist" 
-          aria-label="设置分类"
+          :aria-label="locale.preferences?.category || locale.preferences?.title || 'Categories'"
           :style="tabsStyle"
         >
           <!-- 滑动指示器（水流动画） -->

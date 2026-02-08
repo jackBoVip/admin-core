@@ -74,6 +74,7 @@ export const HorizontalMenu = memo(function HorizontalMenu({
         theme={theme}
         mode="horizontal"
         rounded
+        moreLabel={context.t('layout.common.more')}
         onSelect={handleSelect}
       />
     </div>

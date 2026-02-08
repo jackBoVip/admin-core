@@ -135,7 +135,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
   if (!isLocked) return null;
 
   return createPortal(
-    <div className="preferences-lock-screen" role="dialog" aria-modal="true" aria-label={locale.lockScreen.title || '锁屏'}>
+    <div className="preferences-lock-screen" role="dialog" aria-modal="true" aria-label={locale.lockScreen.title}>
       <div className="preferences-lock-backdrop" aria-hidden="true">
         {actualBgImage && <div className="preferences-lock-backdrop-image" style={bgImageStyle} />}
         <div className="preferences-lock-orb orb-1" data-orb="1" />

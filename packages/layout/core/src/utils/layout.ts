@@ -420,7 +420,7 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
     [CSS_VAR_NAMES.panelOffsetRight]: `${panelOffsetRight}px`,
     [CSS_VAR_NAMES.contentCompactWidth]: `${props.contentCompactWidth ?? 1200}px`,
     [CSS_VAR_NAMES.zIndex]: `${zIndex}`,
-    [CSS_VAR_NAMES.zIndexHeader]: `${zIndex + 10}`,
+    [CSS_VAR_NAMES.zIndexHeader]: `${zIndex + 30}`,
     [CSS_VAR_NAMES.zIndexSidebar]: `${zIndex + 20}`,
     [CSS_VAR_NAMES.zIndexTabbar]: `${zIndex + 5}`,
     [CSS_VAR_NAMES.zIndexPanel]: `${zIndex + 15}`,

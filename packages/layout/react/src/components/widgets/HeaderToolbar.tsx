@@ -2,7 +2,7 @@
  * 顶栏工具栏组件
  * @description 整合所有顶栏工具组件，根据配置显示
  */
-import { useMemo, memo } from 'react';
+import { useMemo, memo, type ReactNode } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { FullscreenButton } from './FullscreenButton';
 import { GlobalSearch } from './GlobalSearch';
@@ -16,12 +16,16 @@ export interface HeaderToolbarProps {
   showPreferencesButton?: boolean;
   preferencesButtonPosition?: 'header' | 'fixed' | 'auto';
   onOpenPreferences?: () => void;
+  userSlot?: ReactNode;
+  userMenuSlot?: ReactNode;
 }
 
 export const HeaderToolbar = memo(function HeaderToolbar({
   showPreferencesButton,
   preferencesButtonPosition,
   onOpenPreferences,
+  userSlot,
+  userMenuSlot,
 }: HeaderToolbarProps) {
   const { props } = useLayoutContext();
 
@@ -50,7 +54,7 @@ export const HeaderToolbar = memo(function HeaderToolbar({
       {showLanguage && <LanguageToggle />}
       {showFullscreen && <FullscreenButton />}
       {showNotification && <NotificationButton />}
-      {showUser && <UserDropdown />}
+      {showUser && (userSlot ? userSlot : <UserDropdown menuSlot={userMenuSlot} />)}
     </div>
   );
 });
