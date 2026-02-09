@@ -200,6 +200,14 @@ export class PreferencesManager {
   }
 
   /**
+   * 获取当前存储中的偏好设置快照
+   * @description 用于在运行时校验内存状态与持久化状态是否一致
+   */
+  getStoredPreferences(): DeepPartial<Preferences> | null {
+    return this.loadFromStorage();
+  }
+
+  /**
    * 获取某个分类的偏好设置
    * @param key - 分类键名
    * @returns 该分类的设置

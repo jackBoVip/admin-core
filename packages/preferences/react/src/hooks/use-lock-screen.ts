@@ -7,7 +7,7 @@ import { usePreferences } from './use-preferences';
  * @description 处理锁屏逻辑，包括手动锁屏和自动锁屏
  */
 export function useLockScreen() {
-  const { preferences, setPreferences } = usePreferences();
+  const { preferences, setPreferences, manager } = usePreferences();
   const preferencesRef = useRef(preferences);
   
   // 使用 ref 存储 setPreferences，避免依赖变化
@@ -20,6 +20,20 @@ export function useLockScreen() {
   useEffect(() => {
     setPreferencesRef.current = setPreferences;
   }, [setPreferences]);
+
+  // 启动时校验持久化状态，避免内存状态被异常覆盖
+  useEffect(() => {
+    try {
+      const stored = manager.getStoredPreferences?.();
+      const storedIsLocked = stored?.lockScreen?.isLocked;
+      if (
+        storedIsLocked !== undefined &&
+        storedIsLocked !== preferencesRef.current.lockScreen.isLocked
+      ) {
+        setPreferencesRef.current({ lockScreen: { isLocked: storedIsLocked } });
+      }
+    } catch {}
+  }, [manager]);
 
   // 自动锁屏回调 - 使用 ref 确保稳定性
   const handleAutoLock = useCallback(() => {

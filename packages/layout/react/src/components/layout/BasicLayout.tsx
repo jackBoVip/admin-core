@@ -165,7 +165,7 @@ const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: P
     if (onReadyRef.current) {
       hasCalledRef.current = true;
       setTimeout(() => {
-        onReadyRef.current?.(() => lockRef.current());
+        onReadyRef.current?.(lockRef.current);
       }, 0);
     }
   }, []); // 只在挂载时执行一次
@@ -890,6 +890,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   }, [preferencesManager]);
 
   const [preferencesLock, setPreferencesLock] = useState<(() => void) | null>(null);
+  const handlePreferencesLockReady = useCallback((lock: () => void) => {
+    setPreferencesLock(() => lock);
+  }, []);
 
   // 标记平台类型（用于滚动条样式兼容）
   useEffect(() => {
@@ -1137,7 +1140,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
       username={userInfo?.displayName || userInfo?.username}
       lockScreenBackground={resolvedLockScreenBackground}
     >
-      <PreferencesLockBridge onReady={setPreferencesLock} />
+      <PreferencesLockBridge onReady={handlePreferencesLockReady} />
       <LayoutProvider
         props={layoutProps}
         events={events}

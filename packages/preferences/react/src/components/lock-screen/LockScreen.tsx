@@ -19,8 +19,8 @@ import {
   useDeferredFocus,
 } from '../../hooks';
 import { Icon } from '../Icon';
-import { LockScreenTime } from './LockScreenTime';
 import { LockScreenBackdrop } from './LockScreenBackdrop';
+import { LockScreenTime } from './LockScreenTime';
 
 export type LockScreenProps = LockScreenComponentProps;
 
