@@ -10,7 +10,11 @@ import {
 } from '@admin-core/preferences';
 import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getPreferencesManager, usePreferences } from '../../hooks';
+import {
+  getPreferencesManager,
+  usePreferences,
+  useDeferredFocus,
+} from '../../hooks';
 import type { LocaleMessages } from '@admin-core/preferences';
 
 export interface LockPasswordModalProps {
@@ -35,13 +39,11 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 清理定时器
   useEffect(() => {
     return () => {
-      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
   }, []);
@@ -78,14 +80,7 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
   useEffect(() => {
     if (open) {
       setIsClosing(false);
-      // 清理之前的定时器
-      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-      focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 100);
     } else {
-      if (focusTimerRef.current) {
-        clearTimeout(focusTimerRef.current);
-        focusTimerRef.current = null;
-      }
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
         closeTimerRef.current = null;
@@ -97,6 +92,12 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
       setShowConfirmPassword(false);
     }
   }, [open]);
+
+  // 弹窗打开时延迟聚焦主输入框
+  useDeferredFocus(inputRef, {
+    enabled: open,
+    delay: 100,
+  });
 
   const handleClose = useCallback(() => {
     setIsClosing(true);

@@ -8,17 +8,19 @@ import {
   computeLockScreenBackground,
   unlockWithPassword,
   getLockScreenKeyAction,
-  lockBodyScrollForLockScreen,
-  restoreBodyScrollForLockScreen,
-  type LockScreenBodyLockState,
   type LocaleMessages,
   type LockScreenComponentProps,
 } from '@admin-core/preferences';
 import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { getPreferencesManager, usePreferences } from '../../hooks';
+import {
+  getPreferencesManager,
+  usePreferences,
+  useDeferredFocus,
+} from '../../hooks';
 import { Icon } from '../Icon';
 import { LockScreenTime } from './LockScreenTime';
+import { LockScreenBackdrop } from './LockScreenBackdrop';
 
 export type LockScreenProps = LockScreenComponentProps;
 
@@ -45,8 +47,6 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
   const inputRef = useRef<HTMLInputElement>(null);
   const handleUnlockRef = useRef<(() => void) | null>(null);
   const showUnlockFormRef = useRef(showUnlockForm);
-  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bodyLockStateRef = useRef<LockScreenBodyLockState | null>(null);
 
   const isLocked = preferences.lockScreen.isLocked;
   const savedPassword = preferences.lockScreen.password;
@@ -58,40 +58,32 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
     showUnlockFormRef.current = showUnlockForm;
   }, [showUnlockForm]);
 
-  // Body 滚动锁定：锁屏时禁止滚动并补偿滚动条宽度
-  useEffect(() => {
-    if (!isLocked) {
-      if (bodyLockStateRef.current) {
-        restoreBodyScrollForLockScreen(bodyLockStateRef.current);
-        bodyLockStateRef.current = null;
-      }
-      return;
+  const handlePasswordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    // 每次修改密码时清除错误提示，避免用户修正后仍看到旧错误
+    if (error) {
+      setError('');
     }
+  }, [error]);
 
-    bodyLockStateRef.current = lockBodyScrollForLockScreen();
+  // 解锁表单打开/关闭行为统一封装，便于在按钮点击与键盘事件中复用
+  const openUnlockForm = useCallback(() => {
+    setShowUnlockForm(true);
+    setPassword('');
+    setError('');
+  }, []);
 
-    return () => {
-      if (bodyLockStateRef.current) {
-        restoreBodyScrollForLockScreen(bodyLockStateRef.current);
-        bodyLockStateRef.current = null;
-      }
-    };
-  }, [isLocked]);
-
-  useEffect(() => {
-    if (showUnlockForm) {
-      // 清理之前的定时器
-      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-      focusTimerRef.current = setTimeout(() => inputRef.current?.focus(), 100);
-    }
-    return () => {
-      if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
-    };
-  }, [showUnlockForm]);
+  const closeUnlockForm = useCallback(() => {
+    setShowUnlockForm(false);
+  }, []);
 
   const toggleUnlockForm = useCallback(() => {
-    setShowUnlockForm(prev => !prev); setPassword(''); setError('');
-  }, []);
+    if (showUnlockFormRef.current) {
+      closeUnlockForm();
+    } else {
+      openUnlockForm();
+    }
+  }, [closeUnlockForm, openUnlockForm]);
 
   const handleUnlock = useCallback(() => {
     const result = unlockWithPassword({
@@ -110,8 +102,8 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
       return;
     }
 
-    setShowUnlockForm(false);
-  }, [password, savedPassword, locale, setPreferences, preferences]);
+    closeUnlockForm();
+  }, [password, savedPassword, locale, setPreferences, closeUnlockForm]);
 
   // 保持 handleUnlock 的最新引用
   useEffect(() => {
@@ -129,15 +121,13 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
 
       switch (action.type) {
         case 'hideUnlockForm':
-          setShowUnlockForm(false);
+          closeUnlockForm();
           break;
         case 'submit':
           handleUnlockRef.current?.();
           break;
         case 'showUnlockForm':
-          setShowUnlockForm(true);
-          setPassword('');
-          setError('');
+          openUnlockForm();
           break;
         default:
           break;
@@ -146,7 +136,13 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
     
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isLocked]); // 仅依赖 isLocked，使用 ref 获取其他最新状态
+  }, [isLocked, closeUnlockForm, openUnlockForm]); // 仅依赖 isLocked，使用 ref 获取其他最新状态
+
+  // 解锁表单展示时延迟聚焦输入框，避免直接在 render 阶段调用 focus
+  useDeferredFocus<HTMLInputElement>(inputRef, {
+    enabled: showUnlockForm,
+    delay: 100,
+  });
 
   // 背景图片样式 - 使用 useMemo 避免每次渲染创建新对象
   const bgImageStyle = useMemo(() => {
@@ -163,13 +159,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
 
   return createPortal(
     <div className="preferences-lock-screen" role="dialog" aria-modal="true" aria-label={locale.lockScreen.title}>
-      <div className="preferences-lock-backdrop" aria-hidden="true">
-        {actualBgImage && <div className="preferences-lock-backdrop-image" style={bgImageStyle} />}
-        <div className="preferences-lock-orb orb-1" data-orb="1" />
-        <div className="preferences-lock-orb orb-2" data-orb="2" />
-        <div className="preferences-lock-orb orb-3" data-orb="3" />
-        <div className="preferences-lock-grid" />
-      </div>
+      <LockScreenBackdrop backgroundImage={actualBgImage} backgroundStyle={bgImageStyle} />
 
       <div className="preferences-lock-content minimal" data-variant="minimal">
         <section
@@ -188,10 +178,14 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
           )}
         </section>
 
-        <section
+        <form
           className={`preferences-lock-unlock ${showUnlockForm ? 'visible' : ''}`}
           data-visible={showUnlockForm ? 'true' : undefined}
-          role="form"
+          aria-label={locale.lockScreen.passwordPlaceholder}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleUnlock();
+          }}
         >
           <div
             className={`preferences-lock-unlock-box ${error ? 'has-error' : ''}`}
@@ -203,18 +197,30 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
               className={`preferences-lock-unlock-input ${error ? 'has-error' : ''}`}
               data-error={error ? 'true' : undefined}
               value={password}
-              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              onChange={handlePasswordChange}
               placeholder={error || locale.lockScreen.passwordPlaceholder}
               aria-label={locale.lockScreen.passwordPlaceholder}
               aria-invalid={!!error}
               autoComplete="current-password"
             />
-            <button className="preferences-lock-unlock-btn" onClick={handleUnlock} aria-label={locale.lockScreen.entry}>
+            <button
+              className="preferences-lock-unlock-btn"
+              type="submit"
+              aria-label={locale.lockScreen.entry}
+            >
               <Icon name="arrowRight" size="sm" />
             </button>
           </div>
-          {onLogout && <button className="preferences-lock-unlock-logout" onClick={onLogout}>{locale.lockScreen.backToLogin}</button>}
-        </section>
+          {onLogout && (
+            <button
+              type="button"
+              className="preferences-lock-unlock-logout"
+              onClick={onLogout}
+            >
+              {locale.lockScreen.backToLogin}
+            </button>
+          )}
+        </form>
       </div>
     </div>,
     document.body

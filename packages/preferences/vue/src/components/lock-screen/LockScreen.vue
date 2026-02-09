@@ -80,6 +80,17 @@ const locale = computed(() => {
 const showUnlockFormRef = ref(showUnlockForm);
 watch(showUnlockForm, (val) => { showUnlockFormRef.value = val; });
 
+// 切换解锁表单显示状态：
+// - 与 React 版本保持一致：仅在展示表单时重置密码与错误
+const toggleUnlockForm = () => {
+  const next = !showUnlockForm.value;
+  if (next) {
+    password.value = '';
+    error.value = '';
+  }
+  showUnlockForm.value = next;
+};
+
 // 全局键盘事件处理函数（使用 ref 获取最新状态，并通过 helper 统一行为）
 const handleGlobalKeyDown = (e: KeyboardEvent) => {
   const action = getLockScreenKeyAction(e, {
@@ -88,7 +99,8 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
 
   switch (action.type) {
     case 'hideUnlockForm':
-      toggleUnlockForm();
+      // 与 React 版本保持一致：隐藏时不重置密码与错误，仅关闭面板
+      showUnlockForm.value = false;
       break;
     case 'submit':
       handleUnlock();
@@ -135,12 +147,6 @@ watch(showUnlockForm, (show) => {
     focusTimerRef.value = null;
   }
 });
-
-const toggleUnlockForm = () => {
-  showUnlockForm.value = !showUnlockForm.value;
-  password.value = '';
-  error.value = '';
-};
 
 const handleUnlock = () => {
   const result = unlockWithPassword({

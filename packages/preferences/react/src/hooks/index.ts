@@ -27,3 +27,8 @@ export {
   type UseDebouncedValueOptions,
   type UseDebouncedValueReturn,
 } from './use-debounced-value';
+
+export {
+  useDeferredFocus,
+  type UseDeferredFocusOptions,
+} from './use-deferred-focus';
