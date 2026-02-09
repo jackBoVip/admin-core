@@ -124,3 +124,11 @@ export {
   verifyPassword,
   verifyPasswordSync,
 } from './password';
+
+// 数值工具
+export {
+  clamp,
+  parseNumber,
+  formatNumber,
+  isInRange,
+} from './number';

@@ -159,7 +159,7 @@ const menuContainerClass = computed(() => [
           <LayoutIcon :name="headerToggleIconName" size="md" :className="headerToggleIconClass" />
         </button>
 
-        <!-- 左侧刷新按钮（与 vben 保持一致位置） -->
+        <!-- 左侧刷新按钮（与常见 admin 布局保持一致位置） -->
         <RefreshButton v-if="showRefresh" />
       </div>
 

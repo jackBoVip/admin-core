@@ -5,20 +5,18 @@
  */
 import { computed } from 'vue';
 import { useLayoutContext } from '../../composables';
-import type { ThemeModeType } from '@admin-core/preferences';
+import { getCurrentThemeMode, toggleThemeMode, isDarkTheme } from '@admin-core/layout';
 import LayoutIcon from '../common/LayoutIcon.vue';
 
 const context = useLayoutContext();
 
 // 当前主题
-const currentTheme = computed<ThemeModeType>(() =>
-  context.props.theme?.mode === 'dark' ? 'dark' : 'light'
-);
-const isDark = computed(() => currentTheme.value === 'dark');
+const currentTheme = computed(() => getCurrentThemeMode(context.props.theme));
+const isDark = computed(() => isDarkTheme(context.props.theme));
 
 // 切换主题
 const handleToggleTheme = () => {
-  const nextTheme: ThemeModeType = isDark.value ? 'light' : 'dark';
+  const nextTheme = toggleThemeMode(currentTheme.value);
   context.events.onThemeToggle?.(nextTheme);
 };
 </script>
@@ -37,12 +35,12 @@ const handleToggleTheme = () => {
 <style scoped>
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity var(--admin-duration-fast, 150ms) ease, transform var(--admin-duration-fast, 150ms) ease;
 }
 
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(var(--admin-dropdown-offset, -4px));
 }
 </style>

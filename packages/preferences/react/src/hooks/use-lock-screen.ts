@@ -24,20 +24,50 @@ export function useLockScreen() {
   // 自动锁屏回调 - 使用 ref 确保稳定性
   const handleAutoLock = useCallback(() => {
     const current = preferencesRef.current;
-    // 只有在开启了锁屏功能且已设置密码的情况下才自动锁定
-    if (canLockScreen(current)) {
+    // 🔧 关键修复：只有在开启了锁屏功能、已设置密码、且 autoLockTime > 0 的情况下才自动锁定
+    // 这样可以防止 autoLockTime 为 0 时仍然触发锁屏
+    if (canLockScreen(current) && current.lockScreen.autoLockTime > 0) {
       setPreferencesRef.current({ lockScreen: { isLocked: true } });
     }
   }, []); // 空依赖，确保稳定
 
   useEffect(() => {
-    const destroy = createLockScreenManager({
-      getPreferences: () => preferencesRef.current,
-      onLock: handleAutoLock,
-    });
+    const current = preferencesRef.current;
+    const autoLockTime = current.lockScreen.autoLockTime;
+    // 🔧 关键修复：只有在 autoLockTime > 0 时才创建锁屏管理器
+    // 这样可以避免在 autoLockTime 为 0 时仍然添加事件监听器
+    if (!autoLockTime || autoLockTime <= 0) {
+      return;
+    }
 
-    return destroy;
-  }, [handleAutoLock]);
+    // 确保 preferences 已初始化后再创建锁屏管理器
+    // 延迟创建，避免在 preferences 初始化完成前读取到错误的状态
+    let destroy: (() => void) | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    
+    timer = setTimeout(() => {
+      // 再次检查 autoLockTime，因为可能在延迟期间发生了变化
+      const latestAutoLockTime = preferencesRef.current.lockScreen.autoLockTime;
+      if (!latestAutoLockTime || latestAutoLockTime <= 0) {
+        return;
+      }
+      destroy = createLockScreenManager({
+        getPreferences: () => preferencesRef.current,
+        onLock: handleAutoLock,
+      });
+    }, 0);
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      if (destroy) {
+        destroy();
+        destroy = null;
+      }
+    };
+  }, [handleAutoLock, preferences.lockScreen.autoLockTime]);
 
   /**
    * 手动锁屏

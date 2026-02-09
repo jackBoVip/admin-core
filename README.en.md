@@ -142,6 +142,64 @@ function App() {
 - `header-mixed-nav` - Header mixed navigation
 - `full-content` - Full screen content
 
+### 3. Static + Dynamic Routes
+
+The framework provides a unified builder for **static route constants + dynamic menu API**, and generates **routes, menus, and breadcrumbs** automatically.  
+Both static and dynamic routes use **RouteRecord style**, and `component` is a string path (e.g. `/system/user`) resolved by the framework.
+
+#### Vue Example (Auto inject into Router)
+
+```ts
+import { createRouter, createWebHistory } from 'vue-router';
+import { createVueRouteAccess } from '@admin-core/layout-vue';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [{ path: '/', name: 'Root', component: () => import('./layouts/BasicLayout.vue') }],
+});
+
+const staticRoutes = [
+  { name: 'home', path: '/', component: '/home', meta: { title: 'Home', icon: 'home' } },
+];
+
+const pageMap = import.meta.glob('./views/**/*.vue');
+
+const { menus } = await createVueRouteAccess({
+  router,
+  staticRoutes,
+  fetchMenuList: async () => await fetch('/api/menu').then(r => r.json()),
+  pageMap,
+  viewsRoot: '/src/views',
+});
+
+export { router, menus };
+```
+
+#### React Example (Returns RouteObject[])
+
+```tsx
+import { useRoutes } from 'react-router-dom';
+import { createReactRouteAccess } from '@admin-core/layout-react';
+
+const staticRoutes = [
+  { name: 'home', path: '/', component: '/home', meta: { title: 'Home', icon: 'home' } },
+];
+
+const pageMap = {
+  '/home': HomePage,
+  '/system/user': UserPage,
+};
+
+const { routeObjects, menus } = await createReactRouteAccess({
+  staticRoutes,
+  fetchMenuList: async () => await fetch('/api/menu').then(r => r.json()),
+  pageMap,
+  viewsRoot: '/src/pages',
+});
+
+const routesElement = useRoutes(routeObjects);
+```
+
 ## 📁 Directory Structure
 
 ```
@@ -150,7 +208,6 @@ admin-core/
 ├── examples/             # Example projects
 │   ├── react-demo/       # React example
 │   ├── vue-demo/         # Vue example
-│   └── vue-vben-admin-main/ # Complete Vue admin template
 ├── internal/             # Internal tools
 │   ├── eslint-config/    # ESLint configuration
 │   └── tsconfig/         # TypeScript configuration

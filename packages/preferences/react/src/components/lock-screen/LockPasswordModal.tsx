@@ -10,7 +10,7 @@ import {
 } from '@admin-core/preferences';
 import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { usePreferences } from '../../hooks';
+import { getPreferencesManager, usePreferences } from '../../hooks';
 import type { LocaleMessages } from '@admin-core/preferences';
 
 export interface LockPasswordModalProps {
@@ -128,6 +128,9 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
         isLocked: true,
       },
     });
+    try {
+      getPreferencesManager()?.flush?.();
+    } catch {}
 
     setPassword('');
     setConfirmPassword('');

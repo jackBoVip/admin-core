@@ -46,6 +46,8 @@
   --pref-btn-icon-size: 36px;
   --pref-number-btn-width: 28px;
   --pref-number-input-height: 32px;
+  --pref-stepper-width: 165px;
+  --pref-stepper-gap: 12px;
 
   /* ========== 5. 网格令牌 ========== */
   --pref-grid-gap-lg: 16px;

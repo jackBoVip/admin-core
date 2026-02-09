@@ -2,11 +2,17 @@
  * 全局搜索组件
  * @description 全局菜单搜索导航，支持快捷键 Ctrl+K
  */
+import { LAYOUT_UI_TOKENS, type MenuItem } from '@admin-core/layout';
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
-import { LAYOUT_UI_TOKENS, type MenuItem } from '@admin-core/layout';
+
+const {
+  SEARCH_MAX_RESULTS,
+  SEARCH_RESULT_MAX_HEIGHT,
+  SEARCH_RESULT_ITEM_HEIGHT,
+} = LAYOUT_UI_TOKENS;
 
 interface FlatMenuItem extends MenuItem {
   parentPath?: string[];
@@ -59,7 +65,6 @@ export const GlobalSearch = memo(function GlobalSearch() {
   }, [menus, isOpen]);
 
   // 搜索结果
-  const MAX_RESULTS = 200;
   const searchResults = useMemo(() => {
     const query = keyword.trim().toLowerCase();
     if (!query) return [];
@@ -68,17 +73,16 @@ export const GlobalSearch = memo(function GlobalSearch() {
     for (const item of flatMenus) {
       if (item.searchText.includes(query)) {
         results.push(item);
-        if (results.length >= MAX_RESULTS) break;
+        if (results.length >= SEARCH_MAX_RESULTS) break;
       }
     }
     return results;
   }, [keyword, flatMenus]);
 
-  const [itemHeight, setItemHeight] = useState(56);
-  const RESULT_MAX_HEIGHT = 320;
+  const [itemHeight, setItemHeight] = useState<number>(SEARCH_RESULT_ITEM_HEIGHT);
   const RESULT_OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
   const totalHeight = searchResults.length * itemHeight;
-  const viewportHeight = totalHeight === 0 ? RESULT_MAX_HEIGHT : Math.min(totalHeight, RESULT_MAX_HEIGHT);
+  const viewportHeight = totalHeight === 0 ? SEARCH_RESULT_MAX_HEIGHT : Math.min(totalHeight, SEARCH_RESULT_MAX_HEIGHT);
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - RESULT_OVERSCAN);
   const endIndex = Math.min(
     searchResults.length,

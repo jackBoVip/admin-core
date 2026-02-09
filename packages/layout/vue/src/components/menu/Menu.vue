@@ -1,13 +1,30 @@
 <script setup lang="ts">
 /**
  * 菜单组件
- * @description 参考 vben-admin 实现，支持水平/垂直模式、折叠、手风琴等
+ * @description 参考常见 admin 布局实现，支持水平/垂直模式、折叠、手风琴等。
+ * 行为逻辑（激活/展开/溢出/类名等）统一由 @admin-core/layout 提供的 headless menu-controller 处理。
  */
 import { computed, ref, watch, watchEffect, onMounted, onUnmounted, nextTick } from 'vue';
 import { createMenuContext, type MenuItemClicked } from './use-menu-context';
 import SubMenu from './SubMenu.vue';
 import MenuItemComp from './MenuItem.vue';
-import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
+import {
+  LAYOUT_UI_TOKENS,
+  rafThrottle,
+  calculateVirtualRange,
+  shouldVirtualize,
+  type MenuItem,
+  normalizeMenuKey,
+  buildMenuParentPathMap,
+  buildActiveParentSet,
+  computeOpenedMenusOnOpen,
+  computeOpenedMenusOnClose,
+  computeOpenedMenusOnCollapseChange,
+  isMenuPopup as computeIsMenuPopup,
+  computeBaseVisibleMenus,
+  computeOverflowMenus,
+  getMenuRootClassName,
+} from '@admin-core/layout';
 
 interface Props {
   /** 菜单数据 */
@@ -48,57 +65,20 @@ const emit = defineEmits<{
   close: [path: string, parentPaths: string[]];
 }>();
 
-const normalizeKey = (value: unknown) => {
-  if (value == null || value === '') return '';
-  return String(value);
-};
-
 // 状态
-const activePath = ref(normalizeKey(props.defaultActive));
+const activePath = ref(normalizeMenuKey(props.defaultActive));
 const openedMenus = ref<string[]>(
   props.defaultOpeneds && !props.collapse
-    ? props.defaultOpeneds.map((key) => normalizeKey(key)).filter(Boolean)
+    ? props.defaultOpeneds.map((key) => normalizeMenuKey(key)).filter(Boolean)
     : []
 );
 const openedMenuSet = computed(() => new Set(openedMenus.value));
-const parentPathMap = computed(() => {
-  const map = new Map<string, string | null>();
-  const visit = (items: MenuItem[], parent: string | null) => {
-    for (const menu of items) {
-      const rawKey = menu.key ?? '';
-      const keyPath = normalizeKey(rawKey);
-      const rawPath = menu.path ?? '';
-      const path = normalizeKey(rawPath);
-      const id = normalizeKey(menu.key ?? menu.path ?? menu.name ?? '');
-      if (keyPath) map.set(keyPath, parent);
-      if (path && path !== keyPath) map.set(path, parent);
-      if (id && id !== keyPath && id !== path) map.set(id, parent);
-      if (menu.children?.length) {
-        visit(menu.children, id || parent);
-      }
-    }
-  };
-  visit(props.menus, null);
-  return map;
-});
-const activeParentSet = computed(() => {
-  const parentSet = new Set<string>();
-  if (!activePath.value) return parentSet;
-  let current = activePath.value;
-  const visited = new Set<string>();
-  while (current && parentPathMap.value.has(current) && !visited.has(current)) {
-    visited.add(current);
-    const parent = parentPathMap.value.get(current);
-    if (!parent) break;
-    parentSet.add(parent);
-    current = parent;
-  }
-  return parentSet;
-});
+const parentPathMap = computed(() => buildMenuParentPathMap(props.menus));
+const activeParentSet = computed(() => buildActiveParentSet(activePath.value, parentPathMap.value));
 
 // 监听 defaultActive 变化
 watch(() => props.defaultActive, (val) => {
-  const nextActive = normalizeKey(val);
+  const nextActive = normalizeMenuKey(val);
   if (activePath.value !== nextActive) {
     activePath.value = nextActive;
   }
@@ -106,57 +86,35 @@ watch(() => props.defaultActive, (val) => {
 
 // 折叠时关闭所有菜单
 watch(() => props.collapse, (val) => {
-  if (val) {
-    if (openedMenus.value.length > 0) {
-      openedMenus.value = [];
-    }
-  }
+  openedMenus.value = computeOpenedMenusOnCollapseChange(openedMenus.value, val);
 });
 
 // 是否为弹出模式
-const isMenuPopup = computed(() => {
-  return props.mode === 'horizontal' || (props.mode === 'vertical' && props.collapse);
-});
+const isMenuPopup = computed(() => computeIsMenuPopup(props.mode, props.collapse));
 
 // 打开菜单
 const openMenu = (path: string, parentPaths: string[] = []) => {
-  const target = normalizeKey(path);
-  if (!target || openedMenuSet.value.has(target)) return;
-  const normalizedParents = parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
-  
-  // 手风琴模式：关闭同级其他菜单
-  if (props.accordion) {
-    if (normalizedParents.length === 0) {
-      openedMenus.value = [];
-    } else {
-      const nextMenus: string[] = [];
-      for (const menu of openedMenus.value) {
-        let keep = false;
-        for (const parent of normalizedParents) {
-          if (menu.startsWith(parent)) {
-            keep = true;
-            break;
-          }
-        }
-        if (keep) nextMenus.push(menu);
-      }
-      openedMenus.value = nextMenus;
-    }
+  const next = computeOpenedMenusOnOpen(openedMenus.value, path, {
+    accordion: props.accordion,
+    parentPaths,
+  });
+  if (next === openedMenus.value) return;
+  openedMenus.value = next;
+  const normalizedTarget = normalizeMenuKey(path);
+  const normalizedParents = parentPaths.map((p) => normalizeMenuKey(p)).filter(Boolean);
+  if (normalizedTarget) {
+    emit('open', normalizedTarget, normalizedParents);
   }
-  
-  openedMenus.value.push(target);
-  emit('open', target, normalizedParents);
 };
 
 // 关闭菜单
 const closeMenu = (path: string, parentPaths: string[] = []) => {
-  const target = normalizeKey(path);
+  const target = normalizeMenuKey(path);
   if (!target) return;
-  const index = openedMenus.value.indexOf(target);
-  if (index !== -1) {
-    openedMenus.value.splice(index, 1);
-    emit('close', target, parentPaths.map((p) => normalizeKey(p)).filter(Boolean));
-  }
+  const next = computeOpenedMenusOnClose(openedMenus.value, target);
+  if (next === openedMenus.value) return;
+  openedMenus.value = next;
+  emit('close', target, parentPaths.map((p) => normalizeMenuKey(p)).filter(Boolean));
 };
 
 // 关闭所有菜单
@@ -168,8 +126,8 @@ const closeAllMenus = () => {
 
 // 处理菜单项点击
 const handleMenuItemClick = (data: MenuItemClicked) => {
-  const path = normalizeKey(data.path);
-  const parentPaths = data.parentPaths.map((p) => normalizeKey(p)).filter(Boolean);
+  const path = normalizeMenuKey(data.path);
+  const parentPaths = data.parentPaths.map((p) => normalizeMenuKey(p)).filter(Boolean);
   if (!path) return;
   
   // 弹出模式下点击菜单项关闭所有菜单
@@ -220,45 +178,46 @@ const scrollResizeObserver = ref<ResizeObserver | null>(null);
 const itemResizeObserver = ref<ResizeObserver | null>(null);
 
 const baseVisibleMenus = computed(() => {
-  if (props.mode === 'horizontal') {
-    if (sliceIndex.value === -1) {
-      return props.menus;
-    }
-    return props.menus.slice(0, sliceIndex.value);
-  }
-  if (props.mode === 'vertical') {
-    return props.menus.slice(0, renderCount.value);
-  }
-  return props.menus;
+  return computeBaseVisibleMenus({
+    menus: props.menus,
+    mode: props.mode,
+    sliceIndex: sliceIndex.value,
+    renderCount: renderCount.value,
+  });
 });
 
 const canVirtualize = computed(() =>
-  props.mode === 'vertical' && props.collapse && viewportHeight.value > 0 && itemHeight.value > 0
+  shouldVirtualize({
+    enabled: props.mode === 'vertical' && props.collapse,
+    viewportHeight: viewportHeight.value,
+    itemHeight: itemHeight.value,
+    totalItems: props.menus.length,
+  })
 );
-const virtualStartIndex = computed(() =>
-  Math.max(0, Math.floor(scrollTop.value / itemHeight.value) - VIRTUAL_OVERSCAN)
-);
-const virtualEndIndex = computed(() =>
-  Math.min(
-    props.menus.length,
-    Math.ceil((scrollTop.value + viewportHeight.value) / itemHeight.value) + VIRTUAL_OVERSCAN
-  )
+const virtualRange = computed(() =>
+  calculateVirtualRange({
+    scrollTop: scrollTop.value,
+    viewportHeight: viewportHeight.value,
+    itemHeight: itemHeight.value,
+    totalItems: props.menus.length,
+    overscan: VIRTUAL_OVERSCAN,
+  })
 );
 const virtualMenus = computed(() =>
-  props.menus.slice(virtualStartIndex.value, virtualEndIndex.value)
+  props.menus.slice(virtualRange.value.startIndex, virtualRange.value.endIndex)
 );
 const renderMenus = computed(() => (canVirtualize.value ? virtualMenus.value : baseVisibleMenus.value));
 const listStyle = computed(() => {
   if (!canVirtualize.value) return undefined;
   return {
-    paddingTop: `${virtualStartIndex.value * itemHeight.value}px`,
-    paddingBottom: `${(props.menus.length - virtualEndIndex.value) * itemHeight.value}px`,
+    paddingTop: `${virtualRange.value.startIndex * itemHeight.value}px`,
+    paddingBottom: `${(props.menus.length - virtualRange.value.endIndex) * itemHeight.value}px`,
   };
 });
 
 watch(
-  [canVirtualize, () => props.menus.length, virtualEndIndex, virtualStartIndex, viewportHeight, scrollTop],
-  ([enabled, total, , , viewHeight, currentTop]) => {
+  [canVirtualize, () => props.menus.length, virtualRange, viewportHeight, scrollTop],
+  ([enabled, total, , viewHeight, currentTop]) => {
     if (!enabled) return;
     const totalHeight = total * itemHeight.value;
     const maxScrollTop = Math.max(0, totalHeight - viewHeight);
@@ -273,12 +232,13 @@ watch(
   }
 );
 
-const overflowMenus = computed(() => {
-  if (props.mode !== 'horizontal' || sliceIndex.value === -1) {
-    return [];
-  }
-  return props.menus.slice(sliceIndex.value);
-});
+const overflowMenus = computed(() =>
+  computeOverflowMenus({
+    menus: props.menus,
+    mode: props.mode,
+    sliceIndex: sliceIndex.value,
+  })
+);
 
 const hasOverflow = computed(() => overflowMenus.value.length > 0);
 
@@ -522,15 +482,14 @@ watch(() => props.menus, () => {
 }, { deep: true });
 
 // 菜单类名
-const menuClass = computed(() => [
-  'menu',
-  `menu--${props.mode}`,
-  `menu--${props.theme}`,
-  {
-    'menu--collapse': props.collapse,
-    'menu--rounded': props.rounded,
-  },
-]);
+const menuClass = computed(() =>
+  getMenuRootClassName({
+    mode: props.mode,
+    theme: props.theme,
+    collapse: props.collapse,
+    rounded: props.rounded,
+  })
+);
 </script>
 
 <template>

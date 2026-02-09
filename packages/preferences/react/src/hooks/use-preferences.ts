@@ -87,16 +87,22 @@ export function destroyPreferences(): void {
   cachedLayoutActions = null;
 }
 
-/**
- * 使用 useSyncExternalStore 订阅偏好设置（避免重复订阅）
- */
 function usePreferencesStore(): Preferences {
   const subscribe = useCallback((callback: () => void) => {
-    return lifecycle.subscribe(callback);
+    const unsubscribe = lifecycle.subscribe(() => {
+      // 始终调用 callback，确保 React 能感知状态变化
+      callback();
+    });
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const getSnapshot = useCallback(() => {
-    return lifecycle.getPreferences() as Preferences;
+    const prefs = lifecycle.getPreferences() as Preferences;
+    // 减少 getSnapshot 日志输出（只在开发环境且值变化时输出）
+    // React useSyncExternalStore 会频繁调用 getSnapshot，这是正常行为
+    return prefs;
   }, []);
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);

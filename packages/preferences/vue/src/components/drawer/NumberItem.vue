@@ -4,7 +4,7 @@
  * @description 带 +/- 步进控制的数字输入
  */
 import { ref, watch, getCurrentInstance } from 'vue';
-import { getIcon } from '@admin-core/preferences';
+import { getIcon, clamp } from '@admin-core/preferences';
 
 const props = withDefaults(defineProps<{
   /** 标签文本 */
@@ -34,15 +34,13 @@ watch(modelValue, (val) => {
   }
 });
 
-const clamp = (value: number) => {
-  let next = Number.isFinite(value) ? value : 0;
-  if (props.min !== undefined) next = Math.max(props.min, next);
-  if (props.max !== undefined) next = Math.min(props.max, next);
-  return next;
+const clampValue = (value: number) => {
+  const next = Number.isFinite(value) ? value : 0;
+  return clamp(next, props.min, props.max);
 };
 
 const commit = (value: number) => {
-  const next = clamp(value);
+  const next = clampValue(value);
   modelValue.value = next;
   localText.value = String(next);
 };
@@ -75,7 +73,6 @@ const inputId = `number-${instance?.uid ?? Math.random().toString(36).slice(2, 9
     class="number-item"
     :class="{ disabled }"
     :data-disabled="disabled ? 'true' : undefined"
-    :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px', flexWrap: 'nowrap' }"
   >
     <label :id="`${inputId}-label`" class="number-item__label">
       <span class="number-item__label-text">{{ label }}</span>
@@ -87,7 +84,7 @@ const inputId = `number-${instance?.uid ?? Math.random().toString(36).slice(2, 9
         v-html="helpCircleIcon"
       />
     </label>
-    <div class="preferences-stepper" :style="{ display: 'flex', alignItems: 'center', width: '165px', flex: '0 0 165px' }">
+    <div class="preferences-stepper">
       <button
         type="button"
         class="preferences-stepper__btn"

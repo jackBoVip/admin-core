@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 侧边栏组件
- * @description 参考 vben admin 实现的混合侧边栏逻辑
+ * @description 参考常见 admin 布局实现的混合侧边栏逻辑
  * 
  * 状态说明：
  * - extraVisible: 子菜单面板是否可见（由是否有子菜单决定）
@@ -18,6 +18,7 @@ import {
   DEFAULT_SIDEBAR_CONFIG, 
   LAYOUT_ICONS, 
   ANIMATION_CLASSES, 
+  LAYOUT_STYLE_CONSTANTS,
   type MenuItem,
 } from '@admin-core/layout';
 import { getPreferencesManager } from '@admin-core/preferences-vue';
@@ -143,7 +144,7 @@ const showExtraContent = computed(() => {
 
 const effectiveExtraCollapsed = computed(() => (expandOnHover.value ? false : extraCollapsed.value));
 
-// 处理子菜单面板折叠/展开切换（vben 风格：点击同一个按钮切换）
+// 处理子菜单面板折叠/展开切换（点击同一个按钮进行折叠/展开）
 const handleExtraCollapseToggle = () => {
   extraCollapsed.value = !extraCollapsed.value;
 };
@@ -192,7 +193,7 @@ const mixedWidth = computed(() => sidebarConfig.value.mixedWidth || DEFAULT_SIDE
 // 子菜单面板折叠宽度
 const extraCollapsedWidth = computed(() => sidebarConfig.value.extraCollapsedWidth || DEFAULT_SIDEBAR_CONFIG.extraCollapsedWidth);
 
-// 子菜单面板宽度（vben: sidebarExtraWidth）
+// 子菜单面板宽度（类似常见 admin 布局的 sidebarExtraWidth）
 const extraWidthValue = computed(() => {
   if (!showExtraContent.value) return 0;
   return effectiveExtraCollapsed.value ? extraCollapsedWidth.value : (sidebarConfig.value.width || DEFAULT_SIDEBAR_CONFIG.width);
@@ -206,10 +207,10 @@ const sidebarStyle = computed(() => {
   return { width: `${width.value}px` };
 });
 
-// 子菜单面板样式（vben 风格：fixed 定位在主菜单右侧）
+// 子菜单面板样式（fixed 定位在主菜单右侧）
 const extraStyle = computed(() => ({
   left: `${mixedWidth.value}px`,
-  width: showExtraContent.value ? `${extraWidthValue.value}px` : '0px',
+  width: showExtraContent.value ? `${extraWidthValue.value}px` : LAYOUT_STYLE_CONSTANTS.ZERO_PX,
 }));
 
 const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');

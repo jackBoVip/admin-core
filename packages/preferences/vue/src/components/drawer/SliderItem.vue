@@ -3,8 +3,9 @@
  * 滑动条设置项组件
  * @description 用于数值范围选择，性能优化：使用 debounce 避免频繁更新
  */
-import { ref, watch, computed, onUnmounted, getCurrentInstance } from 'vue';
+import { computed, getCurrentInstance } from 'vue';
 import { SLIDER_DEBOUNCE_MS } from '@admin-core/preferences';
+import { useDebouncedValue } from '../../composables/use-debounced-value';
 
 const props = withDefaults(defineProps<{
   /** 标签文本 */
@@ -30,17 +31,10 @@ const props = withDefaults(defineProps<{
 
 const modelValue = defineModel<number>({ default: 0 });
 
-// 本地值用于即时响应UI
-const localValue = ref(modelValue.value);
-
-// 防抖定时器（使用 ref 避免多实例冲突）
-const debounceTimerRef = ref<ReturnType<typeof setTimeout> | null>(null);
-
-// 同步外部值变化
-watch(modelValue, (newVal) => {
-  if (newVal !== localValue.value) {
-    localValue.value = newVal;
-  }
+// 使用统一的防抖工具
+const { localValue, handleInput: handleInputDebounced } = useDebouncedValue({
+  modelValue,
+  delay: props.debounce,
 });
 
 // 计算已滑动百分比，用于渐变背景（防止除零）
@@ -58,31 +52,8 @@ const sliderStyle = computed(() => ({
 const handleInput = (e: Event) => {
   const target = e.target as HTMLInputElement;
   const value = Number(target.value);
-  localValue.value = value;
-  
-  // 清除之前的定时器
-  if (debounceTimerRef.value) {
-    clearTimeout(debounceTimerRef.value);
-  }
-
-  if (props.debounce <= 0) {
-    modelValue.value = value;
-    return;
-  }
-  
-  // 防抖更新
-  debounceTimerRef.value = setTimeout(() => {
-    modelValue.value = value;
-  }, props.debounce);
+  handleInputDebounced(value);
 };
-
-// 清理定时器
-onUnmounted(() => {
-  if (debounceTimerRef.value) {
-    clearTimeout(debounceTimerRef.value);
-    debounceTimerRef.value = null;
-  }
-});
 
 // 生成稳定的唯一 ID
 const instance = getCurrentInstance();

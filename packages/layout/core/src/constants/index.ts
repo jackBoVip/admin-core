@@ -4,3 +4,4 @@
 
 export * from './defaults';
 export * from './ui-tokens';
+export * from './animations';

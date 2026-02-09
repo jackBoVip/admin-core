@@ -7,8 +7,8 @@ import { LAYOUT_ICONS, ANIMATION_CLASSES } from '@admin-core/layout';
 import { useMemo, memo, type ReactNode, type CSSProperties } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useHeaderState, useSidebarState } from '../../hooks/use-layout-state';
-import { RefreshButton } from '../widgets';
 import { renderLayoutIcon } from '../../utils';
+import { RefreshButton } from '../widgets';
 
 export interface LayoutHeaderProps {
   logo?: ReactNode;
@@ -170,7 +170,7 @@ export const LayoutHeader = memo(function LayoutHeader({
             </button>
           )}
 
-          {/* 左侧刷新按钮（与 vben 保持一致位置） */}
+          {/* 左侧刷新按钮（与常见 admin 布局保持一致位置） */}
           {showRefresh && <RefreshButton />}
         </div>
 

@@ -2,6 +2,7 @@
  * 子菜单组件
  * @description 支持弹出层模式（水平/折叠）和折叠模式（垂直展开）
  */
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 import {
   useFloating,
   offset,
@@ -17,13 +18,13 @@ import {
   useMemo,
   useCallback,
   memo,
+  startTransition,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { MenuItem as MenuItemComp } from './MenuItem';
-import { MenuIcon } from './MenuIcon';
-import { useMenuContext, useSubMenuContext, SubMenuProvider } from './use-menu-context';
 import { renderLayoutIcon } from '../../utils';
-import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
+import { MenuIcon } from './MenuIcon';
+import { MenuItem as MenuItemComp } from './MenuItem';
+import { useMenuContext, useSubMenuContext, SubMenuProvider } from './use-menu-context';
 
 export interface SubMenuProps {
   /** 菜单项数据 */
@@ -55,7 +56,7 @@ export const SubMenu = memo(function SubMenu({
   const popupItemResizeObserverRef = useRef<ResizeObserver | null>(null);
   const [popupMounted, setPopupMounted] = useState(false);
   const [popupVisible, setPopupVisible] = useState(false);
-  const POPUP_SLOW_DURATION = 500;
+  const POPUP_SLOW_DURATION = LAYOUT_UI_TOKENS.POPUP_SLOW_DURATION;
 
   const rawPath = item.key ?? item.path ?? '';
   const path = rawPath === '' ? '' : String(rawPath);
@@ -313,11 +314,14 @@ export const SubMenu = memo(function SubMenu({
     
     // 垂直非折叠模式：切换展开状态
     if (menuContext.config.mode === 'vertical' && !menuContext.config.collapse) {
+      // 使用 startTransition 确保状态更新不会阻塞渲染
+      startTransition(() => {
       if (opened) {
         menuContext.closeMenu(path, parentPaths);
       } else {
         menuContext.openMenu(path, parentPaths);
       }
+      });
     }
   }, [item.disabled, menuContext, opened, path, parentPaths]);
 

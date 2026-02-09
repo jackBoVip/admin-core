@@ -61,7 +61,7 @@ import {
   generateWatermarkContent,
   getBreadcrumbNavigationPath,
   getMenuId,
-  getMenuPathIndex,
+  buildMenuPathIndex,
   getNextTabAfterClose,
   getOrCreateTabManager,
   getResolvedLayoutProps,
@@ -133,7 +133,7 @@ export function useSidebarState() {
     },
   });
 
-  // 子菜单面板是否折叠（vben 的 extraCollapse）
+  // 子菜单面板是否折叠（类似常见 admin 布局的 extraCollapse）
   const extraCollapsed = computed({
     get: () => context.state.sidebarExtraCollapsed ?? false,
     set: (value) => {
@@ -143,7 +143,7 @@ export function useSidebarState() {
     },
   });
 
-  // 子菜单面板是否固定（vben 的 expandOnHover）
+  // 子菜单面板是否固定（类似常见 admin 布局的 expandOnHover）
   const expandOnHover = computed({
     get: () => context.state.sidebarExpandOnHover ?? false,
     set: (value) => {
@@ -530,7 +530,9 @@ export function useResponsive() {
 export function useMenuState() {
   const context = useLayoutContext();
   const { currentPath, handleMenuItemClick } = useRouter();
-  const normalizeKey = (value: unknown) => (value == null || value === '' ? '' : String(value));
+  const normalizeKey = (value: unknown) => (
+    value === null || value === undefined || value === '' ? '' : String(value)
+  );
 
   const openKeys = computed({
     get: () => context.state.openMenuKeys,
@@ -545,7 +547,7 @@ export function useMenuState() {
     return normalizeKey(candidate);
   });
   const menus = computed<MenuItem[]>(() => context.props.menus || []);
-  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
+  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
 
   // 根据当前路径自动展开菜单
   watch(
@@ -740,7 +742,7 @@ export function useTabsState() {
     }
     return map;
   });
-  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
+  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
 
   const resolveMenuByPath = (path: string) => {
     const basePath = normalizePath(path);
@@ -972,7 +974,7 @@ export function useBreadcrumbState() {
 
   // 面包屑配置
   const breadcrumbConfig = computed(() => context.props.breadcrumb || {});
-  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
+  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
 
   // 面包屑数据
   const breadcrumbs = computed(() => {
@@ -1183,7 +1185,7 @@ export function useDynamicTitle() {
 
   const enabled = computed(() => context.props.dynamicTitle !== false);
   const appName = computed(() => context.props.appName || '');
-  const menuIndex = computed(() => getMenuPathIndex(context.props.menus || []));
+  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
 
   // 更新标题
   const updateTitle = (pageTitle?: string) => {

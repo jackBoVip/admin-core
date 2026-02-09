@@ -39,6 +39,9 @@ export {
   usePreferencesContext,
   type PreferencesContextValue,
   useTheme,
+  useDebouncedValue,
+  type UseDebouncedValueOptions,
+  type UseDebouncedValueReturn,
 } from './composables';
 
 // Components

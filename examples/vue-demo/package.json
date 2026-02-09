@@ -10,8 +10,6 @@
   },
   "dependencies": {
     "@admin-core/layout-vue": "workspace:*",
-
-    "@admin-core/preferences": "workspace:*",
     "vue": "catalog:",
     "vue-router": "^4.5.1"
   },

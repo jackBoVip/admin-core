@@ -2,6 +2,7 @@
  * 语言切换组件
  * @description 切换应用语言
  */
+import { getLocaleDisplayList, createI18n, type SupportedLocale } from '@admin-core/layout';
 import { useState, useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext } from '../../hooks';
@@ -14,19 +15,32 @@ interface LanguageOption {
 }
 
 export const LanguageToggle = memo(function LanguageToggle() {
-  const { props, events, t } = useLayoutContext();
+  const { props, events } = useLayoutContext();
   const [isOpen, setIsOpen] = useState(false);
 
-  const currentLocale = props.locale || 'zh-CN';
+  const currentLocale = (props.locale || 'zh-CN') as SupportedLocale;
 
   const languageOptions: LanguageOption[] = useMemo(() => {
-    const zhLabel = t('layout.widgetLegacy.locale.zh-CN');
-    const enLabel = t('layout.widgetLegacy.locale.en-US');
-    return [
-      { value: 'zh-CN', label: zhLabel, abbr: 'ZH' },
-      { value: 'en-US', label: enLabel, abbr: 'EN' },
-    ];
-  }, [t]);
+    // 使用当前 i18n 实例获取翻译
+    const i18n = createI18n(currentLocale);
+    const displayList = getLocaleDisplayList(i18n);
+    
+    return displayList.map((item) => {
+      let abbr: string;
+      if (item.value === 'zh-CN') {
+        abbr = 'ZH';
+      } else if (item.value === 'en-US') {
+        abbr = 'EN';
+      } else {
+        abbr = String(item.value).toUpperCase().slice(0, 2);
+      }
+      return {
+        value: item.value,
+        label: item.label,
+        abbr,
+      };
+    });
+  }, [currentLocale]);
 
   const handleLocaleChange = useCallback(
     (locale: string) => {

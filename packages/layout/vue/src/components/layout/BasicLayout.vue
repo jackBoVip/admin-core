@@ -7,7 +7,7 @@
  */
 import { computed, ref, shallowRef, watch, onUnmounted, onMounted, defineComponent, h, isRef, type PropType, type DefineComponent, type VNode } from 'vue';
 import type { BasicLayoutProps, LayoutEvents, MenuItem, TabItem, BreadcrumbItem, NotificationItem } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps, logger, buildMenuPathIndex, filterHiddenMenus, resolveMenuNavigation } from '@admin-core/layout';
+import { mapPreferencesToLayoutProps, logger, buildMenuPathIndex, filterHiddenMenus, resolveMenuNavigation, LAYOUT_UI_TOKENS } from '@admin-core/layout';
 import { createLayoutContext, useResponsive } from '../../composables';
 import { 
   PreferencesProvider, 
@@ -353,7 +353,7 @@ const initFloatingPosition = () => {
       }
     }
   } catch {}
-  const inset = 24;
+  const inset = LAYOUT_UI_TOKENS.FLOATING_BUTTON_INSET;
   const size = 48;
   floatingPosition.value = {
     x: window.innerWidth - size - inset,

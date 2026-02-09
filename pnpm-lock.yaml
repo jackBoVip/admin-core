@@ -164,12 +164,18 @@ importers:
 
   examples/react-demo:
     dependencies:
+      '@admin-core/layout':
+        specifier: workspace:*
+        version: link:../../packages/layout/core
       '@admin-core/layout-react':
         specifier: workspace:*
         version: link:../../packages/layout/react
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../packages/preferences/core
+      '@admin-core/preferences-react':
+        specifier: workspace:*
+        version: link:../../packages/preferences/react
       react:
         specifier: 'catalog:'
         version: 19.2.4
@@ -204,12 +210,18 @@ importers:
 
   examples/vue-demo:
     dependencies:
+      '@admin-core/layout':
+        specifier: workspace:*
+        version: link:../../packages/layout/core
       '@admin-core/layout-vue':
         specifier: workspace:*
         version: link:../../packages/layout/vue
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../packages/preferences/core
+      '@admin-core/preferences-vue':
+        specifier: workspace:*
+        version: link:../../packages/preferences/vue
       vue:
         specifier: 'catalog:'
         version: 3.5.27(typescript@5.9.3)
@@ -301,6 +313,9 @@ importers:
       '@floating-ui/react':
         specifier: ^0.27.17
         version: 0.27.17(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      react-router-dom:
+        specifier: '>=6.0.0'
+        version: 7.13.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*

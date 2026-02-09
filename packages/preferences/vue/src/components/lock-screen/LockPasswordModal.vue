@@ -4,7 +4,7 @@
  * @description 极简高级风格，支持国际化、无障碍
  */
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
-import { usePreferences } from '../../composables';
+import { getPreferencesManager, usePreferences } from '../../composables';
 import {
   getLocaleByPreferences,
   getIcon,
@@ -134,6 +134,9 @@ const handleSubmit = () => {
       isLocked: true,
     },
   });
+  try {
+    getPreferencesManager()?.flush?.();
+  } catch {}
 
   password.value = '';
   confirmPassword.value = '';

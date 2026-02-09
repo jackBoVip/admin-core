@@ -2,8 +2,8 @@
  * 数字输入设置项组件
  * @description 带 +/- 步进控制的数字输入
  */
+import { getIcon, clamp, type InputItemBaseProps } from '@admin-core/preferences';
 import React, { memo, useCallback, useEffect, useId, useState } from 'react';
-import { getIcon, type InputItemBaseProps } from '@admin-core/preferences';
 
 export interface NumberItemProps extends InputItemBaseProps {
   /** 当前值 */
@@ -31,18 +31,16 @@ export const NumberItem: React.FC<NumberItemProps> = memo(({
     setLocalText((prev) => (prev === next ? prev : next));
   }, [value]);
 
-  const clamp = useCallback((val: number) => {
-    let next = Number.isFinite(val) ? val : 0;
-    if (min !== undefined) next = Math.max(min, next);
-    if (max !== undefined) next = Math.min(max, next);
-    return next;
+  const clampValue = useCallback((val: number) => {
+    const next = Number.isFinite(val) ? val : 0;
+    return clamp(next, min, max);
   }, [min, max]);
 
   const commit = useCallback((val: number) => {
-    const next = clamp(val);
+    const next = clampValue(val);
     onChange(next);
     setLocalText(String(next));
-  }, [clamp, onChange]);
+  }, [clampValue, onChange]);
 
   const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalText(e.target.value);
@@ -64,7 +62,6 @@ export const NumberItem: React.FC<NumberItemProps> = memo(({
     <div
       className={`number-item ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
-      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px', flexWrap: 'nowrap' }}
     >
       <label id={`${inputId}-label`} className="number-item__label">
         <span className="number-item__label-text">{label}</span>
@@ -77,7 +74,7 @@ export const NumberItem: React.FC<NumberItemProps> = memo(({
           />
         ) : null}
       </label>
-      <div className="preferences-stepper" style={{ display: 'flex', alignItems: 'center', width: '165px', flex: '0 0 165px' }}>
+      <div className="preferences-stepper">
         <button
           type="button"
           className="preferences-stepper__btn"

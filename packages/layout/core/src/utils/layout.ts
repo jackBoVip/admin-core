@@ -14,7 +14,7 @@
  *    - calculateLayoutComputed, generateCSSVariables
  * 
  * 4. 菜单工具函数 (第 380-560 行)
- *    - findMenuByKey, getMenuPath, flattenMenus, generateBreadcrumbsFromMenus 等
+ *    - getMenuPath, flattenMenus, generateBreadcrumbsFromMenus 等
  * 
  * 5. 标签管理器 (第 560-840 行)
  *    - TabManager 类
@@ -172,7 +172,7 @@ export function calculateSidebarWidth(
     return 0;
   }
 
-  // 混合导航模式（vben 风格）
+  // 混合导航模式（图标列 + 子菜单面板）
   // 侧边栏宽度 = 图标列宽度 + 子菜单面板宽度（固定模式且可见时占用空间）
   if (isHeaderMixedNavLayout(layout) || isSidebarMixedNavLayout(layout)) {
     const isSidebarMixed = isSidebarMixedNavLayout(layout);
@@ -556,6 +556,91 @@ export function generateBreadcrumbsFromMenus(
   }
 
   return breadcrumbs;
+}
+
+/**
+ * 获取菜单路径索引（从根到目标的所有父级的索引数组）
+ */
+export function getMenuPathIndex(menus: MenuItem[], key: string): number[] {
+  const path: number[] = [];
+  const stack: { item: MenuItem; index: number }[] = [];
+
+  function traverse(items: MenuItem[], target: string): boolean {
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i];
+      stack.push({ item, index: i });
+      if (item.key === target) {
+        path.push(...stack.map(s => s.index));
+        stack.pop();
+        return true;
+      }
+      if (item.children && traverse(item.children, target)) {
+        stack.pop();
+        return true;
+      }
+      stack.pop();
+    }
+    return false;
+  }
+
+  traverse(menus, key);
+  return path;
+}
+
+/**
+ * 获取菜单项的唯一 ID
+ * @param menu - 菜单项
+ * @returns 菜单 ID（优先使用 key，然后是 path，最后是 name）
+ */
+export function getMenuId(menu: MenuItem | null | undefined): string {
+  if (!menu) return '';
+  const id = menu.key ?? menu.path ?? menu.name ?? '';
+  return id === '' ? '' : String(id);
+}
+
+/**
+ * 构建菜单路径索引（用于快速查找）
+ * @param menus - 菜单列表
+ * @returns 菜单索引对象
+ */
+export function buildMenuPathIndex(menus: MenuItem[]): {
+  byPath: Map<string, MenuItem>;
+  byKey: Map<string, MenuItem>;
+  pathItems: MenuItem[];
+  chainByKey: Map<string, string[]>;
+  chainByPath: Map<string, string[]>;
+} {
+  const byPath = new Map<string, MenuItem>();
+  const byKey = new Map<string, MenuItem>();
+  const pathItems: MenuItem[] = [];
+  const chainByKey = new Map<string, string[]>();
+  const chainByPath = new Map<string, string[]>();
+
+  function traverse(items: MenuItem[], parentChain: string[]) {
+    for (const item of items) {
+      const id = getMenuId(item);
+      const chain = id ? [...parentChain, id] : parentChain.slice();
+      if (item.key) {
+        byKey.set(item.key, item);
+        if (chain.length > 0) {
+          chainByKey.set(item.key, chain);
+        }
+      }
+      if (item.path) {
+        byPath.set(item.path, item);
+        pathItems.push(item);
+        if (chain.length > 0) {
+          chainByPath.set(item.path, chain);
+        }
+      }
+      if (item.children) {
+        traverse(item.children, chain);
+      }
+    }
+  }
+
+  traverse(menus, []);
+  return { byPath, byKey, pathItems, chainByKey, chainByPath };
 }
 
 /**

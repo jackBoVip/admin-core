@@ -63,6 +63,21 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
   const eventTarget = resolveEventTarget(target);
   if (!eventTarget) return () => {};
 
+  // 🔧 关键修复：在创建定时器之前检查 autoLockTime
+  // 如果 autoLockTime 为 0 或小于等于 0，直接返回空销毁函数，不添加任何监听器
+  const initialAutoLockTime = (() => {
+    try {
+      return getAutoLockTime();
+    } catch {
+      return 0;
+    }
+  })();
+  
+  if (!initialAutoLockTime || initialAutoLockTime <= 0) {
+    // autoLockTime 不合法时，直接返回空销毁函数，不添加任何监听器
+    return () => {};
+  }
+
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastActivityTime = 0;
   let isDestroyed = false;
@@ -90,11 +105,18 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
     }
 
     const delayMs = getDelayMs();
-    if (!delayMs || !canLock()) return;
+    const canLockNow = canLock();
+
+    // 如果延迟时间为 0 或不能锁定，直接返回（不设置定时器）
+    if (!delayMs || !canLockNow) {
+      return;
+    }
 
     timer = setTimeout(() => {
       if (isDestroyed) return;
-      if (!getDelayMs() || !canLock()) {
+      const finalDelayMs = getDelayMs();
+      const finalCanLock = canLock();
+      if (!finalDelayMs || !finalCanLock) {
         timer = null;
         return;
       }
@@ -141,10 +163,11 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
 export function createLockScreenManager(options: LockScreenManagerOptions): () => void {
   const { getPreferences, onLock } = options;
 
-  return createAutoLockTimer({
+  const destroyFn = createAutoLockTimer({
     getAutoLockTime: () => {
       try {
-        return getPreferences().lockScreen.autoLockTime;
+        const time = getPreferences().lockScreen.autoLockTime;
+        return time;
       } catch {
         return 0;
       }
@@ -160,4 +183,8 @@ export function createLockScreenManager(options: LockScreenManagerOptions): () =
     throttleMs: THROTTLE_DELAY,
     events: DEFAULT_AUTO_LOCK_EVENTS,
   });
+
+  return () => {
+    destroyFn();
+  };
 }

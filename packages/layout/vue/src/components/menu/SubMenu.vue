@@ -539,7 +539,7 @@ watch(opened, (value, _, onCleanup) => {
 /* 弹出层动画 */
 .menu-popup-enter-active,
 .menu-popup-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity var(--admin-duration-fast, 150ms) ease, transform var(--admin-duration-fast, 150ms) ease;
 }
 
 .menu__popup--slow.menu-popup-enter-active,

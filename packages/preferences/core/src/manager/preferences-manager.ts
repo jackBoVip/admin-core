@@ -78,9 +78,14 @@ export class PreferencesManager {
 
   /** 存储防抖定时器 */
   private saveDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  /** 页面卸载时保存处理 */
+  private pageHideHandler?: () => void;
 
   /** 缓存的差异（避免重复计算） */
   private cachedDiff: DeepPartial<Preferences> | null = null;
+
+  /** 是否正在执行 flush（防止重复调用） */
+  private isFlushing = false;
 
   constructor(options: PreferencesInitOptions = { namespace: 'admin-core' }) {
     this.namespace = options.namespace;
@@ -102,8 +107,22 @@ export class PreferencesManager {
       storedPrefs ?? {}
     );
 
+    // 🔧 关键修复 1：如果 isLocked 是 true 但没有密码，自动解锁
+    // 这可以防止页面刷新后因为存储中的错误状态而自动锁屏
+    if (this.state.lockScreen.isLocked && !this.state.lockScreen.password) {
+      console.warn('[PreferencesManager] Auto-unlocking: isLocked=true but no password set');
+      logger.warn('[PreferencesManager] Auto-unlocking: isLocked=true but no password set', {
+        isLocked: this.state.lockScreen.isLocked,
+        hasPassword: this.state.lockScreen.password !== '',
+        autoLockTime: this.state.lockScreen.autoLockTime,
+        timestamp: new Date().toISOString(),
+      });
+      this.state.lockScreen.isLocked = false;
+    }
+
     // 保存初始状态
     this.initialState = deepClone(this.state);
+
   }
 
   /**
@@ -127,6 +146,18 @@ export class PreferencesManager {
     // 初始化主题切换动画位置追踪
     initThemeTransitionTracking();
 
+    // 页面卸载时强制保存，避免防抖未落盘导致刷新后状态回退
+    if (isBrowser) {
+      this.pageHideHandler = () => {
+        if (this.saveDebounceTimer) {
+          this.saveToStorage();
+          this.saveDebounceTimer = null;
+        }
+      };
+      window.addEventListener('pagehide', this.pageHideHandler);
+      window.addEventListener('beforeunload', this.pageHideHandler);
+    }
+
     this.initialized = true;
   }
 
@@ -143,6 +174,12 @@ export class PreferencesManager {
     if (this.saveDebounceTimer) {
       clearTimeout(this.saveDebounceTimer);
       this.saveDebounceTimer = null;
+    }
+
+    if (this.pageHideHandler && isBrowser) {
+      window.removeEventListener('pagehide', this.pageHideHandler);
+      window.removeEventListener('beforeunload', this.pageHideHandler);
+      this.pageHideHandler = undefined;
     }
 
     // 清空监听器
@@ -180,6 +217,18 @@ export class PreferencesManager {
     const prevState = this.state;
     const prevActualTheme = getActualThemeMode(prevState.theme.mode);
 
+    if (updates.lockScreen) {
+      // 早期检查：如果锁屏状态和密码都没有变化，提前返回
+      if (
+        updates.lockScreen.isLocked !== undefined &&
+        updates.lockScreen.isLocked === prevState.lockScreen.isLocked &&
+        (updates.lockScreen.password === undefined ||
+          updates.lockScreen.password === prevState.lockScreen.password)
+      ) {
+        return;
+      }
+    }
+
     // 深度合并更新（safeMerge 不修改原对象）
     this.state = safeMerge(this.state, updates);
 
@@ -200,14 +249,40 @@ export class PreferencesManager {
       this.applyPreferences();
     }
 
-    // 持久化（使用防抖）
+    // 持久化（使用防抖，避免频繁写入）
     if (persist) {
       this.debouncedSaveToStorage();
     }
 
     // 通知监听器（使用 diffWithKeys 一次计算差异和变更键）
     const { keys: changedKeys } = diffWithKeys(prevState, this.state);
+    
     this.notifyListeners(changedKeys);
+  }
+
+  /**
+   * 立即持久化当前偏好设置
+   * @description 用于锁屏等需要立即落盘的场景
+   */
+  flush(): void {
+    // 防止重复调用
+    if (this.isFlushing) {
+      return;
+    }
+
+    this.isFlushing = true;
+
+    try {
+      if (this.saveDebounceTimer) {
+        clearTimeout(this.saveDebounceTimer);
+        this.saveDebounceTimer = null;
+      }
+      this.saveToStorage();
+      this.isFlushing = false;
+    } catch (error) {
+      this.isFlushing = false;
+      throw error;
+    }
   }
 
   /**
@@ -360,8 +435,142 @@ export class PreferencesManager {
   private saveToStorage(): void {
     // 只保存与默认值不同的部分
     // 使用缓存的 diff（若缓存为空则即时计算）
-    const diffPrefs = this.getDiff();
-    this.storage.setItem(PREFERENCES_STORAGE_KEY, diffPrefs);
+    const diffPrefs = (this.getDiff() as DeepPartial<Preferences> | null) ?? {};
+    
+    // 检查 localStorage 中是否已经存在 lockScreen 设置
+    // 如果存在，说明用户之前操作过锁屏，需要持久化 isLocked 状态
+    const storedPrefs = this.loadFromStorage();
+    const hasStoredLockScreen = storedPrefs?.lockScreen !== undefined;
+    const storedIsLocked = storedPrefs?.lockScreen?.isLocked;
+    
+    // 如果用户设置了密码，或者存在已存储的 lockScreen 设置，或者当前 isLocked 为 true，或者 diff 中有 lockScreen 相关设置
+    // 都需要保存 isLocked 状态，确保刷新后状态正确
+    const hasPassword = this.state.lockScreen.password !== '';
+    // 关键修复：如果存储中的 isLocked 状态与当前状态不同，也需要保存（确保解锁状态能覆盖锁屏状态）
+    // 或者如果存储中存在 lockScreen 设置（无论 isLocked 值是什么），都需要保存当前状态
+    const lockStateChanged = storedIsLocked !== undefined && storedIsLocked !== this.state.lockScreen.isLocked;
+    // 检查 lockScreen 相关字段是否有实际变化
+    const passwordChanged = storedPrefs?.lockScreen?.password !== this.state.lockScreen.password;
+    // 如果存储中存在 lockScreen 设置，必须保存当前状态（包括解锁状态），确保状态同步
+    // 关键：如果存储中有 lockScreen 设置，无论当前状态如何，都必须保存，确保状态同步
+    // 这样可以确保解锁状态（isLocked: false）能正确覆盖之前的锁屏状态（isLocked: true）
+    // 特别注意：即使 isLocked 与默认值相同（false），只要存储中有 lockScreen 设置，也必须保存，确保状态同步
+    // 🔧 关键修复：简化判断逻辑，确保解锁状态能正确保存
+    // 如果存储中有 lockScreen 设置，或者用户设置了密码，或者锁屏状态改变了，都必须保存
+    // 这样可以确保解锁状态（isLocked: false）能正确覆盖锁屏状态（isLocked: true）
+    const shouldSaveLockScreen = hasPassword || hasStoredLockScreen || this.state.lockScreen.isLocked || !!diffPrefs.lockScreen || lockStateChanged || passwordChanged;
+    
+    // 关键修复：由于 setItem 是完全覆盖而不是合并，我们需要合并存储中的其他偏好设置
+    // 确保不会丢失其他偏好设置（如主题、侧边栏等）
+    // 合并策略：存储中的其他设置 > diff 中的设置
+    const finalPrefs: DeepPartial<Preferences> = storedPrefs ? { ...storedPrefs } : {};
+    
+    // 先处理 lockScreen，避免被 diff 覆盖
+    if (shouldSaveLockScreen) {
+      // 初始化 lockScreen 对象
+      if (!finalPrefs.lockScreen) {
+        finalPrefs.lockScreen = {};
+      }
+      
+      // 如果存储中已有 lockScreen 设置，保留其他字段（如 password、backgroundImage、autoLockTime）
+      if (storedPrefs?.lockScreen) {
+        const { isLocked: _storedIsLocked, ...storedLockScreenWithoutIsLocked } = storedPrefs.lockScreen;
+        // 先合并存储中的其他字段（排除 isLocked）
+        finalPrefs.lockScreen = { ...storedLockScreenWithoutIsLocked, ...finalPrefs.lockScreen };
+      }
+      
+      // 合并 diffPrefs.lockScreen 中的其他字段（如 backgroundImage、autoLockTime），但排除 isLocked
+      // 因为 isLocked 需要根据当前状态显式设置
+      if (diffPrefs.lockScreen) {
+        const { isLocked: _diffIsLocked, ...diffLockScreenWithoutIsLocked } = diffPrefs.lockScreen;
+        // 合并 diff 中的其他字段（排除 isLocked）
+        finalPrefs.lockScreen = { ...finalPrefs.lockScreen, ...diffLockScreenWithoutIsLocked };
+      }
+      
+      // 始终保存当前的 isLocked 状态（无论 true 还是 false）
+      // 这是关键：即使 isLocked 与默认值相同，只要用户设置了密码或之前操作过锁屏，就需要保存
+      // 必须显式保存 isLocked，确保解锁状态能正确持久化
+      // 必须在最后设置，确保覆盖任何其他值
+      finalPrefs.lockScreen.isLocked = this.state.lockScreen.isLocked;
+      
+      // 确保 password 也被保存
+      // 如果当前有密码，保存它
+      // 如果当前密码为空字符串但存储中有密码，也需要显式保存空字符串来覆盖旧值
+      const storedPassword = storedPrefs?.lockScreen?.password;
+      if (this.state.lockScreen.password || storedPassword) {
+        finalPrefs.lockScreen.password = this.state.lockScreen.password;
+      }
+    } else if (diffPrefs.lockScreen) {
+      // 如果 shouldSaveLockScreen 为 false，但 diffPrefs 中有 lockScreen（比如只有 backgroundImage 或 autoLockTime）
+      // 我们需要合并这些字段，但不设置 isLocked（因为它与默认值相同且存储中也没有）
+      if (!finalPrefs.lockScreen) {
+        finalPrefs.lockScreen = {};
+      }
+      const { isLocked: _diffIsLocked, ...diffLockScreenWithoutIsLocked } = diffPrefs.lockScreen;
+      // 只合并非 isLocked 字段
+      if (Object.keys(diffLockScreenWithoutIsLocked).length > 0) {
+        finalPrefs.lockScreen = { ...finalPrefs.lockScreen, ...diffLockScreenWithoutIsLocked };
+      }
+    }
+    
+    // 合并 diff 中的其他设置到 finalPrefs（diff 优先，因为它反映当前状态）
+    // 但排除 lockScreen，因为我们已经单独处理了
+    // 🔧 关键修复：在合并前保存 lockScreen，防止被覆盖
+    const savedLockScreen = finalPrefs.lockScreen;
+    if (Object.keys(diffPrefs).length > 0) {
+      const { lockScreen: _diffLockScreen, ...diffPrefsWithoutLockScreen } = diffPrefs;
+      Object.assign(finalPrefs, diffPrefsWithoutLockScreen);
+      // 🔧 关键修复：恢复 lockScreen，确保不被覆盖
+      if (savedLockScreen) {
+        finalPrefs.lockScreen = savedLockScreen;
+      }
+    }
+    
+    // 🔧 关键修复：在保存前再次显式设置 isLocked，确保即使被覆盖也能正确保存
+    // 这是最后一道防线，确保解锁状态能正确持久化
+    // 🔧 关键修复：如果 shouldSaveLockScreen 为 true，确保 lockScreen 对象存在
+    if (shouldSaveLockScreen) {
+      // 🔧 关键修复：强制创建 lockScreen 对象，确保它存在
+      if (!finalPrefs.lockScreen) {
+        finalPrefs.lockScreen = {};
+      }
+      // 🔧 关键修复：确保 lockScreen 是一个对象，不是 null 或 undefined
+      if (typeof finalPrefs.lockScreen !== 'object' || finalPrefs.lockScreen === null) {
+        console.warn('[PreferencesManager] lockScreen is not an object, recreating:', {
+          type: typeof finalPrefs.lockScreen,
+          value: finalPrefs.lockScreen,
+        });
+        finalPrefs.lockScreen = {};
+      }
+      finalPrefs.lockScreen.isLocked = this.state.lockScreen.isLocked;
+      // 🔧 关键修复：确保 password 也被保存（如果存在）
+      if (this.state.lockScreen.password) {
+        finalPrefs.lockScreen.password = this.state.lockScreen.password;
+      }
+    }
+    
+    // 🔧 关键修复：在保存前最后一次检查，确保 lockScreen 存在
+    if (shouldSaveLockScreen) {
+      if (!finalPrefs.lockScreen || typeof finalPrefs.lockScreen !== 'object' || finalPrefs.lockScreen === null) {
+        console.error('[PreferencesManager] CRITICAL: lockScreen is missing before save, recreating:', {
+          shouldSaveLockScreen,
+          hasLockScreen: !!finalPrefs.lockScreen,
+          lockScreenType: typeof finalPrefs.lockScreen,
+          lockScreenValue: finalPrefs.lockScreen,
+        });
+        finalPrefs.lockScreen = {
+          isLocked: this.state.lockScreen.isLocked,
+          password: this.state.lockScreen.password,
+        };
+      }
+      // 🔧 关键修复：最后一次确保 isLocked 和 password 正确设置
+      finalPrefs.lockScreen.isLocked = this.state.lockScreen.isLocked;
+      if (this.state.lockScreen.password) {
+        finalPrefs.lockScreen.password = this.state.lockScreen.password;
+      }
+    }
+    
+    this.storage.setItem(PREFERENCES_STORAGE_KEY, finalPrefs);
   }
 
   /**

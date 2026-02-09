@@ -4,7 +4,7 @@
  * @description 语言、动画、小部件等通用设置
  */
 import { computed, ref, onUnmounted, watch, watchEffect } from 'vue';
-import { usePreferences } from '../../composables';
+import { usePreferences, getPreferencesManager } from '../../composables';
 import {
   PAGE_TRANSITION_OPTIONS,
   DEFAULT_PREFERENCES,
@@ -235,6 +235,11 @@ const clearPassword = () => {
   
   try {
     setPreferences({ lockScreen: { password: '' } });
+    // 立即保存到存储，确保密码被清除
+    try {
+      getPreferencesManager()?.flush?.();
+    } catch {}
+    
     isClearing.value = true;
     
     // 清除之前的定时器

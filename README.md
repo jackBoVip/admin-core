@@ -142,6 +142,64 @@ function App() {
 - `header-mixed-nav` - 顶部混合导航
 - `full-content` - 全屏内容
 
+### 3. 静态 + 动态路由
+
+框架提供“静态路由常量 + 动态菜单 API”统一构建能力，自动生成 **路由、菜单、面包屑**。  
+静态路由与动态菜单都使用 **RouteRecord 风格**，其中 `component` 使用字符串路径（如 `/system/user`），由框架解析为真实组件。
+
+#### Vue 示例（自动注入 Router）
+
+```ts
+import { createRouter, createWebHistory } from 'vue-router';
+import { createVueRouteAccess } from '@admin-core/layout-vue';
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [{ path: '/', name: 'Root', component: () => import('./layouts/BasicLayout.vue') }],
+});
+
+const staticRoutes = [
+  { name: 'home', path: '/', component: '/home', meta: { title: '首页', icon: 'home' } },
+];
+
+const pageMap = import.meta.glob('./views/**/*.vue');
+
+const { menus } = await createVueRouteAccess({
+  router,
+  staticRoutes,
+  fetchMenuList: async () => await fetch('/api/menu').then(r => r.json()),
+  pageMap,
+  viewsRoot: '/src/views',
+});
+
+export { router, menus };
+```
+
+#### React 示例（返回 RouteObject[]）
+
+```tsx
+import { useRoutes } from 'react-router-dom';
+import { createReactRouteAccess } from '@admin-core/layout-react';
+
+const staticRoutes = [
+  { name: 'home', path: '/', component: '/home', meta: { title: '首页', icon: 'home' } },
+];
+
+const pageMap = {
+  '/home': HomePage,
+  '/system/user': UserPage,
+};
+
+const { routeObjects, menus } = await createReactRouteAccess({
+  staticRoutes,
+  fetchMenuList: async () => await fetch('/api/menu').then(r => r.json()),
+  pageMap,
+  viewsRoot: '/src/pages',
+});
+
+const routesElement = useRoutes(routeObjects);
+```
+
 ## 📁 目录结构
 
 ```
@@ -150,7 +208,6 @@ admin-core/
 ├── examples/             # 示例项目
 │   ├── react-demo/       # React 示例
 │   ├── vue-demo/         # Vue 示例
-│   └── vue-vben-admin-main/ # 完整的 Vue 后台模板
 ├── internal/             # 内部工具
 │   ├── eslint-config/    # ESLint 配置
 │   └── tsconfig/         # TypeScript 配置

@@ -170,4 +170,15 @@
     transition-duration: var(--admin-duration-fast);
     transition-timing-function: var(--admin-easing-default);
   }
+
+  /* 图标基础样式：保证 SVG 在容器内居中对齐 */
+  .admin-icon {
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  .admin-icon svg {
+    display: block;
+  }
 }

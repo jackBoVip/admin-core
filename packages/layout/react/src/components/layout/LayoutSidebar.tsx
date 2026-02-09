@@ -1,6 +1,6 @@
 /**
  * 侧边栏组件
- * @description 参考 vben admin 实现的混合侧边栏逻辑
+ * @description 参考常见 admin 布局实现的混合侧边栏逻辑
  * 
  * 状态说明：
  * - extraVisible: 子菜单面板是否可见（由是否有子菜单决定）
@@ -12,15 +12,16 @@ import {
   DEFAULT_SIDEBAR_CONFIG, 
   LAYOUT_ICONS, 
   ANIMATION_CLASSES, 
+  LAYOUT_STYLE_CONSTANTS,
   type MenuItem,
 } from '@admin-core/layout';
 import { getPreferencesManager } from '@admin-core/preferences-react';
 import { useState, useCallback, useMemo, memo, useEffect, useRef, type ReactNode } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useSidebarState, useMenuState } from '../../hooks/use-layout-state';
+import { renderLayoutIcon } from '../../utils';
 import { MixedSidebarMenu, MixedSidebarSubMenu } from './MixedSidebarMenu';
 import { SidebarMenu } from './SidebarMenu';
-import { renderLayoutIcon } from '../../utils';
 
 export interface LayoutSidebarProps {
   logo?: ReactNode;
@@ -82,7 +83,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
   const lastActiveKeyRef = useRef('');
 
   const normalizeKey = useCallback((value: unknown) => {
-    if (value == null || value === '') return '';
+    if (value === null || value === undefined || value === '') return '';
     return String(value);
   }, []);
 
@@ -168,7 +169,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
     [expandOnHover, extraCollapsed]
   );
   
-  // 处理子菜单面板折叠/展开切换（vben 风格：点击同一个按钮切换）
+  // 处理子菜单面板折叠/展开切换（点击同一个按钮进行折叠/展开）
   const handleExtraCollapseToggle = useCallback(() => {
     setExtraCollapsed(!extraCollapsed);
   }, [extraCollapsed, setExtraCollapsed]);
@@ -220,7 +221,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
   // 子菜单面板折叠宽度
   const extraCollapsedWidth = sidebarConfig.extraCollapsedWidth || DEFAULT_SIDEBAR_CONFIG.extraCollapsedWidth;
 
-  // 子菜单面板宽度（vben: sidebarExtraWidth）
+  // 子菜单面板宽度（类似常见 admin 布局的 sidebarExtraWidth）
   const extraWidthNum = useMemo(() => {
     if (!showExtraContent) return 0;
     return effectiveExtraCollapsed ? extraCollapsedWidth : (sidebarConfig.width || DEFAULT_SIDEBAR_CONFIG.width);
@@ -234,7 +235,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
   }, [showExtraContent]);
   
   // 扩展区域宽度
-  const extraWidth = showExtraContent ? `${extraWidthNum}px` : '0px';
+  const extraWidth = showExtraContent ? `${extraWidthNum}px` : LAYOUT_STYLE_CONSTANTS.ZERO_PX;
   
   // 侧边栏宽度（混合模式下只是图标列宽度）
   const sidebarTotalWidth = isMixedMode ? mixedWidth : width;
@@ -258,7 +259,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
     []
   );
 
-  // 子菜单面板样式（vben 风格：fixed 定位在主菜单右侧）
+  // 子菜单面板样式（类似常见 admin 布局：fixed 定位在主菜单右侧）
   const extraStyle = useMemo(() => ({
     left: `${mixedWidth}px`,
     width: extraWidth,
@@ -340,7 +341,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
         </div>
       </div>
 
-      {/* 混合菜单扩展区域（子菜单面板）- vben 风格：fixed 定位 */}
+      {/* 混合菜单扩展区域（子菜单面板）- fixed 定位在主菜单右侧 */}
       {isMixedMode && (
         <div
           className={extraClassName}

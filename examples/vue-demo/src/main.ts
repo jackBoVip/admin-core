@@ -1,11 +1,16 @@
 import { createApp } from 'vue';
 import App from './App.vue';
-import router from './router';
+import router, { setupRouteAccess } from './router';
 
 // 样式
 import './styles/index.css';
 
-const app = createApp(App);
+async function bootstrap() {
+  const { menus } = await setupRouteAccess();
 
-app.use(router);
-app.mount('#app');
+  const app = createApp(App, { menus });
+  app.use(router);
+  app.mount('#app');
+}
+
+bootstrap();

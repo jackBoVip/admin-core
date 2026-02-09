@@ -6,6 +6,7 @@
  */
 import { ref, provide, readonly } from 'vue';
 import { 
+  getPreferencesManager,
   usePreferences, 
   useLockScreen, 
   useShortcutKeys,
@@ -108,6 +109,9 @@ const lock = () => {
 
   // 已有密码，直接锁屏
   setPreferences({ lockScreen: { isLocked: true } });
+  try {
+    getPreferencesManager()?.flush?.();
+  } catch {}
   emit('lock');
 };
 
@@ -119,6 +123,9 @@ const handlePasswordSuccess = () => {
 
 const unlock = () => {
   doUnlock();
+  try {
+    getPreferencesManager()?.flush?.();
+  } catch {}
   emit('unlock');
 };
 

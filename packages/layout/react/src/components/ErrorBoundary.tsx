@@ -1,3 +1,4 @@
+import { logger } from '@admin-core/layout';
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
@@ -20,6 +21,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     this.props.onError?.(error, info);
+    if (!this.props.onError) {
+      logger.error('ErrorBoundary caught an error.', error, info);
+    }
   }
 
   componentDidUpdate(prevProps: ErrorBoundaryProps) {

@@ -2,10 +2,10 @@
  * 菜单项组件
  * @description 叶子节点菜单项
  */
+import { calculateMenuItemPadding, type MenuItem as MenuItemType } from '@admin-core/layout';
 import { useMemo, useCallback, memo } from 'react';
-import { useMenuContext, useSubMenuContext } from './use-menu-context';
-import type { MenuItem as MenuItemType } from '@admin-core/layout';
 import { MenuIcon } from './MenuIcon';
+import { useMenuContext, useSubMenuContext } from './use-menu-context';
 
 export interface MenuItemProps {
   /** 菜单项数据 */
@@ -54,7 +54,7 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
   const indentStyle = useMemo(() => {
     if (menuContext.config.mode === 'vertical' && !menuContext.config.collapse) {
       return {
-        paddingLeft: `${16 + level * 16}px`,
+        paddingLeft: `${calculateMenuItemPadding(level)}px`,
       };
     }
     return {};

@@ -138,6 +138,8 @@ export * from './hooks';
 
 // 工具函数导出
 export * from './utils';
+// Router helpers
+export * from './router/route-access';
 
 // 从核心包重新导出类型和工具
 export {
@@ -210,6 +212,7 @@ export {
   calculateLayoutComputed,
   generateCSSVariables,
   findMenuByKey,
+  getMenuId,
   getMenuPath,
   flattenMenus,
   filterHiddenMenus,
@@ -244,4 +247,7 @@ export {
   layoutBaseCSS,
   layoutUtilitiesCSS,
   layoutFullCSS,
+  // 路由辅助类型
+  type RouteModule,
+  type RouteRecordStringComponent,
 } from '@admin-core/layout';

@@ -2,10 +2,21 @@
 /**
  * 锁屏页面组件
  * @description 经典居中布局，极致毛玻璃质感，高级交互反馈
+ * 行为逻辑（背景决策、解锁流程、键盘交互、body 滚动锁定）由 @admin-core/preferences 提供的 LockScreen helpers 统一处理。
  */
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
-import { usePreferences } from '../../composables';
-import { getLocaleByPreferences, verifyPasswordSync, defaultLockScreenBg, type LocaleMessages } from '@admin-core/preferences';
+import { getPreferencesManager, usePreferences } from '../../composables';
+import {
+  getLocaleByPreferences,
+  defaultLockScreenBg,
+  computeLockScreenBackground,
+  unlockWithPassword,
+  getLockScreenKeyAction,
+  lockBodyScrollForLockScreen,
+  restoreBodyScrollForLockScreen,
+  type LockScreenBodyLockState,
+  type LocaleMessages,
+} from '@admin-core/preferences';
 import LockScreenTime from './LockScreenTime.vue';
 import Icon from '../Icon';
 
@@ -22,15 +33,15 @@ const props = withDefaults(defineProps<{
   username: 'Admin',
 });
 
-// 计算实际使用的背景图片：用户传入 > 默认图片
-const actualBgImage = computed(() => {
-  // 用户显式传入空字符串表示禁用背景
-  if (props.backgroundImage === '') {
-    return undefined;
-  }
-  // 用户传入了有效的 URL，否则使用默认背景
-  return props.backgroundImage || defaultLockScreenBg;
-});
+// 计算实际使用的背景图片：复用 core helper，优先级为 props.override > preferences.lockScreen.backgroundImage > 默认图
+const { preferences, setPreferences } = usePreferences();
+
+const actualBgImage = computed(() =>
+  computeLockScreenBackground({
+    preferences: preferences.value,
+    overrideImage: props.backgroundImage,
+  }) ?? defaultLockScreenBg
+);
 
 // 背景图片样式 - 直接设置在背景元素上，避免 CSS 变量传递问题
 const bgImageStyle = computed(() => {
@@ -45,15 +56,17 @@ const bgImageStyle = computed(() => {
   };
 });
 
-const { preferences, setPreferences } = usePreferences();
-
 const password = ref('');
 const error = ref('');
 const showUnlockForm = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 const focusTimerRef = ref<ReturnType<typeof setTimeout> | null>(null);
+const bodyLockStateRef = ref<LockScreenBodyLockState | null>(null);
 
-const isLocked = computed(() => preferences.value?.lockScreen.isLocked ?? false);
+const isLocked = computed(() => {
+  const locked = preferences.value?.lockScreen.isLocked ?? false;
+  return locked;
+});
 const savedPassword = computed(() => preferences.value?.lockScreen.password ?? '');
 const currentLocale = computed(() => preferences.value?.app?.locale || 'zh-CN');
 
@@ -67,47 +80,44 @@ const locale = computed(() => {
 const showUnlockFormRef = ref(showUnlockForm);
 watch(showUnlockForm, (val) => { showUnlockFormRef.value = val; });
 
-// 全局键盘事件处理函数（使用 ref 获取最新状态）
+// 全局键盘事件处理函数（使用 ref 获取最新状态，并通过 helper 统一行为）
 const handleGlobalKeyDown = (e: KeyboardEvent) => {
-  // ESC 关闭解锁面板
-  if (e.code === 'Escape' && showUnlockFormRef.value) {
-    e.preventDefault();
-    toggleUnlockForm();
-    return;
-  }
-  
-  // 如果解锁面板已显示
-  if (showUnlockFormRef.value) {
-    // Enter 或 NumpadEnter 提交解锁
-    if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-      e.preventDefault();
+  const action = getLockScreenKeyAction(e, {
+    showUnlockForm: showUnlockFormRef.value,
+  });
+
+  switch (action.type) {
+    case 'hideUnlockForm':
+      toggleUnlockForm();
+      break;
+    case 'submit':
       handleUnlock();
-    }
-    return;
-  }
-  
-  // 空格或回车弹出解锁面板
-  if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
-    e.preventDefault();
-    toggleUnlockForm();
+      break;
+    case 'showUnlockForm':
+      if (!showUnlockFormRef.value) {
+        toggleUnlockForm();
+      }
+      break;
+    default:
+      break;
   }
 };
 
-// 锁定状态变化时管理事件监听器（SSR 安全）
+// 锁定状态变化时管理 body 滚动锁定与事件监听器（SSR 安全）
 watch(isLocked, (locked) => {
   // SSR 环境检查
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   
   if (locked) {
-    const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    if (scrollBarWidth > 0) document.body.style.paddingRight = `${scrollBarWidth}px`;
+    bodyLockStateRef.value = lockBodyScrollForLockScreen();
     showUnlockForm.value = false;
     // 只在锁定时注册事件监听器
     window.addEventListener('keydown', handleGlobalKeyDown);
   } else {
-    document.body.style.overflow = '';
-    document.body.style.paddingRight = '';
+    if (bodyLockStateRef.value) {
+      restoreBodyScrollForLockScreen(bodyLockStateRef.value);
+      bodyLockStateRef.value = null;
+    }
     // 解锁时移除事件监听器
     window.removeEventListener('keydown', handleGlobalKeyDown);
   }
@@ -133,10 +143,22 @@ const toggleUnlockForm = () => {
 };
 
 const handleUnlock = () => {
-  if (!password.value) { error.value = locale.value.lockScreen?.passwordPlaceholder ?? ''; return; }
-  // 使用哈希验证密码
-  if (!verifyPasswordSync(password.value, savedPassword.value)) { error.value = locale.value.lockScreen?.passwordError ?? ''; return; }
-  setPreferences({ lockScreen: { isLocked: false } });
+  const result = unlockWithPassword({
+    password: password.value,
+    savedPassword: savedPassword.value,
+    locale: locale.value,
+    setPreferences: (partial) => setPreferences(partial),
+    flushPreferences: () => {
+      const manager = getPreferencesManager();
+      manager?.flush?.();
+    },
+  });
+
+  if (!result.success) {
+    error.value = result.errorMessage ?? '';
+    return;
+  }
+
   showUnlockForm.value = false;
 };
 
@@ -145,6 +167,11 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeyDown);
   // 清理定时器
   if (focusTimerRef.value) clearTimeout(focusTimerRef.value);
+  // 恢复 body 滚动
+  if (bodyLockStateRef.value) {
+    restoreBodyScrollForLockScreen(bodyLockStateRef.value);
+    bodyLockStateRef.value = null;
+  }
 });
 
 </script>

@@ -38,6 +38,8 @@ export const Icon = memo<IconProps>(function Icon({
   const combinedStyle = useMemo<React.CSSProperties>(
     () => ({
       display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       width: `${sizeValue}px`,
       height: `${sizeValue}px`,
       color,

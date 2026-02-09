@@ -10,6 +10,8 @@ import {
   buildMenuPathIndex,
   filterHiddenMenus,
   logger,
+  rafThrottle,
+  LAYOUT_UI_TOKENS,
 } from '@admin-core/layout';
 import {
   PreferencesProvider,
@@ -19,10 +21,10 @@ import {
   usePreferencesContext,
   type PreferencesDrawerUIConfig,
 } from '@admin-core/preferences-react';
-import { useEffect, useState, useMemo, useCallback, useRef, memo, type ReactNode, type CSSProperties } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, memo, startTransition, type ReactNode, type CSSProperties } from 'react';
 import { LayoutProvider, useLayoutComputed, useLayoutCSSVars, useLayoutState, useLayoutContext, useRouter } from '../../hooks';
-import { renderLayoutIcon } from '../../utils';
 import { useResponsive } from '../../hooks/use-layout-state';
+import { renderLayoutIcon } from '../../utils';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { HorizontalMenu } from '../menu';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
@@ -38,19 +40,6 @@ import type { SupportedLocale, BasicLayoutProps, LayoutEvents, RouterConfig, Men
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
-let preferencesManager: ReturnType<typeof getPreferencesManager> | null = null;
-try {
-  preferencesManager = getPreferencesManager();
-} catch {
-  try {
-    initPreferences({ namespace: 'admin-core' });
-    preferencesManager = getPreferencesManager();
-  } catch (initError) {
-    if (isDev) {
-      logger.warn('Failed to initialize preferences.', initError);
-    }
-  }
-}
 
 /**
  * 布局插槽 Props
@@ -153,10 +142,33 @@ interface PreferencesLockBridgeProps {
 
 const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: PreferencesLockBridgeProps) {
   const { lock } = usePreferencesContext();
+  const onReadyRef = useRef(onReady);
+  const lockRef = useRef(lock);
+  const hasCalledRef = useRef(false);
+
+  // 保持最新引用
+  useEffect(() => {
+    onReadyRef.current = onReady;
+  }, [onReady]);
 
   useEffect(() => {
-    onReady?.(() => lock());
-  }, [lock, onReady]);
+    lockRef.current = lock;
+  }, [lock]);
+
+  useEffect(() => {
+    // 防止重复调用（React StrictMode 会导致组件挂载两次）
+    if (hasCalledRef.current) {
+      return;
+    }
+    
+    // 延迟调用，避免在渲染期间更新状态
+    if (onReadyRef.current) {
+      hasCalledRef.current = true;
+      setTimeout(() => {
+        onReadyRef.current?.(() => lockRef.current());
+      }, 0);
+    }
+  }, []); // 只在挂载时执行一次
 
   return null;
 });
@@ -308,7 +320,7 @@ function LayoutInner({
         }
       }
     } catch {}
-    const inset = 24;
+    const inset = LAYOUT_UI_TOKENS.FLOATING_BUTTON_INSET;
     const size = 48;
     setFloatingPosition({
       x: window.innerWidth - size - inset,
@@ -318,7 +330,7 @@ function LayoutInner({
 
   useEffect(() => {
     if (!showFloatingPreferencesButton) return;
-    const handleResize = () => {
+    const handleResize = rafThrottle(() => {
       setFloatingPosition((prev) => {
         if (!prev) return prev;
         const bounds = getFloatingBounds();
@@ -327,9 +339,13 @@ function LayoutInner({
           y: clamp(prev.y, bounds.minY, bounds.maxY),
         };
       });
-    };
+    });
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      // 清理 rafThrottle 的 pending 状态
+      handleResize.cancel?.();
+    };
   }, [showFloatingPreferencesButton, getFloatingBounds]);
 
   useEffect(() => {
@@ -520,9 +536,12 @@ function LayoutInner({
       if (!computed.isMixedNav && !computed.isHeaderMixedNav) return;
       const nextKey = item.key ?? item.path ?? key;
       if (!nextKey) return;
+      // 使用 startTransition 避免在渲染期间更新组件
+      startTransition(() => {
       setState((prev) => {
         if (prev.mixedNavRootKey === String(nextKey)) return prev;
         return { ...prev, mixedNavRootKey: String(nextKey) };
+        });
       });
     },
     [computed.isMixedNav, computed.isHeaderMixedNav, setState]
@@ -542,9 +561,12 @@ function LayoutInner({
 
   useEffect(() => {
     if (menuLauncherOpen) {
+      // 使用 startTransition 避免在渲染期间更新组件
+      startTransition(() => {
       setMenuLauncherOpen(false);
+      });
     }
-  }, [currentPath]);
+  }, [currentPath, menuLauncherOpen]);
 
   useEffect(() => {
     if (!menuLauncherOpen) return;
@@ -571,9 +593,12 @@ function LayoutInner({
         [];
       const rootKey = chain.length > 0 ? chain[0] : rawKey;
       if (rootKey) {
+        // 使用 startTransition 避免在渲染期间更新组件
+        startTransition(() => {
         setState((prev) => {
           if (prev.mixedNavRootKey === String(rootKey)) return prev;
           return { ...prev, mixedNavRootKey: String(rootKey) };
+          });
         });
       }
     }
@@ -827,6 +852,22 @@ function LayoutInner({
  * 基础布局组件
  */
 export function BasicLayout(props: BasicLayoutComponentProps) {
+  const preferencesManager = useMemo(() => {
+    try {
+      return getPreferencesManager();
+    } catch {
+      try {
+        initPreferences({ namespace: 'admin-core' });
+        return getPreferencesManager();
+      } catch (initError) {
+        if (isDev) {
+          logger.warn('Failed to initialize preferences.', initError);
+        }
+      }
+    }
+    return null;
+  }, []);
+
   // 从偏好设置获取配置
   const [preferencesProps, setPreferencesProps] = useState<Partial<BasicLayoutProps>>(() => {
     if (preferencesManager) {
@@ -837,7 +878,6 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   });
 
   // 订阅偏好设置变化
-  // 注意：preferencesManager 是模块级变量，不会变化，所以不需要作为依赖
   useEffect(() => {
     if (!preferencesManager) return;
 
@@ -847,7 +887,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [preferencesManager]);
 
   const [preferencesLock, setPreferencesLock] = useState<(() => void) | null>(null);
 
@@ -1015,7 +1055,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
 
   const resolvedLockScreenBackground = useMemo(() => {
     const value = layoutProps.lockScreen?.backgroundImage;
-    if (value == null) return undefined;
+    if (value === null || value === undefined) return undefined;
     if (typeof value === 'string' && value.trim() === '') return undefined;
     return value;
   }, [layoutProps.lockScreen?.backgroundImage]);

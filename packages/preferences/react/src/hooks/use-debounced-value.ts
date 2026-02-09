@@ -31,20 +31,29 @@ export function useDebouncedValue<T>({
   delay = 300,
 }: UseDebouncedValueOptions<T>): UseDebouncedValueReturn<T> {
   const [localValue, setLocalValueState] = useState(value);
+  const onChangeRef = useRef(onChange);
   const debouncedRef = useRef(createDebouncedCallback(onChange, delay));
+
+  // 同步 onChange ref
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // 同步外部值变化（仅在值实际改变时更新，避免不必要的 re-render）
   useEffect(() => {
     setLocalValueState(prev => prev !== value ? value : prev);
   }, [value]);
 
+  // 只在 delay 变化时重新创建防抖函数
   useEffect(() => {
     debouncedRef.current.cancel();
-    debouncedRef.current = createDebouncedCallback(onChange, delay);
+    debouncedRef.current = createDebouncedCallback((val: T) => {
+      onChangeRef.current(val);
+    }, delay);
     return () => {
       debouncedRef.current.cancel();
     };
-  }, [onChange, delay]);
+  }, [delay]);
 
   // 更新本地值并触发防抖回调
   const setLocalValue = useCallback(

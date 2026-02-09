@@ -132,7 +132,7 @@ body[data-theme='dark'] {
 }
 
 /* ============================================================
- * 页面滚动条占位，避免覆盖内容区（与 vben 行为一致）
+ * 页面滚动条占位，避免覆盖内容区（与常见 admin 布局行为一致）
  * ============================================================ */
 html,
 body {
@@ -141,7 +141,7 @@ body {
   color: var(--foreground, #0f172a);
 }
 
-/* 仅非 mac 平台启用自定义滚动条（与 vben 保持一致） */
+/* 仅非 mac 平台启用自定义滚动条（与常见 admin 布局保持一致） */
 html:not([data-platform='macOs']),
 body:not([data-platform='macOs']) {
   scrollbar-width: thin;
@@ -447,7 +447,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   transform: translateX(-100%);
 }
 
-/* 混合侧边栏模式 - vben 风格：主菜单和子菜单面板都是 fixed 定位 */
+/* 混合侧边栏模式 - 类似常见 admin 布局：主菜单和子菜单面板都是 fixed 定位 */
 :is(.layout-sidebar--mixed, .layout-sidebar[data-mixed="true"]) {
   background-color: var(--sidebar-mixed);
   border-right: none;
@@ -1709,7 +1709,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 /* ========================================
-   折叠状态弹出子菜单样式（类似 vben）
+   折叠状态弹出子菜单样式（类似常见 admin 布局）
    ======================================== */
 .sidebar-menu__popup {
   position: fixed;
@@ -1922,12 +1922,12 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 /* ============================================================
- * 菜单组件样式系统（参考 vben-admin）
+ * 菜单组件样式系统（参考常见 admin 布局）
  * ============================================================ */
 
 /* 菜单 CSS 变量 */
 :root {
-  /* 菜单基础变量 - 参考 vben 更紧凑的设计 */
+  /* 菜单基础变量 - 参考常见 admin 布局更紧凑的设计 */
   --menu-item-height: 36px;
   --menu-item-padding-x: 10px;
   --menu-item-padding-y: 0;
@@ -1939,7 +1939,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --menu-indent: 16px;
   --menu-arrow-size: 14px;
   
-  /* 浅色主题颜色变量 - 参考 vben 的配色 */
+  /* 浅色主题颜色变量 - 参考常见 admin 布局的配色 */
   --menu-bg: transparent;
   --menu-item-color: var(--foreground);
   --menu-item-hover-color: var(--primary);
@@ -2138,7 +2138,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 /* ============================================================
- * 下拉箭头 - 参考 vben 更小更精致
+ * 下拉箭头 - 参考常见 admin 布局更小更精致
  * ============================================================ */
 .menu__arrow {
   @apply absolute right-2.5 flex items-center justify-center opacity-60;
@@ -2601,7 +2601,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   border-left-color: color-mix(in oklch, var(--sidebar-dark-foreground) 10%, transparent);
 }
 
-/* vben 风格的子菜单面板按钮 */
+/* 子菜单面板按钮（类似常见 admin 布局） */
 /* 折叠按钮 - 左下角 */
 .mixed-sidebar-submenu__collapse-btn {
   @apply absolute bottom-2 left-3 flex items-center justify-center cursor-pointer;
@@ -2701,7 +2701,8 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --header-search-padding-x: 8px;
   --header-search-gap: 12px;
   --header-toolbar-gap: 4px;
-  --header-widget-icon-size: 16px;
+  /* 顶栏图标整体再大一点，提升可读性 */
+  --header-widget-icon-size: 18px;
   --header-widget-lift: -1px;
   --header-widget-press-scale: 0.96;
   --header-widget-icon-scale: 1.05;
@@ -3323,55 +3324,56 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   transform: scale(var(--header-widget-icon-scale-open));
 }
 
-/* 主题切换按钮（vben/web.dev 风格图标动画） */
+/* 主题切换按钮（参考 web.dev 风格图标动画） */
 .header-widget-btn.theme-toggle .sun-and-moon {
-  width: var(--header-widget-icon-size) !important;
-  height: var(--header-widget-icon-size) !important;
+  /* 稍微缩小一点，让视觉上与其他图标保持一致 */
+  width: calc(var(--header-widget-icon-size) - 2px) !important;
+  height: calc(var(--header-widget-icon-size) - 2px) !important;
   display: block;
 }
 
-.theme-toggle .sun-and-moon > :is(.moon, .sun, .sun-beams) {
+.theme-toggle .sun-and-moon :is(.moon, .sun, .sun-beams) {
   transform-origin: center;
 }
 
-.theme-toggle .sun-and-moon > :is(.moon, .sun) {
+.theme-toggle .sun-and-moon :is(.moon, .sun) {
   fill: currentColor;
   opacity: 0.9;
 }
 
-.theme-toggle:is(:hover, :focus-visible) .sun-and-moon > :is(.moon, .sun) {
+.theme-toggle:is(:hover, :focus-visible) .sun-and-moon :is(.moon, .sun) {
   opacity: 1;
 }
 
-.theme-toggle .sun-and-moon > .sun-beams {
+.theme-toggle .sun-and-moon .sun-beams {
   stroke: currentColor;
   stroke-width: 2px;
   opacity: 0.9;
 }
 
-.theme-toggle .sun-and-moon > .sun-beams line {
+.theme-toggle .sun-and-moon .sun-beams line {
   stroke-linecap: round;
 }
 
-.theme-toggle:is(:hover, :focus-visible) .sun-and-moon > .sun-beams {
+.theme-toggle:is(:hover, :focus-visible) .sun-and-moon .sun-beams {
   opacity: 1;
 }
 
 /* 浅色模式 - 显示月亮（点击切换到深色） */
-.theme-toggle.is-light .sun-and-moon > .sun {
+.theme-toggle.is-light .sun-and-moon .sun {
   transform: scale(1.75);
 }
 
-.theme-toggle.is-light .sun-and-moon > .sun-beams {
+.theme-toggle.is-light .sun-and-moon .sun-beams {
   opacity: 0;
 }
 
-.theme-toggle.is-light .sun-and-moon > .moon > circle {
+.theme-toggle.is-light .sun-and-moon .moon > circle {
   transform: translateX(-7px);
 }
 
 @supports (cx: 1) {
-  .theme-toggle.is-light .sun-and-moon > .moon > circle {
+  .theme-toggle.is-light .sun-and-moon .moon > circle {
     cx: 17;
     transform: translateX(0);
   }
@@ -3379,11 +3381,11 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 /* 动画过渡 - 仅在非减少运动模式下启用 */
 @media (prefers-reduced-motion: no-preference) {
-  .theme-toggle .sun-and-moon > .sun {
+  .theme-toggle .sun-and-moon .sun {
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  .theme-toggle .sun-and-moon > .sun-beams {
+  .theme-toggle .sun-and-moon .sun-beams {
     transition:
       transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
       opacity 0.5s cubic-bezier(0.25, 0, 0.3, 1);
@@ -3400,17 +3402,17 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   }
 
   /* 浅色模式过渡调整（显示月亮） */
-  .theme-toggle.is-light .sun-and-moon > .sun {
+  .theme-toggle.is-light .sun-and-moon .sun {
     transition-timing-function: cubic-bezier(0.25, 0, 0.3, 1);
     transition-duration: 0.25s;
   }
 
-  .theme-toggle.is-light .sun-and-moon > .sun-beams {
+  .theme-toggle.is-light .sun-and-moon .sun-beams {
     transition-duration: 0.15s;
     transform: rotateZ(-25deg);
   }
 
-  .theme-toggle.is-light .sun-and-moon > .moon > circle {
+  .theme-toggle.is-light .sun-and-moon .moon > circle {
     transition-duration: 0.5s;
     transition-delay: 0.25s;
   }

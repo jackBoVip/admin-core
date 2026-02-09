@@ -45,25 +45,25 @@ export function classNames(...args: ClassValue[]): string {
  * rafThrottle
  * @description requestAnimationFrame 节流（适用于滚动/resize 高频事件）
  */
-export function rafThrottle<T extends (...args: any[]) => void>(fn: T) {
+export function rafThrottle<T extends (...args: unknown[]) => void>(fn: T) {
   let rafId: number | null = null;
   let lastArgs: Parameters<T> | null = null;
-  let lastThis: unknown = null;
+  let lastThis: ThisParameterType<T> | null = null;
   const hasRaf = typeof requestAnimationFrame === 'function';
   const hasCancel = typeof cancelAnimationFrame === 'function';
 
   const invoke = () => {
     rafId = null;
     if (!lastArgs) return;
-    fn.apply(lastThis as any, lastArgs);
+    fn.apply(lastThis as ThisParameterType<T>, lastArgs);
     lastArgs = null;
     lastThis = null;
   };
 
-  const throttled = function (this: unknown, ...args: Parameters<T>) {
+  const throttled = function (this: ThisParameterType<T>, ...args: Parameters<T>) {
     lastArgs = args;
     lastThis = this;
-    if (rafId != null) return;
+    if (rafId !== null) return;
     if (hasRaf) {
       rafId = requestAnimationFrame(invoke);
     } else {
@@ -72,7 +72,7 @@ export function rafThrottle<T extends (...args: any[]) => void>(fn: T) {
   } as T & { cancel?: () => void };
 
   throttled.cancel = () => {
-    if (rafId == null) return;
+    if (rafId === null) return;
     if (hasCancel) {
       cancelAnimationFrame(rafId);
     } else {
@@ -296,6 +296,167 @@ export function getTabContextMenuItems(options: {
       icon: 'pin',
     },
   ];
+}
+
+/**
+ * 上下文菜单操作类型
+ */
+export type ContextMenuAction =
+  | 'reload'
+  | 'close'
+  | 'closeLeft'
+  | 'closeRight'
+  | 'closeOther'
+  | 'closeAll'
+  | 'pin'
+  | 'unpin'
+  | 'openInNewWindow'
+  | 'maximize'
+  | 'restoreMaximize';
+
+/**
+ * 上下文菜单项
+ */
+export interface ContextMenuItem {
+  key: ContextMenuAction | string;
+  label: string;
+  icon?: string;
+  disabled?: boolean;
+  divider?: boolean;
+}
+
+/**
+ * 生成上下文菜单项（支持更多选项，如最大化）
+ */
+export function generateContextMenuItems(
+  tab: TabItem,
+  tabs: TabItem[],
+  activeKey: string,
+  t: (key: string) => string,
+  tabIndexMap: Map<string, number>,
+  options?: { isMaximized?: boolean }
+): ContextMenuItem[] {
+  const targetKey = tab.key;
+  const currentIndex = tabIndexMap.get(targetKey) ?? -1;
+  const isAffix = tab.affix === true;
+  const isActive = targetKey === activeKey;
+  const isMaximized = options?.isMaximized ?? false;
+  
+  let hasLeft = false;
+  let hasRight = false;
+  let hasOther = false;
+  
+  if (currentIndex > 0) {
+    for (let i = 0; i < currentIndex; i += 1) {
+      const tabKey = tabs[i]?.key;
+      if (tabKey && !tabs[i]?.affix) {
+        hasLeft = true;
+        break;
+      }
+    }
+  }
+  
+  if (currentIndex >= 0 && currentIndex < tabs.length - 1) {
+    for (let i = currentIndex + 1; i < tabs.length; i += 1) {
+      if (!tabs[i]?.affix) {
+        hasRight = true;
+        break;
+      }
+    }
+  }
+  
+  for (const t of tabs) {
+    if (t.key !== targetKey && !t.affix) {
+      hasOther = true;
+      break;
+    }
+  }
+
+  const items: ContextMenuItem[] = [
+    {
+      key: 'reload',
+      label: t('layout.tabbar.contextMenu.reload'),
+      icon: 'refresh',
+      disabled: !isActive,
+    },
+    {
+      key: 'close',
+      label: t('layout.tabbar.contextMenu.close'),
+      icon: 'close',
+      disabled: isAffix,
+    },
+    {
+      key: 'divider-1',
+      label: '',
+      divider: true,
+    },
+    {
+      key: 'closeLeft',
+      label: t('layout.tabbar.contextMenu.closeLeft'),
+      icon: 'chevron-left',
+      disabled: !hasLeft,
+    },
+    {
+      key: 'closeRight',
+      label: t('layout.tabbar.contextMenu.closeRight'),
+      icon: 'chevron-right',
+      disabled: !hasRight,
+    },
+    {
+      key: 'divider-2',
+      label: '',
+      divider: true,
+    },
+    {
+      key: 'closeOther',
+      label: t('layout.tabbar.contextMenu.closeOther'),
+      icon: 'close',
+      disabled: !hasOther,
+    },
+    {
+      key: 'closeAll',
+      label: t('layout.tabbar.contextMenu.closeAll'),
+      icon: 'close',
+      disabled: tabs.every(t => t.affix),
+    },
+    {
+      key: 'divider-3',
+      label: '',
+      divider: true,
+    },
+    {
+      key: isAffix ? 'unpin' : 'pin',
+      label: isAffix ? t('layout.tabbar.contextMenu.unpin') : t('layout.tabbar.contextMenu.pin'),
+      icon: 'pin',
+    },
+  ];
+
+  // 添加最大化选项
+  if (isMaximized) {
+    items.push({
+      key: 'divider-4',
+      label: '',
+      divider: true,
+    });
+    items.push({
+      key: 'restoreMaximize',
+      label: t('layout.tabbar.contextMenu.restoreMaximize'),
+      icon: 'restore',
+    });
+  } else {
+    items.push({
+      key: 'divider-4',
+      label: '',
+      divider: true,
+    });
+    items.push({
+      key: 'maximize',
+      label: t('layout.tabbar.contextMenu.maximize'),
+      icon: 'maximize',
+    });
+  }
+
+  return items;
 }
 
 /**

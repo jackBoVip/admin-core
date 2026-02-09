@@ -3,6 +3,12 @@
  * @description 统一管理布局中使用的所有 SVG 图标路径
  */
 
+export type SvgNode = {
+  tag: 'mask' | 'rect' | 'circle' | 'g' | 'line';
+  attrs?: Record<string, string>;
+  children?: SvgNode[];
+};
+
 export interface IconDefinition {
   viewBox: string;
   path: string;
@@ -10,6 +16,8 @@ export interface IconDefinition {
   fill?: boolean;
   /** 额外的 SVG 元素（如 rect） */
   extra?: string;
+  /** 结构化 SVG 节点（用于安全渲染） */
+  extraNodes?: SvgNode[];
 }
 
 // ============================================================
@@ -125,6 +133,10 @@ export const icons: Record<string, IconDefinition> = {
     viewBox: '0 0 24 24',
     path: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10',
     extra: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>',
+    extraNodes: [
+      { tag: 'circle', attrs: { cx: '12', cy: '12', r: '10' } },
+      { tag: 'line', attrs: { x1: '2', y1: '12', x2: '22', y2: '12' } },
+    ],
   },
   refresh: {
     viewBox: '0 0 24 24',
@@ -152,11 +164,17 @@ export const icons: Record<string, IconDefinition> = {
     viewBox: '0 0 24 24',
     path: 'M14 9l3 3-3 3',
     extra: '<rect x="3" y="3" width="7" height="18" rx="1" />',
+    extraNodes: [
+      { tag: 'rect', attrs: { x: '3', y: '3', width: '7', height: '18', rx: '1' } },
+    ],
   },
   'sidebar-expand': {
     viewBox: '0 0 24 24',
     path: 'M17 9l-3 3 3 3',
     extra: '<rect x="14" y="3" width="7" height="18" rx="1" />',
+    extraNodes: [
+      { tag: 'rect', attrs: { x: '14', y: '3', width: '7', height: '18', rx: '1' } },
+    ],
   },
   more: {
     viewBox: '0 0 24 24',
@@ -292,6 +310,34 @@ const THEME_TOGGLE_ICON: IconDefinition = {
       <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
     </g>
   `,
+  extraNodes: [
+    {
+      tag: 'mask',
+      attrs: { class: 'moon', id: 'moon-mask' },
+      children: [
+        { tag: 'rect', attrs: { x: '0', y: '0', width: '100%', height: '100%', fill: 'white' } },
+        { tag: 'circle', attrs: { cx: '24', cy: '10', r: '6', fill: 'black' } },
+      ],
+    },
+    {
+      tag: 'circle',
+      attrs: { class: 'sun', cx: '12', cy: '12', r: '6', mask: 'url(#moon-mask)', fill: 'currentColor' },
+    },
+    {
+      tag: 'g',
+      attrs: { class: 'sun-beams', stroke: 'currentColor' },
+      children: [
+        { tag: 'line', attrs: { x1: '12', y1: '1', x2: '12', y2: '3' } },
+        { tag: 'line', attrs: { x1: '12', y1: '21', x2: '12', y2: '23' } },
+        { tag: 'line', attrs: { x1: '4.22', y1: '4.22', x2: '5.64', y2: '5.64' } },
+        { tag: 'line', attrs: { x1: '18.36', y1: '18.36', x2: '19.78', y2: '19.78' } },
+        { tag: 'line', attrs: { x1: '1', y1: '12', x2: '3', y2: '12' } },
+        { tag: 'line', attrs: { x1: '21', y1: '12', x2: '23', y2: '12' } },
+        { tag: 'line', attrs: { x1: '4.22', y1: '19.78', x2: '5.64', y2: '18.36' } },
+        { tag: 'line', attrs: { x1: '18.36', y1: '5.64', x2: '19.78', y2: '4.22' } },
+      ],
+    },
+  ],
 };
 
 /**

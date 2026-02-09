@@ -387,10 +387,12 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    width: 100%;
+    gap: var(--pref-stepper-gap, 12px);
     margin: 0;
     padding: var(--pref-item-padding) 0;
     border-radius: var(--radius, var(--pref-control-radius));
+    flex-wrap: nowrap;
   }
 
   .number-item:hover:not(.disabled):not([data-disabled="true"]) {
@@ -418,8 +420,8 @@
     display: flex;
     align-items: center;
     height: var(--pref-control-height);
-    width: 165px;
-    flex: 0 0 165px;
+    width: var(--pref-stepper-width, 165px);
+    flex: 0 0 var(--pref-stepper-width, 165px);
     padding: 0 4px;
     background: var(--background);
     border: 1px solid var(--border);

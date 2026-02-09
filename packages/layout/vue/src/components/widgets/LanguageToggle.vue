@@ -6,20 +6,37 @@
 import { computed, ref } from 'vue';
 import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
+import { getLocaleDisplayList, createI18n, type SupportedLocale } from '@admin-core/layout';
 
 const context = useLayoutContext();
 
 // 当前语言
-const currentLocale = computed(() => context.props.locale || 'zh-CN');
+const currentLocale = computed(() => (context.props.locale || 'zh-CN') as SupportedLocale);
 
 // 下拉菜单状态
 const isOpen = ref(false);
 
-// 语言选项
-const languageOptions = computed(() => [
-  { value: 'zh-CN', label: context.t('layout.widgetLegacy.locale.zh-CN'), abbr: 'ZH' },
-  { value: 'en-US', label: context.t('layout.widgetLegacy.locale.en-US'), abbr: 'EN' },
-]);
+// 语言选项 - 使用 core 的 getLocaleDisplayList
+const languageOptions = computed(() => {
+  const i18n = createI18n(currentLocale.value);
+  const displayList = getLocaleDisplayList(i18n);
+  
+  return displayList.map((item) => {
+    let abbr: string;
+    if (item.value === 'zh-CN') {
+      abbr = 'ZH';
+    } else if (item.value === 'en-US') {
+      abbr = 'EN';
+    } else {
+      abbr = String(item.value).toUpperCase().slice(0, 2);
+    }
+    return {
+      value: item.value,
+      label: item.label,
+      abbr,
+    };
+  });
+});
 
 // 切换语言
 const handleLocaleChange = (locale: string) => {
@@ -96,7 +113,7 @@ const closeDropdown = () => {
 <style scoped>
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity var(--admin-duration-fast, 150ms) ease, transform var(--admin-duration-fast, 150ms) ease;
 }
 
 .dropdown-enter-from,

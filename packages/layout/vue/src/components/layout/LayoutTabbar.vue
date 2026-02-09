@@ -6,7 +6,7 @@
 import { computed, nextTick, onMounted, onUnmounted, ref, watch, watchEffect, type ComponentPublicInstance } from 'vue';
 import { useLayoutContext, useLayoutComputed, useTabsState, useSidebarState } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
-import { generateContextMenuItems, type ContextMenuAction, LAYOUT_UI_TOKENS, TABBAR_CHROME_SVG_PATHS, rafThrottle } from '@admin-core/layout';
+import { generateContextMenuItems, type ContextMenuAction, LAYOUT_UI_TOKENS, LAYOUT_STYLE_CONSTANTS, TABBAR_CHROME_SVG_PATHS, rafThrottle, calculateTabbarScrollOffset } from '@admin-core/layout';
 
 const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
@@ -103,7 +103,7 @@ const animateTabPositions = () => {
       animated.forEach((el) => {
         el.style.transition = '';
       });
-    }, 320);
+    }, LAYOUT_UI_TOKENS.TABBAR_SCROLL_DELAY);
   });
 };
 
@@ -170,8 +170,8 @@ const tabbarStyle = computed(() => {
       style.marginRight = panelRightOffset.value;
     }
     if (leftOffset.value !== '0' || panelRightOffset.value !== '0') {
-      const leftValue = leftOffset.value !== '0' ? leftOffset.value : '0px';
-      const rightValue = panelRightOffset.value !== '0' ? panelRightOffset.value : '0px';
+      const leftValue = leftOffset.value !== '0' ? leftOffset.value : LAYOUT_STYLE_CONSTANTS.ZERO_PX;
+      const rightValue = panelRightOffset.value !== '0' ? panelRightOffset.value : LAYOUT_STYLE_CONSTANTS.ZERO_PX;
       style.width = `calc(100% - ${leftValue} - ${rightValue})`;
     }
   }
@@ -219,7 +219,7 @@ const updateScrollStateThrottled = rafThrottle(updateScrollState);
 const scrollTabsBy = (direction: number) => {
   const container = tabsContainerRef.value;
   if (!container) return;
-  const offset = Math.max(container.clientWidth * 0.6, 120);
+  const offset = calculateTabbarScrollOffset(container.clientWidth);
   container.scrollBy({ left: offset * direction, behavior: 'smooth' });
   updateScrollStateThrottled();
 };
@@ -332,9 +332,10 @@ watch(
   }
 );
 
-const handleMenuAction = (action: ContextMenuAction, targetKey: string | null) => {
+const handleMenuAction = (action: ContextMenuAction | string, targetKey: string | null) => {
   if (!targetKey) return;
   switch (action) {
+    case 'reload':
     case 'refresh':
       handleRefresh(targetKey);
       break;

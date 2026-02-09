@@ -1,13 +1,14 @@
 /**
  * Layout UI 图标渲染工具
  */
-import React from 'react';
 import {
   getLayoutUiIconDefinition,
   type LayoutUiIconName,
   type IconDefinition,
   resolveLayoutIconSize,
+  LAYOUT_ICON_SIZE_PX,
 } from '@admin-core/layout';
+import React from 'react';
 
 export type LayoutIconSize = Parameters<typeof resolveLayoutIconSize>[0];
 
@@ -43,9 +44,14 @@ export function renderLayoutIcon(
   const sizeClass = resolveLayoutIconSize(size);
   const mergedClass = className ? `${sizeClass} ${className}` : sizeClass;
   const svg = renderSvg(def, mergedClass);
-  if (!style) return svg;
+  const sizeStyle =
+    typeof size === 'string' && size in LAYOUT_ICON_SIZE_PX
+      ? { width: `${LAYOUT_ICON_SIZE_PX[size as keyof typeof LAYOUT_ICON_SIZE_PX]}px`, height: `${LAYOUT_ICON_SIZE_PX[size as keyof typeof LAYOUT_ICON_SIZE_PX]}px` }
+      : undefined;
+  const mergedStyle = sizeStyle ? { ...sizeStyle, ...style } : style;
+  if (!mergedStyle) return svg;
   return React.cloneElement(
     svg as React.ReactElement<React.SVGProps<SVGSVGElement>>,
-    { style }
+    { style: mergedStyle }
   );
 }

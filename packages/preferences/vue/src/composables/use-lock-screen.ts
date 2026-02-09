@@ -1,5 +1,5 @@
 import { createLockScreenManager, logger, canLockScreen, hasLockScreenPassword, isLockScreenEnabled } from '@admin-core/preferences';
-import { computed, onMounted, onUnmounted } from 'vue';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
 import { usePreferences } from './use-preferences';
 
 /**
@@ -11,12 +11,27 @@ export function useLockScreen() {
 
   let destroyManager: (() => void) | null = null;
 
-  onMounted(() => {
+  const createManager = () => {
     // 确保 preferences 已初始化
     if (!preferences.value) {
       logger.warn('[LockScreen] Preferences not initialized');
       return;
     }
+
+    const autoLockTime = preferences.value.lockScreen.autoLockTime;
+    
+    // 🔧 关键修复：只有在 autoLockTime > 0 时才创建锁屏管理器
+    // 这样可以避免在 autoLockTime 为 0 时仍然添加事件监听器
+    if (!autoLockTime || autoLockTime <= 0) {
+      return;
+    }
+
+    // 如果已经存在管理器，先销毁
+    if (destroyManager) {
+      destroyManager();
+      destroyManager = null;
+    }
+
     destroyManager = createLockScreenManager({
       // 使用非空断言是安全的，因为上面已经检查了 preferences.value 存在
       // 且 createLockScreenManager 内部会在需要时调用 getPreferences
@@ -28,13 +43,38 @@ export function useLockScreen() {
       },
       // 自动锁屏回调 - 使用闭包确保始终读取最新的 preferences.value
       onLock: () => {
-        // 只有在开启了锁屏功能且已设置密码的情况下才自动锁定
-        if (preferences.value && canLockScreen(preferences.value)) {
+        // 🔧 关键修复：只有在开启了锁屏功能、已设置密码、且 autoLockTime > 0 的情况下才自动锁定
+        // 这样可以防止 autoLockTime 为 0 时仍然触发锁屏
+        if (preferences.value && canLockScreen(preferences.value) && preferences.value.lockScreen.autoLockTime > 0) {
           setPreferences({ lockScreen: { isLocked: true } });
+        } else {
         }
       },
     });
+  };
+
+  onMounted(() => {
+    createManager();
   });
+
+  // 监听 autoLockTime 变化，动态创建/销毁管理器
+  watch(
+    () => preferences.value?.lockScreen.autoLockTime,
+    (newTime, oldTime) => {
+      if (newTime === oldTime) return;
+      
+      // 如果 autoLockTime 变为 0 或小于等于 0，销毁管理器
+      if (!newTime || newTime <= 0) {
+        if (destroyManager) {
+          destroyManager();
+          destroyManager = null;
+        }
+      } else {
+        // 如果 autoLockTime 变为大于 0，创建管理器
+        createManager();
+      }
+    }
+  );
 
   onUnmounted(() => {
     if (destroyManager) {

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, defineComponent, h, type VNode } from 'vue';
+import type { PropType } from 'vue';
 import {
   getLayoutUiIconDefinition,
   resolveLayoutIconSize,
   type LayoutUiIconName,
+  type SvgNode,
 } from '@admin-core/layout';
 
 const props = defineProps<{
@@ -19,13 +21,60 @@ const sizeClass = computed(() => {
   return resolveLayoutIconSize(props.size);
 });
 
+const sizeValue = computed(() => {
+  const size = props.size;
+  if (!size) return undefined;
+  if (size === 'xs') return 'var(--admin-icon-size-xs)';
+  if (size === 'sm') return 'var(--admin-icon-size-sm)';
+  if (size === 'md') return 'var(--admin-icon-size-md)';
+  if (size === 'lg') return 'var(--admin-icon-size-lg)';
+  if (size === 'xl') return 'var(--admin-icon-size-xl)';
+  if (typeof size === 'string' && /^(\\d+(\\.\\d+)?)(px|rem|em|%)$/.test(size)) {
+    return size;
+  }
+  return undefined;
+});
+
 const svgClass = computed(() => {
   if (props.className) return `${sizeClass.value} ${props.className}`;
   return sizeClass.value;
 });
 
+const mergedStyle = computed(() => {
+  const base = props.style ?? {};
+  if (!sizeValue.value) return base;
+  if (typeof base === 'string') {
+    return `width:${sizeValue.value};height:${sizeValue.value};${base}`;
+  }
+  return {
+    width: sizeValue.value,
+    height: sizeValue.value,
+    ...(base as Record<string, string>),
+  };
+});
+
 const fill = computed(() => (iconDef.value?.fill ? 'currentColor' : 'none'));
 const stroke = computed(() => (iconDef.value?.fill ? 'none' : 'currentColor'));
+
+function renderSvgNode(node: SvgNode, key?: string | number): VNode {
+  const children = node.children?.map((child, index) =>
+    renderSvgNode(child, `${node.tag}-${index}`)
+  );
+  return h(node.tag, { ...(node.attrs ?? {}), key }, children);
+}
+
+const SvgNodeRenderer = defineComponent({
+  name: 'SvgNodeRenderer',
+  props: {
+    node: {
+      type: Object as PropType<SvgNode>,
+      required: true,
+    },
+  },
+  setup(props) {
+    return () => renderSvgNode(props.node);
+  },
+});
 </script>
 
 <template>
@@ -38,9 +87,13 @@ const stroke = computed(() => (iconDef.value?.fill ? 'none' : 'currentColor'));
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    :style="style"
+    :style="mergedStyle"
   >
-    <g v-if="iconDef.extra" v-html="iconDef.extra" />
+    <SvgNodeRenderer
+      v-for="(node, index) in iconDef.extraNodes || []"
+      :key="`extra-${index}`"
+      :node="node"
+    />
     <path v-if="iconDef.path" :d="iconDef.path" />
   </svg>
 </template>

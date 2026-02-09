@@ -27,6 +27,7 @@ export default defineConfig({
         'react',
         'react-dom',
         'react/jsx-runtime',
+        'react-router-dom',
         '@admin-core/layout',
         '@admin-core/preferences',
         '@admin-core/preferences-react',

@@ -37,6 +37,9 @@ export {
   usePreferences,
   usePreferencesCategory,
   useTheme,
+  useDebouncedValue,
+  type UseDebouncedValueOptions,
+  type UseDebouncedValueReturn,
 } from './hooks';
 
 // Components

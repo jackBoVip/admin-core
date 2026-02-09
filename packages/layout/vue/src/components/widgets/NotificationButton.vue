@@ -79,13 +79,17 @@ const formattedNotifications = computed(() => {
 const listRef = ref<HTMLElement | null>(null);
 const scrollTop = ref(0);
 
-const itemHeight = ref(72);
+const {
+  NOTIFICATION_MAX_HEIGHT,
+  NOTIFICATION_ITEM_HEIGHT,
+} = LAYOUT_UI_TOKENS;
+
+const itemHeight = ref<number>(NOTIFICATION_ITEM_HEIGHT);
 const listResizeObserver = ref<ResizeObserver | null>(null);
-const MAX_HEIGHT = 320;
 const OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
 const totalHeight = computed(() => formattedNotifications.value.length * itemHeight.value);
 const viewportHeight = computed(() =>
-  totalHeight.value === 0 ? MAX_HEIGHT : Math.min(totalHeight.value, MAX_HEIGHT)
+  totalHeight.value === 0 ? NOTIFICATION_MAX_HEIGHT : Math.min(totalHeight.value, NOTIFICATION_MAX_HEIGHT)
 );
 const startIndex = computed(() =>
   Math.max(0, Math.floor(scrollTop.value / itemHeight.value) - OVERSCAN)
@@ -320,7 +324,7 @@ const handleNotificationClick = (e: MouseEvent) => {
 <style scoped>
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition: opacity var(--admin-duration-fast, 150ms) ease, transform var(--admin-duration-fast, 150ms) ease;
 }
 
 .dropdown-enter-from,

@@ -2,10 +2,15 @@
  * 通知按钮组件
  * @description 显示通知列表
  */
+import { LAYOUT_UI_TOKENS, type NotificationItem } from '@admin-core/layout';
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
-import { LAYOUT_UI_TOKENS, type NotificationItem } from '@admin-core/layout';
+
+const {
+  NOTIFICATION_MAX_HEIGHT,
+  NOTIFICATION_ITEM_HEIGHT,
+} = LAYOUT_UI_TOKENS;
 
 export const NotificationButton = memo(function NotificationButton() {
   const { props, events, t } = useLayoutContext();
@@ -82,11 +87,10 @@ export const NotificationButton = memo(function NotificationButton() {
     }));
   }, [notifications, formatTime, isOpen]);
 
-  const [itemHeight, setItemHeight] = useState(72);
-  const MAX_HEIGHT = 320;
+  const [itemHeight, setItemHeight] = useState<number>(NOTIFICATION_ITEM_HEIGHT);
   const OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
   const totalHeight = formattedNotifications.length * itemHeight;
-  const viewportHeight = totalHeight === 0 ? MAX_HEIGHT : Math.min(totalHeight, MAX_HEIGHT);
+  const viewportHeight = totalHeight === 0 ? NOTIFICATION_MAX_HEIGHT : Math.min(totalHeight, NOTIFICATION_MAX_HEIGHT);
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - OVERSCAN);
   const endIndex = Math.min(
     formattedNotifications.length,

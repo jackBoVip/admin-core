@@ -1,433 +1,66 @@
 /**
- * 标签栏工具函数
- * @module utils/tabbar
- * @description 提取 Vue 和 React 共享的标签栏逻辑
+ * 标签栏滚动工具函数
+ * @description 用于处理标签栏滚动相关的逻辑
  */
 
-import type { TabItem } from '../types';
-
-// ============================================================
-// 1. 拖拽排序相关
-// ============================================================
+import { LAYOUT_UI_TOKENS } from '../constants';
 
 /**
- * 拖拽状态
+ * 计算标签栏滚动偏移量
+ * @param containerWidth - 容器宽度
+ * @param offsetRatio - 偏移比例（默认使用 LAYOUT_UI_TOKENS.TABBAR_SCROLL_OFFSET_RATIO）
+ * @param minOffset - 最小偏移量（默认使用 LAYOUT_UI_TOKENS.TABBAR_SCROLL_MIN_OFFSET）
+ * @returns 滚动偏移量
  */
-export interface DragState {
-  /** 是否正在拖拽 */
-  isDragging: boolean;
-  /** 拖拽起始索引 */
-  dragIndex: number;
-  /** 当前悬停索引 */
-  hoverIndex: number;
-}
-
-/**
- * 创建初始拖拽状态
- */
-export function createInitialDragState(): DragState {
-  return {
-    isDragging: false,
-    dragIndex: -1,
-    hoverIndex: -1,
-  };
-}
-
-/**
- * 计算拖拽后的新位置
- * @param fromIndex 原始索引
- * @param toIndex 目标索引
- * @param tabs 标签列表
- * @returns 重新排序后的标签列表
- */
-export function reorderTabs<T extends TabItem>(
-  fromIndex: number,
-  toIndex: number,
-  tabs: T[]
-): T[] {
-  if (fromIndex === toIndex) return tabs;
+export function calculateTabbarScrollOffset(
+  containerWidth: number,
+  offsetRatio?: number,
+  minOffset?: number
+): number {
+  const ratio = offsetRatio ?? LAYOUT_UI_TOKENS.TABBAR_SCROLL_OFFSET_RATIO;
+  const min = minOffset ?? LAYOUT_UI_TOKENS.TABBAR_SCROLL_MIN_OFFSET;
   
-  const result = [...tabs];
-  const [removed] = result.splice(fromIndex, 1);
-  result.splice(toIndex, 0, removed);
-  return result;
+  return Math.max(containerWidth * ratio, min);
 }
 
 /**
- * 检查标签是否可拖拽
- * @param tab 标签项
- * @param draggable 是否启用拖拽
+ * 计算标签栏滚动位置
+ * @param options - 滚动选项
+ * @returns 滚动位置
  */
-export function isTabDraggable(tab: TabItem, draggable: boolean): boolean {
-  return draggable && !tab.affix;
-}
-
-// ============================================================
-// 2. 滚轮切换相关
-// ============================================================
-
-/**
- * 滚轮切换配置
- */
-export interface WheelSwitchConfig {
-  /** 是否启用滚轮切换 */
-  wheelable: boolean;
-  /** 标签列表 */
-  tabs: TabItem[];
-  /** 当前激活的标签 key */
-  activeKey: string;
-  /** 标签索引缓存 */
-  indexMap?: Map<string, number>;
-}
-
-/**
- * 计算滚轮切换后的标签 key
- * @param config 配置
- * @param deltaY 滚轮方向 (正数向下，负数向上)
- * @returns 新的激活标签 key，如果无需切换则返回 null
- */
-export function computeWheelSwitchKey(
-  config: WheelSwitchConfig,
-  deltaY: number
-): string | null {
-  const { wheelable, tabs, activeKey, indexMap } = config;
+export function calculateTabbarScrollPosition(options: {
+  containerWidth: number;
+  scrollLeft: number;
+  targetLeft: number;
+  targetWidth: number;
+  offsetRatio?: number;
+  minOffset?: number;
+}): number {
+  const { containerWidth, scrollLeft, targetLeft, targetWidth } = options;
   
-  if (!wheelable || tabs.length <= 1) return null;
+  // 计算目标元素的右边界
+  const targetRight = targetLeft + targetWidth;
   
-  let currentIndex = indexMap?.get(activeKey) ?? -1;
-  if (currentIndex < 0) {
-    for (let i = 0; i < tabs.length; i += 1) {
-      if (tabs[i].key === activeKey) {
-        currentIndex = i;
-        break;
-      }
-    }
+  // 计算容器的可见区域
+  const containerRight = scrollLeft + containerWidth;
+  
+  // 计算滚动偏移量
+  const offset = calculateTabbarScrollOffset(
+    containerWidth,
+    options.offsetRatio,
+    options.minOffset
+  );
+  
+  let newScrollLeft = scrollLeft;
+  
+  // 如果目标元素在左侧不可见
+  if (targetLeft < scrollLeft) {
+    newScrollLeft = targetLeft - offset;
   }
-  if (currentIndex === -1) return null;
-  
-  let newIndex: number;
-  if (deltaY > 0) {
-    // 向下滚动，切换到下一个
-    newIndex = currentIndex + 1;
-    if (newIndex >= tabs.length) newIndex = 0;
-  } else {
-    // 向上滚动，切换到上一个
-    newIndex = currentIndex - 1;
-    if (newIndex < 0) newIndex = tabs.length - 1;
+  // 如果目标元素在右侧不可见
+  else if (targetRight > containerRight) {
+    newScrollLeft = targetRight - containerWidth + offset;
   }
   
-  if (newIndex === currentIndex) return null;
-  return tabs[newIndex].key;
-}
-
-// ============================================================
-// 3. 中键关闭相关
-// ============================================================
-
-/**
- * 检查是否可以中键关闭标签
- * @param tab 标签项
- * @param middleClickEnabled 是否启用中键关闭
- */
-export function canMiddleClickClose(tab: TabItem, middleClickEnabled: boolean): boolean {
-  return middleClickEnabled && tab.closable !== false && !tab.affix;
-}
-
-// ============================================================
-// 4. 最大化相关
-// ============================================================
-
-/**
- * 最大化状态
- */
-export interface MaximizeState {
-  /** 是否最大化 */
-  isMaximized: boolean;
-  /** 原始内容样式 */
-  originalStyles: {
-    position?: string;
-    top?: string;
-    left?: string;
-    right?: string;
-    bottom?: string;
-    zIndex?: string;
-  } | null;
-}
-
-/**
- * 创建初始最大化状态
- */
-export function createInitialMaximizeState(): MaximizeState {
-  return {
-    isMaximized: false,
-    originalStyles: null,
-  };
-}
-
-/**
- * 计算最大化样式
- * @param isMaximized 是否最大化
- * @param zIndex z-index 值
- */
-export function computeMaximizeStyles(
-  isMaximized: boolean,
-  zIndex: number = 9999
-): Record<string, string> | null {
-  if (!isMaximized) return null;
-  
-  return {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    zIndex: String(zIndex),
-  };
-}
-
-// ============================================================
-// 5. 右键菜单相关
-// ============================================================
-
-/**
- * 右键菜单项类型
- */
-export type ContextMenuAction = 
-  | 'refresh'
-  | 'close'
-  | 'closeOther'
-  | 'closeLeft'
-  | 'closeRight'
-  | 'closeAll'
-  | 'pin'
-  | 'unpin'
-  | 'openInNewWindow'
-  | 'maximize'
-  | 'restoreMaximize';
-
-/**
- * 右键菜单项配置
- */
-export interface ContextMenuItem {
-  key: ContextMenuAction;
-  label: string;
-  icon?: string;
-  disabled?: boolean;
-  divider?: boolean;
-}
-
-/**
- * 生成右键菜单项
- * @param tab 当前标签
- * @param tabs 所有标签
- * @param activeKey 激活的标签 key
- * @param t 翻译函数
- */
-export function generateContextMenuItems(
-  tab: TabItem,
-  tabs: TabItem[],
-  activeKey: string,
-  t: (key: string) => string,
-  indexMap?: Map<string, number>,
-  options?: {
-    isMaximized?: boolean;
-  }
-): ContextMenuItem[] {
-  let currentIndex = indexMap?.get(tab.key) ?? -1;
-  if (currentIndex < 0) {
-    for (let i = 0; i < tabs.length; i += 1) {
-      if (tabs[i].key === tab.key) {
-        currentIndex = i;
-        break;
-      }
-    }
-  }
-  const isActive = tab.key === activeKey;
-  const isAffix = tab.affix === true;
-  const isMaximized = options?.isMaximized ?? false;
-  const affixCount = tabs.reduce((count, item) => (item.affix ? count + 1 : count), 0);
-  const disabled = tabs.length <= 1;
-  const disabledCloseCurrent = isAffix || disabled;
-  const disabledCloseLeft =
-    !isActive ||
-    currentIndex <= 0 ||
-    currentIndex - affixCount <= 0;
-  const disabledCloseRight =
-    !isActive ||
-    currentIndex === tabs.length - 1;
-  const disabledCloseOther =
-    disabled ||
-    !isActive ||
-    tabs.length - affixCount <= 1;
-  const disabledCloseAll = disabled;
-  const disabledRefresh = !isActive;
-
-  return [
-    {
-      key: 'close',
-      label: t('layout.tabbar.contextMenu.close'),
-      icon: 'close',
-      disabled: disabledCloseCurrent,
-    },
-    {
-      key: isAffix ? 'unpin' : 'pin',
-      label: isAffix ? t('layout.tabbar.contextMenu.unpin') : t('layout.tabbar.contextMenu.pin'),
-      icon: isAffix ? 'pin-off' : 'pin',
-      disabled: false,
-    },
-    {
-      key: isMaximized ? 'restoreMaximize' : 'maximize',
-      label: isMaximized
-        ? t('layout.tabbar.contextMenu.restoreMaximize')
-        : t('layout.tabbar.contextMenu.maximize'),
-      icon: isMaximized ? 'minimize' : 'maximize',
-      disabled: false,
-    },
-    {
-      key: 'refresh',
-      label: t('layout.tabbar.contextMenu.reload'),
-      icon: 'refresh',
-      disabled: disabledRefresh,
-    },
-    {
-      key: 'openInNewWindow',
-      label: t('layout.tabbar.contextMenu.openInNewWindow'),
-      icon: 'external-link',
-      divider: true,
-      disabled: false,
-    },
-    {
-      key: 'closeLeft',
-      label: t('layout.tabbar.contextMenu.closeLeft'),
-      icon: 'chevron-left',
-      disabled: disabledCloseLeft,
-    },
-    {
-      key: 'closeRight',
-      label: t('layout.tabbar.contextMenu.closeRight'),
-      icon: 'chevron-right',
-      divider: true,
-      disabled: disabledCloseRight,
-    },
-    {
-      key: 'closeOther',
-      label: t('layout.tabbar.contextMenu.closeOther'),
-      icon: 'close',
-      disabled: disabledCloseOther,
-    },
-    {
-      key: 'closeAll',
-      label: t('layout.tabbar.contextMenu.closeAll'),
-      icon: 'close',
-      disabled: disabledCloseAll,
-    },
-  ];
-}
-
-/**
- * 执行右键菜单操作后需要关闭的标签
- * @param action 操作类型
- * @param tab 当前标签
- * @param tabs 所有标签
- * @returns 需要关闭的标签 key 列表
- */
-export function getTabsToClose(
-  action: ContextMenuAction,
-  tab: TabItem,
-  tabs: TabItem[],
-  indexMap?: Map<string, number>
-): string[] {
-  let currentIndex = indexMap?.get(tab.key) ?? -1;
-  if (currentIndex < 0) {
-    for (let i = 0; i < tabs.length; i += 1) {
-      if (tabs[i].key === tab.key) {
-        currentIndex = i;
-        break;
-      }
-    }
-  }
-
-  switch (action) {
-    case 'close':
-      return tab.closable !== false && !tab.affix ? [tab.key] : [];
-      
-    case 'closeOther':
-      return tabs.reduce((keys, item) => {
-        if (item.key !== tab.key && item.closable !== false && !item.affix) {
-          keys.push(item.key);
-        }
-        return keys;
-      }, [] as string[]);
-        
-    case 'closeLeft':
-      if (currentIndex <= 0) {
-        return [];
-      }
-      return tabs.reduce((keys, item, index) => {
-        if (index < currentIndex && item.closable !== false && !item.affix) {
-          keys.push(item.key);
-        }
-        return keys;
-      }, [] as string[]);
-        
-    case 'closeRight':
-      if (currentIndex < 0 || currentIndex >= tabs.length - 1) {
-        return [];
-      }
-      return tabs.reduce((keys, item, index) => {
-        if (index > currentIndex && item.closable !== false && !item.affix) {
-          keys.push(item.key);
-        }
-        return keys;
-      }, [] as string[]);
-        
-    case 'closeAll':
-      return tabs.reduce((keys, item) => {
-        if (item.closable !== false && !item.affix) {
-          keys.push(item.key);
-        }
-        return keys;
-      }, [] as string[]);
-        
-    default:
-      return [];
-  }
-}
-
-// ============================================================
-// 6. 标签样式计算
-// ============================================================
-
-/**
- * 标签样式类型
- */
-export type TabStyleType = 'chrome' | 'card' | 'plain' | 'brisk';
-
-/**
- * 计算标签类名
- * @param tab 标签项
- * @param options 选项
- */
-export function computeTabClassName(
-  tab: TabItem,
-  options: {
-    isActive: boolean;
-    styleType: TabStyleType;
-    isDragging?: boolean;
-    isHovered?: boolean;
-  }
-): string {
-  const { isActive, styleType, isDragging, isHovered } = options;
-  
-  const classes = [
-    'layout-tabbar__tab',
-    `layout-tabbar__tab--${styleType}`,
-  ];
-  
-  if (isActive) classes.push('layout-tabbar__tab--active');
-  if (isDragging) classes.push('layout-tabbar__tab--dragging');
-  if (isHovered) classes.push('layout-tabbar__tab--hovered');
-  if (tab.affix) classes.push('layout-tabbar__tab--affix');
-  
-  return classes.join(' ');
+  return Math.max(0, newScrollLeft);
 }

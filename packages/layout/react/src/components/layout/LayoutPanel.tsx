@@ -4,8 +4,8 @@
 
 import { memo, useMemo, type ReactNode } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
-import { renderLayoutIcon } from '../../utils';
 import { usePanelState } from '../../hooks/use-layout-state';
+import { renderLayoutIcon } from '../../utils';
 
 export interface LayoutPanelProps {
   children?: ReactNode;

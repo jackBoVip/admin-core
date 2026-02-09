@@ -3,19 +3,21 @@
  * @description 支持拖拽排序、中键关闭、滚轮滚动、最大化、右键菜单等功能
  */
 
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, memo, type ReactNode, type CSSProperties } from 'react';
-import { createPortal } from 'react-dom';
-import { renderLayoutIcon } from '../../utils';
-import { useLayoutContext, useLayoutComputed } from '../../hooks';
-import { useTabsState, useSidebarState } from '../../hooks/use-layout-state';
 import {
   generateContextMenuItems,
   type ContextMenuAction,
   type TabItem,
   LAYOUT_UI_TOKENS,
+  LAYOUT_STYLE_CONSTANTS,
   rafThrottle,
   TABBAR_CHROME_SVG_PATHS,
+  calculateTabbarScrollOffset,
 } from '@admin-core/layout';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, memo, type ReactNode, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
+import { useLayoutContext, useLayoutComputed } from '../../hooks';
+import { useTabsState, useSidebarState } from '../../hooks/use-layout-state';
+import { renderLayoutIcon } from '../../utils';
 
 export interface LayoutTabbarProps {
   left?: ReactNode;
@@ -99,7 +101,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
         animated.forEach((el) => {
           el.style.transition = '';
         });
-      }, 320);
+      }, LAYOUT_UI_TOKENS.TABBAR_SCROLL_DELAY);
     });
   }, []);
 
@@ -195,8 +197,8 @@ export const LayoutTabbar = memo(function LayoutTabbar({
         style.marginRight = panelRightOffset;
       }
       if (leftOffset !== '0' || panelRightOffset !== '0') {
-        const leftValue = leftOffset !== '0' ? leftOffset : '0px';
-        const rightValue = panelRightOffset !== '0' ? panelRightOffset : '0px';
+        const leftValue = leftOffset !== '0' ? leftOffset : LAYOUT_STYLE_CONSTANTS.ZERO_PX;
+        const rightValue = panelRightOffset !== '0' ? panelRightOffset : LAYOUT_STYLE_CONSTANTS.ZERO_PX;
         style.width = `calc(100% - ${leftValue} - ${rightValue})`;
       }
     }
@@ -271,7 +273,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
   const scrollTabsBy = useCallback((direction: number) => {
     const container = tabsContainerRef.current;
     if (!container) return;
-    const offset = Math.max(container.clientWidth * 0.6, 120);
+    const offset = calculateTabbarScrollOffset(container.clientWidth);
     container.scrollBy({ left: offset * direction, behavior: 'smooth' });
     updateScrollStateThrottled();
   }, [updateScrollStateThrottled]);
@@ -341,9 +343,10 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     });
   }, [context.events]);
 
-  const handleMenuAction = useCallback((action: ContextMenuAction, targetKey: string | null) => {
+  const handleMenuAction = useCallback((action: ContextMenuAction | string, targetKey: string | null) => {
     if (!targetKey) return;
     switch (action) {
+      case 'reload':
       case 'refresh':
         handleRefresh(targetKey);
         break;

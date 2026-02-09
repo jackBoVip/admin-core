@@ -11,8 +11,6 @@ export default defineConfig({
         alias: {
             '@': resolve(__dirname, 'src'),
         },
-        // 确保只有一个模块实例
-        dedupe: ['@admin-core/preferences'],
     },
     server: {
         port: 3000,
@@ -23,10 +21,9 @@ export default defineConfig({
             ignored: ['!**/node_modules/@admin-core/**'],
         },
     },
-    // 优化依赖处理 - 使用 alias 指向 dist 后，不再需要特殊处理
+    // 优化依赖处理
     optimizeDeps: {
         include: ['vue', 'vue-router'],
-        exclude: ['@admin-core/preferences'],
     },
     // CSS 配置
     css: {

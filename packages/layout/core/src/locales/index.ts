@@ -101,3 +101,38 @@ export function createI18n(
 }
 
 export type I18nInstance = ReturnType<typeof createI18n>;
+
+/**
+ * 获取所有支持的语言列表
+ */
+export function getSupportedLocales(): SupportedLocale[] {
+  return Object.keys(builtinLocales) as SupportedLocale[];
+}
+
+/**
+ * 获取语言的显示标签
+ * @param locale 语言代码
+ * @param i18n 国际化实例（可选，用于获取翻译）
+ */
+export function getLocaleLabel(locale: SupportedLocale, i18n?: I18nInstance): string {
+  if (i18n) {
+    return i18n.t(`layout.widgetLegacy.locale.${locale}`);
+  }
+  // 默认标签
+  const defaultLabels: Record<SupportedLocale, string> = {
+    'zh-CN': '简体中文',
+    'en-US': 'English',
+  };
+  return defaultLabels[locale] || locale;
+}
+
+/**
+ * 获取语言显示列表（用于下拉菜单等）
+ * @param i18n 国际化实例（可选，用于获取翻译）
+ */
+export function getLocaleDisplayList(i18n?: I18nInstance): Array<{ label: string; value: SupportedLocale }> {
+  return getSupportedLocales().map(locale => ({
+    label: getLocaleLabel(locale, i18n),
+    value: locale,
+  }));
+}

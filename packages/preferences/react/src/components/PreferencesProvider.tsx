@@ -5,7 +5,7 @@
  */
 import { logger, type PreferencesDrawerUIConfig } from '@admin-core/preferences';
 import React, { memo, useCallback, useState, createContext, useContext, useMemo, useRef, useEffect } from 'react';
-import { usePreferences, useLockScreen, useShortcutKeys, initPreferences, isPreferencesInitialized } from '../hooks';
+import { usePreferences, useLockScreen, useShortcutKeys, initPreferences, isPreferencesInitialized, getPreferencesManager } from '../hooks';
 import { PreferencesDrawer, type PreferencesDrawerProps } from './drawer';
 import { PreferencesTrigger, type PreferencesTriggerProps } from './drawer/PreferencesTrigger';
 import { LockScreen } from './lock-screen';
@@ -125,6 +125,9 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = memo(({
   const closePreferences = useCallback(() => setDrawerOpen(false), []);
   const togglePreferences = useCallback(() => setDrawerOpen(prev => !prev), []);
 
+  // 使用 ref 防止重复调用 lock
+  const isLockingRef = useRef(false);
+
   // 锁屏操作 - 使用 ref 读取最新回调
   const lock = useCallback(() => {
     // 检查锁屏功能是否启用
@@ -133,16 +136,33 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = memo(({
       return;
     }
 
-    // 如果没有设置密码，弹出设置密码弹窗
-    if (!hasPassword) {
-      setPasswordModalOpen(true);
+    // 如果已经锁定或正在锁定中，直接返回，避免重复调用
+    if (isLocked || isLockingRef.current) {
       return;
     }
 
-    // 已有密码，直接锁屏
-    setPreferences({ lockScreen: { isLocked: true } });
-    callbacksRef.current.onLock?.();
-  }, [isLockEnabled, hasPassword, setPreferences]);
+    // 如果没有设置密码，弹出设置密码弹窗（延迟执行避免在 render 中 setState）
+    if (!hasPassword) {
+      setTimeout(() => setPasswordModalOpen(true), 0);
+      return;
+    }
+
+    // 已有密码，延迟锁屏（避免在 render 中 setState）
+    isLockingRef.current = true;
+    setTimeout(() => {
+      try {
+        setPreferences({ lockScreen: { isLocked: true } });
+        // 注意：setPreferences 已经有防抖保存，flush() 会在防抖后自动调用
+        // 这里不需要手动调用 flush()，避免重复保存
+        callbacksRef.current.onLock?.();
+      } finally {
+        // 延迟重置标志，避免快速连续调用
+        setTimeout(() => {
+          isLockingRef.current = false;
+        }, 100);
+      }
+    }, 0);
+  }, [isLockEnabled, hasPassword, isLocked, setPreferences]);
 
   // 密码设置成功后的回调（已锁屏）
   const handlePasswordSuccess = useCallback(() => {
@@ -152,6 +172,9 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = memo(({
 
   const unlock = useCallback(() => {
     doUnlock();
+    try {
+      getPreferencesManager()?.flush?.();
+    } catch {}
     callbacksRef.current.onUnlock?.();
   }, [doUnlock]);
 

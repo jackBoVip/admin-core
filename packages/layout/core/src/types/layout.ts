@@ -40,6 +40,8 @@ export interface MenuItem {
   name: string;
   /** 菜单图标 */
   icon?: string;
+  /** 菜单激活图标 */
+  activeIcon?: string;
   /** 子菜单 */
   children?: MenuItem[];
 
@@ -114,6 +116,114 @@ export interface MenuItem {
   // ========== 元数据 ==========
   /** 自定义元数据 */
   meta?: Record<string, unknown>;
+}
+
+/**
+ * 路由元信息定义
+ */
+export interface RouteMeta {
+  /** 标题（用于菜单与面包屑） */
+  title?: string;
+  /** 菜单图标 */
+  icon?: string;
+  /** 激活图标 */
+  activeIcon?: string;
+  /** 排序（越小越靠前） */
+  order?: number;
+  /** 在菜单中隐藏 */
+  hideInMenu?: boolean;
+  /** 在面包屑中隐藏 */
+  hideInBreadcrumb?: boolean;
+  /** 在标签栏中隐藏 */
+  hideInTab?: boolean;
+  /** 菜单中隐藏子级 */
+  hideChildrenInMenu?: boolean;
+  /** 外链地址 */
+  link?: string;
+  /** 徽标数量 */
+  badge?: number | string;
+  /** 徽标类型 */
+  badgeType?: 'danger' | 'default' | 'primary' | 'success' | 'warning';
+  /** 徽标是否显示为点 */
+  badgeDot?: boolean;
+  /** 禁止访问时仍显示菜单 */
+  menuVisibleWithForbidden?: boolean;
+  /** 不挂载到 BasicLayout 的路由 */
+  noBasicLayout?: boolean;
+  /** 其他元信息 */
+  [key: string]: unknown;
+}
+
+/**
+ * 路由记录（component 可为泛型）
+ */
+export interface RouteRecord<TComponent = unknown> {
+  /** 路由名称（推荐唯一） */
+  name?: string;
+  /** 路由路径 */
+  path: string;
+  /** 路由组件 */
+  component?: TComponent;
+  /** 路由重定向 */
+  redirect?: string;
+  /** 子路由 */
+  children?: RouteRecord<TComponent>[];
+  /** 元信息 */
+  meta?: RouteMeta;
+}
+
+/**
+ * component 为字符串路径的路由定义
+ */
+export type RouteRecordStringComponent<T = string> = RouteRecord<T>;
+
+/**
+ * 路由模块类型（支持多种导出格式）
+ */
+export type RouteModule<T = RouteRecordStringComponent[]> =
+  | { default: T }
+  | T
+  | (() => T | Promise<T>);
+
+/**
+ * 路由生成选项
+ */
+export interface GenerateRoutesOptions<TComponent = unknown> {
+  /** 静态路由常量 */
+  staticRoutes?: RouteRecordStringComponent[];
+  /** 动态菜单 API（返回 RouteRecordStringComponent[]） */
+  fetchMenuList?: () => Promise<RouteRecordStringComponent[]>;
+  /** 
+   * 路由模块映射表（基于 import.meta.glob 的自动扫描）
+   * @description 支持自动扫描和合并路由模块文件
+   * @example
+   * // Vue
+   * routeModules: import.meta.glob('./routes/modules/*.ts', { eager: true })
+   * 
+   * // React  
+   * routeModules: import.meta.glob('./routes/modules/*.{ts,tsx}', { eager: true })
+   */
+  routeModules?: Record<string, RouteModule<RouteRecordStringComponent[]>>;
+  /** 视图组件映射表（key 为标准化路径） */
+  pageMap?: Record<string, TComponent>;
+  /** 布局组件映射表（如 BasicLayout / IFrameView） */
+  layoutMap?: Record<string, TComponent>;
+  /** 视图根目录（用于 normalize） */
+  viewsRoot?: string;
+  /** 路由转换钩子（应用自定义权限过滤等） */
+  transformRoutes?: (
+    routes: RouteRecord<TComponent>[]
+  ) => RouteRecord<TComponent>[] | Promise<RouteRecord<TComponent>[]>;
+}
+
+/**
+ * 路由访问结果
+ */
+export interface RouteAccessResult<TComponent = unknown> {
+  /** 路由列表 */
+  routes: RouteRecord<TComponent>[];
+  /** 菜单列表 */
+  menus: MenuItem[];
 }
 
 /**

@@ -31,33 +31,13 @@ export default defineConfig([
     treeshake: true,
     minify: true,
     target: 'es2020',
-    // CDN 版本内联 @admin-core/preferences
+    // CDN 版本内联 @admin-core/preferences，外部化 react 和 react-dom
+    external: ['react', 'react-dom'],
     noExternal: ['@admin-core/preferences'],
     esbuildOptions(options) {
       options.banner = {
         js: '/* @admin-core/preferences-react - CDN Build */',
       };
     },
-    esbuildPlugins: [
-      {
-        name: 'externalize-react',
-        setup(build) {
-          build.onResolve({ filter: /^react$/ }, () => ({
-            path: 'react',
-            namespace: 'external-react',
-          }));
-          build.onResolve({ filter: /^react-dom$/ }, () => ({
-            path: 'react-dom',
-            namespace: 'external-react-dom',
-          }));
-          build.onLoad({ filter: /.*/, namespace: 'external-react' }, () => ({
-            contents: `module.exports = window.React`,
-          }));
-          build.onLoad({ filter: /.*/, namespace: 'external-react-dom' }, () => ({
-            contents: `module.exports = window.ReactDOM`,
-          }));
-        },
-      },
-    ],
   },
 ]);

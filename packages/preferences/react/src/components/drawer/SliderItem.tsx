@@ -3,7 +3,8 @@
  * @description 用于数值范围选择，性能优化：使用 debounce 避免频繁更新
  */
 import { SLIDER_DEBOUNCE_MS, type SliderItemBaseProps } from '@admin-core/preferences';
-import React, { memo, useState, useCallback, useRef, useEffect, useId, useMemo } from 'react';
+import React, { memo, useCallback, useId, useMemo } from 'react';
+import { useDebouncedValue } from '../../hooks/use-debounced-value';
 
 export interface SliderItemProps extends SliderItemBaseProps {
   /** 当前值 */
@@ -23,15 +24,14 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
   unit = '',
   debounce = SLIDER_DEBOUNCE_MS,
 }) => {
-  // 本地值用于即时响应UI
-  const [localValue, setLocalValue] = useState(value);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sliderId = useId();
 
-  // 同步外部值变化（使用函数式更新避免依赖 localValue）
-  useEffect(() => {
-    setLocalValue(prev => prev !== value ? value : prev);
-  }, [value]);
+  // 使用统一的防抖工具
+  const { localValue, setLocalValue } = useDebouncedValue({
+    value,
+    onChange,
+    delay: debounce,
+  });
 
   // 计算已滑动百分比（防止除零）
   const range = max - min;
@@ -45,31 +45,7 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
   const handleInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
     setLocalValue(newValue);
-    
-    // 清除之前的定时器
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    if (debounce <= 0) {
-      onChange(newValue);
-      return;
-    }
-    
-    // 防抖更新
-    debounceTimerRef.current = setTimeout(() => {
-      onChange(newValue);
-    }, debounce);
-  }, [onChange, debounce]);
-
-  // 清理定时器
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
+  }, [setLocalValue]);
 
   return (
     <div

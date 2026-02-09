@@ -8,6 +8,12 @@ import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
 import { LAYOUT_UI_TOKENS, type MenuItem } from '@admin-core/layout';
 
+const {
+  SEARCH_MAX_RESULTS,
+  SEARCH_RESULT_MAX_HEIGHT,
+  SEARCH_RESULT_ITEM_HEIGHT,
+} = LAYOUT_UI_TOKENS;
+
 interface SearchMenuItem extends MenuItem {
   parentPath?: string[];
   searchText: string;
@@ -62,7 +68,6 @@ const flatMenus = computed<SearchMenuItem[]>(() => {
 });
 
 // 搜索结果
-const MAX_RESULTS = 200;
 const searchResults = computed(() => {
   const query = keyword.value.trim().toLowerCase();
   if (!query) return [];
@@ -71,19 +76,18 @@ const searchResults = computed(() => {
   for (const item of flatMenus.value) {
     if (item.searchText.includes(query)) {
       results.push(item);
-      if (results.length >= MAX_RESULTS) break;
+      if (results.length >= SEARCH_MAX_RESULTS) break;
     }
   }
   return results;
 });
 
-const itemHeight = ref(56);
+const itemHeight = ref<number>(SEARCH_RESULT_ITEM_HEIGHT);
 const listResizeObserver = ref<ResizeObserver | null>(null);
-const RESULT_MAX_HEIGHT = 320;
 const RESULT_OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
 const totalHeight = computed(() => searchResults.value.length * itemHeight.value);
 const viewportHeight = computed(() =>
-  totalHeight.value === 0 ? RESULT_MAX_HEIGHT : Math.min(totalHeight.value, RESULT_MAX_HEIGHT)
+  totalHeight.value === 0 ? SEARCH_RESULT_MAX_HEIGHT : Math.min(totalHeight.value, SEARCH_RESULT_MAX_HEIGHT)
 );
 const startIndex = computed(() =>
   Math.max(0, Math.floor(scrollTop.value / itemHeight.value) - RESULT_OVERSCAN)
@@ -379,7 +383,7 @@ const shortcutText = computed(() => {
         >
           <!-- 搜索输入框 -->
           <div class="header-search-modal__input-wrapper">
-            <LayoutIcon name="search" size="md" className="text-muted-foreground" />
+            <LayoutIcon name="search" size="md" class-name="text-muted-foreground" />
             <input
               ref="inputRef"
               v-model="keyword"
@@ -427,7 +431,7 @@ const shortcutText = computed(() => {
                 <!-- 图标 -->
                 <div class="header-search-modal__item-icon">
                   <span v-if="item.icon">{{ item.icon }}</span>
-                  <LayoutIcon v-else name="search-item" size="sm" className="opacity-60" />
+                  <LayoutIcon v-else name="search-item" size="sm" class-name="opacity-60" />
                 </div>
                 
                 <!-- 内容 -->

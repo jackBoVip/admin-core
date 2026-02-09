@@ -59,7 +59,7 @@ import {
   mapPreferencesToLayoutProps,
   logger,
   getMenuId,
-  getMenuPathIndex,
+  buildMenuPathIndex,
   resolveMenuNavigation,
   getTabNavigationPath,
   getBreadcrumbNavigationPath,
@@ -76,7 +76,7 @@ import {
   type RouterConfig,
 } from '@admin-core/layout';
 import { getPreferencesManager, type Preferences } from '@admin-core/preferences-react';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, startTransition } from 'react';
 import { useLayoutContext, useLayoutComputed, useLayoutState } from './use-layout-context';
 
 // ============================================================
@@ -625,7 +625,7 @@ export function useMenuState() {
   const [state, setState] = useLayoutState();
   const { currentPath, handleMenuItemClick } = useRouter();
   const normalizeKey = useCallback((value: unknown) => {
-    if (value == null || value === '') return '';
+    if (value === null || value === undefined || value === '') return '';
     return String(value);
   }, []);
 
@@ -640,7 +640,7 @@ export function useMenuState() {
   }, [context.props.activeMenuKey, menuPath, normalizeKey]);
   const menus = context.props.menus || [];
   const menuIndex = useMemo(
-    () => getMenuPathIndex(context.props.menus || []),
+    () => buildMenuPathIndex(context.props.menus || []),
     [context.props.menus]
   );
 
@@ -682,10 +682,14 @@ export function useMenuState() {
         if (isAccordion) {
           const lastParentKey = parentKeys[parentKeys.length - 1];
           if (lastParentKey !== undefined) {
+            // 使用 startTransition 避免在渲染期间更新组件
+            startTransition(() => {
             setOpenKeys([lastParentKey]);
+            });
           }
         } else {
-          // 使用函数式更新避免依赖 openKeys
+          // 使用函数式更新避免依赖 openKeys，使用 startTransition 避免在渲染期间更新组件
+          startTransition(() => {
           setState((prev) => {
             const merged = [...new Set([...prev.openMenuKeys, ...parentKeys])];
             if (merged.length === prev.openMenuKeys.length) {
@@ -699,6 +703,7 @@ export function useMenuState() {
               if (same) return prev;
             }
             return { ...prev, openMenuKeys: merged };
+            });
           });
         }
       }
@@ -711,8 +716,11 @@ export function useMenuState() {
       if (!target) return;
       const item = menuIndex.byKey.get(target) ?? menuIndex.byPath.get(target);
       if (item) {
+        // 使用 startTransition 避免在渲染期间更新组件
+        startTransition(() => {
         handleMenuItemClick(item);
         context.events.onMenuSelect?.(item, target);
+        });
       }
     },
     [menuIndex, handleMenuItemClick, context.events, normalizeKey]
@@ -849,7 +857,7 @@ export function useTabsState() {
     return map;
   }, [tabs]);
   const menuIndex = useMemo(
-    () => getMenuPathIndex(context.props.menus || []),
+    () => buildMenuPathIndex(context.props.menus || []),
     [context.props.menus]
   );
 
@@ -910,7 +918,10 @@ export function useTabsState() {
     if (menu && menu.path && !menu.hideInTab) {
       const tab = buildTabFromMenu(menu, currentPath);
       const newTabs = tabManagerRef.current.addTab(tab);
+      // 使用 startTransition 避免在渲染期间更新组件
+      startTransition(() => {
       setInternalTabs(newTabs);
+      });
     }
   }, [currentPath, isAutoMode, resolveMenuByPath, buildTabFromMenu]);
 
@@ -919,7 +930,10 @@ export function useTabsState() {
     const keys = context.props.autoTab?.affixKeys;
     if (keys) {
       tabManagerRef.current.setAffixTabs(keys);
+      // 使用 startTransition 避免在渲染期间更新组件
+      startTransition(() => {
       setInternalTabs(tabManagerRef.current.getTabs());
+      });
     }
   }, [context.props.autoTab?.affixKeys]);
 
@@ -933,11 +947,13 @@ export function useTabsState() {
 
   useEffect(() => {
     if (tabbarConfig.keepAlive === false) {
+      startTransition(() => {
       setState((prev) =>
         prev.keepAliveIncludes.length === 0
           ? prev
           : { ...prev, keepAliveIncludes: [] }
       );
+      });
       return;
     }
     const includes = tabs
@@ -950,11 +966,13 @@ export function useTabsState() {
         );
       })
       .filter(Boolean) as string[];
+    startTransition(() => {
     setState((prev) =>
       areArraysEqual(prev.keepAliveIncludes, includes)
         ? prev
         : { ...prev, keepAliveIncludes: includes }
     );
+    });
   }, [tabs, tabbarConfig.keepAlive, setState]);
 
   const handleSelect = useCallback(
@@ -1108,7 +1126,7 @@ export function useBreadcrumbState() {
   const isAutoMode = context.props.autoBreadcrumb?.enabled !== false;
   const breadcrumbConfig = context.props.breadcrumb || {};
   const menuIndex = useMemo(
-    () => getMenuPathIndex(context.props.menus || []),
+    () => buildMenuPathIndex(context.props.menus || []),
     [context.props.menus]
   );
 
@@ -1474,7 +1492,7 @@ export function useDynamicTitle() {
   const enabled = context.props.dynamicTitle !== false;
   const appName = context.props.appName || '';
   const menuIndex = useMemo(
-    () => getMenuPathIndex(context.props.menus || []),
+    () => buildMenuPathIndex(context.props.menus || []),
     [context.props.menus]
   );
 

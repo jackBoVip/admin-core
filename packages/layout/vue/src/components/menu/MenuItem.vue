@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue';
 import { useMenuContext, useSubMenuContext } from './use-menu-context';
-import type { MenuItem } from '@admin-core/layout';
+import { calculateMenuItemPadding, type MenuItem } from '@admin-core/layout';
 import MenuIcon from '../common/MenuIcon.vue';
 
 interface Props {
@@ -68,7 +68,7 @@ const itemClass = computed(() => [
 const indentStyle = computed(() => {
   if (menuContext.props.mode === 'vertical' && !menuContext.props.collapse) {
     return {
-      paddingLeft: `${16 + props.level * 16}px`,
+      paddingLeft: `${calculateMenuItemPadding(props.level)}px`,
     };
   }
   return {};

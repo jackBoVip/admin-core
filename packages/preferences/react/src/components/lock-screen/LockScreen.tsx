@@ -1,14 +1,24 @@
 /**
  * 锁屏页面组件
  * @description 经典居中布局，极致毛玻璃质感，高级交互反馈
+ * 行为逻辑（背景决策、解锁流程、键盘交互、body 滚动锁定）由 @admin-core/preferences 提供的 LockScreen helpers 统一处理。
  */
-import { getLocaleByPreferences, verifyPasswordSync, defaultLockScreenBg } from '@admin-core/preferences';
+import {
+  getLocaleByPreferences,
+  computeLockScreenBackground,
+  unlockWithPassword,
+  getLockScreenKeyAction,
+  lockBodyScrollForLockScreen,
+  restoreBodyScrollForLockScreen,
+  type LockScreenBodyLockState,
+  type LocaleMessages,
+  type LockScreenComponentProps,
+} from '@admin-core/preferences';
 import React, { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { usePreferences } from '../../hooks';
+import { getPreferencesManager, usePreferences } from '../../hooks';
 import { Icon } from '../Icon';
 import { LockScreenTime } from './LockScreenTime';
-import type { LocaleMessages, LockScreenComponentProps } from '@admin-core/preferences';
 
 export type LockScreenProps = LockScreenComponentProps;
 
@@ -19,16 +29,16 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
   username: _username = 'Admin',
   backgroundImage,
 }) => {
-  // 计算实际使用的背景图片：用户传入 > 默认图片
-  const actualBgImage = useMemo(() => {
-    // 空字符串表示禁用背景
-    if (backgroundImage === '') {
-      return undefined;
-    }
-    // 用户传入了有效的 URL，否则使用默认背景
-    return backgroundImage || defaultLockScreenBg;
-  }, [backgroundImage]);
+  // 计算实际使用的背景图片：复用 core helper，优先级为 props.override > preferences.lockScreen.backgroundImage > 默认图
   const { preferences, setPreferences } = usePreferences();
+  const actualBgImage = useMemo(
+    () =>
+      computeLockScreenBackground({
+        preferences,
+        overrideImage: backgroundImage,
+      }),
+    [preferences, backgroundImage],
+  );
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showUnlockForm, setShowUnlockForm] = useState(false);
@@ -36,6 +46,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
   const handleUnlockRef = useRef<(() => void) | null>(null);
   const showUnlockFormRef = useRef(showUnlockForm);
   const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bodyLockStateRef = useRef<LockScreenBodyLockState | null>(null);
 
   const isLocked = preferences.lockScreen.isLocked;
   const savedPassword = preferences.lockScreen.password;
@@ -47,16 +58,24 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
     showUnlockFormRef.current = showUnlockForm;
   }, [showUnlockForm]);
 
+  // Body 滚动锁定：锁屏时禁止滚动并补偿滚动条宽度
   useEffect(() => {
-    // SSR 环境检查
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    
-    if (isLocked) {
-      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
-      document.body.style.overflow = 'hidden';
-      if (scrollBarWidth > 0) document.body.style.paddingRight = `${scrollBarWidth}px`;
-      return () => { document.body.style.overflow = ''; document.body.style.paddingRight = ''; };
+    if (!isLocked) {
+      if (bodyLockStateRef.current) {
+        restoreBodyScrollForLockScreen(bodyLockStateRef.current);
+        bodyLockStateRef.current = null;
+      }
+      return;
     }
+
+    bodyLockStateRef.current = lockBodyScrollForLockScreen();
+
+    return () => {
+      if (bodyLockStateRef.current) {
+        restoreBodyScrollForLockScreen(bodyLockStateRef.current);
+        bodyLockStateRef.current = null;
+      }
+    };
   }, [isLocked]);
 
   useEffect(() => {
@@ -75,45 +94,53 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
   }, []);
 
   const handleUnlock = useCallback(() => {
-    if (!password) { setError(locale.lockScreen.passwordPlaceholder); return; }
-    // 使用哈希验证密码
-    if (!verifyPasswordSync(password, savedPassword)) { setError(locale.lockScreen.passwordError); return; }
-    setPreferences({ lockScreen: { isLocked: false } });
+    const result = unlockWithPassword({
+      password,
+      savedPassword,
+      locale,
+      setPreferences: (partial) => setPreferences(partial),
+      flushPreferences: () => {
+        const manager = getPreferencesManager();
+        manager?.flush?.();
+      },
+    });
+
+    if (!result.success) {
+      setError(result.errorMessage || '');
+      return;
+    }
+
     setShowUnlockForm(false);
-  }, [password, savedPassword, locale, setPreferences]);
+  }, [password, savedPassword, locale, setPreferences, preferences]);
 
   // 保持 handleUnlock 的最新引用
   useEffect(() => {
     handleUnlockRef.current = handleUnlock;
   }, [handleUnlock]);
 
-  // 全局键盘事件（使用 ref 避免频繁重新注册）
+  // 全局键盘事件（使用 ref + helper 避免频繁重新注册且保证两端行为一致）
   useEffect(() => {
     if (!isLocked) return;
     
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // ESC 关闭解锁面板
-      if (e.code === 'Escape' && showUnlockFormRef.current) {
-        e.preventDefault();
-        setShowUnlockForm(false);
-        return;
-      }
-      
-      // 如果解锁面板已显示，Enter/NumpadEnter 提交
-      if (showUnlockFormRef.current) {
-        if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-          e.preventDefault();
+      const action = getLockScreenKeyAction(e, {
+        showUnlockForm: showUnlockFormRef.current,
+      });
+
+      switch (action.type) {
+        case 'hideUnlockForm':
+          setShowUnlockForm(false);
+          break;
+        case 'submit':
           handleUnlockRef.current?.();
-        }
-        return;
-      }
-      
-      // 空格或回车弹出解锁面板
-      if (e.code === 'Space' || e.code === 'Enter' || e.code === 'NumpadEnter') {
-        e.preventDefault();
-        setShowUnlockForm(true);
-        setPassword('');
-        setError('');
+          break;
+        case 'showUnlockForm':
+          setShowUnlockForm(true);
+          setPassword('');
+          setError('');
+          break;
+        default:
+          break;
       }
     };
     

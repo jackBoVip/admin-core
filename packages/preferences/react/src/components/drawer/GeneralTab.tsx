@@ -14,7 +14,7 @@ import {
   type ResolvedFeatureConfig,
 } from '@admin-core/preferences';
 import React, { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
-import { usePreferences } from '../../hooks';
+import { usePreferences, getPreferencesManager } from '../../hooks';
 import { Block } from './Block';
 import { InputItem } from './InputItem';
 import { SelectItem } from './SelectItem';
@@ -198,6 +198,11 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
       }
       
       setPreferences({ lockScreen: { password: '' } });
+      // 立即保存到存储，确保密码被清除
+      try {
+        getPreferencesManager()?.flush?.();
+      } catch {}
+      
       timerRef.current = setTimeout(() => {
         setIsClearing(false);
         timerRef.current = null;

@@ -1,6 +1,6 @@
 /**
  * 菜单上下文系统
- * @description 参考 vben-admin 实现，提供菜单状态管理和组件通信
+ * @description 提供菜单状态管理和组件通信
  */
 import { inject, provide, type InjectionKey, type Ref } from 'vue';
 import type { MenuItem } from '@admin-core/layout';

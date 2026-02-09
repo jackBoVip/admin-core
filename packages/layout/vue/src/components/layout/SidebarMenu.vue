@@ -2,7 +2,7 @@
 /**
  * 侧边栏菜单组件
  * @description 自动渲染菜单数据，支持多级嵌套
- * 折叠状态下支持悬停弹出子菜单（类似 vben）
+ * 折叠状态下支持悬停弹出子菜单
  */
 import { computed, ref, onMounted, onUnmounted, watch, watchEffect, nextTick } from 'vue';
 import { useLayoutContext, useLayoutComputed, useSidebarState } from '../../composables';
@@ -122,7 +122,7 @@ const popupContentTop = ref(0);
 const popupViewportHeight = ref(0);
 const popupItemHeight = ref<number>(LAYOUT_UI_TOKENS.POPUP_MENU_ITEM_HEIGHT);
 const POPUP_OVERSCAN = LAYOUT_UI_TOKENS.POPUP_OVERSCAN;
-const POPUP_VIRTUAL_MIN_ITEMS = 50;
+const POPUP_VIRTUAL_MIN_ITEMS = LAYOUT_UI_TOKENS.POPUP_VIRTUAL_MIN_ITEMS;
 const popupResizeObserver = ref<ResizeObserver | null>(null);
 let popupWheelCleanup: (() => void) | null = null;
 

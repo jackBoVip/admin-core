@@ -212,7 +212,7 @@ onMounted(() => {
 // 当前选中的一级菜单
 const selectedRootMenu = ref<MenuItem | null>(null);
 
-// 记录每个一级菜单最后激活的子菜单路径（类似 vben 的 defaultSubMap）
+// 记录每个一级菜单最后激活的子菜单路径（类似常见 admin 布局的 defaultSubMap）
 const lastActiveSubMenuMap = new Map<string, string>();
 const rootActiveMap = shallowRef(new Map<string, boolean>());
 const lastSyncRef = ref<{ key: string | null; menus: MenuItem[] | null }>({
@@ -957,8 +957,8 @@ export const MixedSidebarSubMenu = defineComponent({
       }
     });
 
-    return () => {
-      // vben 风格的按钮布局：
+      return () => {
+      // 按钮布局：
       // - 折叠按钮在左下角（只在固定模式下显示）
       // - 固定按钮在右下角（只在未折叠时显示）
       const collapseBtn = props.showCollapseBtn && h('button', {
@@ -1059,7 +1059,7 @@ export const MixedSidebarSubMenu = defineComponent({
   border-radius: 0.5rem;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.7);
-  transition: all 150ms ease;
+  transition: all var(--admin-duration-fast, 150ms) ease;
 }
 
 .mixed-sidebar-menu__root-item:hover {
@@ -1123,7 +1123,7 @@ export const MixedSidebarSubMenu = defineComponent({
   border-radius: 0.375rem;
   cursor: pointer;
   color: var(--foreground, #4b5563);
-  transition: all 150ms ease;
+  transition: all var(--admin-duration-fast, 150ms) ease;
   font-size: 0.875rem;
 }
 

@@ -1,105 +1,55 @@
 import { createRouter, createWebHistory } from 'vue-router';
+import {
+  createVueRouteAccess,
+  type RouteModule,
+  type RouteRecordStringComponent,
+} from '@admin-core/layout-vue';
 
-// 页面组件
-const Home = () => import('../views/Home.vue');
-const DashboardAnalysis = () => import('../views/dashboard/Analysis.vue');
-const DashboardMonitor = () => import('../views/dashboard/Monitor.vue');
-const DashboardWorkplace = () => import('../views/dashboard/Workplace.vue');
-const SystemUser = () => import('../views/system/User.vue');
-const SystemRole = () => import('../views/system/Role.vue');
-const SystemMenu = () => import('../views/system/Menu.vue');
-const SystemDept = () => import('../views/system/Dept.vue');
-const ComponentsButton = () => import('../views/components/Button.vue');
-const ComponentsForm = () => import('../views/components/Form.vue');
-const ComponentsTable = () => import('../views/components/Table.vue');
-const About = () => import('../views/About.vue');
-const FeatureClipboard = () => import('../views/feature/Clipboard.vue');
+import RouteView from '../layouts/RouteView.vue';
+import { staticRoutes } from './static-routes';
+import { fetchMenuList } from './menu-api';
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: [
-    {
-      path: '/',
-      name: 'Home',
-      component: Home,
-    },
-    {
-      path: '/dashboard',
-      redirect: '/dashboard/analysis',
-    },
-    {
-      path: '/dashboard/analysis',
-      name: 'DashboardAnalysis',
-      component: DashboardAnalysis,
-    },
-    {
-      path: '/dashboard/monitor',
-      name: 'DashboardMonitor',
-      component: DashboardMonitor,
-    },
-    {
-      path: '/dashboard/workplace',
-      name: 'DashboardWorkplace',
-      component: DashboardWorkplace,
-    },
-    {
-      path: '/system',
-      redirect: '/system/user',
-    },
-    {
-      path: '/system/user',
-      name: 'SystemUser',
-      component: SystemUser,
-    },
-    {
-      path: '/system/role',
-      name: 'SystemRole',
-      component: SystemRole,
-    },
-    {
-      path: '/system/menu',
-      name: 'SystemMenu',
-      component: SystemMenu,
-    },
-    {
-      path: '/system/dept',
-      name: 'SystemDept',
-      component: SystemDept,
-    },
-    {
-      path: '/components',
-      redirect: '/components/button',
-    },
-    {
-      path: '/components/button',
-      name: 'ComponentsButton',
-      component: ComponentsButton,
-    },
-    {
-      path: '/components/form',
-      name: 'ComponentsForm',
-      component: ComponentsForm,
-    },
-    {
-      path: '/components/table',
-      name: 'ComponentsTable',
-      component: ComponentsTable,
-    },
-    {
-      path: '/feature',
-      redirect: '/feature/clipboard',
-    },
-    {
-      path: '/feature/clipboard',
-      name: 'FeatureClipboard',
-      component: FeatureClipboard,
-    },
-    {
-      path: '/about',
-      name: 'About',
-      component: About,
-    },
-  ],
+  routes: [],
 });
+
+/**
+ * 设置路由访问
+ * @description
+ * 支持三种路由来源的自动合并：
+ * 1. 静态路由（staticRoutes）- 基础路由，如首页、关于页
+ * 2. 路由模块（routeModules）- 自动扫描 routes/modules 下的模块文件
+ * 3. 动态路由（fetchMenuList）- 后端 API 返回的路由
+ *
+ * 合并顺序：静态 -> 模块 -> 动态（后面的会覆盖前面的同名路由）
+ */
+export async function setupRouteAccess() {
+  // 自动扫描视图组件
+  const pageMap = import.meta.glob('/src/views/**/*.vue');
+
+  // 自动扫描路由模块（类似常见 admin 模板的 modules 路由扫描）
+  const routeModules = import.meta.glob('./modules/**/*.ts', { eager: true }) as Record<
+    string,
+    RouteModule<RouteRecordStringComponent[]>
+  >;
+
+  const { menus } = await createVueRouteAccess({
+    router,
+    // 静态路由常量（基础路由）
+    staticRoutes,
+    // 路由模块自动扫描（类似常见 admin 模板的模块化路由）
+    routeModules,
+    // 动态菜单 API（后端返回的路由）
+    fetchMenuList,
+    pageMap,
+    viewsRoot: '/src/views',
+    layoutMap: {
+      LAYOUT: RouteView,
+    },
+  });
+
+  return { menus };
+}
 
 export default router;

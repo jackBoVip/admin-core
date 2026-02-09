@@ -1,16 +1,16 @@
 /**
  * 侧边栏菜单组件
  * @description 自动渲染菜单数据，支持多级嵌套
- * 折叠状态下支持悬停弹出子菜单（类似 vben）
+ * 折叠状态下支持悬停弹出子菜单（类似常见 admin 布局）
  */
 
 import { hasChildren, getMenuItemClassName, getMenuId, isMenuActive, LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
-import { useState, useCallback, useMemo, useRef, useEffect, memo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect, memo, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
-import { renderIcon } from '../../utils/icon-renderer';
 import { renderLayoutIcon } from '../../utils';
+import { renderIcon } from '../../utils/icon-renderer';
 
 interface MenuItemProps {
   item: MenuItem;
@@ -309,7 +309,7 @@ const PopupMenu = memo(function PopupMenu({
     LAYOUT_UI_TOKENS.POPUP_MENU_ITEM_HEIGHT,
   );
   const POPUP_OVERSCAN = LAYOUT_UI_TOKENS.POPUP_OVERSCAN;
-  const POPUP_VIRTUAL_MIN_ITEMS = 50;
+  const POPUP_VIRTUAL_MIN_ITEMS = LAYOUT_UI_TOKENS.POPUP_VIRTUAL_MIN_ITEMS;
   const shouldVirtualize = expandedKeys.size === 0 && popupChildren.length >= POPUP_VIRTUAL_MIN_ITEMS;
   const contentScrollTop = Math.max(0, scrollTop - contentTop);
   const totalHeight = popupChildren.length * popupItemHeight;
@@ -513,7 +513,19 @@ export function SidebarMenu() {
     () => new Set(openKeys)
   );
 
+  // 使用 ref 来跟踪是否是由用户点击触发的 expandedKeys 变化
+  // 避免在外部同步（如路由变化）时触发 handleOpenChange
+  const pendingOpenChangeRef = useRef<string[] | null>(null);
+  const isExpandedKeysInternalUpdateRef = useRef<boolean>(false);
+
+  // 同步 openKeys 到 expandedKeys（外部同步，不触发 handleOpenChange）
   useEffect(() => {
+    // 如果是内部更新触发的，不需要同步（避免循环）
+    if (isExpandedKeysInternalUpdateRef.current) {
+      isExpandedKeysInternalUpdateRef.current = false;
+      return;
+    }
+    
     setExpandedKeys((prev) => {
       if (prev.size === openKeys.length) {
         let same = true;
@@ -528,6 +540,19 @@ export function SidebarMenu() {
       return new Set(openKeys);
     });
   }, [openKeys]);
+
+  // 处理 pendingOpenChange，避免在渲染期间更新组件
+  useEffect(() => {
+    if (pendingOpenChangeRef.current !== null) {
+      const keys = pendingOpenChangeRef.current;
+      pendingOpenChangeRef.current = null;
+      // 标记这是内部更新，避免触发同步循环
+      isExpandedKeysInternalUpdateRef.current = true;
+      startTransition(() => {
+        handleOpenChange(keys);
+      });
+    }
+  }, [expandedKeys, handleOpenChange]);
 
   // 弹出菜单状态
   const [popupState, setPopupState] = useState<{
@@ -561,7 +586,7 @@ export function SidebarMenu() {
   const isMixedNav = computed.isMixedNav;
 
   const normalizeKey = useCallback((value: unknown) => {
-    if (value == null || value === '') return '';
+    if (value === null || value === undefined || value === '') return '';
     return String(value);
   }, []);
 
@@ -604,13 +629,6 @@ export function SidebarMenu() {
     return null;
   }, [allMenus, menuContainsKey]);
 
-  const derivedRootMenu = useMemo(() => {
-    if (!isMixedNav) return null;
-    const candidateKey = layoutState.mixedNavRootKey || activeKey;
-    if (!candidateKey) return null;
-    return findRootMenuByKey(candidateKey);
-  }, [isMixedNav, layoutState.mixedNavRootKey, activeKey, findRootMenuByKey]);
-
   const fallbackRootMenu = useMemo(() => {
     if (!isMixedNav) return null;
     for (const item of allMenus) {
@@ -619,15 +637,118 @@ export function SidebarMenu() {
     return null;
   }, [isMixedNav, allMenus]);
 
+  // 使用独立的 state 存储 mixedNavRootKey，避免在渲染期间读取 layoutState
+  // 这样可以避免 "Cannot update a component while rendering a different component" 错误
+  const [localMixedNavRootKey, setLocalMixedNavRootKey] = useState<string | null>(() => {
+    if (!isMixedNav) return null;
+    // 初始化时从 layoutState 读取，但只在初始化时读取一次
+    return layoutState.mixedNavRootKey || null;
+  });
+
+  // 标记是否是由内部更新触发的 layoutState 变化，避免循环同步
+  const isInternalUpdateRef = useRef<boolean>(false);
+
+  // 同步 layoutState.mixedNavRootKey 的变化到本地 state
+  // 但忽略由内部更新触发的变化（避免循环）
+  useEffect(() => {
+    if (!isMixedNav) {
+      if (!isInternalUpdateRef.current) {
+        setLocalMixedNavRootKey(null);
+      }
+      return;
+    }
+    
+    // 如果是内部更新触发的，不需要同步（因为我们已经更新了 localMixedNavRootKey）
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+    
+    // 使用函数式更新，只在值真正变化时更新
+    setLocalMixedNavRootKey((prev) => {
+      const next = layoutState.mixedNavRootKey || null;
+      return prev === next ? prev : next;
+    });
+  }, [isMixedNav, layoutState.mixedNavRootKey]);
+
+  // 基于 activeKey 和 localMixedNavRootKey 计算 rootMenu
+  // 注意：这里不直接读取 layoutState.mixedNavRootKey，而是使用 localMixedNavRootKey
+  const derivedRootMenu = useMemo(() => {
+    if (!isMixedNav) return null;
+    const candidateKey = localMixedNavRootKey || activeKey;
+    if (!candidateKey) return null;
+    return findRootMenuByKey(candidateKey);
+  }, [isMixedNav, localMixedNavRootKey, activeKey, findRootMenuByKey]);
+
   const rootMenu = derivedRootMenu ?? fallbackRootMenu;
 
+  // 使用 ref 存储上一次的 activeKey 和 rootKey，避免不必要的更新
+  const prevActiveKeyRef = useRef<string | null>(null);
+  const prevRootKeyRef = useRef<string | null>(null);
+
+  // 基于 activeKey 的变化来更新 mixedNavRootKey，而不是依赖 rootMenu
+  // 这样可以避免循环依赖，因为 rootMenu 依赖于 localMixedNavRootKey
+  // 注意：这里只依赖 activeKey，不依赖 localMixedNavRootKey，避免循环
   useEffect(() => {
-    if (!isMixedNav) return;
-    if (!rootMenu) return;
-    const rootKey = normalizeKey(rootMenu.key ?? rootMenu.path ?? '');
-    if (!rootKey || rootKey === layoutState.mixedNavRootKey) return;
-    setLayoutState((prev) => ({ ...prev, mixedNavRootKey: rootKey }));
-  }, [isMixedNav, rootMenu, normalizeKey, layoutState.mixedNavRootKey, setLayoutState]);
+    if (!isMixedNav) {
+      prevActiveKeyRef.current = null;
+      prevRootKeyRef.current = null;
+      return;
+    }
+    
+    if (!activeKey) {
+      prevActiveKeyRef.current = null;
+      prevRootKeyRef.current = null;
+      return;
+    }
+    
+    // 如果 activeKey 没有改变，不需要更新
+    if (prevActiveKeyRef.current === activeKey) return;
+    
+    // 更新 activeKey ref
+    prevActiveKeyRef.current = activeKey;
+    
+    // 基于 activeKey 计算 rootMenu（不依赖 localMixedNavRootKey，避免循环）
+    const computedRootMenu = findRootMenuByKey(activeKey) ?? fallbackRootMenu;
+    if (!computedRootMenu) {
+      prevRootKeyRef.current = null;
+      return;
+    }
+    
+    const rootKey = normalizeKey(computedRootMenu.key ?? computedRootMenu.path ?? '');
+    if (!rootKey) {
+      prevRootKeyRef.current = null;
+      return;
+    }
+    
+    // 如果 rootKey 没有改变，不需要更新
+    if (prevRootKeyRef.current === rootKey) return;
+    
+    // 更新 ref
+    prevRootKeyRef.current = rootKey;
+    
+    // 使用 requestAnimationFrame 确保在下一个渲染帧中更新，避免在渲染期间更新组件
+    requestAnimationFrame(() => {
+      // 标记这是内部更新，避免触发同步循环
+      isInternalUpdateRef.current = true;
+      
+      // 先更新本地 state，避免在渲染期间读取 layoutState
+      setLocalMixedNavRootKey(rootKey);
+      
+      // 使用函数式更新避免依赖 layoutState.mixedNavRootKey，防止循环更新
+      setLayoutState((prev) => {
+        // 如果值已经相同，不更新
+        if (prev.mixedNavRootKey === rootKey) return prev;
+        return { ...prev, mixedNavRootKey: rootKey };
+      });
+      
+      // 在下一个 tick 重置标志，确保同步 useEffect 能正确处理
+      // 使用 setTimeout 确保在 React 的状态更新和 useEffect 执行之后重置
+      setTimeout(() => {
+        isInternalUpdateRef.current = false;
+      }, 0);
+    });
+  }, [isMixedNav, activeKey, findRootMenuByKey, fallbackRootMenu, normalizeKey, setLayoutState]);
 
   const menus = useMemo<MenuItem[]>(
     () => (isMixedNav ? rootMenu?.children ?? [] : allMenus),
@@ -789,11 +910,14 @@ export function SidebarMenu() {
           }
           if (same) return prev;
         }
-        handleOpenChange(Array.from(next));
+        // 将需要更新的 keys 存储到 ref 中，由 useEffect 异步处理
+        // 这样可以避免在渲染期间更新组件
+        const nextKeys = Array.from(next);
+        pendingOpenChangeRef.current = nextKeys;
         return next;
       });
     },
-    [handleOpenChange]
+    []
   );
 
   const updateSidebarRect = useCallback(() => {

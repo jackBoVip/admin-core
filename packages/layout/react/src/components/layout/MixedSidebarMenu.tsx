@@ -7,13 +7,13 @@
  * - 点击无子菜单项直接导航
  */
 
+import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
+import { useState, useCallback, useMemo, useEffect, useRef, memo, startTransition } from 'react';
 import { createPortal } from 'react-dom';
-import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
 import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
-import { renderIcon as renderIconByType } from '../../utils/icon-renderer';
 import { renderLayoutIcon } from '../../utils';
-import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
+import { renderIcon as renderIconByType } from '../../utils/icon-renderer';
 
 interface MixedSidebarMenuProps {
   onRootMenuChange?: (menu: MenuItem | null) => void;
@@ -45,7 +45,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     return id === '' ? '' : String(id);
   }, []);
   const normalizeKey = useCallback((value: unknown) => {
-    if (value == null || value === '') return '';
+    if (value === null || value === undefined || value === '') return '';
     return String(value);
   }, []);
   const menuMatchesKey = useCallback((menu: MenuItem, key: string) => {
@@ -102,9 +102,16 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     if (!isHeaderMixedNav) return;
     if (!headerMixedRootMenu) return;
     const rootKey = normalizeKey(headerMixedRootMenu.key ?? headerMixedRootMenu.path ?? '');
-    if (!rootKey || rootKey === layoutState.mixedNavRootKey) return;
-    setLayoutState((prev) => ({ ...prev, mixedNavRootKey: rootKey }));
-  }, [isHeaderMixedNav, headerMixedRootMenu, normalizeKey, layoutState.mixedNavRootKey, setLayoutState]);
+    if (!rootKey) return;
+    // 使用函数式更新避免依赖 layoutState.mixedNavRootKey，防止循环更新
+    // 使用 startTransition 避免在渲染期间更新组件
+    startTransition(() => {
+      setLayoutState((prev) => {
+        if (prev.mixedNavRootKey === rootKey) return prev;
+        return { ...prev, mixedNavRootKey: rootKey };
+      });
+    });
+  }, [isHeaderMixedNav, headerMixedRootMenu, normalizeKey, setLayoutState]);
   const rootMenus = useMemo(() => {
     const source = isHeaderMixedNav ? (headerMixedRootMenu?.children ?? []) : menus;
     const result: MenuItem[] = [];
@@ -144,7 +151,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   // 当前选中的一级菜单
   const [selectedRootMenu, setSelectedRootMenu] = useState<MenuItem | null>(null);
 
-  // 记录每个一级菜单最后激活的子菜单路径（类似 vben 的 defaultSubMap）
+  // 记录每个一级菜单最后激活的子菜单路径（类似常见 admin 布局的 defaultSubMap）
   const lastActiveSubMenuMapRef = useRef<Map<string, string>>(new Map());
 
   const parentPathMap = useMemo(() => {
@@ -272,14 +279,20 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
         const lastActivePath = lastActiveSubMenuMapRef.current.get(getMenuId(item));
         const firstChildPath = item.children[0]?.path ?? item.children[0]?.key;
         const targetPath = lastActivePath ?? firstChildPath;
-        const normalizedTarget = targetPath === '' || targetPath == null ? '' : String(targetPath);
+        const normalizedTarget =
+          targetPath === '' || targetPath === null || targetPath === undefined
+            ? ''
+            : String(targetPath);
         if (normalizedTarget && normalizedTarget !== activeKey) {
           handleSelect(normalizedTarget);
         }
       }
     } else if (item.path || item.key) {
       const target = item.key ?? item.path;
-      const normalizedTarget = target === '' || target == null ? '' : String(target);
+      const normalizedTarget =
+        target === '' || target === null || target === undefined
+          ? ''
+          : String(target);
       if (normalizedTarget) handleSelect(normalizedTarget);
     }
   }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey, getMenuId]);
@@ -680,7 +693,10 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
         return;
       }
       const target = item.path ?? item.key ?? id;
-      const normalizedTarget = target == null || target === '' ? '' : String(target);
+      const normalizedTarget =
+        target === null || target === undefined || target === ''
+          ? ''
+          : String(target);
       if (normalizedTarget) {
         onSelect?.(normalizedTarget);
       }
@@ -807,7 +823,10 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
         return;
       }
       const target = item.path ?? item.key ?? menuId;
-      const normalizedTarget = target == null || target === '' ? '' : String(target);
+      const normalizedTarget =
+        target === null || target === undefined || target === ''
+          ? ''
+          : String(target);
       if (normalizedTarget) {
         onSelect?.(normalizedTarget);
       }

@@ -151,6 +151,18 @@ export {
   isLockScreenEnabled,
   hasLockScreenPassword,
   canLockScreen,
+  computeLockScreenBackground,
+  lockBodyScrollForLockScreen,
+  restoreBodyScrollForLockScreen,
+  unlockWithPassword,
+  getLockScreenKeyAction,
+  type LockScreenBackgroundOptions,
+  type LockScreenBodyLockState,
+  type UnlockWithPasswordOptions,
+  type UnlockWithPasswordResult,
+  type LockScreenKeyAction,
+  type LockScreenKeyOptions,
+  type KeyboardEventLike,
 } from './helpers';
 
 // ========== 配置 ==========
@@ -449,6 +461,11 @@ export {
   isObject,
   debounce,
   throttle,
+  // 数值工具
+  clamp,
+  parseNumber,
+  formatNumber,
+  isInRange,
   // 布局判断工具
   LAYOUT_CATEGORIES,
   isHeaderMenuLayout,

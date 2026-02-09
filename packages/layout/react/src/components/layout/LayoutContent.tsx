@@ -3,7 +3,7 @@
  */
 
 import { DEFAULT_CONTENT_CONFIG } from '@admin-core/layout';
-import { cloneElement, isValidElement, memo, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { cloneElement, isValidElement, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
 import { usePanelState, useSidebarState, useTabsState } from '../../hooks/use-layout-state';
 import { LayoutRefreshView } from './LayoutRefreshView';
@@ -42,14 +42,23 @@ export const LayoutContent = memo(function LayoutContent({
 
   const cacheRef = useRef(new Map<string, { element: ReactNode; refreshKey: number }>());
   const [, forceUpdate] = useState(0);
+  const childrenRef = useRef(children);
+  const routerLocationRef = useRef(routerLocation);
 
-  const buildCachedElement = (key: string, refreshKey: number) => {
-    let element: ReactNode = children;
-    if (routerLocation && isValidElement(element) && typeof element.type !== 'string') {
-      element = cloneElement(element as ReactElement<Record<string, unknown>>, { location: routerLocation } as Record<string, unknown>);
+  // 更新 refs
+  useEffect(() => {
+    childrenRef.current = children;
+    routerLocationRef.current = routerLocation;
+  }, [children, routerLocation]);
+
+  const buildCachedElement = useCallback((key: string, refreshKey: number) => {
+    let element: ReactNode = childrenRef.current;
+    const currentRouterLocation = routerLocationRef.current;
+    if (currentRouterLocation && isValidElement(element) && typeof element.type !== 'string') {
+      element = cloneElement(element as ReactElement<Record<string, unknown>>, { location: currentRouterLocation } as Record<string, unknown>);
     }
     return <div key={`${key}:${refreshKey}`}>{element}</div>;
-  };
+  }, []);
 
   useEffect(() => {
     if (!keepAliveAvailable) {
@@ -67,7 +76,7 @@ export const LayoutContent = memo(function LayoutContent({
       });
       forceUpdate((val) => val + 1);
     }
-  }, [activeKey, keepAliveAvailable, layoutState.refreshKey, routerLocation, children]);
+  }, [activeKey, keepAliveAvailable, layoutState.refreshKey, buildCachedElement]);
 
   useEffect(() => {
     if (!keepAliveAvailable) return;

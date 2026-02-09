@@ -1,164 +1,162 @@
 /**
  * 菜单工具函数
- * @description 统一管理菜单相关的逻辑（侧边栏菜单组件专用）
+ * @description 用于处理菜单相关的逻辑
  */
 
+import { LAYOUT_UI_TOKENS } from '../constants';
 import type { MenuItem } from '../types';
 
 /**
- * 菜单路径索引结构
+ * 计算菜单项的 padding 值
+ * @param level - 菜单层级（从 0 开始）
+ * @returns padding 值（像素）
  */
-export interface MenuPathIndex {
-  byKey: Map<string, MenuItem>;
-  byPath: Map<string, MenuItem>;
-  chainByKey: Map<string, string[]>;
-  chainByPath: Map<string, string[]>;
-  pathItems: MenuItem[];
-}
-
-/**
- * 获取菜单项的唯一标识
- */
-export function getMenuId(item: MenuItem): string {
-  const id = item.key ?? item.path ?? item.name ?? '';
-  return id === '' ? '' : String(id);
-}
-
-/**
- * 构建菜单路径索引
- */
-export function buildMenuPathIndex(menus: MenuItem[]): MenuPathIndex {
-  const byKey = new Map<string, MenuItem>();
-  const byPath = new Map<string, MenuItem>();
-  const chainByKey = new Map<string, string[]>();
-  const chainByPath = new Map<string, string[]>();
-  const pathItems: MenuItem[] = [];
-  const stack: string[] = [];
-
-  const walk = (items: MenuItem[]) => {
-    for (const item of items) {
-      const id = getMenuId(item);
-      const rawKey = item.key ?? '';
-      const key = rawKey === '' ? '' : String(rawKey);
-      const rawPath = item.path ?? '';
-      const path = rawPath === '' ? '' : String(rawPath);
-      if (key) {
-        byKey.set(key, item);
-      }
-      if (path) {
-        byPath.set(path, item);
-        pathItems.push(item);
-      }
-      const chain = id ? [...stack, id] : [...stack];
-      if (key) {
-        chainByKey.set(key, chain);
-      }
-      if (path) {
-        chainByPath.set(path, chain);
-      }
-      if (id) {
-        stack.push(id);
-      }
-      if (item.children?.length) {
-        walk(item.children);
-      }
-      if (id) {
-        stack.pop();
-      }
-    }
-  };
-
-  walk(menus);
-  pathItems.sort((a, b) => (b.path?.length ?? 0) - (a.path?.length ?? 0));
-  return { byKey, byPath, chainByKey, chainByPath, pathItems };
-}
-
-const menuIndexCache = new WeakMap<MenuItem[], MenuPathIndex>();
-
-/**
- * 获取菜单路径索引（带缓存）
- */
-export function getMenuPathIndex(menus: MenuItem[]): MenuPathIndex {
-  const cached = menuIndexCache.get(menus);
-  if (cached) return cached;
-  const index = buildMenuPathIndex(menus);
-  menuIndexCache.set(menus, index);
-  return index;
-}
-
-/**
- * 判断菜单项是否有子菜单
- */
-export function hasChildren(item: MenuItem): boolean {
-  return Boolean(item.children?.length);
+export function calculateMenuItemPadding(level: number): number {
+  return LAYOUT_UI_TOKENS.MENU_ITEM_BASE_PADDING + level * LAYOUT_UI_TOKENS.MENU_ITEM_LEVEL_INDENT;
 }
 
 /**
  * 判断菜单项是否激活
+ * @param item - 菜单项
+ * @param currentPath - 当前路径
+ * @returns 是否激活
  */
-export function isMenuActive(item: MenuItem, activeKey: string): boolean {
-  const rawKey = item.key ?? '';
-  const key = rawKey === '' ? '' : String(rawKey);
-  if (key && key === activeKey) return true;
-  const rawPath = item.path ?? '';
-  const path = rawPath === '' ? '' : String(rawPath);
-  return path === activeKey;
-}
-
-/**
- * 判断菜单项是否有激活的子菜单
- */
-export function hasActiveChild(item: MenuItem, activeKey: string): boolean {
-  if (!item.children?.length) return false;
-  const stack = [...item.children];
-  while (stack.length > 0) {
-    const child = stack.pop();
-    if (!child) continue;
-    if (isMenuActive(child, activeKey)) {
-      return true;
-    }
-    if (child.children?.length) {
-      for (let i = child.children.length - 1; i >= 0; i -= 1) {
-        stack.push(child.children[i]);
-      }
-    }
+export function isMenuItemActive(item: MenuItem, currentPath: string): boolean {
+  if (!currentPath) return false;
+  
+  // 精确匹配
+  if (item.path === currentPath) return true;
+  
+  // 如果菜单项有子菜单，检查子菜单中是否有激活项
+  if (item.children && item.children.length > 0) {
+    return item.children.some(child => isMenuItemActive(child, currentPath));
   }
+  
   return false;
 }
 
 /**
+ * 判断菜单项是否应该展开
+ * @param item - 菜单项
+ * @param currentPath - 当前路径
+ * @param openedMenuSet - 已打开的菜单集合
+ * @returns 是否应该展开
+ */
+export function shouldMenuItemExpand(
+  item: MenuItem,
+  currentPath: string,
+  openedMenuSet: Set<string>
+): boolean {
+  // 如果已经在打开的集合中，返回 true
+  if (openedMenuSet.has(item.key)) return true;
+  
+  // 如果当前路径匹配，返回 true
+  if (isMenuItemActive(item, currentPath)) return true;
+  
+  return false;
+}
+
+/**
+ * 判断菜单项是否有子菜单
+ * @param item - 菜单项
+ * @returns 是否有子菜单
+ */
+export function hasChildren(item: MenuItem): boolean {
+  return !!(item.children && item.children.length > 0);
+}
+
+/**
+ * 根据 key 查找菜单项
+ */
+export function findMenuByKey(menus: MenuItem[], key: string): MenuItem | null {
+  for (const item of menus) {
+    if (item.key === key) {
+      return item;
+    }
+    if (item.children) {
+      const found = findMenuByKey(item.children, key);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+/**
+ * 判断菜单项是否激活（通过 key 或 path 匹配）
+ * @param item - 菜单项
+ * @param activeKey - 激活的 key 或 path
+ * @returns 是否激活
+ */
+export function isMenuActive(item: MenuItem, activeKey: string): boolean {
+  if (!activeKey) return false;
+  return item.key === activeKey || item.path === activeKey;
+}
+
+/**
+ * 判断菜单项是否有激活的子菜单
+ * @param item - 菜单项
+ * @param activeKey - 激活的 key
+ * @returns 是否有激活的子菜单
+ */
+export function hasActiveChild(item: MenuItem, activeKey: string): boolean {
+  if (!item.children || item.children.length === 0) return false;
+  return item.children.some(child => {
+    if (isMenuActive(child, activeKey)) return true;
+    return hasActiveChild(child, activeKey);
+  });
+}
+
+/**
  * 获取菜单项的类名
+ * @param item - 菜单项
+ * @param options - 选项
+ * @returns 类名字符串
  */
 export function getMenuItemClassName(
   item: MenuItem,
-  options: {
-    level: number;
-    isActive: boolean;
-    isExpanded: boolean;
-    hasActiveChild: boolean;
-    prefix?: string;
+  options?: {
+    level?: number;
+    isActive?: boolean;
+    isExpanded?: boolean;
+    hasActiveChild?: boolean;
   }
 ): string {
-  const { level, isActive, isExpanded, hasActiveChild: hasActive, prefix = 'sidebar-menu' } = options;
-  const hasChildrenItems = hasChildren(item);
-
-  const classes = [
-    `${prefix}__item`,
-    `${prefix}__item--level-${level}`,
-  ];
-  if (isActive) classes.push(`${prefix}__item--active`);
-  if (hasChildrenItems) classes.push(`${prefix}__item--has-children`);
-  if (isExpanded) classes.push(`${prefix}__item--expanded`);
-  if (hasActive) classes.push(`${prefix}__item--has-active-child`);
-  if (item.disabled) classes.push(`${prefix}__item--disabled`);
+  const classes: string[] = ['sidebar-menu__item'];
+  
+  if (options?.level !== undefined) {
+    classes.push(`sidebar-menu__item--level-${options.level}`);
+  }
+  
+  if (options?.isActive) {
+    classes.push('sidebar-menu__item--active');
+  }
+  
+  if (options?.isExpanded) {
+    classes.push('sidebar-menu__item--expanded');
+  }
+  
+  if (options?.hasActiveChild) {
+    classes.push('sidebar-menu__item--has-active-child');
+  }
+  
+  if (item.disabled) {
+    classes.push('sidebar-menu__item--disabled');
+  }
+  
+  if (hasChildren(item)) {
+    classes.push('sidebar-menu__item--has-children');
+  }
+  
   return classes.join(' ');
 }
 
 /**
- * 查找第一个可激活的子菜单
+ * 查找第一个可激活的子菜单项
+ * @param item - 菜单项
+ * @returns 第一个可激活的子菜单项，如果没有则返回 null
  */
 export function findFirstActivatableChild(item: MenuItem): MenuItem | null {
-  if (!item.children?.length) return null;
+  if (!item.children || item.children.length === 0) return null;
   
   for (const child of item.children) {
     if (child.hidden || child.disabled) continue;
@@ -171,61 +169,28 @@ export function findFirstActivatableChild(item: MenuItem): MenuItem | null {
 }
 
 /**
- * 获取菜单的所有父级 key
+ * 获取菜单项的所有父级 key
+ * @param menus - 菜单列表
+ * @param targetKey - 目标 key
+ * @returns 父级 key 数组
  */
 export function getMenuParentKeys(menus: MenuItem[], targetKey: string): string[] {
   const keys: string[] = [];
-  const stack: string[] = [];
   
-  function find(items: MenuItem[]): boolean {
+  function traverse(items: MenuItem[], target: string, parentKeys: string[]): boolean {
     for (const item of items) {
-      const id = getMenuId(item);
-      const rawKey = item.key ?? '';
-      const key = rawKey === '' ? '' : String(rawKey);
-      const rawPath = item.path ?? '';
-      const path = rawPath === '' ? '' : String(rawPath);
-      if (key === targetKey || path === targetKey || id === targetKey) {
-        keys.push(...stack);
+      const currentKeys = [...parentKeys, item.key];
+      if (item.key === target) {
+        keys.push(...currentKeys.slice(0, -1)); // 不包括自己
         return true;
       }
-      if (item.children?.length) {
-        if (id) {
-          stack.push(id);
-        }
-        if (find(item.children)) {
-          if (id) {
-            stack.pop();
-          }
+      if (item.children && traverse(item.children, target, currentKeys)) {
           return true;
-        }
-        if (id) {
-          stack.pop();
-        }
       }
     }
     return false;
   }
   
-  find(menus);
+  traverse(menus, targetKey, []);
   return keys;
-}
-
-/**
- * 根据 key 查找菜单项
- */
-export function findMenuByKey(menus: MenuItem[], key: string): MenuItem | null {
-  const stack = [...menus].reverse();
-  while (stack.length > 0) {
-    const item = stack.pop();
-    if (!item) continue;
-    const rawKey = item.key ?? '';
-    const itemKey = rawKey === '' ? '' : String(rawKey);
-    if (itemKey === key) return item;
-    if (item.children?.length) {
-      for (let i = item.children.length - 1; i >= 0; i -= 1) {
-        stack.push(item.children[i]);
-      }
-    }
-  }
-  return null;
 }

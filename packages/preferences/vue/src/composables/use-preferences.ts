@@ -58,7 +58,11 @@ function ensureGlobalSubscription(): void {
   });
   
   // 初始化状态
-  preferencesState.value = lifecycle.getPreferences();
+  const initialPrefs = lifecycle.getPreferences();
+  if (initialPrefs) {
+    // 初始化时同步一次状态
+  }
+  preferencesState.value = initialPrefs;
   globalSubscribed = true;
 }
 
