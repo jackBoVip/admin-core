@@ -390,6 +390,8 @@ export interface AutoTabConfig {
   maxCount?: number;
   /** 持久化存储 key（用于刷新保留） */
   persistKey?: string;
+  /** 收藏持久化存储 key（用于刷新保留） */
+  favoritePersistKey?: string;
 }
 
 /**
@@ -720,6 +722,10 @@ export interface LayoutEvents {
   onGlobalSearch?: (keyword: string) => void;
   /** 刷新按钮点击 */
   onRefresh?: () => void;
+  /** 标签收藏变化（单次操作） */
+  onTabFavoriteChange?: (menu: MenuItem, favorited: boolean, keys: string[], menus: MenuItem[]) => void;
+  /** 收藏列表变化 */
+  onFavoritesChange?: (menus: MenuItem[], keys: string[]) => void;
 }
 
 /**

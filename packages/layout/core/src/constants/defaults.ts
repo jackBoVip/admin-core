@@ -21,6 +21,10 @@ import type {
 export const DEFAULT_HEADER_CONFIG = {
   enable: true,
   height: 48,
+  widgetSize: 36,
+  widgetIconSize: 18,
+  widgetFontSize: 14,
+  searchKbdFontSize: 11,
   hidden: false,
   menuAlign: 'start' as const,
   menuLauncher: false,

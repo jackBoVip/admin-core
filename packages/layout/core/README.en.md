@@ -45,6 +45,10 @@ pnpm add @admin-core/layout
 {
   enable: true,           // Enable header
   height: 48,             // Height (px)
+  widgetSize: 36,         // Header icon button size (px)
+  widgetIconSize: 20,     // Header icon size (px)
+  widgetFontSize: 12,     // Header text size (px)
+  searchKbdFontSize: 11,  // Header search kbd font size (px)
   hidden: false,          // Hidden state
   menuAlign: 'start',     // Menu alignment: 'start' | 'center' | 'end'
   menuLauncher: false,    // Menu launcher mode

@@ -74,12 +74,14 @@ import {
   resolveKeepAliveIncludes,
   resolveTabKey,
   getOrCreateTabManager,
+  getOrCreateFavoritesManager,
   getResolvedLayoutProps,
   mapPreferencesToLayoutProps,
   logger,
   resolveCurrentPath,
   shouldShowLockScreen,
   resolveMenuTitleByPath,
+  resolveFavoriteMenus,
   formatDocumentTitle,
   resolveShortcutAction,
   shouldIgnoreShortcutEvent,
@@ -694,6 +696,61 @@ export function useTabsState() {
     return resolveMenuByPathIndex(menuIndex.value, basePath);
   };
 
+  const resolveTabMenu = (tab?: TabItem): MenuItem | undefined => {
+    if (!tab) return undefined;
+    const meta = tab.meta as Record<string, unknown> | undefined;
+    const menuKey = meta?.menuKey as string | undefined;
+    if (menuKey) {
+      const byKey = menuIndex.value.byKey.get(menuKey);
+      if (byKey) return byKey;
+    }
+    if (tab.path) {
+      return resolveMenuByPath(tab.path);
+    }
+    return undefined;
+  };
+
+  const favoritePersistKey = computed(() => {
+    const customKey = context.props.autoTab?.favoritePersistKey;
+    if (customKey) return customKey;
+    const baseKey = context.props.autoTab?.persistKey || 'tabs';
+    return `${baseKey}:favorites`;
+  });
+
+  const favoriteManager = computed(() => getOrCreateFavoritesManager({
+    persistKey: favoritePersistKey.value,
+  }));
+
+  const favoriteKeys = ref<string[]>(favoriteManager.value.getKeys());
+
+  watch(
+    favoriteManager,
+    (manager, prevManager) => {
+      if (prevManager) prevManager.setOnChange(undefined);
+      manager.setOnChange((keys) => {
+        favoriteKeys.value = keys;
+      });
+      favoriteKeys.value = manager.getKeys();
+    },
+    { immediate: true }
+  );
+
+  const favoriteMenus = computed(() => resolveFavoriteMenus(menus.value, favoriteKeys.value));
+
+  watch([favoriteMenus, favoriteKeys], ([nextMenus, nextKeys]) => {
+    context.events.onFavoritesChange?.(nextMenus, nextKeys);
+  }, { immediate: true });
+
+  const isFavorite = (tab: TabItem) => {
+    const menu = resolveTabMenu(tab);
+    if (!menu) return false;
+    return favoriteManager.value.has(menu.key);
+  };
+
+  const canFavorite = (tab: TabItem) => {
+    return Boolean(resolveTabMenu(tab));
+  };
+
   const activeKey = computed<string>(() => {
     if (context.props.activeTabKey) return context.props.activeTabKey;
     const path = currentPath.value || '';
@@ -845,6 +902,20 @@ export function useTabsState() {
     }
   };
 
+  const handleToggleFavorite = (key: string) => {
+    const tab = tabMap.value.get(key);
+    if (!tab) return;
+    const menu = resolveTabMenu(tab);
+    if (!menu) return;
+    const result = favoriteManager.value.toggle(menu.key);
+    const nextMenus = resolveFavoriteMenus(menus.value, result.keys);
+    context.events.onTabFavoriteChange?.(menu, result.favorited, result.keys, nextMenus);
+  };
+
+  const setFavoriteKeys = (keys: string[]) => {
+    favoriteManager.value.setKeys(keys || []);
+  };
+
   const handleSort = (fromIndex: number, toIndex: number) => {
     if (isAutoMode.value) {
       internalTabs.value = tabManager.sortTabs(fromIndex, toIndex);
@@ -864,9 +935,16 @@ export function useTabsState() {
     handleRefresh,
     handleToggleAffix,
     handleOpenInNewWindow,
+    handleToggleFavorite,
+    setFavoriteKeys,
     handleSort,
     // 暴露 tabManager 供高级用法
     tabManager,
+    favoriteManager,
+    favoriteKeys,
+    favoriteMenus,
+    isFavorite,
+    canFavorite,
   };
 }
 

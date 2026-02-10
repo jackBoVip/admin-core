@@ -510,6 +510,10 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   z-index: var(--layout-z-index-header);
   border-bottom: 1px solid var(--border);
   transition: left var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)), transform var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+  --header-nav-icon-size: calc(var(--header-widget-icon-size) - 2px);
+  --menu-font-size: var(--header-widget-font-size);
+  --menu-icon-size: var(--header-nav-icon-size);
+  --menu-arrow-size: var(--header-nav-icon-size);
 }
 
 :is(.layout-header--light, .layout-header[data-theme="light"]) {
@@ -540,6 +544,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 /* 顶栏面包屑颜色跟随顶栏主题 */
 .layout-header .breadcrumb {
   color: inherit;
+  font-size: var(--header-widget-font-size);
 }
 
 .layout-header .breadcrumb__item {
@@ -558,6 +563,25 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 .layout-header .breadcrumb__separator,
 .layout-header .breadcrumb__separator svg {
   color: color-mix(in oklch, currentColor 60%, transparent);
+}
+
+.layout-header .breadcrumb__icon,
+.layout-header .breadcrumb__separator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.layout-header .breadcrumb__icon svg,
+.layout-header .breadcrumb__separator svg {
+  width: var(--header-nav-icon-size) !important;
+  height: var(--header-nav-icon-size) !important;
+}
+
+.layout-header .breadcrumb__icon span {
+  font-size: var(--header-nav-icon-size);
+  line-height: 1;
 }
 
 /* ============================================================
@@ -582,6 +606,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 .layout-header__launcher-btn {
   @apply flex items-center gap-2 h-9 px-3 border-0 rounded-md bg-transparent text-sm font-medium cursor-pointer transition-colors;
   color: inherit;
+  font-size: var(--header-widget-font-size);
 }
 
 .layout-header__launcher-btn:hover {
@@ -2103,8 +2128,17 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 .menu__icon svg {
+  display: block;
   width: 100%;
   height: 100%;
+}
+
+.menu__icon > span {
+  @apply inline-flex items-center justify-center;
+  width: 100%;
+  height: 100%;
+  line-height: 1;
+  font-size: var(--menu-icon-size);
 }
 
 .menu__item:hover .menu__icon,
@@ -2686,6 +2720,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --header-search-bg: color-mix(in oklch, var(--muted) 68%, var(--background));
   --header-search-hover-bg: color-mix(in oklch, var(--muted) 80%, var(--background));
   --header-search-border: transparent;
+  --header-search-font-size: 12px;
   --header-widget-fg: var(--foreground);
   --header-widget-muted-fg: var(--muted-foreground);
   --header-widget-disabled-opacity: 0.45;
@@ -2710,7 +2745,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
     color-mix(in oklch, var(--primary) 10%, transparent);
   --header-widget-shadow-open: 0 8px 18px
     color-mix(in oklch, var(--primary) 14%, transparent);
-  --header-widget-font-size: 12px;
+  --header-widget-font-size: 14px;
   --header-widget-font-weight: 500;
   --header-user-text-max-width: 96px;
   --header-search-kbd-font-size: 11px;
@@ -2844,7 +2879,11 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   outline-offset: var(--header-widget-focus-ring-offset);
 }
 
-.header-search-btn,
+.header-search-btn {
+  font-size: var(--header-search-font-size);
+  font-weight: var(--header-widget-font-weight);
+}
+
 .header-widget-user {
   font-size: var(--header-widget-font-size);
   font-weight: var(--header-widget-font-weight);
@@ -3175,7 +3214,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 /* 搜索按钮特殊样式 */
 .header-search-btn {
-  @apply flex items-center text-xs cursor-pointer transition-colors;
+  @apply flex items-center cursor-pointer transition-colors;
   height: var(--header-search-height);
   padding: 0 var(--header-search-padding-x);
   border-radius: var(--header-search-radius);
@@ -3293,8 +3332,8 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 .header-widget-btn svg,
 .header-widget-user svg,
 .header-search-btn svg {
-  width: var(--header-widget-icon-size);
-  height: var(--header-widget-icon-size);
+  width: var(--header-widget-icon-size) !important;
+  height: var(--header-widget-icon-size) !important;
   transition: transform var(--admin-duration-fast, 150ms)
     var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
@@ -3321,9 +3360,8 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 /* 主题切换按钮（参考 web.dev 风格图标动画） */
 .header-widget-btn.theme-toggle .sun-and-moon {
-  /* 稍微缩小一点，让视觉上与其他图标保持一致 */
-  width: calc(var(--header-widget-icon-size) - 2px) !important;
-  height: calc(var(--header-widget-icon-size) - 2px) !important;
+  width: var(--header-widget-icon-size) !important;
+  height: var(--header-widget-icon-size) !important;
   display: block;
 }
 
@@ -3356,7 +3394,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 /* 浅色模式 - 显示月亮（点击切换到深色） */
 .theme-toggle.is-light .sun-and-moon .sun {
-  transform: scale(1.75);
+  transform: scale(1.55);
 }
 
 .theme-toggle.is-light .sun-and-moon .sun-beams {
@@ -3376,6 +3414,14 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 /* 动画过渡 - 仅在非减少运动模式下启用 */
 @media (prefers-reduced-motion: no-preference) {
+  .theme-toggle.is-dark .sun-and-moon .sun {
+    transform: scale(1.1);
+  }
+
+  .theme-toggle.is-dark .sun-and-moon .sun-beams {
+    animation: theme-toggle-spin 0.6s ease;
+  }
+
   .theme-toggle .sun-and-moon .sun {
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
@@ -3410,6 +3456,15 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   .theme-toggle.is-light .sun-and-moon .moon > circle {
     transition-duration: 0.5s;
     transition-delay: 0.25s;
+  }
+}
+
+@keyframes theme-toggle-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

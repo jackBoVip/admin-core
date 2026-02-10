@@ -149,6 +149,14 @@ export interface HeaderPreferences {
   enable: boolean;
   /** 顶栏高度 (px) */
   height: number;
+  /** 顶栏右侧图标按钮尺寸 (px) */
+  widgetSize: number;
+  /** 顶栏图标大小 (px) */
+  widgetIconSize: number;
+  /** 顶栏文字大小 (px) */
+  widgetFontSize: number;
+  /** 顶栏搜索快捷键字体大小 (px) */
+  searchKbdFontSize: number;
   /** 隐藏顶栏（CSS 隐藏，用于最大化内容区） */
   hidden: boolean;
   /** 菜单对齐方式 */

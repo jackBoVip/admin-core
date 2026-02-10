@@ -38,6 +38,15 @@
     gap: var(--pref-item-gap);
   }
 
+  /* 禁用态统一指针覆盖（覆盖 admin-core 内部的 cursor: pointer 规则） */
+  :is(.pref-disabled.disabled, .pref-disabled[data-disabled="true"], .pref-disabled[aria-disabled="true"]) {
+    cursor: not-allowed;
+  }
+
+  :is(.pref-disabled.disabled, .pref-disabled[data-disabled="true"], .pref-disabled[aria-disabled="true"]) * {
+    cursor: not-allowed;
+  }
+
   /* ========== 轮廓选择框 ========== */
   .outline-box {
     position: relative;
@@ -473,6 +482,13 @@
     transition: 
       border-color var(--pref-transition),
       box-shadow var(--pref-transition);
+  }
+
+  .preferences-input:disabled {
+    cursor: not-allowed;
+    background: var(--muted);
+    color: var(--muted-foreground);
+    border-color: var(--border);
   }
 
   .input-item--inline .preferences-input {

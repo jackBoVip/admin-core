@@ -69,6 +69,8 @@ export default {
         closeRight: '关闭右侧',
         maximize: '最大化',
         restoreMaximize: '还原',
+        favorite: '加入收藏',
+        unfavorite: '取消收藏',
         pin: '固定',
         unpin: '取消固定',
         openInNewWindow: '在新窗口打开',

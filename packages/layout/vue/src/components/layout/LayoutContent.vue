@@ -21,10 +21,23 @@ const transitionClassName = ref('');
 
 const resolveTransitionDuration = () => {
   if (typeof window === 'undefined') return 0;
-  const raw = getComputedStyle(document.documentElement).getPropertyValue('--admin-duration-normal').trim();
-  const value = Number.parseFloat(raw);
-  return Number.isFinite(value) ? value : 300;
+  const styles = getComputedStyle(document.documentElement);
+  const raw = styles.getPropertyValue('--admin-page-transition-duration')
+    || styles.getPropertyValue('--admin-duration-normal');
+  const value = raw.trim();
+  if (!value) return 300;
+  if (value.endsWith('ms')) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
+  }
+  if (value.endsWith('s')) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed * 1000 : 300;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
 };
+
 
 const clearTransitionTimers = () => {
   if (transitionRaf !== null) {
@@ -68,7 +81,6 @@ const applyTransitionInlineFrom = (el: HTMLElement, name: string) => {
   }
   if (name === 'slide-right') {
     el.style.setProperty('transform', 'translateX(-100%)', 'important');
-    return;
   }
 };
 
@@ -77,15 +89,15 @@ const clearTransitionInlineFrom = (el: HTMLElement) => {
   el.style.removeProperty('transform');
 };
 
-const runTransition = () => {
+const runTransition = async () => {
   if (!transitionEnabled.value || typeof window === 'undefined') return;
   if (!innerRef.value) return;
   const name = transitionName.value || 'fade-slide';
   const el = innerRef.value;
-  clearTransitionInlineFrom(el);
   transitionClassName.value = name;
   transitionPhase.value = 'from';
   applyTransitionInlineFrom(el, name);
+  await nextTick();
   void el.offsetWidth;
   transitionRaf = window.requestAnimationFrame(() => {
     clearTransitionInlineFrom(el);
@@ -104,7 +116,7 @@ watch(
   [transitionTrigger, transitionEnabled, transitionName],
   () => {
     clearTransitionTimers();
-    nextTick(() => runTransition());
+    runTransition();
   }
 );
 
@@ -170,13 +182,43 @@ const contentStyle = computed(() => {
 
 // 内容容器样式
 const innerStyle = computed(() => {
+  const style: Record<string, string | number> = {};
   if (contentCompact.value === 'compact') {
-    return {
-      maxWidth: `${contentCompactWidth.value}px`,
-      margin: '0 auto',
-    };
+    style.maxWidth = `${contentCompactWidth.value}px`;
+    style.margin = '0 auto';
   }
-  return {};
+  return style;
+});
+
+const transitionStyle = computed(() => {
+  if (!transitionEnabled.value) return {};
+  const style: Record<string, string | number> = {
+    width: '100%',
+  };
+  const name = transitionName.value || 'fade-slide';
+  const isSlide = name === 'slide-left' || name === 'slide-right';
+  style.transitionProperty = isSlide ? 'transform' : 'opacity, transform';
+  style.transitionDuration = 'var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))';
+  style.transitionTimingFunction = 'var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1))';
+  if (transitionPhase.value === 'from') {
+    if (name === 'fade') {
+      style.opacity = 0;
+    } else if (name === 'fade-slide') {
+      style.opacity = 0;
+      style.transform = 'translateX(10px)';
+    } else if (name === 'fade-up') {
+      style.opacity = 0;
+      style.transform = 'translateY(10px)';
+    } else if (name === 'fade-down') {
+      style.opacity = 0;
+      style.transform = 'translateY(-10px)';
+    } else if (name === 'slide-left') {
+      style.transform = 'translateX(100%)';
+    } else if (name === 'slide-right') {
+      style.transform = 'translateX(-100%)';
+    }
+  }
+  return style;
 });
 
 const transitionClasses = computed(() => {
@@ -210,13 +252,20 @@ const transitionClasses = computed(() => {
     </div>
 
     <!-- 主内容 -->
-    <div ref="innerRef" class="layout-content__inner" :class="transitionClasses" :style="innerStyle">
-      <LayoutRefreshView>
-        <KeepAlive v-if="keepAliveEnabled" :include="keepAliveInclude" :exclude="keepAliveExclude">
-          <slot />
-        </KeepAlive>
-        <slot v-else />
-      </LayoutRefreshView>
+    <div class="layout-content__inner" :style="innerStyle">
+      <div
+        ref="innerRef"
+        class="layout-content__transition"
+        :class="transitionClasses"
+        :style="transitionStyle"
+      >
+        <LayoutRefreshView>
+          <KeepAlive v-if="keepAliveEnabled" :include="keepAliveInclude" :exclude="keepAliveExclude">
+            <slot />
+          </KeepAlive>
+          <slot v-else />
+        </LayoutRefreshView>
+      </div>
     </div>
 
     <!-- 内容底部 -->

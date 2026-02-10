@@ -262,6 +262,7 @@ const calcSliceIndex = (): number => {
   if (!menuRef.value) return -1;
 
   const container = menuRef.value;
+  const widthTarget = menuRef.value.parentElement ?? menuRef.value;
   const children = Array.from(container.children) as HTMLElement[];
   const items = children.filter((el) => {
     if (!el) return false;
@@ -272,10 +273,10 @@ const calcSliceIndex = (): number => {
 
   if (items.length === 0) return -1;
 
-  const containerStyle = getComputedStyle(container);
+  const containerStyle = getComputedStyle(widthTarget);
   const paddingLeft = parseFloat(containerStyle.paddingLeft) || 0;
   const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
-  const availableWidth = container.clientWidth - paddingLeft - paddingRight;
+  const availableWidth = widthTarget.clientWidth - paddingLeft - paddingRight;
 
   // 更新已渲染项的宽度缓存
   for (const item of items) {
@@ -343,7 +344,7 @@ let resizeObserver: ResizeObserver | null = null;
 onMounted(() => {
   if (props.mode === 'horizontal' && menuRef.value) {
     resizeObserver = new ResizeObserver(handleResize);
-    resizeObserver.observe(menuRef.value);
+    resizeObserver.observe(menuRef.value.parentElement ?? menuRef.value);
     nextTick(handleResize);
   }
 });
@@ -364,7 +365,7 @@ watchEffect(() => {
   if (props.mode === 'horizontal' && menuRef.value) {
     if (!resizeObserver) {
       resizeObserver = new ResizeObserver(handleResize);
-      resizeObserver.observe(menuRef.value);
+      resizeObserver.observe(menuRef.value.parentElement ?? menuRef.value);
     }
     nextTick(handleResize);
   } else {

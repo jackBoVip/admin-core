@@ -468,10 +468,9 @@ export class PreferencesManager {
     // 这样可以确保解锁状态（isLocked: false）能正确覆盖锁屏状态（isLocked: true）
     const shouldSaveLockScreen = hasPassword || hasStoredLockScreen || this.state.lockScreen.isLocked || !!diffPrefs.lockScreen || lockStateChanged || passwordChanged;
     
-    // 关键修复：由于 setItem 是完全覆盖而不是合并，我们需要合并存储中的其他偏好设置
-    // 确保不会丢失其他偏好设置（如主题、侧边栏等）
-    // 合并策略：存储中的其他设置 > diff 中的设置
-    const finalPrefs: DeepPartial<Preferences> = storedPrefs ? { ...storedPrefs } : {};
+    // 仅保存与默认值的差异作为持久化结果（避免旧存储覆盖当前状态）
+    // 这样当某项恢复为默认值时，会从存储中移除，确保刷新后正确回退
+    const finalPrefs: DeepPartial<Preferences> = {};
     
     // 先处理 lockScreen，避免被 diff 覆盖
     if (shouldSaveLockScreen) {
@@ -523,7 +522,7 @@ export class PreferencesManager {
     
     // 合并 diff 中的其他设置到 finalPrefs（diff 优先，因为它反映当前状态）
     // 但排除 lockScreen，因为我们已经单独处理了
-    // 🔧 关键修复：在合并前保存 lockScreen，防止被覆盖
+    // 在合并前保存 lockScreen，防止被覆盖
     const savedLockScreen = finalPrefs.lockScreen;
     if (Object.keys(diffPrefs).length > 0) {
       const { lockScreen: _diffLockScreen, ...diffPrefsWithoutLockScreen } = diffPrefs;

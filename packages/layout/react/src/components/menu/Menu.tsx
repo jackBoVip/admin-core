@@ -214,10 +214,11 @@ export const Menu = memo(function Menu({
     if (items.length === 0) return -1;
     
     const moreItemWidth = 46;
-    const computedMenuStyle = getComputedStyle(menuRef.current);
+    const widthTarget = menuRef.current.parentElement ?? menuRef.current;
+    const computedMenuStyle = getComputedStyle(widthTarget);
     const paddingLeft = parseInt(computedMenuStyle.paddingLeft, 10) || 0;
     const paddingRight = parseInt(computedMenuStyle.paddingRight, 10) || 0;
-    const menuWidth = menuRef.current.clientWidth - paddingLeft - paddingRight;
+    const menuWidth = widthTarget.clientWidth - paddingLeft - paddingRight;
     
     let calcWidth = 0;
     let sliceIdx = 0;
@@ -260,11 +261,12 @@ export const Menu = memo(function Menu({
   // 设置 ResizeObserver（使用 useLayoutEffect 确保同步）
   useLayoutEffect(() => {
     if (mode === 'horizontal' && menuRef.current) {
+      const resizeTarget = menuRef.current.parentElement ?? menuRef.current;
       // 初始化 ResizeObserver
       resizeObserverRef.current = new ResizeObserver(() => {
         handleResize();
       });
-      resizeObserverRef.current.observe(menuRef.current);
+      resizeObserverRef.current.observe(resizeTarget);
       
       // 首次计算
       handleResize();

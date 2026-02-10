@@ -124,6 +124,15 @@ export async function fetchMenuList(): Promise<RouteRecordStringComponent[]> {
           },
         },
         {
+          name: 'ComponentsCard',
+          path: '/components/card',
+          component: '/components/Card',
+          meta: {
+            title: '卡片',
+            icon: '🃏',
+          },
+        },
+        {
           name: 'ComponentsForm',
           path: '/components/form',
           component: '/components/Form',

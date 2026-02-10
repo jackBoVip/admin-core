@@ -8,6 +8,7 @@ export * from './menu';
 export * from './menu-key';
 export * from './menu-state';
 export * from './menu-controller';
+export * from './favorites';
 export * from './router';
 export * from './route-access';
 export * from './common';

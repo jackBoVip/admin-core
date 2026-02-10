@@ -372,6 +372,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               label={locale.copyright.companyName}
               value={preferences.copyright.companyName}
               onChange={handleSetCopyrightCompanyName}
+              inline
               disabled={copyrightItemDisabled || configs.copyrightCompanyName.disabled}
             />
           )}
@@ -380,6 +381,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               label={locale.copyright.companySiteLink}
               value={preferences.copyright.companySiteLink}
               onChange={handleSetCopyrightCompanySiteLink}
+              inline
               disabled={copyrightItemDisabled || configs.copyrightCompanySiteLink.disabled}
             />
           )}
@@ -388,6 +390,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               label={locale.copyright.date}
               value={preferences.copyright.date}
               onChange={handleSetCopyrightDate}
+              inline
               disabled={copyrightItemDisabled || configs.copyrightDate.disabled}
             />
           )}
@@ -396,6 +399,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               label={locale.copyright.icp}
               value={preferences.copyright.icp}
               onChange={handleSetCopyrightIcp}
+              inline
               disabled={copyrightItemDisabled || configs.copyrightIcp.disabled}
             />
           )}
@@ -404,6 +408,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               label={locale.copyright.icpLink}
               value={preferences.copyright.icpLink}
               onChange={handleSetCopyrightIcpLink}
+              inline
               disabled={copyrightItemDisabled || configs.copyrightIcpLink.disabled}
             />
           )}

@@ -102,7 +102,7 @@ export function generateLightNeutralColors(primaryColor?: string): Record<string
     }
   }
 
-  return {
+  const variables: Record<string, string> = {
     '--background': primaryColor ? createOklch(0.98, chroma * 0.5, hue) : 'oklch(1 0 0)',
     '--foreground': createOklch(0.1, chroma * 2, hue),
     '--muted': createOklch(0.96, chroma, hue),
@@ -114,6 +114,30 @@ export function generateLightNeutralColors(primaryColor?: string): Record<string
     '--card': primaryColor ? createOklch(0.99, chroma * 0.3, hue) : 'oklch(1 0 0)',
     '--card-foreground': createOklch(0.1, chroma * 2, hue),
   };
+
+  // 侧边栏浅色变量（随背景跟随主题色开关切换，保证关闭时回退默认值）
+  const follow = Boolean(primaryColor);
+  Object.assign(variables, {
+    '--sidebar-light': follow ? createOklch(0.99, chroma * 0.4, hue) : 'oklch(1 0 0)',
+    '--sidebar-light-foreground': follow
+      ? createOklch(0.15, chroma * 2, hue)
+      : 'oklch(0.15 0.02 250)',
+    '--sidebar-light-muted': follow
+      ? createOklch(0.45, chroma * 2, hue)
+      : 'oklch(0.45 0.02 250)',
+    '--sidebar-light-border': follow
+      ? createOklch(0.9, chroma, hue)
+      : 'oklch(0.9 0.01 250)',
+    '--sidebar-light-hover': follow
+      ? createOklch(0.96, chroma, hue)
+      : 'oklch(0.96 0.01 250)',
+    '--sidebar-light-active': 'var(--primary)',
+    '--sidebar-mixed-light': follow
+      ? createOklch(0.97, chroma, hue)
+      : 'oklch(0.97 0.01 250)',
+  });
+
+  return variables;
 }
 
 /**

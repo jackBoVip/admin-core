@@ -217,6 +217,7 @@ html {
     --admin-duration-fast: 150ms;
     --admin-duration-normal: 300ms;
     --admin-duration-slow: 500ms;
+    --admin-page-transition-duration: 1000ms;
     --admin-easing-default: cubic-bezier(0.4, 0, 0.2, 1);
     --admin-easing-in: cubic-bezier(0.4, 0, 1, 1);
     --admin-easing-out: cubic-bezier(0, 0, 0.2, 1);

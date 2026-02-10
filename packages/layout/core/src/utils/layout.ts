@@ -387,6 +387,10 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
 
   const adminVars: Record<string, string> = {
     [CSS_VAR_LAYOUT.HEADER_HEIGHT]: `${header.height}px`,
+    [CSS_VAR_LAYOUT.HEADER_WIDGET_SIZE]: `${header.widgetSize}px`,
+    [CSS_VAR_LAYOUT.HEADER_WIDGET_ICON_SIZE]: `${header.widgetIconSize}px`,
+    [CSS_VAR_LAYOUT.HEADER_WIDGET_FONT_SIZE]: `${header.widgetFontSize}px`,
+    [CSS_VAR_LAYOUT.HEADER_SEARCH_KBD_FONT_SIZE]: `${header.searchKbdFontSize}px`,
     [CSS_VAR_LAYOUT.SIDEBAR_WIDTH]: `${sidebarWidth}px`,
     [CSS_VAR_LAYOUT.SIDEBAR_COLLAPSED_WIDTH]: `${sidebar.collapseWidth}px`,
     [CSS_VAR_LAYOUT.TABBAR_HEIGHT]: `${tabbar.height}px`,

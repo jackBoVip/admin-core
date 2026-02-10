@@ -13,7 +13,13 @@
 /* Fade - 淡入淡出 */
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity var(--admin-duration-normal) var(--admin-easing-default);
+  transition: opacity var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default);
+}
+
+.fade-enter-active {
+  animation: admin-fade var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .fade-enter-from,
@@ -25,8 +31,13 @@
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition:
-    opacity var(--admin-duration-normal) var(--admin-easing-default),
-    transform var(--admin-duration-normal) var(--admin-easing-default);
+    opacity var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms)) var(--admin-easing-default),
+    transform var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms)) var(--admin-easing-default);
+}
+
+.fade-slide-enter-active {
+  animation: admin-fade-slide var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .fade-slide-enter-from {
@@ -43,8 +54,13 @@
 .fade-up-enter-active,
 .fade-up-leave-active {
   transition:
-    opacity var(--admin-duration-normal) var(--admin-easing-default),
-    transform var(--admin-duration-normal) var(--admin-easing-default);
+    opacity var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms)) var(--admin-easing-default),
+    transform var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms)) var(--admin-easing-default);
+}
+
+.fade-up-enter-active {
+  animation: admin-fade-up var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .fade-up-enter-from {
@@ -61,8 +77,13 @@
 .fade-down-enter-active,
 .fade-down-leave-active {
   transition:
-    opacity var(--admin-duration-normal) var(--admin-easing-default),
-    transform var(--admin-duration-normal) var(--admin-easing-default);
+    opacity var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms)) var(--admin-easing-default),
+    transform var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms)) var(--admin-easing-default);
+}
+
+.fade-down-enter-active {
+  animation: admin-fade-down var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .fade-down-enter-from {
@@ -80,7 +101,18 @@
 .slide-left-leave-active,
 .slide-right-enter-active,
 .slide-right-leave-active {
-  transition: transform var(--admin-duration-normal) var(--admin-easing-default);
+  transition: transform var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default);
+}
+
+.slide-left-enter-active {
+  animation: admin-slide-left var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
+}
+
+.slide-right-enter-active {
+  animation: admin-slide-right var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))
+    var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)) both;
 }
 
 .slide-left-enter-from { transform: translateX(100%); }
@@ -144,6 +176,36 @@
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@keyframes admin-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes admin-fade-slide {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes admin-fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes admin-fade-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes admin-slide-left {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes admin-slide-right {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

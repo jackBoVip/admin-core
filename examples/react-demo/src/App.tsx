@@ -23,6 +23,7 @@ import SystemRole from './pages/system/Role';
 import SystemMenu from './pages/system/Menu';
 import SystemDept from './pages/system/Dept';
 import ComponentsButton from './pages/components/Button';
+import ComponentsCard from './pages/components/Card';
 import ComponentsForm from './pages/components/Form';
 import ComponentsTable from './pages/components/Table';
 import About from './pages/About';
@@ -37,6 +38,7 @@ const pageMap = {
   '/system/Menu': SystemMenu,
   '/system/Dept': SystemDept,
   '/components/Button': ComponentsButton,
+  '/components/Card': ComponentsCard,
   '/components/Form': ComponentsForm,
   '/components/Table': ComponentsTable,
   '/About': About,

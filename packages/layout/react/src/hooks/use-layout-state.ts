@@ -47,6 +47,7 @@ import {
   HEADER_TRIGGER_DISTANCE,
   TIMING,
   getOrCreateTabManager,
+  getOrCreateFavoritesManager,
   generateThemeCSSVariables,
   generateThemeClasses,
   generateWatermarkContent,
@@ -71,6 +72,7 @@ import {
   resolveTabKey,
   resolveCurrentPath,
   resolveMenuTitleByPath,
+  resolveFavoriteMenus,
   formatDocumentTitle,
   createNavigationHandlers,
   resolveShortcutAction,
@@ -250,24 +252,17 @@ export function useSidebarState() {
 
   const setCollapsed = useCallback(
     (value: boolean) => {
-      let changed = false;
-      setState((prev) => {
-        if (computed.isSidebarMixedNav || computed.isHeaderMixedNav) {
-          if (!prev.sidebarCollapsed) return prev;
-          changed = true;
-          return { ...prev, sidebarCollapsed: false };
-        }
-        if (prev.sidebarCollapsed === value) return prev;
-        changed = true;
-        return { ...prev, sidebarCollapsed: value };
-      });
-      if (changed) {
-        context.events.onSidebarCollapse?.(
-          (computed.isSidebarMixedNav || computed.isHeaderMixedNav) ? false : value
-        );
-      }
+      const isNonCollapsible = computed.isSidebarMixedNav || computed.isHeaderMixedNav;
+      const nextCollapsed = isNonCollapsible ? false : value;
+
+      if (state.sidebarCollapsed === nextCollapsed) return;
+
+      setState((prev) => (
+        prev.sidebarCollapsed === nextCollapsed ? prev : { ...prev, sidebarCollapsed: nextCollapsed }
+      ));
+      context.events.onSidebarCollapse?.(nextCollapsed);
     },
-    [setState, context.events, computed.isSidebarMixedNav, computed.isHeaderMixedNav]
+    [setState, context.events, computed.isSidebarMixedNav, computed.isHeaderMixedNav, state.sidebarCollapsed]
   );
 
   const toggle = useCallback(() => {
@@ -809,6 +804,59 @@ export function useTabsState() {
     [menuIndex]
   );
 
+  const resolveTabMenu = useCallback((tab?: TabItem): MenuItem | undefined => {
+    if (!tab) return undefined;
+    const meta = tab.meta as Record<string, unknown> | undefined;
+    const menuKey = meta?.menuKey as string | undefined;
+    if (menuKey) {
+      const byKey = menuIndex.byKey.get(menuKey);
+      if (byKey) return byKey;
+    }
+    if (tab.path) {
+      return resolveMenuByPath(tab.path);
+    }
+    return undefined;
+  }, [menuIndex, resolveMenuByPath]);
+
+  const favoritePersistKey = useMemo(() => {
+    const customKey = context.props.autoTab?.favoritePersistKey;
+    if (customKey) return customKey;
+    const baseKey = context.props.autoTab?.persistKey || 'tabs';
+    return `${baseKey}:favorites`;
+  }, [context.props.autoTab?.favoritePersistKey, context.props.autoTab?.persistKey]);
+
+  const favoriteManager = useMemo(
+    () => getOrCreateFavoritesManager({ persistKey: favoritePersistKey }),
+    [favoritePersistKey]
+  );
+
+  const [favoriteKeys, setFavoriteKeysState] = useState<string[]>(() => favoriteManager.getKeys());
+
+  useEffect(() => {
+    favoriteManager.setOnChange(setFavoriteKeysState);
+    setFavoriteKeysState(favoriteManager.getKeys());
+    return () => favoriteManager.setOnChange(undefined);
+  }, [favoriteManager]);
+
+  const favoriteMenus = useMemo(
+    () => resolveFavoriteMenus(menus, favoriteKeys),
+    [menus, favoriteKeys]
+  );
+
+  useEffect(() => {
+    context.events.onFavoritesChange?.(favoriteMenus, favoriteKeys);
+  }, [favoriteMenus, favoriteKeys, context.events]);
+
+  const isFavorite = useCallback((tab: TabItem) => {
+    const menu = resolveTabMenu(tab);
+    if (!menu) return false;
+    return favoriteManager.has(menu.key);
+  }, [favoriteManager, resolveTabMenu]);
+
+  const canFavorite = useCallback((tab: TabItem) => {
+    return Boolean(resolveTabMenu(tab));
+  }, [resolveTabMenu]);
+
   const activeKey = useMemo(() => {
     if (context.props.activeTabKey) return context.props.activeTabKey;
     if (!isAutoMode || !currentPath) return currentPath;
@@ -974,6 +1022,20 @@ export function useTabsState() {
     [tabMap]
   );
 
+  const handleToggleFavorite = useCallback((key: string) => {
+    const tab = tabMap.get(key);
+    if (!tab) return;
+    const menu = resolveTabMenu(tab);
+    if (!menu) return;
+    const result = favoriteManager.toggle(menu.key);
+    const nextMenus = resolveFavoriteMenus(menus, result.keys);
+    context.events.onTabFavoriteChange?.(menu, result.favorited, result.keys, nextMenus);
+  }, [tabMap, resolveTabMenu, favoriteManager, menus, context.events]);
+
+  const setFavoriteKeys = useCallback((keys: string[]) => {
+    favoriteManager.setKeys(keys || []);
+  }, [favoriteManager]);
+
   const handleSort = useCallback(
     (fromIndex: number, toIndex: number) => {
       if (isAutoMode) {
@@ -997,8 +1059,15 @@ export function useTabsState() {
     handleRefresh,
     handleToggleAffix,
     handleOpenInNewWindow,
+    handleToggleFavorite,
+    setFavoriteKeys,
     handleSort,
     tabManager: tabManagerRef.current,
+    favoriteManager,
+    favoriteKeys,
+    favoriteMenus,
+    isFavorite,
+    canFavorite,
   };
 }
 

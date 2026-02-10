@@ -126,6 +126,10 @@ export function updateLayoutCSSVariables(preferences: Preferences): void {
 
   const layoutVariables: Record<string, string> = {
     [CSS_VAR_LAYOUT.HEADER_HEIGHT]: `${header.height}px`,
+    [CSS_VAR_LAYOUT.HEADER_WIDGET_SIZE]: `${header.widgetSize}px`,
+    [CSS_VAR_LAYOUT.HEADER_WIDGET_ICON_SIZE]: `${header.widgetIconSize}px`,
+    [CSS_VAR_LAYOUT.HEADER_WIDGET_FONT_SIZE]: `${header.widgetFontSize}px`,
+    [CSS_VAR_LAYOUT.HEADER_SEARCH_KBD_FONT_SIZE]: `${header.searchKbdFontSize}px`,
     [CSS_VAR_LAYOUT.FOOTER_HEIGHT]: `${footer.height}px`,
     [CSS_VAR_LAYOUT.SIDEBAR_WIDTH]: `${sidebar.width}px`,
     [CSS_VAR_LAYOUT.SIDEBAR_COLLAPSED_WIDTH]: `${sidebar.collapseWidth}px`,

@@ -200,6 +200,14 @@ export const DEFAULT_PREFERENCES: Preferences = {
     enable: true,
     /** 顶栏高度 (px) */
     height: 50,
+    /** 顶栏右侧图标按钮尺寸 (px) */
+    widgetSize: 36,
+    /** 顶栏图标大小 (px) */
+    widgetIconSize: 18,
+    /** 顶栏文字大小 (px) */
+    widgetFontSize: 14,
+    /** 顶栏搜索快捷键字体大小 (px) */
+    searchKbdFontSize: 11,
     /** 隐藏顶栏（CSS 隐藏，用于最大化内容区） */
     hidden: false,
     /** 菜单对齐方式: start | center | end */

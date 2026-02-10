@@ -34,18 +34,25 @@ const EMPTY_MENUS: MenuItem[] = [];
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
 let preferencesManager: ReturnType<typeof getPreferencesManager> | null = null;
-try {
-  preferencesManager = getPreferencesManager();
-} catch (error) {
+const resolvePreferencesManager = () => {
+  if (preferencesManager) return preferencesManager;
   try {
-    initPreferences({ namespace: 'admin-core' });
     preferencesManager = getPreferencesManager();
-  } catch (initError) {
-    if (isDev) {
-      logger.warn('Failed to initialize preferences.', initError);
+  } catch {
+    try {
+      initPreferences({ namespace: 'admin-core' });
+      preferencesManager = getPreferencesManager();
+    } catch (initError) {
+      if (isDev) {
+        logger.warn('Failed to initialize preferences.', initError);
+      }
     }
   }
-}
+  return preferencesManager;
+};
+
+// 初始化获取一次（尽量提前）
+resolvePreferencesManager();
 
 // 偏好设置抽屉状态
 const showPreferencesDrawer = ref(false);
@@ -115,8 +122,9 @@ const updateCounter = ref(0);
 
 // 更新偏好设置配置
 const updatePreferencesProps = () => {
-  if (preferencesManager) {
-    const prefs = preferencesManager.getPreferences();
+  const manager = resolvePreferencesManager();
+  if (manager) {
+    const prefs = manager.getPreferences();
     // 创建新对象确保响应式更新
     preferencesProps.value = { ...mapPreferencesToLayoutProps(prefs) };
     // 强制增加计数器触发依赖更新
@@ -128,8 +136,9 @@ const updatePreferencesProps = () => {
 updatePreferencesProps();
 
 // 订阅偏好设置变化
-if (preferencesManager) {
-  unsubscribeRef.value = preferencesManager.subscribe(() => {
+const activeManager = resolvePreferencesManager();
+if (activeManager) {
+  unsubscribeRef.value = activeManager.subscribe(() => {
     updatePreferencesProps();
   });
 }
@@ -208,6 +217,8 @@ const emit = defineEmits<{
   (e: 'panel-collapse', collapsed: boolean): void;
   (e: 'global-search', keyword: string): void;
   (e: 'refresh'): void;
+  (e: 'tab-favorite-change', menu: MenuItem, favorited: boolean, keys: string[], menus: MenuItem[]): void;
+  (e: 'favorites-change', menus: MenuItem[], keys: string[]): void;
   (e: 'preferences-open'): void;
   (e: 'preferences-close'): void;
 }>();
@@ -227,7 +238,7 @@ const handleLockScreen = () => {
 const events: LayoutEvents = {
   onSidebarCollapse: (collapsed) => {
     // 同步更新偏好设置
-    preferencesManager?.setPreferences({ sidebar: { collapsed } });
+    resolvePreferencesManager()?.setPreferences({ sidebar: { collapsed } });
     emit('sidebar-collapse', collapsed);
   },
   onMenuSelect: (item, key) => emit('menu-select', item, key),
@@ -243,23 +254,25 @@ const events: LayoutEvents = {
   onFullscreenToggle: (isFullscreen) => emit('fullscreen-toggle', isFullscreen),
   onThemeToggle: (theme) => {
     // 同步更新偏好设置
-    preferencesManager?.setPreferences({ theme: { mode: theme as 'light' | 'dark' } });
+    resolvePreferencesManager()?.setPreferences({ theme: { mode: theme as 'light' | 'dark' } });
     emit('theme-toggle', theme);
   },
   onLocaleChange: (locale) => {
     // 同步更新偏好设置
-    preferencesManager?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
+    resolvePreferencesManager()?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
     emit('locale-change', locale);
   },
   onLockScreen: handleLockScreen,
   onLogout: () => emit('logout'),
   onPanelCollapse: (collapsed) => {
     // 同步更新偏好设置
-    preferencesManager?.setPreferences({ panel: { collapsed } });
+    resolvePreferencesManager()?.setPreferences({ panel: { collapsed } });
     emit('panel-collapse', collapsed);
   },
   onGlobalSearch: (keyword) => emit('global-search', keyword),
   onRefresh: () => emit('refresh'),
+  onTabFavoriteChange: (menu, favorited, keys, menus) => emit('tab-favorite-change', menu, favorited, keys, menus),
+  onFavoritesChange: (menus, keys) => emit('favorites-change', menus, keys),
 };
 
 // 最终传递给布局上下文的 props（直接使用 computed 确保响应式）

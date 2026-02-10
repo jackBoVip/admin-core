@@ -200,6 +200,8 @@ export function getTabContextMenuItems(options: {
   activeKey: string;
   tabs: TabItem[];
   t: (key: string) => string;
+  isFavorite?: boolean;
+  canFavorite?: boolean;
 }): TabContextMenuItem[] {
   const { targetKey, activeKey, tabs, t } = options;
   let currentTab: TabItem | undefined;
@@ -237,6 +239,9 @@ export function getTabContextMenuItems(options: {
       break;
     }
   }
+
+  const isFavorite = options.isFavorite ?? false;
+  const canFavorite = options.canFavorite !== false;
 
   return [
     {
@@ -291,6 +296,14 @@ export function getTabContextMenuItems(options: {
       divider: true,
     },
     {
+      key: isFavorite ? 'unfavorite' : 'favorite',
+      label: isFavorite
+        ? t('layout.tabbar.contextMenu.unfavorite')
+        : t('layout.tabbar.contextMenu.favorite'),
+      icon: 'star',
+      disabled: !canFavorite,
+    },
+    {
       key: 'pin',
       label: isAffix ? t('layout.tabbar.contextMenu.unpin') : t('layout.tabbar.contextMenu.pin'),
       icon: 'pin',
@@ -308,6 +321,8 @@ export type ContextMenuAction =
   | 'closeRight'
   | 'closeOther'
   | 'closeAll'
+  | 'favorite'
+  | 'unfavorite'
   | 'pin'
   | 'unpin'
   | 'openInNewWindow'
@@ -334,13 +349,15 @@ export function generateContextMenuItems(
   activeKey: string,
   t: (key: string) => string,
   tabIndexMap: Map<string, number>,
-  options?: { isMaximized?: boolean }
+  options?: { isMaximized?: boolean; isFavorite?: boolean; canFavorite?: boolean }
 ): ContextMenuItem[] {
   const targetKey = tab.key;
   const currentIndex = tabIndexMap.get(targetKey) ?? -1;
   const isAffix = tab.affix === true;
   const isActive = targetKey === activeKey;
   const isMaximized = options?.isMaximized ?? false;
+  const isFavorite = options?.isFavorite ?? false;
+  const canFavorite = options?.canFavorite !== false;
   
   let hasLeft = false;
   let hasRight = false;
@@ -423,6 +440,14 @@ export function generateContextMenuItems(
       key: 'divider-3',
       label: '',
       divider: true,
+    },
+    {
+      key: isFavorite ? 'unfavorite' : 'favorite',
+      label: isFavorite
+        ? t('layout.tabbar.contextMenu.unfavorite')
+        : t('layout.tabbar.contextMenu.favorite'),
+      icon: 'star',
+      disabled: !canFavorite,
     },
     {
       key: isAffix ? 'unpin' : 'pin',

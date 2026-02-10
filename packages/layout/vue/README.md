@@ -190,6 +190,8 @@ interface AutoBreadcrumbConfig {
 | `tab-close-all` | - | 关闭全部标签 |
 | `tab-close-other` | `(exceptKey)` | 关闭其他标签 |
 | `tab-refresh` | `(item, key)` | 刷新标签 |
+| `tab-favorite-change` | `(menu, favorited, keys, menus)` | 标签收藏变化（单次操作） |
+| `favorites-change` | `(menus, keys)` | 收藏列表变化 |
 
 ## Composables
 
@@ -207,6 +209,15 @@ import {
   useFullscreenState,  // 全屏状态
 } from '@admin-core/layout-vue';
 ```
+
+## 收藏菜单
+
+`useTabsState()` 额外暴露收藏相关 API（用于后端同步/初始化）：
+
+- `favoriteMenus`：当前收藏菜单完整数据
+- `favoriteKeys`：收藏 key 列表
+- `setFavoriteKeys(keys)`：初始化/覆盖收藏列表
+- `handleToggleFavorite(key)`：收藏/取消收藏
 
 ## 高级用法
 

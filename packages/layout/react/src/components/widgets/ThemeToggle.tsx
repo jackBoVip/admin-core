@@ -21,7 +21,7 @@ export const ThemeToggle = memo(function ThemeToggle() {
   return (
     <button
       type="button"
-      className="header-widget-btn theme-toggle"
+      className={`header-widget-btn theme-toggle ${isDark ? 'is-dark' : 'is-light'}`}
       data-mode={currentTheme}
       data-theme={isDark ? 'dark' : 'light'}
       onClick={handleToggleTheme}

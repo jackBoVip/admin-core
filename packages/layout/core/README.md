@@ -45,6 +45,10 @@ pnpm add @admin-core/layout
 {
   enable: true,           // 启用顶栏
   height: 48,             // 顶栏高度 (px)
+  widgetSize: 36,         // 顶栏图标按钮尺寸 (px)
+  widgetIconSize: 20,     // 顶栏图标大小 (px)
+  widgetFontSize: 12,     // 顶栏文字大小 (px)
+  searchKbdFontSize: 11,  // 顶栏搜索快捷键字体大小 (px)
   hidden: false,          // 隐藏顶栏
   menuAlign: 'start',     // 菜单对齐: 'start' | 'center' | 'end'
   menuLauncher: false,    // 菜单启动器模式

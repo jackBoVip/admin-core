@@ -71,6 +71,8 @@ const locale: LayoutLocale = {
         closeRight: 'Close Right',
         maximize: 'Maximize',
         restoreMaximize: 'Restore',
+        favorite: 'Add to Favorites',
+        unfavorite: 'Remove from Favorites',
         pin: 'Pin',
         unpin: 'Unpin',
         openInNewWindow: 'Open in New Window',

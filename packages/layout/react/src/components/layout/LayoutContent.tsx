@@ -53,9 +53,21 @@ export const LayoutContent = memo(function LayoutContent({
 
   const resolveTransitionDuration = useCallback(() => {
     if (typeof window === 'undefined') return 0;
-    const raw = getComputedStyle(document.documentElement).getPropertyValue('--admin-duration-normal').trim();
-    const value = Number.parseFloat(raw);
-    return Number.isFinite(value) ? value : 300;
+    const styles = getComputedStyle(document.documentElement);
+    const raw = styles.getPropertyValue('--admin-page-transition-duration') ||
+      styles.getPropertyValue('--admin-duration-normal');
+    const value = raw.trim();
+    if (!value) return 300;
+    if (value.endsWith('ms')) {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
+    }
+    if (value.endsWith('s')) {
+      const parsed = Number.parseFloat(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed * 1000 : 300;
+    }
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
   }, []);
 
   const clearTransitionTimers = useCallback(() => {
@@ -100,7 +112,6 @@ export const LayoutContent = memo(function LayoutContent({
     }
     if (name === 'slide-right') {
       el.style.setProperty('transform', 'translateX(-100%)', 'important');
-      return;
     }
   }, []);
 
@@ -124,14 +135,17 @@ export const LayoutContent = memo(function LayoutContent({
     const name = transitionName || 'fade-slide';
     const el = innerRef.current;
     if (!el) return;
-    clearTransitionInlineFrom(el);
     setTransitionClassName(name);
     setTransitionPhase('from');
-    applyTransitionInlineFrom(el, name);
-    void el.offsetWidth;
     transitionRafRef.current = window.requestAnimationFrame(() => {
-      clearTransitionInlineFrom(el);
-      setTransitionPhase('active');
+      const target = innerRef.current;
+      if (!target) return;
+      applyTransitionInlineFrom(target, name);
+      void target.offsetWidth;
+      transitionRafRef.current = window.requestAnimationFrame(() => {
+        clearTransitionInlineFrom(target);
+        setTransitionPhase('active');
+      });
     });
     transitionTimerRef.current = window.setTimeout(() => {
       clearTransitionClasses();
@@ -256,13 +270,45 @@ export const LayoutContent = memo(function LayoutContent({
   ]);
 
   // 内容容器样式
-  const innerStyle = useMemo(() =>
-    contentCompact === 'compact'
-      ? {
-          maxWidth: `${contentCompactWidth}px`,
-          margin: '0 auto',
-        }
-      : {}, [contentCompact, contentCompactWidth]);
+  const innerStyle = useMemo(() => {
+    const style: Record<string, string | number> = {};
+    if (contentCompact === 'compact') {
+      style.maxWidth = `${contentCompactWidth}px`;
+      style.margin = '0 auto';
+    }
+    return style;
+  }, [contentCompact, contentCompactWidth]);
+
+  const transitionStyle = useMemo(() => {
+    if (!transitionEnabled) return {};
+    const style: Record<string, string | number> = {
+      width: '100%',
+    };
+    const name = transitionName || 'fade-slide';
+    const isSlide = name === 'slide-left' || name === 'slide-right';
+    style.transitionProperty = isSlide ? 'transform' : 'opacity, transform';
+    style.transitionDuration = 'var(--admin-page-transition-duration, var(--admin-duration-normal, 300ms))';
+    style.transitionTimingFunction = 'var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1))';
+    if (transitionPhase === 'from') {
+      if (name === 'fade') {
+        style.opacity = 0;
+      } else if (name === 'fade-slide') {
+        style.opacity = 0;
+        style.transform = 'translateX(10px)';
+      } else if (name === 'fade-up') {
+        style.opacity = 0;
+        style.transform = 'translateY(10px)';
+      } else if (name === 'fade-down') {
+        style.opacity = 0;
+        style.transform = 'translateY(-10px)';
+      } else if (name === 'slide-left') {
+        style.transform = 'translateX(100%)';
+      } else if (name === 'slide-right') {
+        style.transform = 'translateX(-100%)';
+      }
+    }
+    return style;
+  }, [transitionEnabled, transitionName, transitionPhase]);
   const transitionClasses = useMemo(() => {
     if (!transitionClassName || transitionPhase === 'idle') return '';
     if (transitionPhase === 'from') {
@@ -291,16 +337,22 @@ export const LayoutContent = memo(function LayoutContent({
       )}
 
       {/* 主内容 */}
-      <div ref={innerRef} className={`layout-content__inner${transitionClasses ? ` ${transitionClasses}` : ''}`} style={innerStyle}>
-        {!keepAliveAvailable || !activeKey ? (
-          <LayoutRefreshView>{children}</LayoutRefreshView>
-        ) : (
-          Array.from(cacheRef.current.entries()).map(([key, entry]) => (
-            <div key={key} style={{ display: key === activeKey ? 'block' : 'none' }}>
-              {entry.element}
-            </div>
-          ))
-        )}
+      <div className="layout-content__inner" style={innerStyle}>
+        <div
+          ref={innerRef}
+          className={`layout-content__transition${transitionClasses ? ` ${transitionClasses}` : ''}`}
+          style={transitionStyle}
+        >
+          {!keepAliveAvailable || !activeKey ? (
+            <LayoutRefreshView>{children}</LayoutRefreshView>
+          ) : (
+            Array.from(cacheRef.current.entries()).map(([key, entry]) => (
+              <div key={key} style={{ display: key === activeKey ? 'block' : 'none' }}>
+                {entry.element}
+              </div>
+            ))
+          )}
+        </div>
       </div>
 
       {/* 内容底部 */}

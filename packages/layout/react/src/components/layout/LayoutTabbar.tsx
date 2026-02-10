@@ -46,7 +46,10 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     handleRefresh,
     handleToggleAffix,
     handleOpenInNewWindow,
+    handleToggleFavorite,
     handleSort,
+    isFavorite,
+    canFavorite,
   } = useTabsState();
   const { collapsed: sidebarCollapsed } = useSidebarState();
 
@@ -373,6 +376,10 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       case 'openInNewWindow':
         handleOpenInNewWindow(targetKey);
         break;
+      case 'favorite':
+      case 'unfavorite':
+        handleToggleFavorite(targetKey);
+        break;
       case 'maximize':
         if (!isMaximized) {
           if (targetKey !== activeKey) {
@@ -398,6 +405,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     handleCloseAll,
     handleToggleAffix,
     handleOpenInNewWindow,
+    handleToggleFavorite,
     handleSelect,
     activeKey,
     isMaximized,
@@ -414,7 +422,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       activeKey ?? '',
       context.t,
       tabIndexMap,
-      { isMaximized }
+      { isMaximized, isFavorite: isFavorite(tab), canFavorite: canFavorite(tab) }
     );
     return items.filter((item) => {
       if (item.key === 'maximize' || item.key === 'restoreMaximize') {
@@ -422,7 +430,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       }
       return true;
     });
-  }, [contextMenu.targetKey, tabMap, tabs, activeKey, tabIndexMap, context.t, isMaximized, tabbarConfig.showMaximize]);
+  }, [contextMenu.targetKey, tabMap, tabs, activeKey, tabIndexMap, context.t, isMaximized, tabbarConfig.showMaximize, isFavorite, canFavorite]);
 
   const moreMenuItems = useMemo(() => {
     const key = activeKey ?? tabs[0]?.key ?? '';
@@ -435,7 +443,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       activeKey ?? '',
       context.t,
       tabIndexMap,
-      { isMaximized }
+      { isMaximized, isFavorite: isFavorite(tab), canFavorite: canFavorite(tab) }
     );
     return items.filter((item) => {
       if (item.key === 'maximize' || item.key === 'restoreMaximize') {
@@ -443,7 +451,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       }
       return true;
     });
-  }, [activeKey, tabs, tabMap, tabIndexMap, context.t, isMaximized, tabbarConfig.showMaximize]);
+  }, [activeKey, tabs, tabMap, tabIndexMap, context.t, isMaximized, tabbarConfig.showMaximize, isFavorite, canFavorite]);
 
   const onContextMenu = useCallback((e: React.MouseEvent, key: string) => {
     e.preventDefault();

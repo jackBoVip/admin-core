@@ -190,6 +190,8 @@ interface AutoBreadcrumbConfig {
 | `onTabCloseAll` | - | 关闭全部标签 |
 | `onTabCloseOther` | `(exceptKey)` | 关闭其他标签 |
 | `onTabRefresh` | `(item, key)` | 刷新标签 |
+| `onTabFavoriteChange` | `(menu, favorited, keys, menus)` | 标签收藏变化（单次操作） |
+| `onFavoritesChange` | `(menus, keys)` | 收藏列表变化 |
 
 ## Hooks
 
@@ -208,6 +210,15 @@ import {
   useFullscreenState,  // 全屏状态
 } from '@admin-core/layout-react';
 ```
+
+## 收藏菜单
+
+`useTabsState()` 额外暴露收藏相关 API（用于后端同步/初始化）：
+
+- `favoriteMenus`：当前收藏菜单完整数据
+- `favoriteKeys`：收藏 key 列表
+- `setFavoriteKeys(keys)`：初始化/覆盖收藏列表
+- `handleToggleFavorite(key)`：收藏/取消收藏
 
 ## 高级用法
 

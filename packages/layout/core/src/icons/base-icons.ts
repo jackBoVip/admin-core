@@ -18,6 +18,8 @@ export interface IconDefinition {
   extra?: string;
   /** 结构化 SVG 节点（用于安全渲染） */
   extraNodes?: SvgNode[];
+  /** 视觉尺寸微调（以 24x24 画布为基准） */
+  opticalScale?: number;
 }
 
 // ============================================================
@@ -132,6 +134,7 @@ export const icons: Record<string, IconDefinition> = {
   globe: {
     viewBox: '0 0 24 24',
     path: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10',
+    opticalScale: 0.99,
     extra: '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>',
     extraNodes: [
       { tag: 'circle', attrs: { cx: '12', cy: '12', r: '10' } },
@@ -145,10 +148,12 @@ export const icons: Record<string, IconDefinition> = {
   maximize: {
     viewBox: '0 0 24 24',
     path: 'M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3',
+    opticalScale: 1.08,
   },
   minimize: {
     viewBox: '0 0 24 24',
     path: 'M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3',
+    opticalScale: 1.08,
   },
   // 图钉相关（用于固定/取消固定子菜单）- lucide 风格
   pin: {
@@ -189,6 +194,7 @@ export const icons: Record<string, IconDefinition> = {
   settings: {
     viewBox: '0 0 24 24',
     path: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
+    opticalScale: 1.2,
   },
   user: {
     viewBox: '0 0 24 24',
@@ -213,6 +219,7 @@ export const icons: Record<string, IconDefinition> = {
   notification: {
     viewBox: '0 0 24 24',
     path: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+    opticalScale: 1.2,
   },
 
   // 主页/仪表盘
@@ -293,6 +300,7 @@ export const icons: Record<string, IconDefinition> = {
 const THEME_TOGGLE_ICON: IconDefinition = {
   viewBox: '0 0 24 24',
   path: '',
+  opticalScale: 0.98,
   extra: `
     <mask class="moon" id="moon-mask">
       <rect x="0" y="0" width="100%" height="100%" fill="white" />
@@ -592,5 +600,11 @@ export function getLayoutUiIconSvg(name: LayoutUiIconName): string {
   const stroke = def.fill ? 'none' : 'currentColor';
   const extra = def.extra ?? '';
   const path = def.path ? `<path d="${def.path}"/>` : '';
-  return `<svg viewBox="${def.viewBox}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${extra}${path}</svg>`;
+  const hasOpticalScale = typeof def.opticalScale === 'number' && def.opticalScale !== 1;
+  const transform = hasOpticalScale
+    ? `translate(12 12) scale(${def.opticalScale}) translate(-12 -12)`
+    : '';
+  const content = `${extra}${path}`;
+  const wrapped = transform ? `<g transform="${transform}">${content}</g>` : content;
+  return `<svg viewBox="${def.viewBox}" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${wrapped}</svg>`;
 }

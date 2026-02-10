@@ -55,6 +55,11 @@ const mergedStyle = computed(() => {
 
 const fill = computed(() => (iconDef.value?.fill ? 'currentColor' : 'none'));
 const stroke = computed(() => (iconDef.value?.fill ? 'none' : 'currentColor'));
+const opticalTransform = computed(() => {
+  const scale = iconDef.value?.opticalScale;
+  if (!scale || scale === 1) return '';
+  return `translate(12 12) scale(${scale}) translate(-12 -12)`;
+});
 
 function renderSvgNode(node: SvgNode, key?: string | number): VNode {
   const children = node.children?.map((child, index) =>
@@ -81,6 +86,7 @@ const SvgNodeRenderer = defineComponent({
   <svg
     v-if="iconDef"
     :class="svgClass"
+    :data-icon="props.name"
     :viewBox="iconDef.viewBox"
     :fill="fill"
     :stroke="stroke"
@@ -89,11 +95,21 @@ const SvgNodeRenderer = defineComponent({
     stroke-linejoin="round"
     :style="mergedStyle"
   >
-    <SvgNodeRenderer
-      v-for="(node, index) in iconDef.extraNodes || []"
-      :key="`extra-${index}`"
-      :node="node"
-    />
-    <path v-if="iconDef.path" :d="iconDef.path" />
+    <g v-if="opticalTransform" :transform="opticalTransform">
+      <SvgNodeRenderer
+        v-for="(node, index) in iconDef.extraNodes || []"
+        :key="`extra-${index}`"
+        :node="node"
+      />
+      <path v-if="iconDef.path" :d="iconDef.path" />
+    </g>
+    <template v-else>
+      <SvgNodeRenderer
+        v-for="(node, index) in iconDef.extraNodes || []"
+        :key="`extra-${index}`"
+        :node="node"
+      />
+      <path v-if="iconDef.path" :d="iconDef.path" />
+    </template>
   </svg>
 </template>

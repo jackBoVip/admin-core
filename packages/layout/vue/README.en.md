@@ -183,6 +183,8 @@ interface AutoBreadcrumbConfig {
 | `tab-close-all` | - | Close all tabs |
 | `tab-close-other` | `(exceptKey)` | Close other tabs |
 | `tab-refresh` | `(item, key)` | Refresh tab |
+| `tab-favorite-change` | `(menu, favorited, keys, menus)` | Favorite change (single action) |
+| `favorites-change` | `(menus, keys)` | Favorites list change |
 
 ## Composables
 
@@ -200,6 +202,15 @@ import {
   useFullscreenState,  // fullscreen state
 } from '@admin-core/layout-vue';
 ```
+
+## Favorites
+
+`useTabsState()` exposes favorites APIs for sync/init:
+
+- `favoriteMenus`: full `MenuItem[]` for current favorites
+- `favoriteKeys`: favorite key list
+- `setFavoriteKeys(keys)`: initialize/replace favorites
+- `handleToggleFavorite(key)`: toggle favorite
 
 ## Advanced Usage
 

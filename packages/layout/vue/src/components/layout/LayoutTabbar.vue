@@ -22,7 +22,10 @@ const {
   handleRefresh,
   handleToggleAffix,
   handleOpenInNewWindow,
+  handleToggleFavorite,
   handleSort,
+  isFavorite,
+  canFavorite,
 } = useTabsState();
 const { collapsed: sidebarCollapsed } = useSidebarState();
 
@@ -361,6 +364,10 @@ const handleMenuAction = (action: ContextMenuAction | string, targetKey: string 
     case 'openInNewWindow':
       handleOpenInNewWindow(targetKey);
       break;
+    case 'favorite':
+    case 'unfavorite':
+      handleToggleFavorite(targetKey);
+      break;
     case 'maximize':
       if (!isMaximized.value) {
         if (targetKey !== activeKey.value) {
@@ -388,7 +395,7 @@ const contextMenuItems = computed(() => {
     activeKey.value,
     context.t,
     tabIndexMap.value,
-    { isMaximized: isMaximized.value }
+    { isMaximized: isMaximized.value, isFavorite: isFavorite(tab), canFavorite: canFavorite(tab) }
   );
   return items.filter((item) => {
     if (item.key === 'maximize' || item.key === 'restoreMaximize') {
@@ -409,7 +416,7 @@ const moreMenuItems = computed(() => {
     activeKey.value,
     context.t,
     tabIndexMap.value,
-    { isMaximized: isMaximized.value }
+    { isMaximized: isMaximized.value, isFavorite: isFavorite(tab), canFavorite: canFavorite(tab) }
   );
   return items.filter((item) => {
     if (item.key === 'maximize' || item.key === 'restoreMaximize') {

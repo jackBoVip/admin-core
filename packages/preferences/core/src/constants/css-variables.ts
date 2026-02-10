@@ -13,6 +13,14 @@ export const CSS_VAR_LAYOUT = {
   CONTENT_WIDTH: '--admin-content-width',
   /** 顶栏高度 */
   HEADER_HEIGHT: '--admin-header-height',
+  /** 顶栏右侧图标按钮尺寸 */
+  HEADER_WIDGET_SIZE: '--header-widget-size',
+  /** 顶栏图标大小 */
+  HEADER_WIDGET_ICON_SIZE: '--header-widget-icon-size',
+  /** 顶栏文字大小 */
+  HEADER_WIDGET_FONT_SIZE: '--header-widget-font-size',
+  /** 顶栏搜索快捷键字体大小 */
+  HEADER_SEARCH_KBD_FONT_SIZE: '--header-search-kbd-font-size',
   /** 页脚高度 */
   FOOTER_HEIGHT: '--admin-footer-height',
   /** 侧边栏宽度 */
@@ -93,6 +101,8 @@ export const CSS_VAR_ANIMATION = {
   DURATION_NORMAL: '--admin-duration-normal',
   /** 慢速动画时长 */
   DURATION_SLOW: '--admin-duration-slow',
+  /** 页面过渡动画时长 */
+  PAGE_TRANSITION_DURATION: '--admin-page-transition-duration',
   /** 默认缓动函数 */
   EASING_DEFAULT: '--admin-easing-default',
   /** 加速缓动函数 */

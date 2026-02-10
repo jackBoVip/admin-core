@@ -372,36 +372,41 @@ const handleTransitionOptionActivate = (e: Event) => {
       :label="locale.copyright.enable"
       :disabled="!footerEnable || configs.copyrightEnable.disabled"
     />
-    <InputItem
-      v-if="configs.copyrightCompanyName.visible"
-      v-model="copyrightCompanyName"
-      :label="locale.copyright.companyName"
-      :disabled="copyrightItemDisabled || configs.copyrightCompanyName.disabled"
-    />
-    <InputItem
-      v-if="configs.copyrightCompanySiteLink.visible"
-      v-model="copyrightCompanySiteLink"
-      :label="locale.copyright.companySiteLink"
-      :disabled="copyrightItemDisabled || configs.copyrightCompanySiteLink.disabled"
-    />
-    <InputItem
-      v-if="configs.copyrightDate.visible"
-      v-model="copyrightDate"
-      :label="locale.copyright.date"
-      :disabled="copyrightItemDisabled || configs.copyrightDate.disabled"
-    />
-    <InputItem
-      v-if="configs.copyrightIcp.visible"
-      v-model="copyrightIcp"
-      :label="locale.copyright.icp"
-      :disabled="copyrightItemDisabled || configs.copyrightIcp.disabled"
-    />
-    <InputItem
-      v-if="configs.copyrightIcpLink.visible"
-      v-model="copyrightIcpLink"
-      :label="locale.copyright.icpLink"
-      :disabled="copyrightItemDisabled || configs.copyrightIcpLink.disabled"
-    />
+      <InputItem
+        v-if="configs.copyrightCompanyName.visible"
+        v-model="copyrightCompanyName"
+        :label="locale.copyright.companyName"
+        inline
+        :disabled="copyrightItemDisabled || configs.copyrightCompanyName.disabled"
+      />
+      <InputItem
+        v-if="configs.copyrightCompanySiteLink.visible"
+        v-model="copyrightCompanySiteLink"
+        :label="locale.copyright.companySiteLink"
+        inline
+        :disabled="copyrightItemDisabled || configs.copyrightCompanySiteLink.disabled"
+      />
+      <InputItem
+        v-if="configs.copyrightDate.visible"
+        v-model="copyrightDate"
+        :label="locale.copyright.date"
+        inline
+        :disabled="copyrightItemDisabled || configs.copyrightDate.disabled"
+      />
+      <InputItem
+        v-if="configs.copyrightIcp.visible"
+        v-model="copyrightIcp"
+        :label="locale.copyright.icp"
+        inline
+        :disabled="copyrightItemDisabled || configs.copyrightIcp.disabled"
+      />
+      <InputItem
+        v-if="configs.copyrightIcpLink.visible"
+        v-model="copyrightIcpLink"
+        :label="locale.copyright.icpLink"
+        inline
+        :disabled="copyrightItemDisabled || configs.copyrightIcpLink.disabled"
+      />
   </Block>
 
   <!-- 动画设置 -->

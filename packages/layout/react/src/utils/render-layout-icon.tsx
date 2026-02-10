@@ -12,9 +12,21 @@ import React from 'react';
 
 export type LayoutIconSize = Parameters<typeof resolveLayoutIconSize>[0];
 
-function renderSvg(def: IconDefinition, className: string) {
+function renderSvg(def: IconDefinition, className: string, name?: string) {
   const fill = def.fill ? 'currentColor' : 'none';
   const stroke = def.fill ? 'none' : 'currentColor';
+  const hasOpticalScale = typeof def.opticalScale === 'number' && def.opticalScale !== 1;
+  const transform = hasOpticalScale
+    ? `translate(12 12) scale(${def.opticalScale}) translate(-12 -12)`
+    : undefined;
+  const content = (
+    <>
+      {def.extra ? (
+        <g dangerouslySetInnerHTML={{ __html: def.extra }} />
+      ) : null}
+      {def.path ? <path d={def.path} /> : null}
+    </>
+  );
   return (
     <svg
       className={className}
@@ -24,11 +36,9 @@ function renderSvg(def: IconDefinition, className: string) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      data-icon={name}
     >
-      {def.extra ? (
-        <g dangerouslySetInnerHTML={{ __html: def.extra }} />
-      ) : null}
-      {def.path ? <path d={def.path} /> : null}
+      {transform ? <g transform={transform}>{content}</g> : content}
     </svg>
   );
 }
@@ -43,7 +53,7 @@ export function renderLayoutIcon(
   if (!def) return null;
   const sizeClass = resolveLayoutIconSize(size);
   const mergedClass = className ? `${sizeClass} ${className}` : sizeClass;
-  const svg = renderSvg(def, mergedClass);
+  const svg = renderSvg(def, mergedClass, name);
   const sizeStyle =
     typeof size === 'string' && size in LAYOUT_ICON_SIZE_PX
       ? { width: `${LAYOUT_ICON_SIZE_PX[size as keyof typeof LAYOUT_ICON_SIZE_PX]}px`, height: `${LAYOUT_ICON_SIZE_PX[size as keyof typeof LAYOUT_ICON_SIZE_PX]}px` }

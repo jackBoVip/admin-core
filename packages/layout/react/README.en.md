@@ -183,6 +183,8 @@ interface AutoBreadcrumbConfig {
 | `onTabCloseAll` | - | Close all tabs |
 | `onTabCloseOther` | `(exceptKey)` | Close other tabs |
 | `onTabRefresh` | `(item, key)` | Refresh tab |
+| `onTabFavoriteChange` | `(menu, favorited, keys, menus)` | Favorite change (single action) |
+| `onFavoritesChange` | `(menus, keys)` | Favorites list change |
 
 ## Hooks
 
@@ -201,6 +203,15 @@ import {
   useFullscreenState,  // fullscreen state
 } from '@admin-core/layout-react';
 ```
+
+## Favorites
+
+`useTabsState()` exposes favorites APIs for sync/init:
+
+- `favoriteMenus`: full `MenuItem[]` for current favorites
+- `favoriteKeys`: favorite key list
+- `setFavoriteKeys(keys)`: initialize/replace favorites
+- `handleToggleFavorite(key)`: toggle favorite
 
 ## Advanced Usage
 

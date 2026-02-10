@@ -134,6 +134,8 @@ export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots
   onRefresh?: () => void;
   onPreferencesOpen?: () => void;
   onPreferencesClose?: () => void;
+  onTabFavoriteChange?: (menu: MenuItem, favorited: boolean, keys: string[], menus: MenuItem[]) => void;
+  onFavoritesChange?: (menus: MenuItem[], keys: string[]) => void;
 }
 
 /** 默认设置图标 */
@@ -959,6 +961,8 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onPanelCollapse,
     onGlobalSearch,
     onRefresh,
+    onTabFavoriteChange,
+    onFavoritesChange,
   } = props;
 
   // 合并配置（preferences 为底，用户 props 优先）
@@ -1098,6 +1102,8 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     },
     onGlobalSearch,
     onRefresh,
+    onTabFavoriteChange,
+    onFavoritesChange,
   }), [
     preferencesManager,
     onSidebarCollapse,
@@ -1119,6 +1125,8 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onPanelCollapse,
     onGlobalSearch,
     onRefresh,
+    onTabFavoriteChange,
+    onFavoritesChange,
   ]);
 
   return (
