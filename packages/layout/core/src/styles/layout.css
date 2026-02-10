@@ -92,23 +92,23 @@
 /* ============================================================
  * 颜色方案（确保滚动条与系统深色模式无关）
  * ============================================================ */
-html,
-body {
-  color-scheme: light !important;
+html:not(.dark):not([data-theme='dark']),
+body:not(.dark):not([data-theme='dark']) {
+  color-scheme: light;
 }
 
 html.dark,
 html[data-theme='dark'],
 body.dark,
 body[data-theme='dark'] {
-  color-scheme: dark !important;
+  color-scheme: dark;
 }
 
 /* 系统为深色但应用为浅色时，强制使用浅色滚动条 */
 @media (prefers-color-scheme: dark) {
   html:not(.dark):not([data-theme='dark']),
   body:not(.dark):not([data-theme='dark']) {
-    color-scheme: light !important;
+    color-scheme: light;
   }
 
   html[data-platform='macOs']:not(.dark):not([data-theme='dark'])::-webkit-scrollbar {
