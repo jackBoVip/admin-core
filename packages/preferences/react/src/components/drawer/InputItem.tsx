@@ -46,7 +46,7 @@ export const InputItem: React.FC<InputItemProps> = memo(({
 
   return (
     <div
-      className={`input-item ${inline ? 'input-item--inline' : ''} ${disabled ? 'disabled' : ''}`}
+      className={`input-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_.preferences-input]:cursor-not-allowed ${inline ? 'input-item--inline' : ''} ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
     >
       <label id={`${inputId}-label`} className="input-item-label">

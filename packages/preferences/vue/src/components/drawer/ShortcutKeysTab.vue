@@ -90,7 +90,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 启用快捷键 - 主开关 -->
     <div
       v-if="configs.enable.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
       :class="{ disabled: configs.enable.disabled }"
       role="switch"
       :aria-checked="shortcutKeysEnable"
@@ -117,7 +117,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 打开设置 -->
     <div
       v-if="configs.globalPreferences.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalPreferences.disabled }"
       role="switch"
       :aria-checked="globalPreferences"
@@ -147,7 +147,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 全局搜索 -->
     <div
       v-if="configs.globalSearch.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalSearch.disabled }"
       role="switch"
       :aria-checked="globalSearch"
@@ -177,7 +177,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 锁屏 -->
     <div
       v-if="configs.globalLockScreen.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalLockScreen.disabled }"
       role="switch"
       :aria-checked="globalLockScreen"
@@ -207,7 +207,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 登出 -->
     <div
       v-if="configs.globalLogout.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
+      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalLogout.disabled }"
       role="switch"
       :aria-checked="globalLogout"

@@ -541,15 +541,6 @@
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 15%, transparent);
   }
 
-  :is(.input-item.disabled, .input-item[data-disabled="true"]) {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  :is(.input-item.disabled, .input-item[data-disabled="true"]) .preferences-input {
-    cursor: not-allowed;
-  }
-
   /* ========== 帮助图标 ========== */
   .help-icon {
     display: inline-flex;
@@ -596,19 +587,6 @@
     display: flex;
     align-items: center;
     gap: 12px;
-  }
-
-  :is(.shortcut-item.disabled, .shortcut-item[data-disabled="true"]) {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  :is(.shortcut-item.disabled, .shortcut-item[data-disabled="true"]) .shortcut-item-label {
-    color: var(--muted-foreground);
-  }
-
-  :is(.shortcut-item.disabled, .shortcut-item[data-disabled="true"]) .preferences-switch {
-    cursor: not-allowed;
   }
 
   /* ========== 快捷键显示 ========== */

@@ -53,7 +53,7 @@ const ShortcutItem = memo<ShortcutItemProps>(function ShortcutItem({
 
   return (
     <div
-      className={`shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground ${disabled ? 'disabled' : ''}`}
+      className={`shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground ${disabled ? 'disabled' : ''}`}
       role="switch"
       aria-checked={checked}
       aria-disabled={disabled}
