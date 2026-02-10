@@ -283,7 +283,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
               <span className="select-item-label">{locale.lockScreen.clearPassword}</span>
               <div className="select-item-control">
                 <button
-                  className="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50"
+                  className="preferences-btn preferences-btn-primary pref-disabled"
                   disabled={isClearing || configs.lockScreenClearPassword.disabled}
                   aria-disabled={(isClearing || configs.lockScreenClearPassword.disabled) || undefined}
                   data-disabled={(isClearing || configs.lockScreenClearPassword.disabled) ? 'true' : undefined}

@@ -103,6 +103,7 @@
 
 /* 统一禁用态（依赖 data-disabled / aria-disabled / .disabled） */
 @utility pref-disabled {
+  &:where(:disabled),
   &:where([data-disabled="true"]),
   &:where([aria-disabled="true"]),
   &.disabled {

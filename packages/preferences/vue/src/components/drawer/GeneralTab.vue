@@ -304,7 +304,7 @@ const handleTransitionOptionActivate = (e: Event) => {
       <span class="select-item-label">{{ locale.lockScreen.clearPassword }}</span>
       <div class="select-item-control">
         <button 
-          class="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50" 
+          class="preferences-btn preferences-btn-primary pref-disabled" 
           :disabled="isClearing || configs.lockScreenClearPassword.disabled"
           :aria-disabled="(isClearing || configs.lockScreenClearPassword.disabled) || undefined"
           :data-disabled="(isClearing || configs.lockScreenClearPassword.disabled) ? 'true' : undefined"

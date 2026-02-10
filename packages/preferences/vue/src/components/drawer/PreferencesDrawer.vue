@@ -315,7 +315,7 @@ const iconStyleSm = getIconStyleString('sm');
         <button
           v-for="action in headerActions"
           :key="action.type"
-          class="preferences-btn-icon data-disabled:opacity-50 aria-disabled:opacity-50"
+          class="preferences-btn-icon pref-disabled"
           :class="{ relative: action.showIndicator }"
           :disabled="action.disabled"
           :aria-disabled="action.disabled || undefined"
@@ -381,7 +381,7 @@ const iconStyleSm = getIconStyleString('sm');
     <!-- 底部 -->
     <div v-if="showCopyButton" class="preferences-drawer-footer">
       <button
-        class="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50"
+        class="preferences-btn preferences-btn-primary pref-disabled"
         :class="{ 'is-copied': copyState.isCopied }"
         :disabled="copyButtonDisabled"
         :aria-disabled="copyButtonDisabled || undefined"

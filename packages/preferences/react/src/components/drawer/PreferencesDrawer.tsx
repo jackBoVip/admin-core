@@ -365,7 +365,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
             {headerActions.map((action) => (
               <button
                 key={action.type}
-                className={`preferences-btn-icon data-disabled:opacity-50 aria-disabled:opacity-50${action.showIndicator ? ' relative' : ''}`}
+                className={`preferences-btn-icon pref-disabled${action.showIndicator ? ' relative' : ''}`}
                 disabled={action.disabled}
                 aria-disabled={action.disabled || undefined}
                 data-disabled={action.disabled ? 'true' : undefined}
@@ -432,7 +432,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
         {showCopyButton && (
           <div className="preferences-drawer-footer">
             <button
-              className={`preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50${copyState.isCopied ? ' is-copied' : ''}`}
+              className={`preferences-btn preferences-btn-primary pref-disabled${copyState.isCopied ? ' is-copied' : ''}`}
               disabled={copyButtonDisabled}
               aria-disabled={copyButtonDisabled || undefined}
               data-disabled={copyButtonDisabled ? 'true' : undefined}
@@ -472,7 +472,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
             </div>
             <div className="preferences-modal-footer">
               <button
-                className="preferences-btn preferences-btn-primary data-disabled:opacity-50 aria-disabled:opacity-50"
+                className="preferences-btn preferences-btn-primary"
                 onClick={closeImportError}
               >
                 {locale.common.confirm}
