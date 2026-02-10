@@ -221,7 +221,7 @@ const handleContentWidthActivate = (e: Event) => {
       <div
         v-for="opt in layoutOptions"
         :key="opt.value"
-        class="layout-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground"
+        class="layout-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground"
         :class="{ disabled: configs.layoutType.disabled }"
         role="radio"
         :tabindex="configs.layoutType.disabled ? -1 : 0"
@@ -251,7 +251,7 @@ const handleContentWidthActivate = (e: Event) => {
   <Block v-if="configs.contentWidth.visible" :title="locale.layout.contentWidth">
     <div class="content-width-grid" role="radiogroup" :aria-label="locale.layout.contentWidth">
       <div 
-        class="content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
+        class="content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground" 
         :class="{ disabled: configs.contentWidth.disabled }"
         role="radio"
         :tabindex="configs.contentWidth.disabled ? -1 : 0"
@@ -275,7 +275,7 @@ const handleContentWidthActivate = (e: Event) => {
         <span class="content-width-label">{{ locale.layout.contentWide }}</span>
       </div>
       <div 
-        class="content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground" 
+        class="content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground" 
         :class="{ disabled: configs.contentWidth.disabled }"
         role="radio"
         :tabindex="configs.contentWidth.disabled ? -1 : 0"

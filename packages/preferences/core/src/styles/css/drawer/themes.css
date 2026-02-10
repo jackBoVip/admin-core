@@ -49,7 +49,7 @@
 
       /* 子元素也继承禁用鼠标样式 */
       & * {
-        cursor: not-allowed !important;
+        cursor: not-allowed;
       }
 
       /* 禁用 hover 效果 */
@@ -163,7 +163,7 @@
       opacity: 0.5;
 
       & * {
-        cursor: not-allowed !important;
+        cursor: not-allowed;
       }
 
       &:hover .theme-preset-label {
@@ -280,7 +280,7 @@
       opacity: 0.5;
 
       & * {
-        cursor: not-allowed !important;
+        cursor: not-allowed;
       }
 
       .radius-option {
@@ -394,7 +394,7 @@
       opacity: 0.5;
 
       & * {
-        cursor: not-allowed !important;
+        cursor: not-allowed;
       }
 
       &:hover .layout-preset-label {
@@ -464,7 +464,7 @@
       opacity: 0.5;
 
       & * {
-        cursor: not-allowed !important;
+        cursor: not-allowed;
       }
 
       &:hover .content-width-label {

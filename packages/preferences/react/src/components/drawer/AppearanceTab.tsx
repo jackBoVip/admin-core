@@ -220,7 +220,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
         <Block title={locale.theme.mode}>
           <div className="theme-mode-grid" role="radiogroup" aria-label={locale.theme.mode}>
             <div 
-              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
+              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.themeMode.disabled ? -1 : 0}
               aria-checked={preferences.theme.mode === 'light'}
@@ -241,7 +241,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
               <span className="theme-mode-label">{locale.theme.modeLight}</span>
             </div>
             <div 
-              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
+              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.themeMode.disabled ? -1 : 0}
               aria-checked={preferences.theme.mode === 'dark'}
@@ -262,7 +262,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
               <span className="theme-mode-label">{locale.theme.modeDark}</span>
             </div>
             <div 
-              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
+              className={`theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.themeMode.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.themeMode.disabled ? -1 : 0}
               aria-checked={preferences.theme.mode === 'auto'}
@@ -293,7 +293,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
             {visiblePresets.map((preset) => (
               <div
                 key={preset.type}
-                className={`theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+                className={`theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.builtinTheme.disabled ? ' disabled' : ''}`}
                 role="radio"
                 tabIndex={configs.builtinTheme.disabled ? -1 : 0}
                 aria-checked={preferences.theme.builtinType === preset.type}
@@ -322,7 +322,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
             ))}
             {/* 自定义颜色 */}
             <div 
-              className={`theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 aria-checked:text-foreground${configs.builtinTheme.disabled ? ' disabled' : ''}`}
+              className={`theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.builtinTheme.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.builtinTheme.disabled ? -1 : 0}
               aria-checked={preferences.theme.builtinType === 'custom'}
@@ -373,13 +373,13 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = memo(({ locale, uiCon
       {configs.radius.visible && (
         <Block title={locale.theme.radius}>
           <div
-            className={`radius-options${configs.radius.disabled ? ' disabled' : ''}`}
+            className={`radius-options data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed${configs.radius.disabled ? ' disabled' : ''}`}
             data-disabled={configs.radius.disabled ? 'true' : undefined}
           >
             {RADIUS_OPTIONS.map((r) => (
               <button
                 key={r}
-                className={`radius-option data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 ${preferences.theme.radius === r ? 'active' : ''}`}
+                className={`radius-option data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed ${preferences.theme.radius === r ? 'active' : ''}`}
                 disabled={configs.radius.disabled}
                 data-state={preferences.theme.radius === r ? 'active' : 'inactive'}
                 data-disabled={configs.radius.disabled ? 'true' : undefined}

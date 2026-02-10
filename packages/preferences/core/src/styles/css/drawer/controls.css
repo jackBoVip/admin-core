@@ -624,7 +624,7 @@
       opacity: 0.5;
 
       & * {
-        cursor: not-allowed !important;
+        cursor: not-allowed;
       }
 
       &:hover .transition-preset-label {
