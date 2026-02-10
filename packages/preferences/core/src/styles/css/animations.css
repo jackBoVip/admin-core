@@ -8,116 +8,114 @@
  * - 使用 CSS 嵌套简化代码
  */
 
-@layer admin-core {
-  /* ========== Vue/React 过渡动画类 ========== */
-  
-  /* Fade - 淡入淡出 */
-  .fade-enter-active,
-  .fade-leave-active {
-    transition: opacity var(--admin-duration-normal) var(--admin-easing-default);
-  }
+/* ========== Vue/React 过渡动画类 ========== */
 
-  .fade-enter-from,
-  .fade-leave-to {
-    opacity: 0;
-  }
+/* Fade - 淡入淡出 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--admin-duration-normal) var(--admin-easing-default);
+}
 
-  /* Fade Slide - 淡入滑动 */
-  .fade-slide-enter-active,
-  .fade-slide-leave-active {
-    transition:
-      opacity var(--admin-duration-normal) var(--admin-easing-default),
-      transform var(--admin-duration-normal) var(--admin-easing-default);
-  }
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0 !important;
+}
 
-  .fade-slide-enter-from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
+/* Fade Slide - 淡入滑动 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition:
+    opacity var(--admin-duration-normal) var(--admin-easing-default),
+    transform var(--admin-duration-normal) var(--admin-easing-default);
+}
 
-  .fade-slide-leave-to {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
+.fade-slide-enter-from {
+  opacity: 0 !important;
+  transform: translateX(10px) !important;
+}
 
-  /* Fade Up - 淡入上滑 */
-  .fade-up-enter-active,
-  .fade-up-leave-active {
-    transition:
-      opacity var(--admin-duration-normal) var(--admin-easing-default),
-      transform var(--admin-duration-normal) var(--admin-easing-default);
-  }
+.fade-slide-leave-to {
+  opacity: 0 !important;
+  transform: translateX(-10px) !important;
+}
 
-  .fade-up-enter-from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
+/* Fade Up - 淡入上滑 */
+.fade-up-enter-active,
+.fade-up-leave-active {
+  transition:
+    opacity var(--admin-duration-normal) var(--admin-easing-default),
+    transform var(--admin-duration-normal) var(--admin-easing-default);
+}
 
-  .fade-up-leave-to {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
+.fade-up-enter-from {
+  opacity: 0 !important;
+  transform: translateY(10px) !important;
+}
 
-  /* Fade Down - 淡入下滑 */
-  .fade-down-enter-active,
-  .fade-down-leave-active {
-    transition:
-      opacity var(--admin-duration-normal) var(--admin-easing-default),
-      transform var(--admin-duration-normal) var(--admin-easing-default);
-  }
+.fade-up-leave-to {
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+}
 
-  .fade-down-enter-from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
+/* Fade Down - 淡入下滑 */
+.fade-down-enter-active,
+.fade-down-leave-active {
+  transition:
+    opacity var(--admin-duration-normal) var(--admin-easing-default),
+    transform var(--admin-duration-normal) var(--admin-easing-default);
+}
 
-  .fade-down-leave-to {
-    opacity: 0;
-    transform: translateY(20px);
-  }
+.fade-down-enter-from {
+  opacity: 0 !important;
+  transform: translateY(-10px) !important;
+}
 
-  /* Slide Left/Right - 滑动 */
-  .slide-left-enter-active,
-  .slide-left-leave-active,
-  .slide-right-enter-active,
-  .slide-right-leave-active {
-    transition: transform var(--admin-duration-normal) var(--admin-easing-default);
-  }
+.fade-down-leave-to {
+  opacity: 0 !important;
+  transform: translateY(10px) !important;
+}
 
-  .slide-left-enter-from { transform: translateX(100%); }
-  .slide-left-leave-to { transform: translateX(-100%); }
-  .slide-right-enter-from { transform: translateX(-100%); }
-  .slide-right-leave-to { transform: translateX(100%); }
+/* Slide Left/Right - 滑动 */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: transform var(--admin-duration-normal) var(--admin-easing-default);
+}
 
-  /* Scale - 缩放 */
-  .scale-enter-active,
-  .scale-leave-active {
-    transition:
-      opacity var(--admin-duration-fast) var(--admin-easing-default),
-      transform var(--admin-duration-fast) var(--admin-easing-default);
-  }
+.slide-left-enter-from { transform: translateX(100%) !important; }
+.slide-left-leave-to { transform: translateX(-100%) !important; }
+.slide-right-enter-from { transform: translateX(-100%) !important; }
+.slide-right-leave-to { transform: translateX(100%) !important; }
 
-  .scale-enter-from,
-  .scale-leave-to {
-    opacity: 0;
-    transform: scale(0.95);
-  }
+/* Scale - 缩放 */
+.scale-enter-active,
+.scale-leave-active {
+  transition:
+    opacity var(--admin-duration-fast) var(--admin-easing-default),
+    transform var(--admin-duration-fast) var(--admin-easing-default);
+}
 
-  /* Expand/Collapse - 展开/折叠（使用 max-height 替代 height 避免重排） */
-  .expand-enter-active,
-  .expand-leave-active {
-    transition:
-      max-height var(--admin-duration-normal) var(--admin-easing-default),
-      opacity var(--admin-duration-normal) var(--admin-easing-default);
-    overflow: hidden;
-    max-height: 500px; /* 足够大的值 */
-  }
+.scale-enter-from,
+.scale-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
 
-  .expand-enter-from,
-  .expand-leave-to {
-    max-height: 0;
-    opacity: 0;
-  }
+/* Expand/Collapse - 展开/折叠（使用 max-height 替代 height 避免重排） */
+.expand-enter-active,
+.expand-leave-active {
+  transition:
+    max-height var(--admin-duration-normal) var(--admin-easing-default),
+    opacity var(--admin-duration-normal) var(--admin-easing-default);
+  overflow: hidden;
+  max-height: 500px; /* 足够大的值 */
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
 }
 
 /* ========== 使用 @utility 定义动画工具类 ========== */

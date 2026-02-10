@@ -23,6 +23,8 @@
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "eslint-plugin-import-x": "catalog:",
+    "eslint-plugin-react": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
     "eslint-plugin-vue": "catalog:",
     "vue-eslint-parser": "catalog:"
   },

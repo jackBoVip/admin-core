@@ -1,5 +1,7 @@
 # @admin-core/preferences
 
+简体中文 | [English](./README.md)
+
 > 框架无关的偏好设置管理系统，支持 OKLCH 颜色系统、多 UI 库适配和国际化。
 
 ## 特性
@@ -11,6 +13,13 @@
 - **可配置**: 所有设置通过配置文件管理，禁止硬编码
 - **TypeScript**: 完整的类型定义，类型安全
 - **Tailwind CSS**: 内置预设，无缝集成 Tailwind
+
+## 对外导出
+
+- **管理器**：`createPreferencesManager`、`PreferencesManager`、生命周期工具
+- **Actions / Store**：`createPreferencesActions`、`createThemeActions`、`createLayoutActions`、`getDefaultPreferencesStore`
+- **工具**：存储、配置导入/导出、快捷键、i18n 辅助工具
+- **样式与 Tokens**：CSS 变量生成、Tailwind 预设、主题 tokens
 
 ## 安装
 

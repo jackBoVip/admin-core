@@ -77,6 +77,7 @@ export const SubMenu = memo(function SubMenu({
   // 是否为弹出模式
   const isPopup = menuContext.isMenuPopup;
   const shouldAnimatePopup = menuContext.config.mode === 'horizontal';
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 是否激活（有子菜单激活）
   const active = useMemo(
@@ -90,7 +91,7 @@ export const SubMenu = memo(function SubMenu({
       ? total
       : Math.min(CHILD_RENDER_CHUNK, total);
     setChildRenderCount((prev) => (prev === nextCount ? prev : nextCount));
-  }, [isPopup, opened, item.children?.length]);
+  }, [isPopup, opened, item.children?.length, CHILD_RENDER_CHUNK]);
 
   useEffect(() => {
     const total = item.children?.length ?? 0;
@@ -99,7 +100,7 @@ export const SubMenu = memo(function SubMenu({
       setChildRenderCount((prev) => Math.min(prev + CHILD_RENDER_CHUNK, total));
     });
     return () => cancelAnimationFrame(frame);
-  }, [isPopup, opened, childRenderCount, item.children?.length]);
+  }, [isPopup, opened, childRenderCount, item.children?.length, CHILD_RENDER_CHUNK]);
 
   useEffect(() => {
     if (!opened || !isPopup) return;
@@ -217,7 +218,7 @@ export const SubMenu = memo(function SubMenu({
     if (popupVisible) setPopupVisible(false);
     const timer = window.setTimeout(() => setPopupMounted(false), POPUP_SLOW_DURATION);
     return () => window.clearTimeout(timer);
-  }, [opened, isPopup, shouldAnimatePopup]);
+  }, [opened, isPopup, shouldAnimatePopup, popupMounted, popupVisible, POPUP_SLOW_DURATION]);
 
   useEffect(() => {
     if (!shouldAnimatePopup) return;
@@ -376,7 +377,7 @@ export const SubMenu = memo(function SubMenu({
   }), [path, level, mouseInChild, handleMouseleave]);
 
   // 渲染子菜单内容
-  const popupChildren = item.children ?? [];
+  const popupChildren = useMemo(() => item.children ?? [], [item.children]);
   const popupStartIndex = Math.max(0, Math.floor(popupScrollTop / popupItemHeight) - 4);
   const popupEndIndex = Math.min(
     popupChildren.length,
@@ -470,7 +471,7 @@ export const SubMenu = memo(function SubMenu({
             </div>
             
             {/* 弹出层 */}
-            {(isPopup && (shouldAnimatePopup ? popupMounted : opened)) && createPortal(
+            {(isPopup && (shouldAnimatePopup ? popupMounted : opened) && portalTarget) && createPortal(
               <div
                 ref={(node) => {
                   refs.setFloating(node);
@@ -495,7 +496,7 @@ export const SubMenu = memo(function SubMenu({
                   {renderChildren(isPopup ? popupVisibleChildren : visibleChildren)}
                 </ul>
               </div>,
-              document.body
+              portalTarget
             )}
           </>
         ) : (

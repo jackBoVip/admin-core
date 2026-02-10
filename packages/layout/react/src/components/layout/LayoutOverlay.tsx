@@ -10,11 +10,12 @@ import { useSidebarState } from '../../hooks/use-layout-state';
 export const LayoutOverlay = memo(function LayoutOverlay() {
   const context = useLayoutContext();
   const { collapsed, toggle } = useSidebarState();
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 是否显示遮罩
   const visible = context.props.isMobile && !collapsed;
 
-  if (!visible) return null;
+  if (!visible || !portalTarget) return null;
 
   return createPortal(
     <div
@@ -22,6 +23,6 @@ export const LayoutOverlay = memo(function LayoutOverlay() {
       data-state="visible"
       onClick={toggle}
     />,
-    document.body
+    portalTarget
   );
 });

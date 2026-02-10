@@ -295,7 +295,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
           : String(target);
       if (normalizedTarget) handleSelect(normalizedTarget);
     }
-  }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey, getMenuId]);
+  }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey, getMenuId, extraVisible]);
 
   const handleRootMenuMouseEnter = useCallback((item: MenuItem) => {
     handleRootMenuEnter(item);
@@ -346,7 +346,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
         rootResizeObserverRef.current = null;
       }
     };
-  }, []);
+  }, [rootItemHeight]);
 
   useEffect(() => {
     if (typeof ResizeObserver === 'undefined') return;
@@ -499,6 +499,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   onTogglePin,
 }: MixedSidebarSubMenuProps) {
   const context = useLayoutContext();
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
   const SUB_RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
   const [subRenderCount, setSubRenderCount] = useState<number>(SUB_RENDER_CHUNK);
   const navRef = useRef<HTMLElement>(null);
@@ -522,7 +523,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       ? menus.length
       : Math.min(SUB_RENDER_CHUNK, menus.length);
     setSubRenderCount((prev) => (prev === nextCount ? prev : nextCount));
-  }, [collapsed, menus.length]);
+  }, [collapsed, menus.length, SUB_RENDER_CHUNK]);
 
   useEffect(() => {
     if (collapsed || subRenderCount >= menus.length) return;
@@ -530,7 +531,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       setSubRenderCount((prev) => Math.min(prev + SUB_RENDER_CHUNK, menus.length));
     });
     return () => cancelAnimationFrame(frame);
-  }, [collapsed, subRenderCount, menus.length]);
+  }, [collapsed, subRenderCount, menus.length, SUB_RENDER_CHUNK]);
 
   const visibleMenus = useMemo(() => menus.slice(0, subRenderCount), [menus, subRenderCount]);
   const virtualTotalHeight = menus.length * subItemHeight;
@@ -604,7 +605,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     };
     visit(menus, null);
     return map;
-  }, [menus]);
+  }, [menus, getMenuId]);
 
   const activeParentSet = useMemo(() => {
     const parentSet = new Set<string>();
@@ -909,7 +910,7 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
         subResizeObserverRef.current = null;
       }
     };
-  }, []);
+  }, [subItemHeight]);
 
   useEffect(() => {
     if (!collapsed || typeof ResizeObserver === 'undefined') return;
@@ -1071,8 +1072,8 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
           return renderMenuItem(item, 0, itemStyle);
         })}
       </nav>
-      {popupState.visible && popupNode && typeof document !== 'undefined'
-        ? createPortal(popupNode, document.body)
+      {popupState.visible && popupNode && portalTarget
+        ? createPortal(popupNode, portalTarget)
         : null}
     </div>
   );

@@ -15,16 +15,8 @@
  * - 与 DOM 相关的「宽度测量」逻辑仍由各框架在适配层中完成，再将结果传入本控制器。
  */
 
+import { normalizeMenuKey } from './menu-key';
 import type { MenuItem } from '../types';
-
-/**
- * 统一的 key 规范化函数
- * @description 将 null/undefined/空字符串 统一视为「无效 key」，其他值转为字符串
- */
-export function normalizeMenuKey(value: unknown): string {
-  if (value === null || value === undefined || value === '') return '';
-  return String(value);
-}
 
 /**
  * 构建菜单项的父级关系映射
@@ -232,5 +224,3 @@ export function getMenuRootClassName(options: MenuClassNameOptions): string {
   if (rounded) classes.push('menu--rounded');
   return classes.join(' ');
 }
-
-

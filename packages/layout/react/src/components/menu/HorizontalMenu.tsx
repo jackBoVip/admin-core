@@ -2,10 +2,15 @@
  * 水平菜单组件
  * @description 封装 Menu 组件，用于顶栏水平导航
  */
+import {
+  getCachedMenuPathIndex,
+  normalizeMenuKey,
+  resolveMenuByPathIndex,
+  type MenuItem,
+} from '@admin-core/layout';
 import { useCallback, useMemo, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { Menu } from './Menu';
-import type { MenuItem } from '@admin-core/layout';
 
 export interface HorizontalMenuProps {
   /** 菜单数据 */
@@ -20,8 +25,10 @@ export interface HorizontalMenuProps {
   onSelect?: (item: MenuItem, key: string) => void;
 }
 
+const EMPTY_MENUS: MenuItem[] = [];
+
 export const HorizontalMenu = memo(function HorizontalMenu({
-  menus = [],
+  menus = EMPTY_MENUS,
   activeKey = '',
   align = 'start',
   theme = 'light',
@@ -29,23 +36,12 @@ export const HorizontalMenu = memo(function HorizontalMenu({
 }: HorizontalMenuProps) {
   const context = useLayoutContext();
 
-  const menuIndex = useMemo(() => {
-    const map = new Map<string, MenuItem>();
-    const walk = (items: MenuItem[]) => {
-      items.forEach((item) => {
-        if (item.key) map.set(String(item.key), item);
-        if (item.path) map.set(String(item.path), item);
-        if (item.children?.length) walk(item.children);
-      });
-    };
-    walk(menus);
-    return map;
-  }, [menus]);
+  const menuIndex = useMemo(() => getCachedMenuPathIndex(menus), [menus]);
 
   // 处理菜单选择
   const handleSelect = useCallback((path: string, _parentPaths: string[]) => {
-    const key = path === '' ? '' : String(path);
-    const item = menuIndex.get(key);
+    const key = normalizeMenuKey(path);
+    const item = resolveMenuByPathIndex(menuIndex, key);
     if (item) {
       onSelect?.(item, key);
       context.events?.onMenuSelect?.(item, key);

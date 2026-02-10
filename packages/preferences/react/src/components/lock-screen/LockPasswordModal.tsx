@@ -51,6 +51,7 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
   const locale = useMemo(() => {
     return getLocaleByPreferences(preferences) as LocaleMessages;
   }, [preferences]);
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 文本 - 使用国际化
   const texts = useMemo(() => {
@@ -157,6 +158,8 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
   const overlayClass = `preferences-lock-modal-overlay ${isClosing ? 'is-closing' : ''}`;
   const cardClass = `preferences-lock-modal-card ${isClosing ? 'is-closing' : ''}`;
 
+  if (!portalTarget) return null;
+
   return createPortal(
     <div 
       className={overlayClass} 
@@ -241,7 +244,7 @@ export const LockPasswordModal: React.FC<LockPasswordModalProps> = memo(({
         </div>
       </div>
     </div>,
-    document.body
+    portalTarget
   );
 });
 

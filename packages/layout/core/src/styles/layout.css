@@ -18,6 +18,9 @@
 @custom-variant tabbar-dark (.layout-tabbar--dark &);
 @custom-variant data-active ([data-state="active"] &);
 @custom-variant data-disabled ([data-disabled="true"] &);
+/* Ensure preferences styles (tokens, animations) are available for layout effects */
+@import '@admin-core/preferences/styles';
+
 @custom-variant content-maximized (:is(body.layout-content-maximized, body[data-content-maximized="true"]) &);
 
 /* ============================================================
@@ -2561,6 +2564,18 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 :is(.mixed-sidebar-submenu__item--level-2, .mixed-sidebar-submenu__item[data-level="2"]) {
   padding-left: 1.25rem;
+}
+
+/* 折叠状态下子菜单图标居中 */
+:is(.mixed-sidebar-submenu--collapsed, .mixed-sidebar-submenu[data-collapsed="true"]) .mixed-sidebar-submenu__item,
+:is(.mixed-sidebar-submenu--collapsed, .mixed-sidebar-submenu[data-collapsed="true"]) .mixed-sidebar-submenu__item:hover {
+  justify-content: center;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+:is(.mixed-sidebar-submenu--collapsed, .mixed-sidebar-submenu[data-collapsed="true"]) .mixed-sidebar-submenu__icon {
+  margin-right: 0;
 }
 
 /* 浅色主题下的混合菜单 */

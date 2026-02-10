@@ -1,10 +1,10 @@
 /**
  * UI 业务常量
- * @description 仅保留业务相关常量，设计令牌直接从 config/tokens 模块导入
+ * @description 仅保留业务相关常量，设计令牌直接从 tokens 模块导入
  *
  * 使用指南：
  * - 业务选项（如圆角选项数组）从此文件导入
- * - 设计数值（如尺寸、颜色）直接从 config/tokens 导入
+ * - 设计数值（如尺寸、颜色）直接从 tokens 导入
  *
  * @example
  * ```ts
@@ -20,7 +20,7 @@
 import {
   radius as tokenRadius,
   fontSize as tokenFontSize,
-} from '../config/tokens';
+} from '../tokens';
 
 /* ========== 圆角选项（用于 UI 选择器） ========== */
 

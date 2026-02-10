@@ -278,7 +278,7 @@ export const Menu = memo(function Menu({
         resizeFrameRef.current = null;
       }
     };
-  }, [mode]);
+  }, [mode, handleResize]);
 
   // 监听菜单变化
   useEffect(() => {
@@ -286,7 +286,7 @@ export const Menu = memo(function Menu({
       isFirstRenderRef.current = true;
       handleResize();
     }
-  }, [menus]);
+  }, [menus, mode, handleResize]);
 
   useEffect(() => {
     const nextCount =
@@ -294,7 +294,7 @@ export const Menu = memo(function Menu({
         ? menus.length
         : Math.min(RENDER_CHUNK, menus.length);
     setRenderCount((prev) => (prev === nextCount ? prev : nextCount));
-  }, [mode, menus.length, canVirtualize]);
+  }, [mode, menus.length, canVirtualize, RENDER_CHUNK]);
 
   useEffect(() => {
     if (mode !== 'vertical' || canVirtualize || renderCount >= menus.length) return;
@@ -302,7 +302,7 @@ export const Menu = memo(function Menu({
       setRenderCount((prev) => Math.min(prev + RENDER_CHUNK, menus.length));
     });
     return () => cancelAnimationFrame(frame);
-  }, [mode, canVirtualize, renderCount, menus.length]);
+  }, [mode, canVirtualize, renderCount, menus.length, RENDER_CHUNK]);
 
   useEffect(() => {
     if (mode !== 'vertical' || !collapse) return;

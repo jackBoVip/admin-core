@@ -52,6 +52,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
   const savedPassword = preferences.lockScreen.password;
   const currentLocale = preferences.app.locale || 'zh-CN';
   const locale = useMemo(() => getLocaleByPreferences(preferences) as LocaleMessages, [preferences]);
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 同步 showUnlockForm 到 ref
   useEffect(() => {
@@ -155,7 +156,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
     } as React.CSSProperties;
   }, [actualBgImage]);
 
-  if (!isLocked) return null;
+  if (!isLocked || !portalTarget) return null;
 
   return createPortal(
     <div className="preferences-lock-screen" role="dialog" aria-modal="true" aria-label={locale.lockScreen.title}>
@@ -223,7 +224,7 @@ export const LockScreen: React.FC<LockScreenProps> = memo(({
         </form>
       </div>
     </div>,
-    document.body
+    portalTarget
   );
 });
 

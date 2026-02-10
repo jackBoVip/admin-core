@@ -9,7 +9,4 @@
 /* 引入核心包公共样式 */
 @import '@admin-core/layout/styles/layout.css';
 
-/* 引入偏好设置核心样式（抽屉、主题等） */
-@import '@admin-core/preferences/styles';
-
 /* React 特定样式（如有需要可在此扩展） */

@@ -59,17 +59,30 @@ import {
   generateThemeClasses,
   generateThemeCSSVariables,
   generateWatermarkContent,
-  getBreadcrumbNavigationPath,
-  getMenuId,
-  buildMenuPathIndex,
-  getNextTabAfterClose,
+  createNavigationHandlers,
+  areArraysEqual,
+  buildTabFromMenu,
+  getPathWithoutQuery,
+  getTabCacheName,
+  normalizeMenuKey,
+  getCachedMenuPathIndex,
+  resolveBreadcrumbsFromIndex,
+  resolveMenuByPathIndex,
+  resolveAutoBreadcrumbOptions,
+  resolveMenuOpenKeysOnChange,
+  resolveMenuOpenKeysOnPath,
+  resolveKeepAliveIncludes,
+  resolveTabKey,
   getOrCreateTabManager,
   getResolvedLayoutProps,
   mapPreferencesToLayoutProps,
   logger,
-  resolveMenuNavigation,
-  getTabNavigationPath,
+  resolveCurrentPath,
   shouldShowLockScreen,
+  resolveMenuTitleByPath,
+  formatDocumentTitle,
+  resolveShortcutAction,
+  shouldIgnoreShortcutEvent,
   type BasicLayoutProps,
   type TabItem,
   type BreadcrumbItem,
@@ -80,8 +93,11 @@ import {
   type LockScreenConfig,
 } from '@admin-core/layout';
 import { getPreferencesManager } from '@admin-core/preferences-vue';
-import { computed, isRef, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useLayoutContext, useLayoutComputed } from './use-layout-context';
+
+const EMPTY_MENUS: MenuItem[] = [];
+const VALID_TRANSITIONS = new Set(['fade', 'fade-slide', 'fade-up', 'fade-down', 'slide-left', 'slide-right']);
 
 // ============================================================
 // 1. 区域状态管理
@@ -530,9 +546,7 @@ export function useResponsive() {
 export function useMenuState() {
   const context = useLayoutContext();
   const { currentPath, handleMenuItemClick } = useRouter();
-  const normalizeKey = (value: unknown) => (
-    value === null || value === undefined || value === '' ? '' : String(value)
-  );
+  const normalizeKey = (value: unknown) => normalizeMenuKey(value);
 
   const openKeys = computed({
     get: () => context.state.openMenuKeys,
@@ -541,52 +555,29 @@ export function useMenuState() {
     },
   });
 
-  const menuPath = computed(() => currentPath.value.split('?')[0] || '');
+  const menuPath = computed(() => getPathWithoutQuery(currentPath.value || ''));
   const activeKey = computed<string>(() => {
     const candidate = context.props.activeMenuKey ?? menuPath.value ?? '';
     return normalizeKey(candidate);
   });
-  const menus = computed<MenuItem[]>(() => context.props.menus || []);
-  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
+  const menus = computed<MenuItem[]>(() =>
+    context.props.menus && context.props.menus.length > 0 ? context.props.menus : EMPTY_MENUS
+  );
+  const menuIndex = computed(() => getCachedMenuPathIndex(menus.value));
 
   // 根据当前路径自动展开菜单
   watch(
     [menuPath, menuIndex],
     ([path]) => {
       if (!path) return;
-      const index = menuIndex.value;
-      const menu = index.byPath.get(path) ?? index.byKey.get(path);
-      if (menu) {
-        // 获取菜单路径，自动展开父级
-        const chain =
-          index.chainByPath.get(path) ??
-          (menu.key ? index.chainByKey.get(menu.key) : undefined) ??
-          [];
-        if (chain.length > 1) {
-          const parentKeys = chain.slice(0, -1);
-          if (context.props.navigation?.accordion) {
-            const lastParentKey = parentKeys[parentKeys.length - 1];
-            if (lastParentKey !== undefined) {
-              openKeys.value = [lastParentKey];
-            }
-          } else {
-            const merged = [...new Set([...openKeys.value, ...parentKeys])];
-            if (merged.length !== openKeys.value.length) {
-              openKeys.value = merged;
-            } else {
-              let same = true;
-              for (let i = 0; i < merged.length; i += 1) {
-                if (merged[i] !== openKeys.value[i]) {
-                  same = false;
-                  break;
-                }
-              }
-              if (!same) {
-                openKeys.value = merged;
-              }
-            }
-          }
-        }
+      const nextKeys = resolveMenuOpenKeysOnPath({
+        menuIndex: menuIndex.value,
+        menuPath: path,
+        openKeys: openKeys.value,
+        accordion: context.props.navigation?.accordion,
+      });
+      if (nextKeys !== openKeys.value) {
+        openKeys.value = nextKeys;
       }
     },
     { immediate: true }
@@ -606,36 +597,14 @@ export function useMenuState() {
   };
 
   const handleOpenChange = (keys: string[]) => {
-    if (context.props.navigation?.accordion) {
-      // 手风琴模式：保留当前分支的父级路径
-      const lastKey = keys[keys.length - 1];
-      let nextKeys: string[] = [];
-      if (lastKey !== undefined) {
-        const menu = menuIndex.value.byKey.get(lastKey) ?? menuIndex.value.byPath.get(lastKey);
-        const chain =
-          (menu?.key ? menuIndex.value.chainByKey.get(menu.key) : undefined) ??
-          (menu?.path ? menuIndex.value.chainByPath.get(menu.path) : undefined) ??
-          [];
-        nextKeys = chain.length > 0 ? chain : [lastKey];
-      }
-      if (nextKeys.length !== openKeys.value.length || nextKeys[0] !== openKeys.value[0]) {
-        openKeys.value = nextKeys;
-      }
-    } else {
-      if (keys.length !== openKeys.value.length) {
-        openKeys.value = keys;
-        return;
-      }
-      let same = true;
-      for (let i = 0; i < keys.length; i += 1) {
-        if (keys[i] !== openKeys.value[i]) {
-          same = false;
-          break;
-        }
-      }
-      if (!same) {
-        openKeys.value = keys;
-      }
+    const nextKeys = resolveMenuOpenKeysOnChange({
+      menuIndex: menuIndex.value,
+      openKeys: openKeys.value,
+      nextKeys: keys,
+      accordion: context.props.navigation?.accordion,
+    });
+    if (nextKeys !== openKeys.value) {
+      openKeys.value = nextKeys;
     }
   };
 
@@ -700,33 +669,6 @@ export function useTabsState() {
     }
   });
 
-  const normalizePath = (path: string) => path.split('?')[0] || path;
-  const getPageKey = (fullPath: string) => {
-    if (!fullPath.includes('?')) return '';
-    const query = fullPath.split('?')[1]?.split('#')[0] || '';
-    if (!query) return '';
-    try {
-      const params = new URLSearchParams(query);
-      return params.get('pageKey') || '';
-    } catch {
-      return '';
-    }
-  };
-  const resolveTabKey = (fullPath: string, menu?: MenuItem) => {
-    const basePath = normalizePath(fullPath);
-    const meta = menu?.meta as Record<string, unknown> | undefined;
-    const fullPathKey = meta?.fullPathKey;
-    const pageKey = getPageKey(fullPath);
-    const rawKey =
-      pageKey || (fullPathKey === false ? basePath : fullPath || basePath);
-    const fallbackKey = menu?.key || basePath;
-    try {
-      return decodeURIComponent(rawKey) || fallbackKey;
-    } catch {
-      return rawKey || fallbackKey;
-    }
-  };
-
   // 实际标签数据
   const tabs = computed(() => {
     if (isAutoMode.value) {
@@ -742,23 +684,14 @@ export function useTabsState() {
     }
     return map;
   });
-  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
+  const menus = computed(() =>
+    context.props.menus && context.props.menus.length > 0 ? context.props.menus : EMPTY_MENUS
+  );
+  const menuIndex = computed(() => getCachedMenuPathIndex(menus.value));
 
   const resolveMenuByPath = (path: string) => {
-    const basePath = normalizePath(path);
-    const index = menuIndex.value;
-    let menu =
-      index.byPath.get(basePath) ??
-      index.byKey.get(basePath);
-    if (!menu) {
-      for (const item of index.pathItems) {
-        if (item.path && basePath.startsWith(item.path)) {
-          menu = item;
-          break;
-        }
-      }
-    }
-    return menu;
+    const basePath = getPathWithoutQuery(path);
+    return resolveMenuByPathIndex(menuIndex.value, basePath);
   };
 
   const activeKey = computed<string>(() => {
@@ -770,22 +703,10 @@ export function useTabsState() {
     return resolveTabKey(path, menu);
   });
 
-  const buildTabFromMenu = (menu: MenuItem, fullPath: string): TabItem => {
-    const resolvedFullPath = fullPath || menu.path || '';
-    const basePath = normalizePath(resolvedFullPath || menu.path || '');
-    const key = resolveTabKey(resolvedFullPath || basePath, menu);
-    const baseTab = tabManager.createTabFromMenu(menu, { affix: menu.affix });
-    return {
-      ...baseTab,
-      key,
-      path: resolvedFullPath || baseTab.path || basePath,
-      meta: {
-        ...(baseTab.meta || {}),
-        fullPath: resolvedFullPath || basePath,
-        fullPathKey: (menu.meta as Record<string, unknown> | undefined)?.fullPathKey,
-        pageKey: getPageKey(resolvedFullPath || basePath) || undefined,
-      },
-    };
+  const buildTabForMenu = (menu: MenuItem, fullPath: string): TabItem => {
+    return buildTabFromMenu(menu, fullPath, (item, options) =>
+      tabManager.createTabFromMenu(item, options)
+    );
   };
 
   // 监听当前路径变化，自动添加标签
@@ -798,7 +719,7 @@ export function useTabsState() {
 
       // 检查菜单是否配置了隐藏标签
       if (menu && menu.path && !menu.hideInTab) {
-        const tab = buildTabFromMenu(menu, path);
+        const tab = buildTabForMenu(menu, path);
         internalTabs.value = tabManager.addTab(tab);
       }
     },
@@ -820,20 +741,8 @@ export function useTabsState() {
   watch(
     [tabs, () => tabbarConfig.value.keepAlive],
     ([nextTabs, keepAliveEnabled]) => {
-      if (keepAliveEnabled === false) {
-        context.state.keepAliveIncludes = [];
-        return;
-      }
-      const includes = nextTabs
-        .filter((tab) => (tab.meta as Record<string, unknown> | undefined)?.keepAlive !== false)
-        .map((tab) => {
-          return (
-            tab.cacheName ||
-            ((tab.meta as Record<string, unknown> | undefined)?.cacheName as string | undefined) ||
-            tab.name
-          );
-        })
-        .filter(Boolean);
+      const includes = resolveKeepAliveIncludes(nextTabs, keepAliveEnabled !== false);
+      if (areArraysEqual(includes, context.state.keepAliveIncludes)) return;
       context.state.keepAliveIncludes = includes;
     },
     { immediate: true }
@@ -904,8 +813,7 @@ export function useTabsState() {
       context.state.refreshKey += 1;
     }
     if (tabbarConfig.value.keepAlive !== false && item) {
-      const meta = item.meta as Record<string, unknown> | undefined;
-      const cacheName = item.cacheName || (meta?.cacheName as string | undefined) || item.name;
+      const cacheName = getTabCacheName(item);
       if (cacheName) {
         context.state.keepAliveExcludes = [cacheName];
         nextTick(() => {
@@ -974,7 +882,10 @@ export function useBreadcrumbState() {
 
   // 面包屑配置
   const breadcrumbConfig = computed(() => context.props.breadcrumb || {});
-  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
+  const menus = computed(() =>
+    context.props.menus && context.props.menus.length > 0 ? context.props.menus : EMPTY_MENUS
+  );
+  const menuIndex = computed(() => getCachedMenuPathIndex(menus.value));
 
   // 面包屑数据
   const breadcrumbs = computed(() => {
@@ -983,68 +894,27 @@ export function useBreadcrumbState() {
     }
 
     const path = currentPath.value;
-    const basePath = path.split('?')[0] || path;
-    const config = context.props.autoBreadcrumb || {};
-
+    const basePath = getPathWithoutQuery(path || '');
     if (!path || menuIndex.value.byKey.size === 0) {
       return [];
     }
 
-    // 翻译首页名称
-    const translatedHomeName = context.t('layout.breadcrumb.home');
+    const { showHome, homePath, homeName, homeIcon, hideOnlyOne } = resolveAutoBreadcrumbOptions({
+      autoBreadcrumb: context.props.autoBreadcrumb,
+      breadcrumb: breadcrumbConfig.value,
+      defaultHomePath: context.props.defaultHomePath,
+      translatedHomeName: context.t('layout.breadcrumb.home'),
+    });
 
-    const showHome = config.showHome ?? breadcrumbConfig.value.showHome ?? true;
-    const homePath = config.homePath || context.props.defaultHomePath || '/';
-    const hideOnlyOne = breadcrumbConfig.value.hideOnlyOne ?? true;
-    const homeName = config.homeName || translatedHomeName;
-    const homeIcon = config.homeIcon || 'home';
-
-    const index = menuIndex.value;
-    let menu =
-      index.byPath.get(basePath) ??
-      index.byKey.get(basePath);
-    if (!menu) {
-      for (const item of index.pathItems) {
-        if (item.path && basePath.startsWith(item.path)) {
-          menu = item;
-          break;
-        }
-      }
-    }
-    const chainKeys =
-      (menu?.key ? index.chainByKey.get(menu.key) : undefined) ??
-      (menu?.path ? index.chainByPath.get(menu.path) : undefined) ??
-      [];
-
-    const items: BreadcrumbItem[] = [];
-    if (showHome) {
-      items.push({
-        key: '__breadcrumb_home__',
-        name: homeName,
-        icon: homeIcon,
-        path: homePath,
-        clickable: true,
-      });
-    }
-
-    for (const key of chainKeys) {
-      const menuItem = index.byKey.get(key) ?? index.byPath.get(key);
-      if (!menuItem) continue;
-      if (showHome && menuItem.path === homePath) continue;
-      const menuId = getMenuId(menuItem);
-      items.push({
-        key: `__breadcrumb_${menuId}__`,
-        name: menuItem.name,
-        icon: menuItem.icon,
-        path: menuItem.path,
-        clickable: !!menuItem.path && menuItem.path !== basePath,
-      });
-    }
-
-    if (hideOnlyOne && items.length <= 1) {
-      return [];
-    }
-    return items;
+    return resolveBreadcrumbsFromIndex({
+      menuIndex: menuIndex.value,
+      basePath,
+      showHome,
+      homePath,
+      homeName,
+      homeIcon,
+      hideOnlyOne,
+    });
   });
 
   // 是否显示图标
@@ -1085,32 +955,16 @@ export function useShortcutKeys() {
   // 快捷键处理函数
   const handleKeydown = (e: KeyboardEvent) => {
     if (!enabled.value) return;
-
-    const { key, altKey, ctrlKey, metaKey } = e;
-    const modKey = ctrlKey || metaKey;
-
-    // Alt+L 锁屏
-    if (altKey && key.toLowerCase() === 'l' && config.value.globalLockScreen !== false) {
-      e.preventDefault();
+    if (shouldIgnoreShortcutEvent(e)) return;
+    const action = resolveShortcutAction(e, config.value);
+    if (!action) return;
+    e.preventDefault();
+    if (action === 'globalLockScreen') {
       context.events.onLockScreen?.();
-    }
-
-    // Alt+Q 登出
-    if (altKey && key.toLowerCase() === 'q' && config.value.globalLogout !== false) {
-      e.preventDefault();
+    } else if (action === 'globalLogout') {
       context.events.onLogout?.();
-    }
-
-    // Ctrl/Cmd+K 全局搜索
-    if (modKey && key.toLowerCase() === 'k' && config.value.globalSearch !== false) {
-      e.preventDefault();
+    } else if (action === 'globalSearch') {
       context.events.onGlobalSearch?.('');
-    }
-
-    // Ctrl/Cmd+, 偏好设置
-    if (modKey && key === ',' && config.value.globalPreferences !== false) {
-      e.preventDefault();
-      // 触发偏好设置打开事件（可通过插槽实现）
     }
   };
 
@@ -1164,7 +1018,13 @@ export function usePageTransition() {
 
   const config = computed(() => context.props.transition || {});
   const enabled = computed(() => config.value.enable !== false);
-  const transitionName = computed(() => config.value.name || 'fade-slide');
+  const transitionName = computed(() => {
+    const name = config.value.name;
+    if (typeof name === 'string' && VALID_TRANSITIONS.has(name)) {
+      return name;
+    }
+    return 'fade-slide';
+  });
   const showProgress = computed(() => config.value.progress !== false);
   const showLoading = computed(() => config.value.loading !== false);
 
@@ -1185,18 +1045,17 @@ export function useDynamicTitle() {
 
   const enabled = computed(() => context.props.dynamicTitle !== false);
   const appName = computed(() => context.props.appName || '');
-  const menuIndex = computed(() => buildMenuPathIndex(context.props.menus || []));
+  const menus = computed(() =>
+    context.props.menus && context.props.menus.length > 0 ? context.props.menus : EMPTY_MENUS
+  );
+  const menuIndex = computed(() => getCachedMenuPathIndex(menus.value));
 
   // 更新标题
   const updateTitle = (pageTitle?: string) => {
     if (!enabled.value || typeof document === 'undefined') return;
-
-    if (pageTitle && appName.value) {
-      document.title = `${pageTitle} - ${appName.value}`;
-    } else if (pageTitle) {
-      document.title = pageTitle;
-    } else if (appName.value) {
-      document.title = appName.value;
+    const title = formatDocumentTitle(pageTitle, appName.value);
+    if (title) {
+      document.title = title;
     }
   };
 
@@ -1206,22 +1065,9 @@ export function useDynamicTitle() {
     ([path]) => {
       if (!enabled.value || !path) return;
 
-      const basePath = String(path).split('?')[0] || String(path);
-      const index = menuIndex.value;
-      let menu =
-        index.byPath.get(basePath) ??
-        index.byKey.get(basePath);
-      if (!menu) {
-        for (const item of index.pathItems) {
-          if (item.path && basePath.startsWith(item.path)) {
-            menu = item;
-            break;
-          }
-        }
-      }
-
-      if (menu) {
-        updateTitle(menu.name);
+      const title = resolveMenuTitleByPath(menuIndex.value, String(path));
+      if (title) {
+        updateTitle(title);
       }
     },
     { immediate: true }
@@ -1305,29 +1151,52 @@ export function useVueRouterAdapter(
 export function useRouter() {
   const context = useLayoutContext();
 
-  const normalizePath = (value: unknown): string => {
-    if (typeof value === 'string') return value;
-    if (value && typeof value === 'object' && 'value' in value) {
-      const resolved = (value as { value?: unknown }).value;
-      return typeof resolved === 'string' ? resolved : '';
+  const resolveLocationPath = (location?: { pathname?: string; search?: string; hash?: string } | null) => {
+    if (!location) return '';
+    const hash = location.hash || '';
+    if (hash) {
+      const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
+      if (normalized) return normalized.startsWith('/') ? normalized : `/${normalized}`;
+    }
+    if (location.pathname) {
+      return `${location.pathname}${location.search || ''}`;
     }
     return '';
+  };
+
+  const resolveWindowPath = (preferHash: boolean) => {
+    if (typeof window === 'undefined') return '';
+    const { pathname, search, hash } = window.location;
+    if (preferHash && hash) {
+      const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
+      if (normalized) return normalized.startsWith('/') ? normalized : `/${normalized}`;
+    }
+    return `${pathname}${search}`;
   };
 
   // 获取当前路径（优先使用 router.currentPath）
   const currentPath = computed<string>(() => {
     const router = context.props.router;
     if (!router) {
-      return normalizePath(context.props.currentPath) || '';
+      const preferHash = typeof window !== 'undefined' && Boolean(window.location.hash);
+      return resolveCurrentPath(context.props.currentPath) || resolveWindowPath(preferHash) || '';
     }
-    
+
     const routerPath = router.currentPath;
-    // 支持 ComputedRef、Ref 和普通值
-    // 使用 isRef 进行更准确的类型判断
-    if (isRef(routerPath)) {
-      return normalizePath(routerPath.value);
-    }
-    return normalizePath(routerPath) || normalizePath(context.props.currentPath);
+    const resolved =
+      resolveCurrentPath(routerPath) ||
+      resolveCurrentPath(context.props.currentPath);
+    if (resolved) return resolved;
+
+    const location = router.location as { pathname?: string; search?: string; hash?: string } | undefined;
+    const locationPath = resolveLocationPath(location);
+    if (locationPath) return locationPath;
+
+    const preferHash = router.mode === 'hash' || (typeof window !== 'undefined' && Boolean(window.location.hash));
+    const windowPath = resolveWindowPath(preferHash);
+    if (windowPath) return windowPath;
+
+    return '';
   });
 
   // 路由导航函数
@@ -1344,52 +1213,16 @@ export function useRouter() {
     }
   };
 
-  // 处理菜单项点击
-  const handleMenuItemClick = (menu: MenuItem) => {
-    const action = resolveMenuNavigation(menu, {
-      autoActivateChild: context.props.sidebar?.autoActivateChild,
-    });
-
-    if (action.type === 'external' && action.url) {
-      window.open(action.url, action.target ?? '_blank');
-      return;
-    }
-
-    if (action.type === 'internal' && action.path) {
-      navigate(action.path, {
-        params: action.params,
-        query: action.query,
-      });
-    }
-  };
-
-  // 处理标签点击
-  const handleTabClick = (tab: TabItem) => {
-    const targetPath = getTabNavigationPath(tab, currentPath.value);
-    if (targetPath) {
-      navigate(targetPath);
-    }
-  };
-
-  // 处理面包屑点击
-  const handleBreadcrumbClick = (item: BreadcrumbItem) => {
-    const targetPath = getBreadcrumbNavigationPath(item, currentPath.value);
-    if (targetPath) {
-      navigate(targetPath);
-    }
-  };
-
-  // 关闭标签后的导航处理
-  const handleTabCloseNavigate = (
-    closedKey: string,
-    tabs: TabItem[],
-    activeKey: string
-  ) => {
-    const nextTab = getNextTabAfterClose(tabs, closedKey, activeKey);
-    if (nextTab?.path) {
-      navigate(nextTab.path);
-    }
-  };
+  const {
+    handleMenuItemClick,
+    handleTabClick,
+    handleBreadcrumbClick,
+    handleTabCloseNavigate,
+  } = createNavigationHandlers({
+    getCurrentPath: () => currentPath.value,
+    navigate,
+    autoActivateChild: () => context.props.sidebar?.autoActivateChild,
+  });
 
   return {
     currentPath,

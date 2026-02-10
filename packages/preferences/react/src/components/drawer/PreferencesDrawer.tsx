@@ -69,6 +69,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
   uiConfig,
 }) => {
   const { preferences, resetPreferences, setPreferences, hasChanges } = usePreferences();
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 当前激活的标签
   const [activeTab, setActiveTab] = useState<DrawerTabType>('appearance');
@@ -453,7 +454,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
       </div>
 
       {/* 导入错误弹窗 */}
-      {importError.show && createPortal(
+      {importError.show && portalTarget && createPortal(
         <div className="preferences-modal-overlay" onClick={closeImportError}>
           <div className="preferences-modal" onClick={(e) => e.stopPropagation()}>
             <div className="preferences-modal-header">
@@ -479,7 +480,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
             </div>
           </div>
         </div>,
-        document.body
+        portalTarget
       )}
     </>
   );

@@ -6,7 +6,7 @@
 import { computed } from 'vue';
 import { Menu } from '../menu';
 import { useLayoutContext } from '../../composables';
-import type { MenuItem } from '@admin-core/layout';
+import { getCachedMenuPathIndex, normalizeMenuKey, resolveMenuByPathIndex, type MenuItem } from '@admin-core/layout';
 
 interface Props {
   /** 菜单数据 */
@@ -31,23 +31,15 @@ const emit = defineEmits<{
 }>();
 
 const context = useLayoutContext();
+const EMPTY_MENUS: MenuItem[] = [];
+const menuSource = computed(() => (props.menus.length > 0 ? props.menus : EMPTY_MENUS));
 
-const menuIndex = computed(() => {
-  const map = new Map<string, MenuItem>();
-  const walk = (items: MenuItem[]) => {
-    items.forEach((item) => {
-      if (item.key) map.set(item.key, item);
-      if (item.path) map.set(item.path, item);
-      if (item.children?.length) walk(item.children);
-    });
-  };
-  walk(props.menus);
-  return map;
-});
+const menuIndex = computed(() => getCachedMenuPathIndex(menuSource.value));
 
 // 处理菜单选择
 const handleSelect = (path: string, _parentPaths: string[]) => {
-  const item = menuIndex.value.get(path);
+  const key = normalizeMenuKey(path);
+  const item = resolveMenuByPathIndex(menuIndex.value, key);
   if (item) {
     emit('select', item, path);
     context.events?.onMenuSelect?.(item, path);

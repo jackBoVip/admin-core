@@ -5,7 +5,7 @@
 
 import { debounce as sharedDebounce, throttle as sharedThrottle } from '@admin-core/preferences';
 import { BREAKPOINTS } from '../constants';
-import { TabManager } from './layout';
+import { TabManager } from './tabs';
 import type { TabItem } from '../types';
 
 /**

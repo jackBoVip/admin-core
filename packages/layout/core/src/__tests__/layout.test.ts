@@ -18,12 +18,12 @@ import {
   calculateTabbarHeight,
   calculateFooterHeight,
   mergeConfig,
-  TabManager,
   generateThemeCSSVariables,
   generateThemeClasses,
   generateWatermarkContent,
   shouldShowLockScreen,
 } from '../utils/layout';
+import { TabManager } from '../utils/tabs';
 
 // ============================================================
 // 1. 布局类型判断测试

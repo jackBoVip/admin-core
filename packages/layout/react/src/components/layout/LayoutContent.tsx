@@ -4,8 +4,8 @@
 
 import { DEFAULT_CONTENT_CONFIG } from '@admin-core/layout';
 import { cloneElement, isValidElement, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
-import { useLayoutContext, useLayoutComputed, useLayoutState } from '../../hooks';
-import { usePanelState, useSidebarState, useTabsState } from '../../hooks/use-layout-state';
+import { useLayoutContext, useLayoutComputed, useLayoutState, useRouter } from '../../hooks';
+import { usePageTransition, usePanelState, useSidebarState, useTabsState } from '../../hooks/use-layout-state';
 import { LayoutRefreshView } from './LayoutRefreshView';
 
 export interface LayoutContentProps {
@@ -29,6 +29,8 @@ export const LayoutContent = memo(function LayoutContent({
   const { collapsed: sidebarCollapsed } = useSidebarState();
   const { collapsed: panelCollapsed, position: panelPosition } = usePanelState();
   const { tabs, activeKey } = useTabsState();
+  const { currentPath } = useRouter();
+  const { enabled: transitionEnabled, transitionName } = usePageTransition();
 
   const contentCompact = context.props.contentCompact || DEFAULT_CONTENT_CONFIG.contentCompact;
   const contentCompactWidth = context.props.contentCompactWidth || DEFAULT_CONTENT_CONFIG.contentCompactWidth;
@@ -42,6 +44,127 @@ export const LayoutContent = memo(function LayoutContent({
 
   const cacheRef = useRef(new Map<string, { element: ReactNode; refreshKey: number }>());
   const [, forceUpdate] = useState(0);
+  const transitionInitRef = useRef(false);
+  const transitionRafRef = useRef<number | null>(null);
+  const transitionTimerRef = useRef<number | null>(null);
+  const [transitionPhase, setTransitionPhase] = useState<'idle' | 'from' | 'active'>('idle');
+  const [transitionClassName, setTransitionClassName] = useState<string>('');
+  const innerRef = useRef<HTMLDivElement | null>(null);
+
+  const resolveTransitionDuration = useCallback(() => {
+    if (typeof window === 'undefined') return 0;
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--admin-duration-normal').trim();
+    const value = Number.parseFloat(raw);
+    return Number.isFinite(value) ? value : 300;
+  }, []);
+
+  const clearTransitionTimers = useCallback(() => {
+    if (transitionRafRef.current !== null) {
+      window.cancelAnimationFrame(transitionRafRef.current);
+      transitionRafRef.current = null;
+    }
+    if (transitionTimerRef.current !== null) {
+      window.clearTimeout(transitionTimerRef.current);
+      transitionTimerRef.current = null;
+    }
+  }, []);
+
+  const clearTransitionClasses = useCallback(() => {
+    setTransitionPhase('idle');
+    setTransitionClassName('');
+  }, []);
+
+  const applyTransitionInlineFrom = useCallback((el: HTMLElement, name: string) => {
+    if (name === 'fade') {
+      el.style.setProperty('opacity', '0', 'important');
+      return;
+    }
+    if (name === 'fade-slide') {
+      el.style.setProperty('opacity', '0', 'important');
+      el.style.setProperty('transform', 'translateX(10px)', 'important');
+      return;
+    }
+    if (name === 'fade-up') {
+      el.style.setProperty('opacity', '0', 'important');
+      el.style.setProperty('transform', 'translateY(10px)', 'important');
+      return;
+    }
+    if (name === 'fade-down') {
+      el.style.setProperty('opacity', '0', 'important');
+      el.style.setProperty('transform', 'translateY(-10px)', 'important');
+      return;
+    }
+    if (name === 'slide-left') {
+      el.style.setProperty('transform', 'translateX(100%)', 'important');
+      return;
+    }
+    if (name === 'slide-right') {
+      el.style.setProperty('transform', 'translateX(-100%)', 'important');
+      return;
+    }
+  }, []);
+
+  const clearTransitionInlineFrom = useCallback((el: HTMLElement) => {
+    el.style.removeProperty('opacity');
+    el.style.removeProperty('transform');
+  }, []);
+
+  useEffect(() => {
+    if (!transitionInitRef.current) {
+      transitionInitRef.current = true;
+      return;
+    }
+    if (!transitionEnabled || typeof window === 'undefined') {
+      return;
+    }
+
+    clearTransitionTimers();
+    clearTransitionClasses();
+
+    const name = transitionName || 'fade-slide';
+    const el = innerRef.current;
+    if (!el) return;
+    clearTransitionInlineFrom(el);
+    setTransitionClassName(name);
+    setTransitionPhase('from');
+    applyTransitionInlineFrom(el, name);
+    void el.offsetWidth;
+    transitionRafRef.current = window.requestAnimationFrame(() => {
+      clearTransitionInlineFrom(el);
+      setTransitionPhase('active');
+    });
+    transitionTimerRef.current = window.setTimeout(() => {
+      clearTransitionClasses();
+    }, resolveTransitionDuration());
+
+    return () => {
+      clearTransitionTimers();
+      clearTransitionClasses();
+      if (innerRef.current) {
+        clearTransitionInlineFrom(innerRef.current);
+      }
+    };
+  }, [
+    transitionEnabled,
+    transitionName,
+    activeKey,
+    currentPath,
+    layoutState.refreshKey,
+    resolveTransitionDuration,
+    clearTransitionTimers,
+    clearTransitionClasses,
+    applyTransitionInlineFrom,
+    clearTransitionInlineFrom,
+  ]);
+
+  useEffect(() => {
+    if (transitionEnabled) return;
+    clearTransitionTimers();
+    clearTransitionClasses();
+    if (innerRef.current) {
+      clearTransitionInlineFrom(innerRef.current);
+    }
+  }, [transitionEnabled, clearTransitionTimers, clearTransitionClasses, clearTransitionInlineFrom]);
   const childrenRef = useRef(children);
   const routerLocationRef = useRef(routerLocation);
 
@@ -140,6 +263,13 @@ export const LayoutContent = memo(function LayoutContent({
           margin: '0 auto',
         }
       : {}, [contentCompact, contentCompactWidth]);
+  const transitionClasses = useMemo(() => {
+    if (!transitionClassName || transitionPhase === 'idle') return '';
+    if (transitionPhase === 'from') {
+      return `${transitionClassName}-enter-active ${transitionClassName}-enter-from`;
+    }
+    return `${transitionClassName}-enter-active`;
+  }, [transitionClassName, transitionPhase]);
 
   return (
     <main
@@ -161,7 +291,7 @@ export const LayoutContent = memo(function LayoutContent({
       )}
 
       {/* 主内容 */}
-      <div className="layout-content__inner" style={innerStyle}>
+      <div ref={innerRef} className={`layout-content__inner${transitionClasses ? ` ${transitionClasses}` : ''}`} style={innerStyle}>
         {!keepAliveAvailable || !activeKey ? (
           <LayoutRefreshView>{children}</LayoutRefreshView>
         ) : (

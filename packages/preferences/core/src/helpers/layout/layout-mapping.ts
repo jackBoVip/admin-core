@@ -1,4 +1,4 @@
-import type { Preferences } from '../types';
+import type { Preferences } from '../../types';
 
 export function mapPreferencesToLayoutProps(preferences: Partial<Preferences>): Record<string, unknown> {
   const {

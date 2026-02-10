@@ -19,6 +19,7 @@ export const LanguageToggle = memo(function LanguageToggle() {
   const [isOpen, setIsOpen] = useState(false);
 
   const currentLocale = (props.locale || 'zh-CN') as SupportedLocale;
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   const languageOptions: LanguageOption[] = useMemo(() => {
     // 使用当前 i18n 实例获取翻译
@@ -105,9 +106,9 @@ export const LanguageToggle = memo(function LanguageToggle() {
       </div>
 
       {/* 点击外部关闭 */}
-      {isOpen && createPortal(
+      {isOpen && portalTarget && createPortal(
         <div className="fixed inset-0 z-40" onClick={handleClose} />,
-        document.body
+        portalTarget
       )}
     </>
   );

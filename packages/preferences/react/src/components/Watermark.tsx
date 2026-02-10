@@ -15,6 +15,7 @@ export const Watermark: React.FC = memo(() => {
   const { preferences } = usePreferences();
   const [watermarkDataUrl, setWatermarkDataUrl] = useState('');
   const generatorRef = useRef(createWatermarkGenerator());
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 使用 useMemo 提取水印配置，避免整个 preferences 变化触发重渲染
   const watermarkConfig = useMemo<WatermarkConfig>(() => ({
@@ -54,13 +55,13 @@ export const Watermark: React.FC = memo(() => {
     };
   }, [watermarkDataUrl]);
 
-  if (!watermarkConfig.enabled || !watermarkText || !watermarkStyle) {
+  if (!watermarkConfig.enabled || !watermarkText || !watermarkStyle || !portalTarget) {
     return null;
   }
 
   return createPortal(
     <div style={watermarkStyle} aria-hidden="true" />,
-    document.body
+    portalTarget
   );
 });
 

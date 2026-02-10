@@ -57,7 +57,7 @@ export const LayoutSidebar = memo(function LayoutSidebar({
   const { activeKey, handleSelect } = useMenuState();
 
   const sidebarConfig = context.props.sidebar || {};
-  const menus = context.props.menus || [];
+  const menus = useMemo(() => context.props.menus ?? [], [context.props.menus]);
   const logoConfig = context.props.logo || {};
   // 使用 computed 中计算的主题（考虑 semiDarkSidebar）
   const theme = computed.sidebarTheme || 'light';

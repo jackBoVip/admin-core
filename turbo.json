@@ -3,11 +3,9 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".vite/**"],
-      "cache": false
+      "outputs": ["dist/**", ".vite/**"]
     },
     "test": {
-      "dependsOn": ["^build"],
       "outputs": []
     },
     "dev": {

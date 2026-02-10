@@ -3,7 +3,7 @@
  * @description SVG 图标字符串，供 Vue/React 包装使用
  */
 
-import { iconSizes } from '../config/tokens';
+import { iconSizes } from '../tokens';
 
 /**
  * 图标尺寸类型

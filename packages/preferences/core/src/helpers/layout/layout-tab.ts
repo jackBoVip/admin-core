@@ -1,10 +1,10 @@
-import { generateLayoutPreview } from '../icons';
-import { getFeatureItemConfig } from './drawer-config';
-import { createTranslatedOptions } from './options-factory';
-import type { LayoutPreviewOptions } from '../icons/layout-preview-generator';
-import type { LocaleMessages } from '../locales';
-import type { LayoutTabConfig, ResolvedFeatureConfig, Preferences, DeepPartial } from '../types';
-import type { LayoutType, ContentCompactType } from '../types/layout';
+import { generateLayoutPreview } from '../../icons';
+import { getFeatureItemConfig } from '../drawer-config';
+import { createTranslatedOptions } from '../options-factory';
+import type { LayoutPreviewOptions } from '../../icons/layout-preview-generator';
+import type { LocaleMessages } from '../../locales';
+import type { LayoutTabConfig, ResolvedFeatureConfig, Preferences, DeepPartial } from '../../types';
+import type { LayoutType, ContentCompactType } from '../../types/layout';
 
 export interface LayoutTabUpdater {
   setLayout: (layout: LayoutType) => void;

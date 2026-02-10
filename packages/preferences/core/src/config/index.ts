@@ -17,7 +17,7 @@ export {
 } from './defaults';
 
 // 设计令牌
-export * from './tokens';
+export * from '../tokens';
 
 // Tab 内容配置
 export {

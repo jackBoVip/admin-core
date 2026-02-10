@@ -752,45 +752,45 @@
   }
 
   .transition-preview-fade-enter {
-    animation: previewFadeIn 0.5s ease-out forwards;
+    animation: previewFadeIn var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
   .transition-preview-fade-leave {
-    animation: previewFadeOut 0.5s ease-in forwards;
+    animation: previewFadeOut var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
 
   .transition-preview-fade-slide-enter {
-    animation: previewFadeSlideIn 0.5s ease-out forwards;
+    animation: previewFadeSlideIn var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
   .transition-preview-fade-slide-leave {
-    animation: previewFadeSlideOut 0.5s ease-in forwards;
+    animation: previewFadeSlideOut var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
 
   .transition-preview-fade-up-enter {
-    animation: previewFadeUpIn 0.5s ease-out forwards;
+    animation: previewFadeUpIn var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
   .transition-preview-fade-up-leave {
-    animation: previewFadeUpOut 0.5s ease-in forwards;
+    animation: previewFadeUpOut var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
 
   .transition-preview-fade-down-enter {
-    animation: previewFadeDownIn 0.5s ease-out forwards;
+    animation: previewFadeDownIn var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
   .transition-preview-fade-down-leave {
-    animation: previewFadeDownOut 0.5s ease-in forwards;
+    animation: previewFadeDownOut var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
 
   .transition-preview-slide-left-enter {
-    animation: previewSlideLeftIn 0.5s ease-out forwards;
+    animation: previewSlideLeftIn var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
   .transition-preview-slide-left-leave {
-    animation: previewSlideLeftOut 0.5s ease-in forwards;
+    animation: previewSlideLeftOut var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
 
   .transition-preview-slide-right-enter {
-    animation: previewSlideRightIn 0.5s ease-out forwards;
+    animation: previewSlideRightIn var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
   .transition-preview-slide-right-leave {
-    animation: previewSlideRightOut 0.5s ease-in forwards;
+    animation: previewSlideRightOut var(--admin-duration-normal) var(--admin-easing-default) forwards;
   }
 
   /* 动画预览 - Keyframes */

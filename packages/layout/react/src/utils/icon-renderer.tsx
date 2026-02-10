@@ -26,16 +26,17 @@ export function renderIcon(
   const meta = resolveMenuIconMeta(icon);
   const type = meta?.type;
   const sizeClass = resolveLayoutIconSize(size);
+  const mergedClass = className ? `${sizeClass} ${className}` : sizeClass;
 
   if (type === 'emoji' || type === 'custom') {
-    return <span className={className}>{meta?.raw ?? icon}</span>;
+    return <span className={mergedClass}>{meta?.raw ?? icon}</span>;
   }
 
   if (type === 'svg') {
     if (meta?.path) {
       return (
         <svg
-          className={`${sizeClass}${className ? ` ${className}` : ''}`}
+          className={mergedClass}
           viewBox={meta.viewBox}
           fill="none"
           stroke="currentColor"
@@ -48,7 +49,7 @@ export function renderIcon(
   }
 
   // 回退：显示原始内容
-  return <span className={className}>{meta?.raw ?? icon}</span>;
+  return <span className={mergedClass}>{meta?.raw ?? icon}</span>;
 }
 
 /**

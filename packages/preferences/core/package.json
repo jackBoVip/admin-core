@@ -3,11 +3,13 @@
   "version": "0.0.1",
   "description": "框架无关的偏好设置管理系统，支持主题、布局、国际化等配置",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "browser": "./dist/index.global.js",
+  "browser": "./dist/index.js",
   "unpkg": "./dist/index.global.js",
   "jsdelivr": "./dist/index.global.js",
   "exports": {

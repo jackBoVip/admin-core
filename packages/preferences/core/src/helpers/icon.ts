@@ -3,7 +3,7 @@
  * @description 框架无关的图标尺寸和样式计算
  */
 
-import { iconSizes, layoutIcon } from '../config/tokens';
+import { iconSizes, layoutIcon } from '../tokens';
 import type { IconSize } from '../icons';
 
 /**

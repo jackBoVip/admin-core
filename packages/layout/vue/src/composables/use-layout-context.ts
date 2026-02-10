@@ -5,10 +5,12 @@
 
 import {
   DEFAULT_LAYOUT_CONFIG,
-  DEFAULT_LAYOUT_STATE,
   calculateLayoutComputed,
   createI18n,
   generateCSSVariables,
+  getInitialLayoutState,
+  getLayoutStatePatchFromProps,
+  isSidebarMixedLayout,
   mergeConfig,
   type BasicLayoutProps,
   type LayoutComputed,
@@ -71,14 +73,6 @@ export function createLayoutContext(
   // 合并默认配置（响应式）
   const mergedProps = computed(() => mergeConfig(DEFAULT_LAYOUT_CONFIG, getProps()));
 
-  const resolveLayout = (props: BasicLayoutProps) =>
-    props.isMobile ? 'sidebar-nav' : (props.layout || 'sidebar-nav');
-
-  const isSidebarMixedLayout = (props: BasicLayoutProps) => {
-    const layout = resolveLayout(props);
-    return layout === 'sidebar-mixed-nav' || layout === 'header-mixed-nav';
-  };
-
   // 从 props 中获取初始状态值
   const initialProps = getProps();
   const initialLocale =
@@ -87,17 +81,7 @@ export function createLayoutContext(
     'zh-CN';
   
   // 创建响应式状态（从 props 中读取初始值）
-  const state = reactive<LayoutState>({
-    ...DEFAULT_LAYOUT_STATE,
-    // 从 sidebar 配置初始化折叠状态
-    sidebarCollapsed: isSidebarMixedLayout(initialProps)
-      ? false
-      : (initialProps.sidebar?.collapsed ?? DEFAULT_LAYOUT_STATE.sidebarCollapsed),
-    // 从 sidebar 配置初始化 expandOnHover
-    sidebarExpandOnHover: initialProps.sidebar?.expandOnHover ?? DEFAULT_LAYOUT_STATE.sidebarExpandOnHover,
-    // 从 panel 配置初始化折叠状态
-    panelCollapsed: initialProps.panel?.collapsed ?? DEFAULT_LAYOUT_STATE.panelCollapsed,
-  });
+  const state = reactive<LayoutState>(getInitialLayoutState(initialProps));
 
   // 创建国际化实例
   const i18n = createI18n(initialLocale, options?.customMessages);
@@ -183,25 +167,15 @@ export function createLayoutContext(
         }
       }
       
-      // 同步 sidebar.collapsed 到 state（当 preferences 变化时）
-      if (isSidebarMixedLayout(newProps)) {
-        if (state.sidebarCollapsed) {
-          state.sidebarCollapsed = false;
-          events.onSidebarCollapse?.(false);
+      const { patch, changed, sidebarCollapseChanged } = getLayoutStatePatchFromProps(
+        state,
+        newProps
+      );
+      if (changed) {
+        if (sidebarCollapseChanged !== undefined) {
+          events.onSidebarCollapse?.(sidebarCollapseChanged);
         }
-      } else if (
-        newProps.sidebar?.collapsed !== undefined &&
-        state.sidebarCollapsed !== newProps.sidebar.collapsed
-      ) {
-        state.sidebarCollapsed = newProps.sidebar.collapsed;
-      }
-      // 同步 sidebar.expandOnHover 到 state
-      if (newProps.sidebar?.expandOnHover !== undefined && state.sidebarExpandOnHover !== newProps.sidebar.expandOnHover) {
-        state.sidebarExpandOnHover = newProps.sidebar.expandOnHover;
-      }
-      // 同步 panel.collapsed 到 state
-      if (newProps.panel?.collapsed !== undefined && state.panelCollapsed !== newProps.panel.collapsed) {
-        state.panelCollapsed = newProps.panel.collapsed;
+        Object.assign(state, patch);
       }
     },
     { immediate: true, deep: true }

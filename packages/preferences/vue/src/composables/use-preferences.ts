@@ -4,10 +4,7 @@
  */
 
 import {
-  getDefaultLifecycle,
-  createPreferencesActions,
-  createThemeActions,
-  createLayoutActions,
+  getDefaultPreferencesStore,
   getDefaultPreferences,
   hasChanges as hasChangesUtil,
   type PreferencesManager,
@@ -21,7 +18,8 @@ import { computed, ref } from 'vue';
 /**
  * 全局生命周期管理器（使用 core 的单例）
  */
-const lifecycle = getDefaultLifecycle();
+const store = getDefaultPreferencesStore();
+const actionFactory = store.actions;
 
 /**
  * 响应式偏好设置状态
@@ -42,10 +40,6 @@ let globalUnsubscribe: (() => void) | null = null;
 /**
  * 缓存的 actions 对象（避免重复创建）
  */
-let cachedPreferencesActions: ReturnType<typeof createPreferencesActions> | null = null;
-let cachedThemeActions: ReturnType<typeof createThemeActions> | null = null;
-let cachedLayoutActions: ReturnType<typeof createLayoutActions> | null = null;
-
 /**
  * 确保已订阅全局状态
  */
@@ -53,12 +47,12 @@ function ensureGlobalSubscription(): void {
   if (globalSubscribed) return;
   
   // 保存取消订阅函数以便后续清理
-  globalUnsubscribe = lifecycle.subscribe((prefs) => {
+  globalUnsubscribe = store.subscribe((prefs) => {
     preferencesState.value = prefs;
   });
   
   // 初始化状态
-  const initialPrefs = lifecycle.getPreferences();
+  const initialPrefs = store.getPreferences();
   if (initialPrefs) {
     // 初始化时同步一次状态
   }
@@ -70,24 +64,15 @@ function ensureGlobalSubscription(): void {
  * 获取缓存的 actions
  */
 function getPreferencesActionsInstance() {
-  if (!cachedPreferencesActions) {
-    cachedPreferencesActions = createPreferencesActions(lifecycle.get());
-  }
-  return cachedPreferencesActions;
+  return actionFactory.getPreferencesActions();
 }
 
 function getThemeActionsInstance() {
-  if (!cachedThemeActions) {
-    cachedThemeActions = createThemeActions(lifecycle.get());
-  }
-  return cachedThemeActions;
+  return actionFactory.getThemeActions();
 }
 
 function getLayoutActionsInstance() {
-  if (!cachedLayoutActions) {
-    cachedLayoutActions = createLayoutActions(lifecycle.get());
-  }
-  return cachedLayoutActions;
+  return actionFactory.getLayoutActions();
 }
 
 /**
@@ -96,7 +81,7 @@ function getLayoutActionsInstance() {
  * @returns PreferencesManager 实例
  */
 export function initPreferences(options?: PreferencesInitOptions): PreferencesManager {
-  const manager = lifecycle.init(options);
+  const manager = store.init(options);
   ensureGlobalSubscription();
   return manager;
 }
@@ -105,14 +90,14 @@ export function initPreferences(options?: PreferencesInitOptions): PreferencesMa
  * 获取全局偏好设置管理器
  */
 export function getPreferencesManager(): PreferencesManager {
-  return lifecycle.get();
+  return store.getManager();
 }
 
 /**
  * 判断偏好设置管理器是否已初始化
  */
 export function isPreferencesInitialized(): boolean {
-  return lifecycle.isInitialized();
+  return store.isInitialized();
 }
 
 /**
@@ -125,13 +110,9 @@ export function destroyPreferences(): void {
     globalUnsubscribe = null;
   }
   
-  lifecycle.destroy();
+  store.destroy();
   preferencesState.value = null;
   globalSubscribed = false;
-  // 清除缓存的 actions
-  cachedPreferencesActions = null;
-  cachedThemeActions = null;
-  cachedLayoutActions = null;
 }
 
 /**
@@ -139,7 +120,7 @@ export function destroyPreferences(): void {
  * @returns 响应式偏好设置
  */
 export function usePreferences() {
-  const manager = lifecycle.get();
+  const manager = store.getManager();
   const actions = getPreferencesActionsInstance();
 
   // Vue 响应式绑定
@@ -175,7 +156,7 @@ export function usePreferences() {
  * @param key - 分类键名
  */
 export function usePreferencesCategory<K extends PreferencesKeys>(key: K) {
-  const manager = lifecycle.get();
+  const manager = store.getManager();
 
   const value = computed(() => preferencesState.value?.[key]);
 

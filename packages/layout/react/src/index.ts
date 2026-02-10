@@ -216,6 +216,7 @@ export {
   getMenuPath,
   flattenMenus,
   filterHiddenMenus,
+  clearMenuCaches,
   mergeConfig,
   // 自动标签/面包屑
   TabManager,

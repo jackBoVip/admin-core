@@ -14,6 +14,21 @@ export interface MenuNavigationResult {
   target?: '_blank' | '_self';
 }
 
+export type CurrentPathValue = string | { value?: string } | null | undefined;
+
+/**
+ * 解析当前路径（支持 Ref-like 对象）
+ */
+export function resolveCurrentPath(value: CurrentPathValue): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object' && 'value' in value) {
+    const resolved = (value as { value?: unknown }).value;
+    return typeof resolved === 'string' ? resolved : '';
+  }
+  return '';
+}
+
 /**
  * 查找第一个可激活的菜单项（支持路径或外链）
  */
@@ -96,4 +111,84 @@ export function getNextTabAfterClose(
   if (closedIndex === -1) return null;
 
   return tabs[closedIndex + 1] ?? tabs[closedIndex - 1] ?? null;
+}
+
+export interface NavigationHandlers {
+  handleMenuItemClick: (menu: MenuItem) => void;
+  handleTabClick: (tab: TabItem) => void;
+  handleBreadcrumbClick: (item: BreadcrumbItem) => void;
+  handleTabCloseNavigate: (closedKey: string, tabs: TabItem[], activeKey: string) => void;
+}
+
+export interface NavigationHandlerOptions {
+  getCurrentPath: () => string;
+  navigate: (
+    path: string,
+    options?: {
+      replace?: boolean;
+      params?: Record<string, string | number>;
+      query?: Record<string, string | number>;
+    }
+  ) => void;
+  autoActivateChild?: boolean | (() => boolean | undefined);
+}
+
+/**
+ * 创建导航处理函数（菜单/标签/面包屑）
+ */
+export function createNavigationHandlers(options: NavigationHandlerOptions): NavigationHandlers {
+  const resolveAutoActivateChild = () =>
+    typeof options.autoActivateChild === 'function'
+      ? options.autoActivateChild()
+      : options.autoActivateChild;
+
+  const handleMenuItemClick = (menu: MenuItem) => {
+    const action = resolveMenuNavigation(menu, {
+      autoActivateChild: resolveAutoActivateChild(),
+    });
+
+    if (action.type === 'external' && action.url) {
+      window.open(action.url, action.target ?? '_blank');
+      return;
+    }
+
+    if (action.type === 'internal' && action.path) {
+      options.navigate(action.path, {
+        params: action.params,
+        query: action.query,
+      });
+    }
+  };
+
+  const handleTabClick = (tab: TabItem) => {
+    const targetPath = getTabNavigationPath(tab, options.getCurrentPath());
+    if (targetPath) {
+      options.navigate(targetPath);
+    }
+  };
+
+  const handleBreadcrumbClick = (item: BreadcrumbItem) => {
+    const targetPath = getBreadcrumbNavigationPath(item, options.getCurrentPath());
+    if (targetPath) {
+      options.navigate(targetPath);
+    }
+  };
+
+  const handleTabCloseNavigate = (
+    closedKey: string,
+    tabs: TabItem[],
+    activeKey: string
+  ) => {
+    const nextTab = getNextTabAfterClose(tabs, closedKey, activeKey);
+    if (nextTab?.path) {
+      options.navigate(nextTab.path);
+    }
+  };
+
+  return {
+    handleMenuItemClick,
+    handleTabClick,
+    handleBreadcrumbClick,
+    handleTabCloseNavigate,
+  };
 }

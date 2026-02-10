@@ -1,12 +1,12 @@
-import adminCoreConfig from '@admin-core/eslint-config';
+import adminCoreReactConfig from '@admin-core/eslint-config/react';
 
 export default [
-  ...adminCoreConfig,
+  ...adminCoreReactConfig,
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parserOptions: {
-        project: './tsconfig.json',
+        project: './tsconfig.eslint.json',
       },
     },
   },

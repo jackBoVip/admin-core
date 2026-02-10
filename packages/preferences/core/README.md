@@ -1,5 +1,7 @@
 # @admin-core/preferences
 
+English | [简体中文](./README.zh-CN.md)
+
 > Framework-agnostic preferences management system with OKLCH color system, multi-UI library support, and i18n.
 
 ## Features
@@ -11,6 +13,13 @@
 - **Configurable**: All settings managed through configuration, no hardcoding
 - **TypeScript**: Full type safety with comprehensive type definitions
 - **Tailwind CSS**: Built-in preset for seamless Tailwind integration
+
+## Public API
+
+- **Manager**: `createPreferencesManager`, `PreferencesManager`, lifecycle helpers
+- **Actions & Store**: `createPreferencesActions`, `createThemeActions`, `createLayoutActions`, `getDefaultPreferencesStore`
+- **Utilities**: storage helpers, config import/export, shortcuts, i18n helpers
+- **Styles & Tokens**: CSS variable helpers, Tailwind preset, theme tokens
 
 ## Installation
 

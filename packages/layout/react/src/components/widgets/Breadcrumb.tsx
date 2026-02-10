@@ -43,7 +43,7 @@ export const Breadcrumb = memo(function Breadcrumb({
 }: BreadcrumbProps) {
   // 使用自动面包屑状态
   const { breadcrumbs: autoBreadcrumbs, showIcon: autoShowIcon, handleClick: autoHandleClick } = useBreadcrumbState();
-  const context = useLayoutContext();
+  const { t } = useLayoutContext();
   
   // 如果传入了 items，使用传入的；否则使用自动生成的
   const rawBreadcrumbItems = items && items.length > 0 ? items : autoBreadcrumbs;
@@ -53,11 +53,11 @@ export const Breadcrumb = memo(function Breadcrumb({
     return rawBreadcrumbItems.map(item => {
       // 如果名称看起来是翻译 key（包含 layout. 前缀），尝试翻译
       if (item.name && item.name.startsWith('layout.')) {
-        return { ...item, name: context.t(item.name) };
+        return { ...item, name: t(item.name) };
       }
       return item;
     });
-  }, [rawBreadcrumbItems, context.t]);
+  }, [rawBreadcrumbItems, t]);
   
   const showIcon = showIconProp ?? autoShowIcon;
 

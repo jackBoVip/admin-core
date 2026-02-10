@@ -7,7 +7,7 @@
  */
 import { computed, ref, shallowRef, watch, onUnmounted, onMounted, defineComponent, h, isRef, type PropType, type DefineComponent, type VNode } from 'vue';
 import type { BasicLayoutProps, LayoutEvents, MenuItem, TabItem, BreadcrumbItem, NotificationItem } from '@admin-core/layout';
-import { mapPreferencesToLayoutProps, logger, buildMenuPathIndex, filterHiddenMenus, resolveMenuNavigation, LAYOUT_UI_TOKENS } from '@admin-core/layout';
+import { mapPreferencesToLayoutProps, logger, getCachedMenuPathIndex, getCachedFilteredMenus, resolveMenuNavigation, getCachedHeaderMenus, resolveHeaderActiveKey, LAYOUT_UI_TOKENS } from '@admin-core/layout';
 import { createLayoutContext, useResponsive } from '../../composables';
 import { 
   PreferencesProvider, 
@@ -28,6 +28,8 @@ import LayoutProgress from './LayoutProgress.vue';
 import HorizontalMenu from './HorizontalMenu.vue';
 import { HeaderToolbar, Breadcrumb } from '../widgets';
 import LayoutIcon from '../common/LayoutIcon.vue';
+
+const EMPTY_MENUS: MenuItem[] = [];
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
@@ -534,67 +536,43 @@ const rootStyle = computed(() => ({
 }));
 
 const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');
+const menus = computed(() =>
+  contextProps.value.menus && contextProps.value.menus.length > 0
+    ? contextProps.value.menus
+    : EMPTY_MENUS
+);
 
 // 顶部导航菜单数据（用于 header-nav、mixed-nav、header-mixed-nav 模式）
 const headerMenus = shallowRef<MenuItem[]>([]);
 watch(
-  [() => contextProps.value.menus, () => layoutComputed.value.currentLayout],
-  ([menus, layout]) => {
-    if (!menus || layout === 'header-sidebar-nav') {
-      headerMenus.value = [];
-      return;
-    }
-    if (layout === 'header-nav') {
-      headerMenus.value = menus;
-      return;
-    }
-    if (layout === 'mixed-nav' || layout === 'header-mixed-nav') {
-      headerMenus.value = menus.map(item => ({
-        ...item,
-        children: undefined,
-      }));
-      return;
-    }
-    headerMenus.value = [];
+  [menus, () => layoutComputed.value.currentLayout],
+  ([nextMenus, layout]) => {
+    headerMenus.value = getCachedHeaderMenus(nextMenus, {
+      isHeaderNav: layout === 'header-nav',
+      isMixedNav: layout === 'mixed-nav',
+      isHeaderMixedNav: layout === 'header-mixed-nav',
+      isHeaderSidebarNav: layout === 'header-sidebar-nav',
+    });
   },
   { immediate: true }
 );
 
-const headerMenuIndex = computed(() => buildMenuPathIndex(contextProps.value.menus || []));
+const headerMenuIndex = computed(() => getCachedMenuPathIndex(menus.value));
 
 // 顶部菜单激活的 key
 const headerActiveKey = computed(() => {
-  if (isHeaderSidebarNav.value) return '';
-  if ((layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) && state.mixedNavRootKey) {
-    return state.mixedNavRootKey;
-  }
   const rawPath = typeof contextProps.value.router?.currentPath === 'object' 
     ? contextProps.value.router.currentPath.value 
     : contextProps.value.router?.currentPath;
-  const path = rawPath ? String(rawPath).split('?')[0] : '';
-  
-  if (!path) return '';
-  const index = headerMenuIndex.value;
-  let menu =
-    index.byPath.get(path) ??
-    index.byKey.get(path);
-  if (!menu) {
-    for (const item of index.pathItems) {
-      if (item.path && path.startsWith(item.path)) {
-        menu = item;
-        break;
-      }
-    }
-  }
-  if (!menu) return '';
-  const chain =
-    (menu.key ? index.chainByKey.get(menu.key) : undefined) ??
-    (menu.path ? index.chainByPath.get(menu.path) : undefined) ??
-    [];
-  if (layoutComputed.value.isMixedNav || layoutComputed.value.isHeaderMixedNav) {
-    return chain[0] || '';
-  }
-  return menu.key || '';
+  return resolveHeaderActiveKey({
+    activeMenuKey: contextProps.value.activeMenuKey,
+    currentPath: rawPath ? String(rawPath) : '',
+    menuIndex: headerMenuIndex.value,
+    mixedNavRootKey: state.mixedNavRootKey,
+    isMixedNav: layoutComputed.value.isMixedNav,
+    isHeaderMixedNav: layoutComputed.value.isHeaderMixedNav,
+    isHeaderSidebarNav: isHeaderSidebarNav.value,
+  });
 });
 
 const handleHeaderMenuSelect = (item: MenuItem, key: string) => {
@@ -632,7 +610,7 @@ const preferencesTitle = computed(() => {
 });
 
 const launcherMenus = computed(() => {
-  return filterHiddenMenus(contextProps.value.menus || []);
+  return getCachedFilteredMenus(menus.value);
 });
 
 const closeMenuLauncher = () => {

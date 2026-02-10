@@ -1,5 +1,7 @@
 # @admin-core/layout
 
+English | [简体中文](./README.md)
+
 Core layout package that provides framework-agnostic types, configuration, i18n, and utilities.
 
 ## Features
@@ -9,6 +11,13 @@ Core layout package that provides framework-agnostic types, configuration, i18n,
 - 🌍 Built-in i18n: English and Chinese, extensible
 - 🎛️ Highly configurable: everything is customizable
 - 📦 Framework-agnostic core: logic decoupled from UI
+
+## Public API
+
+- **Types & constants**: layout types, default configs, sizing & animation constants
+- **Utilities**: menu/tab/router/layout helpers, theme, watermark, shortcuts
+- **I18n**: `createI18n` with built-in EN/ZH locales
+- **Styles & icons**: layout styles entry and built-in icons
 
 ## Install
 

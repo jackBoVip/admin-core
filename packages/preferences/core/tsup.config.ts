@@ -82,19 +82,8 @@ function generateBundledCSS(tokensCSS: string): string {
 
 // 生成设计令牌 CSS 文件
 async function generateTokensCSS(): Promise<string> {
-  const { generateCSSVariables } = await import('./src/config/tokens/generate-css');
-  const css = generateCSSVariables();
-  const destDir = 'dist/styles/css';
-  if (!existsSync(destDir)) {
-    mkdirSync(destDir, { recursive: true });
-  }
-  writeFileSync(join(destDir, 'tokens.css'), css);
-  
-  // 同时写入 src 目录供开发时使用
-  const srcDir = 'src/styles/css';
-  writeFileSync(join(srcDir, 'tokens.css'), css);
-  
-  return css;
+  const { generateCSSVariables } = await import('./src/tokens/generate-css');
+  return generateCSSVariables();
 }
 
 export default defineConfig([
@@ -117,7 +106,7 @@ export default defineConfig([
       options.banner = {
         js: '/* @admin-core/preferences */',
       };
-      // 处理图片文件，转换为 base64 data URL
+      // 处理图片文件，转换为 base64 data URL（避免运行时资源丢失）
       options.loader = {
         ...options.loader,
         '.jpg': 'dataurl',
@@ -133,6 +122,11 @@ export default defineConfig([
       
       // 复制原始 CSS 文件（保留分离的文件结构供高级用户使用）
       copyDir('src/styles/css', 'dist/styles/css');
+      // 覆盖写入 dist 的 tokens.css，避免构建时修改 src
+      if (!existsSync('dist/styles/css')) {
+        mkdirSync('dist/styles/css', { recursive: true });
+      }
+      writeFileSync(join('dist/styles/css', 'tokens.css'), tokensCSS);
       
       // 复制 assets 目录（图片等静态资源）
       if (existsSync('src/assets')) {

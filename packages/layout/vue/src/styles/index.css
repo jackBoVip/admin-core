@@ -9,9 +9,6 @@
 /* 引入核心包公共样式 */
 @import '@admin-core/layout/styles/layout.css';
 
-/* 引入偏好设置核心样式（抽屉、主题等） */
-@import '@admin-core/preferences/styles';
-
 /* 引入偏好设置 Vue 特定样式（过渡动画等） */
 @import '@admin-core/preferences-vue/styles';
 

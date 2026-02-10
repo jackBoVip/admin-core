@@ -56,6 +56,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
   const isHeaderFixed = headerMode !== 'static';
   const leftOffset = computed.mainStyle.marginLeft || '0';
   const panelRightOffset = computed.mainStyle.marginRight || '0';
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
 
   // 标签列表容器引用
   const tabsContainerRef = useRef<HTMLDivElement>(null);
@@ -214,7 +215,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     } else {
       setTabRenderCount(Math.min(TAB_RENDER_CHUNK, tabs.length));
     }
-  }, [tabs, activeKey, tabIndexMap]);
+  }, [tabs, activeKey, tabIndexMap, TAB_RENDER_CHUNK]);
 
   useEffect(() => {
     if (tabRenderCount >= tabs.length) return;
@@ -222,7 +223,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       setTabRenderCount((prev) => Math.min(prev + TAB_RENDER_CHUNK, tabs.length));
     });
     return () => cancelAnimationFrame(frame);
-  }, [tabRenderCount, tabs.length]);
+  }, [tabRenderCount, tabs.length, TAB_RENDER_CHUNK]);
 
   const visibleTabs = useMemo(() => tabs.slice(0, tabRenderCount), [tabs, tabRenderCount]);
 
@@ -575,7 +576,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     const meta = tab.meta as Record<string, unknown> | undefined;
     const title = (meta?.newTabTitle as string | undefined) || (meta?.title as string | undefined) || tab.name;
     return context.t(title);
-  }, [context.t]);
+  }, [context]);
 
   const isChrome = styleType === 'chrome';
 
@@ -793,7 +794,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
         ) : null}
       </div>
 
-      {contextMenu.visible && createPortal(
+      {contextMenu.visible && portalTarget && createPortal(
         <>
           <div
             ref={contextMenuRef}
@@ -818,10 +819,10 @@ export const LayoutTabbar = memo(function LayoutTabbar({
           </div>
           <div className="fixed inset-0 z-layout-overlay" onClick={closeContextMenu} />
         </>,
-        document.body
+        portalTarget
       )}
 
-      {moreMenu.visible && createPortal(
+      {moreMenu.visible && portalTarget && createPortal(
         <>
           <div
             ref={moreMenuRef}
@@ -846,7 +847,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
           </div>
           <div className="fixed inset-0 z-layout-overlay" onClick={closeMoreMenu} />
         </>,
-        document.body
+        portalTarget
       )}
     </div>
   );

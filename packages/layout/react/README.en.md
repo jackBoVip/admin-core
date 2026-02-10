@@ -1,0 +1,241 @@
+# @admin-core/layout-react
+
+English | [简体中文](./README.md)
+
+React basic layout components with built-in preferences integration.
+
+## Features
+
+- 🚀 **Out of the box** - import components and pass data to start
+- 🎨 **Tailwind CSS v4** - uses v4 utilities and design tokens
+- 🌍 **Internationalization** - built-in EN/ZH locales, extensible
+- 🔌 **Slots & Extensibility** - ReactNode props for each region
+- 📱 **Responsive** - auto adapts to mobile
+
+## Public API
+
+- **Layout components**: `BasicLayout` and built-in layout/menu components
+- **Hooks**: `useLayoutContext`, `useLayoutState`, `useLayoutComputed`, `useRouter`, etc.
+- **Built-in preferences**: `initPreferences`, `PreferencesProvider`, `PreferencesDrawer` (from `@admin-core/preferences-react`)
+- **Types & constants**: re-exported layout types, configs, and utils from `@admin-core/layout`
+- **Styles**: `@admin-core/layout-react/style.css`
+
+## Install
+
+```bash
+pnpm add @admin-core/layout-react
+```
+
+## Quick Start
+
+```tsx
+import { BasicLayout } from '@admin-core/layout-react';
+import '@admin-core/layout-react/style.css';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
+
+const menus = [
+  { key: '/dashboard', name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
+  {
+    key: '/system',
+    name: 'System',
+    icon: 'setting',
+    children: [
+      { key: '/system/user', name: 'Users', path: '/system/user' },
+      { key: '/system/role', name: 'Roles', path: '/system/role' },
+    ],
+  },
+];
+
+function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  return (
+    <BasicLayout
+      menus={menus}
+      currentPath={location.pathname}
+      autoTab={{ enabled: true, affixKeys: ['/dashboard'] }}
+      autoBreadcrumb={{ enabled: true, showHome: true }}
+      onMenuSelect={(item) => navigate(item.path)}
+      onTabSelect={(item) => navigate(item.path)}
+      onBreadcrumbClick={(item) => navigate(item.path)}
+    >
+      <Outlet />
+    </BasicLayout>
+  );
+}
+```
+
+**Auto mode notes:**
+- Tabs are generated from menus and follow `currentPath`
+- Breadcrumbs are derived from menu paths automatically
+
+## Styles & Tokens
+
+- Layout styles depend on `@admin-core/preferences/styles` global variables (e.g. `--admin-duration-*`, `--admin-easing-*`, `--admin-z-index-*`).
+- Page transitions use the `fade-*` animation classes from `@admin-core/preferences`.
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `layout` | `LayoutType` | `'sidebar-nav'` | Layout type |
+| `menus` | `MenuItem[]` | `[]` | Menu data |
+| `currentPath` | `string` | - | Current path (auto tabs/breadcrumbs) |
+| `autoTab` | `AutoTabConfig` | `{ enabled: true }` | Auto tab config |
+| `autoBreadcrumb` | `AutoBreadcrumbConfig` | `{ enabled: true }` | Auto breadcrumb config |
+| `tabs` | `TabItem[]` | `[]` | Manual tabs |
+| `breadcrumbs` | `BreadcrumbItem[]` | `[]` | Manual breadcrumbs |
+| `activeMenuKey` | `string` | - | Active menu key |
+| `activeTabKey` | `string` | - | Active tab key |
+| `header` | `HeaderPreferences` | - | Header config |
+| `sidebar` | `SidebarPreferences` | - | Sidebar config |
+| `tabbar` | `TabbarPreferences` | - | Tabbar config |
+| `locale` | `'zh-CN' | 'en-US'` | `'zh-CN'` | Locale |
+
+## AutoTab / AutoBreadcrumb
+
+```typescript
+interface AutoTabConfig {
+  enabled?: boolean;
+  affixKeys?: string[];
+  maxCount?: number;
+  persistKey?: string;
+}
+
+interface AutoBreadcrumbConfig {
+  enabled?: boolean;
+  showHome?: boolean;
+  homePath?: string;
+  homeName?: string;
+  homeIcon?: string;
+}
+```
+
+### Example
+
+```tsx
+<BasicLayout
+  menus={menus}
+  currentPath={location.pathname}
+  autoTab={{
+    enabled: true,
+    affixKeys: ['/dashboard', '/workbench'],
+    maxCount: 10,
+  }}
+  autoBreadcrumb={{
+    enabled: true,
+    showHome: true,
+    homeName: 'Home',
+  }}
+/>
+```
+
+## Slots (Props)
+
+### Header
+
+- `headerLogo`
+- `headerLeft`
+- `headerCenter`
+- `headerMenu`
+- `headerRight`
+- `headerActions`
+- `headerExtra`
+
+### Sidebar
+
+- `sidebarLogo`
+- `sidebarMenu`
+- `sidebarMixedMenu`
+- `sidebarExtra`
+- `sidebarFooter`
+
+### Tabbar
+
+- `tabbar`
+- `tabbarLeft`
+- `tabbarRight`
+- `tabbarExtra`
+
+### Content
+
+- `content` / `children`
+- `contentHeader`
+- `breadcrumb`
+- `contentFooter`
+- `contentOverlay`
+
+### Panel
+
+- `panel`
+- `panelHeader`
+- `panelFooter`
+
+## Events
+
+| Callback | Params | Description |
+|------|------|------|
+| `onSidebarCollapse` | `(collapsed: boolean)` | Sidebar collapse state change |
+| `onMenuSelect` | `(item, key)` | Menu select |
+| `onTabSelect` | `(item, key)` | Tab select |
+| `onTabClose` | `(item, key)` | Tab close |
+| `onTabCloseAll` | - | Close all tabs |
+| `onTabCloseOther` | `(exceptKey)` | Close other tabs |
+| `onTabRefresh` | `(item, key)` | Refresh tab |
+
+## Hooks
+
+```typescript
+import {
+  useLayoutContext,    // layout context
+  useLayoutComputed,   // computed layout values
+  useLayoutCSSVars,    // CSS variables
+  useLayoutState,      // layout state (with setter)
+  useSidebarState,     // sidebar state
+  useHeaderState,      // header state
+  usePanelState,       // panel state
+  useMenuState,        // menu state
+  useTabsState,        // tab state
+  useResponsive,       // breakpoints
+  useFullscreenState,  // fullscreen state
+} from '@admin-core/layout-react';
+```
+
+## Advanced Usage
+
+### Custom Menu Component
+
+```tsx
+function App() {
+  return (
+    <BasicLayout
+      menus={menus}
+      sidebarMenu={<MyCustomMenu menus={menus} />}
+    >
+      <Outlet />
+    </BasicLayout>
+  );
+}
+```
+
+### Preferences Integration
+
+```tsx
+import { usePreferences } from '@admin-core/preferences-react';
+
+function App() {
+  const { preferences } = usePreferences();
+
+  return (
+    <BasicLayout
+      layout={preferences.app.layout}
+      header={preferences.header}
+      sidebar={preferences.sidebar}
+      tabbar={preferences.tabbar}
+    >
+      <Outlet />
+    </BasicLayout>
+  );
+}
+```

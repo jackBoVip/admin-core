@@ -6,10 +6,12 @@ import {
   flattenMenus,
   filterHiddenMenus,
   generateBreadcrumbsFromMenus,
+  resolveBreadcrumbsFromIndex,
+  resolveAutoBreadcrumbOptions,
+  getCachedFilteredMenus,
+  getCachedHeaderMenus,
   findMenuByPath,
   getMenuPathByPath,
-} from '../utils/layout';
-import {
   findMenuByKey,
   findFirstActivatableChild,
   getMenuParentKeys,
@@ -17,6 +19,7 @@ import {
   isMenuActive,
   hasActiveChild,
   getMenuItemClassName,
+  buildMenuPathIndex,
 } from '../utils/menu';
 import type { MenuItem } from '../types';
 
@@ -254,10 +257,29 @@ describe('菜单数据处理', () => {
       expect(systemMenu?.children?.some((m) => m.key === 'permission')).toBe(false);
     });
   });
+
+  describe('getCachedFilteredMenus', () => {
+    it('应对相同引用返回同一结果', () => {
+      const first = getCachedFilteredMenus(mockMenus);
+      const second = getCachedFilteredMenus(mockMenus);
+      expect(first).toBe(second);
+    });
+  });
 });
 
 // ============================================================
-// 6. 面包屑生成测试
+// 6. 顶部菜单缓存测试
+// ============================================================
+describe('顶部菜单缓存', () => {
+  it('应缓存顶部菜单结果', () => {
+    const first = getCachedHeaderMenus(mockMenus, { isHeaderNav: true });
+    const second = getCachedHeaderMenus(mockMenus, { isHeaderNav: true });
+    expect(first).toBe(second);
+  });
+});
+
+// ============================================================
+// 7. 面包屑生成测试
 // ============================================================
 describe('面包屑生成', () => {
   describe('generateBreadcrumbsFromMenus', () => {
@@ -280,6 +302,72 @@ describe('面包屑生成', () => {
     it('应返回空数组当路径不存在', () => {
       const breadcrumbs = generateBreadcrumbsFromMenus(mockMenus, '/nonexistent');
       expect(breadcrumbs).toHaveLength(0);
+    });
+  });
+
+  describe('resolveBreadcrumbsFromIndex', () => {
+    const menuIndex = buildMenuPathIndex(mockMenus);
+
+    it('应基于索引生成面包屑数据', () => {
+      const breadcrumbs = resolveBreadcrumbsFromIndex({
+        menuIndex,
+        basePath: '/system/user',
+        showHome: true,
+        homePath: '/',
+        homeName: '首页',
+        homeIcon: 'home',
+      });
+      expect(breadcrumbs.map((item) => item.name)).toEqual(['首页', '系统管理', '用户管理']);
+    });
+
+    it('应返回空数组当路径不存在且仅有首页', () => {
+      const breadcrumbs = resolveBreadcrumbsFromIndex({
+        menuIndex,
+        basePath: '/nonexistent',
+        showHome: true,
+        homePath: '/',
+        homeName: '首页',
+        hideOnlyOne: true,
+      });
+      expect(breadcrumbs).toHaveLength(0);
+    });
+  });
+
+  describe('resolveAutoBreadcrumbOptions', () => {
+    it('应合并自动配置与面包屑配置', () => {
+      const resolved = resolveAutoBreadcrumbOptions({
+        autoBreadcrumb: {
+          showHome: false,
+          homePath: '/dashboard',
+          homeName: '仪表盘',
+          homeIcon: 'dashboard',
+        },
+        breadcrumb: {
+          showHome: true,
+          hideOnlyOne: false,
+        },
+        defaultHomePath: '/',
+        translatedHomeName: '首页',
+      });
+      expect(resolved).toEqual({
+        showHome: false,
+        homePath: '/dashboard',
+        homeName: '仪表盘',
+        homeIcon: 'dashboard',
+        hideOnlyOne: false,
+      });
+    });
+
+    it('应使用默认值与翻译名称', () => {
+      const resolved = resolveAutoBreadcrumbOptions({
+        autoBreadcrumb: {},
+        breadcrumb: {},
+        defaultHomePath: '/home',
+        translatedHomeName: '首页',
+      });
+      expect(resolved.homePath).toBe('/home');
+      expect(resolved.homeName).toBe('首页');
+      expect(resolved.showHome).toBe(true);
     });
   });
 });

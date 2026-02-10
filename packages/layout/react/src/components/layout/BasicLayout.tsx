@@ -7,11 +7,13 @@
 
 import {
   mapPreferencesToLayoutProps,
-  buildMenuPathIndex,
-  filterHiddenMenus,
+  getCachedMenuPathIndex,
+  getCachedFilteredMenus,
   logger,
   rafThrottle,
   LAYOUT_UI_TOKENS,
+  getCachedHeaderMenus,
+  resolveHeaderActiveKey,
 } from '@admin-core/layout';
 import {
   PreferencesProvider,
@@ -40,6 +42,7 @@ import type { SupportedLocale, BasicLayoutProps, LayoutEvents, RouterConfig, Men
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+const EMPTY_MENUS: MenuItem[] = [];
 
 /**
  * 布局插槽 Props
@@ -254,9 +257,13 @@ function LayoutInner({
     return context.t('layout.header.menuLauncher');
   }, [context]);
 
+  const menus = contextProps.menus && contextProps.menus.length > 0
+    ? contextProps.menus
+    : EMPTY_MENUS;
+
   const launcherMenus = useMemo(() => {
-    return filterHiddenMenus(contextProps.menus || []);
-  }, [contextProps.menus]);
+    return getCachedFilteredMenus(menus);
+  }, [menus]);
 
   const showFloatingPreferencesButton = showPreferencesButton && computed.isFullContent;
   const showFixedPreferencesButton =
@@ -326,7 +333,7 @@ function LayoutInner({
       x: window.innerWidth - size - inset,
       y: window.innerHeight - size - inset,
     });
-  }, [showFloatingPreferencesButton, floatingPosition]);
+  }, [showFloatingPreferencesButton, floatingPosition, getFloatingBounds]);
 
   useEffect(() => {
     if (!showFloatingPreferencesButton) return;
@@ -428,16 +435,16 @@ function LayoutInner({
   }, [isMobile, state.sidebarCollapsed, setState]);
 
   // 打开偏好设置
-  const openPreferences = () => {
+  const openPreferences = useCallback(() => {
     setShowPreferencesDrawer(true);
     onPreferencesOpen?.();
-  };
+  }, [onPreferencesOpen]);
 
   // 关闭偏好设置
-  const closePreferences = () => {
+  const closePreferences = useCallback(() => {
     setShowPreferencesDrawer(false);
     onPreferencesClose?.();
-  };
+  }, [onPreferencesClose]);
 
   const handleFloatingClick = useCallback(() => {
     if (floatingMovedRef.current) {
@@ -475,61 +482,44 @@ function LayoutInner({
   }, [computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]);
 
   // 顶部导航菜单数据
-  const headerMenus = useMemo(() => {
-    if (!contextProps.menus || isHeaderSidebarNav) return [];
-    
-    // header-nav 模式：显示完整菜单树
-    if (computed.isHeaderNav) {
-      return contextProps.menus;
-    }
-    
-    // mixed-nav、header-mixed-nav 模式：只显示顶级菜单
-    if (computed.isMixedNav || computed.isHeaderMixedNav) {
-      return contextProps.menus.map(item => ({
-        ...item,
-        children: undefined,
-      }));
-    }
-    
-    return [];
-  }, [contextProps.menus, computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]);
+  const headerMenus = useMemo(
+    () =>
+      getCachedHeaderMenus(menus, {
+        isHeaderNav: computed.isHeaderNav,
+        isMixedNav: computed.isMixedNav,
+        isHeaderMixedNav: computed.isHeaderMixedNav,
+        isHeaderSidebarNav,
+      }),
+    [menus, computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]
+  );
 
   const headerMenuIndex = useMemo(
-    () => buildMenuPathIndex(contextProps.menus || []),
-    [contextProps.menus]
+    () => getCachedMenuPathIndex(menus),
+    [menus]
   );
 
   // 顶部导航菜单激活 key
-  const headerActiveKey = useMemo(() => {
-    if (contextProps.activeMenuKey) return contextProps.activeMenuKey;
-    if ((computed.isMixedNav || computed.isHeaderMixedNav) && state.mixedNavRootKey) {
-      return state.mixedNavRootKey;
-    }
-    
-    const path = contextProps.currentPath ? contextProps.currentPath.split('?')[0] : '';
-    if (!path || !headerMenus.length) return undefined;
-    
-    let menu =
-      headerMenuIndex.byPath.get(path) ??
-      headerMenuIndex.byKey.get(path);
-    if (!menu) {
-      for (const item of headerMenuIndex.pathItems) {
-        if (item.path && path.startsWith(item.path)) {
-          menu = item;
-          break;
-        }
-      }
-    }
-    if (!menu) return undefined;
-    const chain =
-      (menu.key ? headerMenuIndex.chainByKey.get(menu.key) : undefined) ??
-      (menu.path ? headerMenuIndex.chainByPath.get(menu.path) : undefined) ??
-      [];
-    if (computed.isMixedNav || computed.isHeaderMixedNav) {
-      return chain[0];
-    }
-    return menu.key;
-  }, [contextProps.activeMenuKey, contextProps.currentPath, headerMenuIndex, headerMenus.length, computed.isMixedNav, computed.isHeaderMixedNav, state.mixedNavRootKey]);
+  const headerActiveKey = useMemo(
+    () =>
+      resolveHeaderActiveKey({
+        activeMenuKey: contextProps.activeMenuKey,
+        currentPath: contextProps.currentPath,
+        menuIndex: headerMenuIndex,
+        mixedNavRootKey: state.mixedNavRootKey,
+        isMixedNav: computed.isMixedNav,
+        isHeaderMixedNav: computed.isHeaderMixedNav,
+        isHeaderSidebarNav,
+      }) || undefined,
+    [
+      contextProps.activeMenuKey,
+      contextProps.currentPath,
+      headerMenuIndex,
+      state.mixedNavRootKey,
+      computed.isMixedNav,
+      computed.isHeaderMixedNav,
+      isHeaderSidebarNav,
+    ]
+  );
 
   const handleHeaderMenuSelect = useCallback(
     (item: MenuItem, key: string) => {
@@ -1109,6 +1099,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onGlobalSearch,
     onRefresh,
   }), [
+    preferencesManager,
     onSidebarCollapse,
     onMenuSelect,
     onTabSelect,

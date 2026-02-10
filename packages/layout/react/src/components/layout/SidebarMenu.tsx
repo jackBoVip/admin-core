@@ -192,6 +192,7 @@ const PopupMenu = memo(function PopupMenu({
   const [scrollTop, setScrollTop] = useState<number>(0);
   const [contentTop, setContentTop] = useState<number>(0);
   const [viewportHeight, setViewportHeight] = useState<number>(0);
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
   const popupResizeObserverRef = useRef<ResizeObserver | null>(null);
   const popupStyle = useMemo(() => ({ top: `${top}px`, left: `${left}px` }), [top, left]);
   const itemId = useMemo(() => getMenuId(item), [item]);
@@ -231,7 +232,7 @@ const PopupMenu = memo(function PopupMenu({
     if (!isSame) {
       setExpandedKeys(nextKeys);
     }
-  }, [buildExpandedKeys]);
+  }, [buildExpandedKeys, expandedKeys]);
 
   const menuItemMap = useMemo(() => {
     const map = new Map<string, MenuItem>();
@@ -304,7 +305,7 @@ const PopupMenu = memo(function PopupMenu({
     }
   }, [menuItemMap, handleItemClick]);
 
-  const popupChildren = item.children ?? [];
+  const popupChildren = useMemo(() => item.children ?? [], [item.children]);
   const [popupItemHeight, setPopupItemHeight] = useState<number>(
     LAYOUT_UI_TOKENS.POPUP_MENU_ITEM_HEIGHT,
   );
@@ -457,6 +458,8 @@ const PopupMenu = memo(function PopupMenu({
     );
   };
 
+  if (!portalTarget) return null;
+
   return createPortal(
     <div
       className={`sidebar-menu__popup sidebar-menu__popup--${theme}`}
@@ -492,7 +495,7 @@ const PopupMenu = memo(function PopupMenu({
         })}
       </div>
     </div>,
-    document.body
+    portalTarget
   );
 });
 
@@ -772,7 +775,7 @@ export function SidebarMenu() {
       ? visibleMenus.length
       : Math.min(RENDER_CHUNK, visibleMenus.length);
     setRenderCount((prev) => (prev === nextCount ? prev : nextCount));
-  }, [shouldVirtualize, visibleMenus.length]);
+  }, [shouldVirtualize, visibleMenus.length, RENDER_CHUNK]);
 
   useEffect(() => {
     if (shouldVirtualize || renderCount >= visibleMenus.length) return;
@@ -780,7 +783,7 @@ export function SidebarMenu() {
       setRenderCount((prev) => Math.min(prev + RENDER_CHUNK, visibleMenus.length));
     });
     return () => cancelAnimationFrame(frame);
-  }, [shouldVirtualize, renderCount, visibleMenus.length]);
+  }, [shouldVirtualize, renderCount, visibleMenus.length, RENDER_CHUNK]);
 
   const slicedMenus = useMemo(
     () => visibleMenus.slice(0, renderCount),

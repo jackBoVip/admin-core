@@ -5,10 +5,12 @@
 
 import {
   DEFAULT_LAYOUT_CONFIG,
-  DEFAULT_LAYOUT_STATE,
   calculateLayoutComputed,
   createI18n,
   generateCSSVariables,
+  getInitialLayoutState,
+  getLayoutStatePatchFromProps,
+  isSidebarMixedLayout,
   mergeConfig,
   type BasicLayoutProps,
   type LayoutComputed,
@@ -75,32 +77,30 @@ export function LayoutProvider({
     [props]
   );
 
-  const resolveLayout = useCallback(
-    (nextProps: BasicLayoutProps) =>
-      nextProps.isMobile ? 'sidebar-nav' : (nextProps.layout || 'sidebar-nav'),
-    []
-  );
-
-  const isSidebarMixedLayout = useCallback(
-    (nextProps: BasicLayoutProps) => {
-      const layout = resolveLayout(nextProps);
-      return layout === 'sidebar-mixed-nav' || layout === 'header-mixed-nav';
-    },
-    [resolveLayout]
+  const syncProps = useMemo(
+    () =>
+      ({
+        layout: props.layout,
+        isMobile: props.isMobile,
+        sidebar: {
+          collapsed: props.sidebar?.collapsed,
+          expandOnHover: props.sidebar?.expandOnHover,
+        },
+        panel: {
+          collapsed: props.panel?.collapsed,
+        },
+      } as BasicLayoutProps),
+    [
+      props.layout,
+      props.isMobile,
+      props.sidebar?.collapsed,
+      props.sidebar?.expandOnHover,
+      props.panel?.collapsed,
+    ]
   );
 
   // 从 props 中获取初始状态值
-  const getInitialState = (): LayoutState => ({
-    ...DEFAULT_LAYOUT_STATE,
-    // 从 sidebar 配置初始化折叠状态
-    sidebarCollapsed: isSidebarMixedLayout(props)
-      ? false
-      : (props.sidebar?.collapsed ?? DEFAULT_LAYOUT_STATE.sidebarCollapsed),
-    // 从 sidebar 配置初始化 expandOnHover
-    sidebarExpandOnHover: props.sidebar?.expandOnHover ?? DEFAULT_LAYOUT_STATE.sidebarExpandOnHover,
-    // 从 panel 配置初始化折叠状态
-    panelCollapsed: props.panel?.collapsed ?? DEFAULT_LAYOUT_STATE.panelCollapsed,
-  });
+  const getInitialState = (): LayoutState => getInitialLayoutState(props);
 
   // 布局状态（从 props 初始化）
   const [state, setState] = useState<LayoutState>(getInitialState);
@@ -116,53 +116,19 @@ export function LayoutProvider({
       return;
     }
     
-    const sidebarMixed = isSidebarMixedLayout(props);
-    const sidebarCollapsed = props.sidebar?.collapsed;
-    const sidebarExpandOnHover = props.sidebar?.expandOnHover;
-    const panelCollapsed = props.panel?.collapsed;
-
-    // 同步 sidebar.collapsed 到 state
-    if (sidebarMixed) {
-      setState((prev) => {
-        if (!prev.sidebarCollapsed) return prev;
-        events.onSidebarCollapse?.(false);
-        return { ...prev, sidebarCollapsed: false };
-      });
-    } else if (sidebarCollapsed !== undefined) {
-      setState((prev) => {
-        if (prev.sidebarCollapsed !== sidebarCollapsed) {
-          return { ...prev, sidebarCollapsed };
-        }
-        return prev;
-      });
-    }
-
-    // 同步 sidebar.expandOnHover 到 state
-    if (sidebarExpandOnHover !== undefined) {
-      setState((prev) => {
-        if (prev.sidebarExpandOnHover !== sidebarExpandOnHover) {
-          return { ...prev, sidebarExpandOnHover };
-        }
-        return prev;
-      });
-    }
-
-    // 同步 panel.collapsed 到 state
-    if (panelCollapsed !== undefined) {
-      setState((prev) => {
-        if (prev.panelCollapsed !== panelCollapsed) {
-          return { ...prev, panelCollapsed };
-        }
-        return prev;
-      });
-    }
+    setState((prev) => {
+      const { patch, changed, sidebarCollapseChanged } = getLayoutStatePatchFromProps(
+        prev,
+        syncProps
+      );
+      if (!changed) return prev;
+      if (sidebarCollapseChanged !== undefined) {
+        events.onSidebarCollapse?.(sidebarCollapseChanged);
+      }
+      return { ...prev, ...patch };
+    });
   }, [
-    props.layout,
-    props.isMobile,
-    props.sidebar?.collapsed,
-    props.sidebar?.expandOnHover,
-    props.panel?.collapsed,
-    isSidebarMixedLayout,
+    syncProps,
     events,
   ]);
 
@@ -186,7 +152,7 @@ export function LayoutProvider({
       events.onSidebarCollapse?.(newCollapsed);
       return { ...prev, sidebarCollapsed: newCollapsed };
     });
-  }, [events, mergedProps, isSidebarMixedLayout]);
+  }, [events, mergedProps]);
 
   // 切换功能区折叠
   const togglePanelCollapse = useCallback(() => {

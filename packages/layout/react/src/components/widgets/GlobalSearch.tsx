@@ -30,7 +30,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
   const resultListRef = useRef<HTMLDivElement>(null);
   const isOpenRef = useRef(isOpen);
 
-  const menus = props.menus || [];
+  const menus = useMemo(() => props.menus ?? [], [props.menus]);
   const shortcutConfig = props.shortcutKeys || {};
   const shortcutEnabled =
     shortcutConfig.enable !== false && shortcutConfig.globalSearch !== false;
@@ -309,6 +309,8 @@ export const GlobalSearch = memo(function GlobalSearch() {
     return isMac ? '⌘K' : 'Ctrl K';
   }, []);
 
+  const portalTarget = typeof document === 'undefined' ? null : document.body;
+
   return (
     <>
       <button
@@ -324,7 +326,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
         </kbd>
       </button>
 
-      {isOpen &&
+      {isOpen && portalTarget &&
         createPortal(
           <div className="header-search-overlay" data-state="open">
             <div
@@ -422,7 +424,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
               </div>
             </div>
           </div>,
-          document.body
+          portalTarget
         )}
     </>
   );

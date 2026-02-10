@@ -1,5 +1,7 @@
 # @admin-core/preferences-vue
 
+简体中文 | [English](./README.md)
+
 > Vue 3 偏好设置集成，提供 Composables 和组件。
 
 ## 特性
@@ -9,6 +11,13 @@
 - **开箱即用组件**: 预构建的抽屉、标签页和表单组件
 - **TypeScript**: 完整的类型定义，类型安全
 - **响应式优化**: 使用 shallowRef 实现高效的订阅管理
+
+## 对外导出
+
+- **初始化**：`initPreferences`、`destroyPreferences`、`getPreferencesManager`
+- **Provider / 组件**：`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger`、各类 Tab 与表单项
+- **组合式 API**：`usePreferences`、`usePreferencesContext`、`usePreferencesCategory`、`useLayout`、`useTheme`
+- **再导出**：`@admin-core/preferences` 的类型、常量、语言包与图标
 
 ## 安装
 

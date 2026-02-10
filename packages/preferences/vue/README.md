@@ -1,5 +1,7 @@
 # @admin-core/preferences-vue
 
+English | [简体中文](./README.zh-CN.md)
+
 > Vue 3 integration for @admin-core/preferences with composables and components.
 
 ## Features
@@ -9,6 +11,13 @@
 - **Ready-to-use Components**: Pre-built drawer, tabs, and form components
 - **TypeScript**: Full type safety with comprehensive type definitions
 - **Optimized Reactivity**: Efficient subscription management with shallow refs
+
+## Public API
+
+- **Initialization**: `initPreferences`, `destroyPreferences`, `getPreferencesManager`
+- **Providers & Components**: `PreferencesProvider`, `PreferencesDrawer`, `PreferencesTrigger`, tabs and form items
+- **Composables**: `usePreferences`, `usePreferencesContext`, `usePreferencesCategory`, `useLayout`, `useTheme`
+- **Re-exports**: core types, constants, locales, and icons from `@admin-core/preferences`
 
 ## Installation
 

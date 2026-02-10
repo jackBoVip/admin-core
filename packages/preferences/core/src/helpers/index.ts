@@ -70,7 +70,7 @@ export {
 } from './font-scale';
 
 // 布局偏好映射
-export { mapPreferencesToLayoutProps } from './layout-mapping';
+export { mapPreferencesToLayoutProps } from './layout/layout-mapping';
 
 // 布局设置页辅助
 export {
@@ -81,7 +81,7 @@ export {
   createLayoutTabUpdater,
   type LayoutTabConfigs,
   type LayoutTabUpdater,
-} from './layout-tab';
+} from './layout/layout-tab';
 
 // 主题工具
 export {

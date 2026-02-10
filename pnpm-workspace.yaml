@@ -1,5 +1,6 @@
 packages:
   - examples/*
+  - '!examples/vue-vben-admin-main'
   - packages/preferences/*
   - packages/layout/*
   - internal/*
@@ -37,6 +38,8 @@ catalog:
   culori: ^4.0.2
   element-plus: ^2.13.1
   eslint: ^9.39.2
+  eslint-plugin-react: ^7.37.1
+  eslint-plugin-react-hooks: ^5.0.0
   eslint-plugin-import-x: ^4.16.1
   eslint-plugin-vue: ^10.7.0
   vue-eslint-parser: ^10.2.0

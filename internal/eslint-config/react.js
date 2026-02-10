@@ -4,6 +4,8 @@
  */
 
 import baseConfig from './index.js';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooksPlugin from 'eslint-plugin-react-hooks';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
@@ -21,6 +23,10 @@ export default [
       react: {
         version: 'detect',
       },
+    },
+    plugins: {
+      react: reactPlugin,
+      'react-hooks': reactHooksPlugin,
     },
     rules: {
       // React-specific rules

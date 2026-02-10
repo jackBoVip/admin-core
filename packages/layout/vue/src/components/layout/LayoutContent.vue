@@ -2,8 +2,8 @@
 /**
  * 内容区组件
  */
-import { computed } from 'vue';
-import { useLayoutContext, useLayoutComputed, useSidebarState, usePanelState } from '../../composables';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { useLayoutContext, useLayoutComputed, usePageTransition, useSidebarState, usePanelState, useRouter } from '../../composables';
 import { DEFAULT_CONTENT_CONFIG } from '@admin-core/layout';
 import LayoutRefreshView from './LayoutRefreshView.vue';
 
@@ -11,6 +11,121 @@ const context = useLayoutContext();
 const layoutComputed = useLayoutComputed();
 const { collapsed: sidebarCollapsed } = useSidebarState();
 const { collapsed: panelCollapsed, position: panelPosition } = usePanelState();
+const { enabled: transitionEnabled, transitionName } = usePageTransition();
+const { currentPath } = useRouter();
+const innerRef = ref<HTMLElement | null>(null);
+let transitionTimer: number | null = null;
+let transitionRaf: number | null = null;
+const transitionPhase = ref<'idle' | 'from' | 'active'>('idle');
+const transitionClassName = ref('');
+
+const resolveTransitionDuration = () => {
+  if (typeof window === 'undefined') return 0;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--admin-duration-normal').trim();
+  const value = Number.parseFloat(raw);
+  return Number.isFinite(value) ? value : 300;
+};
+
+const clearTransitionTimers = () => {
+  if (transitionRaf !== null) {
+    window.cancelAnimationFrame(transitionRaf);
+    transitionRaf = null;
+  }
+  if (transitionTimer !== null) {
+    window.clearTimeout(transitionTimer);
+    transitionTimer = null;
+  }
+};
+
+const clearTransitionClasses = () => {
+  transitionPhase.value = 'idle';
+  transitionClassName.value = '';
+};
+
+const applyTransitionInlineFrom = (el: HTMLElement, name: string) => {
+  if (name === 'fade') {
+    el.style.setProperty('opacity', '0', 'important');
+    return;
+  }
+  if (name === 'fade-slide') {
+    el.style.setProperty('opacity', '0', 'important');
+    el.style.setProperty('transform', 'translateX(10px)', 'important');
+    return;
+  }
+  if (name === 'fade-up') {
+    el.style.setProperty('opacity', '0', 'important');
+    el.style.setProperty('transform', 'translateY(10px)', 'important');
+    return;
+  }
+  if (name === 'fade-down') {
+    el.style.setProperty('opacity', '0', 'important');
+    el.style.setProperty('transform', 'translateY(-10px)', 'important');
+    return;
+  }
+  if (name === 'slide-left') {
+    el.style.setProperty('transform', 'translateX(100%)', 'important');
+    return;
+  }
+  if (name === 'slide-right') {
+    el.style.setProperty('transform', 'translateX(-100%)', 'important');
+    return;
+  }
+};
+
+const clearTransitionInlineFrom = (el: HTMLElement) => {
+  el.style.removeProperty('opacity');
+  el.style.removeProperty('transform');
+};
+
+const runTransition = () => {
+  if (!transitionEnabled.value || typeof window === 'undefined') return;
+  if (!innerRef.value) return;
+  const name = transitionName.value || 'fade-slide';
+  const el = innerRef.value;
+  clearTransitionInlineFrom(el);
+  transitionClassName.value = name;
+  transitionPhase.value = 'from';
+  applyTransitionInlineFrom(el, name);
+  void el.offsetWidth;
+  transitionRaf = window.requestAnimationFrame(() => {
+    clearTransitionInlineFrom(el);
+    transitionPhase.value = 'active';
+  });
+  transitionTimer = window.setTimeout(() => {
+    clearTransitionClasses();
+  }, resolveTransitionDuration());
+};
+
+const transitionTrigger = computed(() => {
+  return `${currentPath.value || ''}:${context.state.refreshKey}`;
+});
+
+watch(
+  [transitionTrigger, transitionEnabled, transitionName],
+  () => {
+    clearTransitionTimers();
+    nextTick(() => runTransition());
+  }
+);
+
+watch(
+  transitionEnabled,
+  (enabled) => {
+    if (enabled) return;
+    clearTransitionClasses();
+    if (innerRef.value) {
+      clearTransitionInlineFrom(innerRef.value);
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  clearTransitionTimers();
+  clearTransitionClasses();
+  if (innerRef.value) {
+    clearTransitionInlineFrom(innerRef.value);
+  }
+});
 
 // 配置
 const contentCompact = computed(() => context.props.contentCompact || DEFAULT_CONTENT_CONFIG.contentCompact);
@@ -63,6 +178,14 @@ const innerStyle = computed(() => {
   }
   return {};
 });
+
+const transitionClasses = computed(() => {
+  if (!transitionClassName.value || transitionPhase.value === 'idle') return '';
+  if (transitionPhase.value === 'from') {
+    return `${transitionClassName.value}-enter-active ${transitionClassName.value}-enter-from`;
+  }
+  return `${transitionClassName.value}-enter-active`;
+});
 </script>
 
 <template>
@@ -87,7 +210,7 @@ const innerStyle = computed(() => {
     </div>
 
     <!-- 主内容 -->
-    <div class="layout-content__inner" :style="innerStyle">
+    <div ref="innerRef" class="layout-content__inner" :class="transitionClasses" :style="innerStyle">
       <LayoutRefreshView>
         <KeepAlive v-if="keepAliveEnabled" :include="keepAliveInclude" :exclude="keepAliveExclude">
           <slot />

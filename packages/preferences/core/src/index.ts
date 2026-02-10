@@ -60,6 +60,13 @@ export {
   type ActionFactory,
 } from './actions';
 
+// ========== Store ==========
+export {
+  getDefaultPreferencesStore,
+  resetDefaultPreferencesStore,
+  type PreferencesStore,
+} from './store';
+
 // ========== 控制器 (Headless) ==========
 export {
   SliderController,

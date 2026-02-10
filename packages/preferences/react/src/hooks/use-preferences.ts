@@ -4,10 +4,7 @@
  */
 
 import {
-  getDefaultLifecycle,
-  createPreferencesActions,
-  createThemeActions,
-  createLayoutActions,
+  getDefaultPreferencesStore,
   getDefaultPreferences,
   hasChanges as hasChangesUtil,
   type PreferencesManager,
@@ -21,37 +18,22 @@ import { useCallback, useMemo, useSyncExternalStore } from 'react';
 /**
  * 全局生命周期管理器（使用 core 的单例）
  */
-const lifecycle = getDefaultLifecycle();
-
-/**
- * 缓存的 actions 对象（避免重复创建，与 Vue 版本一致）
- */
-let cachedPreferencesActions: ReturnType<typeof createPreferencesActions> | null = null;
-let cachedThemeActions: ReturnType<typeof createThemeActions> | null = null;
-let cachedLayoutActions: ReturnType<typeof createLayoutActions> | null = null;
+const store = getDefaultPreferencesStore();
+const actionFactory = store.actions;
 
 /**
  * 获取缓存的 actions
  */
 function getPreferencesActionsInstance() {
-  if (!cachedPreferencesActions) {
-    cachedPreferencesActions = createPreferencesActions(lifecycle.get());
-  }
-  return cachedPreferencesActions;
+  return actionFactory.getPreferencesActions();
 }
 
 function getThemeActionsInstance() {
-  if (!cachedThemeActions) {
-    cachedThemeActions = createThemeActions(lifecycle.get());
-  }
-  return cachedThemeActions;
+  return actionFactory.getThemeActions();
 }
 
 function getLayoutActionsInstance() {
-  if (!cachedLayoutActions) {
-    cachedLayoutActions = createLayoutActions(lifecycle.get());
-  }
-  return cachedLayoutActions;
+  return actionFactory.getLayoutActions();
 }
 
 /**
@@ -59,37 +41,33 @@ function getLayoutActionsInstance() {
  * @param options - 初始化选项
  */
 export function initPreferences(options?: PreferencesInitOptions): PreferencesManager {
-  return lifecycle.init(options);
+  return store.init(options);
 }
 
 /**
  * 获取全局偏好设置管理器
  */
 export function getPreferencesManager(): PreferencesManager {
-  return lifecycle.get();
+  return store.getManager();
 }
 
 /**
  * 判断偏好设置管理器是否已初始化
  */
 export function isPreferencesInitialized(): boolean {
-  return lifecycle.isInitialized();
+  return store.isInitialized();
 }
 
 /**
  * 销毁全局偏好设置管理器
  */
 export function destroyPreferences(): void {
-  lifecycle.destroy();
-  // 清除缓存的 actions（与 Vue 版本一致）
-  cachedPreferencesActions = null;
-  cachedThemeActions = null;
-  cachedLayoutActions = null;
+  store.destroy();
 }
 
 function usePreferencesStore(): Preferences {
   const subscribe = useCallback((callback: () => void) => {
-    const unsubscribe = lifecycle.subscribe(() => {
+    const unsubscribe = store.subscribe(() => {
       // 始终调用 callback，确保 React 能感知状态变化
       callback();
     });
@@ -99,7 +77,7 @@ function usePreferencesStore(): Preferences {
   }, []);
 
   const getSnapshot = useCallback(() => {
-    const prefs = lifecycle.getPreferences() as Preferences;
+    const prefs = store.getPreferences() as Preferences;
     // 减少 getSnapshot 日志输出（只在开发环境且值变化时输出）
     // React useSyncExternalStore 会频繁调用 getSnapshot，这是正常行为
     return prefs;
@@ -113,7 +91,7 @@ function usePreferencesStore(): Preferences {
  * @returns 响应式偏好设置
  */
 export function usePreferences() {
-  const manager = lifecycle.get();
+  const manager = store.getManager();
   const actions = getPreferencesActionsInstance();
   const preferences = usePreferencesStore();
 
@@ -151,7 +129,7 @@ export function usePreferences() {
  * @param key - 分类键名
  */
 export function usePreferencesCategory<K extends PreferencesKeys>(key: K) {
-  const manager = lifecycle.get();
+  const manager = store.getManager();
   const preferences = usePreferencesStore();
 
   const value = preferences[key] as Preferences[K];

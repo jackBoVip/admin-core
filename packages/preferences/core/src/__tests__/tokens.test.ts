@@ -12,7 +12,7 @@ import {
   drawer,
   iconSizes,
   generateCSSVariables,
-} from '../config/tokens';
+} from '../tokens';
 
 describe('设计令牌', () => {
   beforeEach(() => {

@@ -1,5 +1,7 @@
 # @admin-core/layout-react
 
+简体中文 | [English](./README.en.md)
+
 React 基础布局组件，开箱即用，高度集成偏好设置。
 
 ## 特性
@@ -9,6 +11,14 @@ React 基础布局组件，开箱即用，高度集成偏好设置。
 - 🌍 **国际化** - 内置中英文，支持扩展
 - 🔌 **丰富插槽** - 每个区域支持 ReactNode，高度可定制
 - 📱 **响应式** - 自动适配移动端
+
+## 对外导出
+
+- **布局组件**：`BasicLayout` 及内置布局组件与菜单组件
+- **Hooks**：`useLayoutContext`、`useLayoutState`、`useLayoutComputed`、`useRouter` 等
+- **偏好设置内置**：`initPreferences`、`PreferencesProvider`、`PreferencesDrawer` 等（来自 `@admin-core/preferences-react`）
+- **类型与常量**：从 `@admin-core/layout` 重新导出布局类型、配置与工具
+- **样式入口**：`@admin-core/layout-react/style.css`
 
 ## 安装
 
