@@ -440,7 +440,7 @@ const handleTransitionOptionActivate = (e: Event) => {
         @keydown.enter.space.prevent="handleTransitionOptionActivate"
       >
         <div
-          class="outline-box flex-center transition-preset-box"
+          class="outline-box flex-center transition-preset-box pref-disabled"
           :class="{ 
             'outline-box-active': transitionName === opt.value, 
             'disabled': !transitionEnable || configs.transitionName.disabled 

@@ -44,9 +44,6 @@
     /* 禁用状态 - 使用 JS 阻止点击，CSS 只处理视觉样式 */
     &.disabled,
     &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.5;
-
       /* 禁用 hover 效果 */
       &:hover .theme-mode-label {
         color: var(--muted-foreground);
@@ -154,9 +151,6 @@
     /* 禁用状态 */
     &.disabled,
     &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.5;
-
       &:hover .theme-preset-label {
         color: var(--muted-foreground);
       }
@@ -267,9 +261,6 @@
     /* 禁用状态 */
     &.disabled,
     &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.5;
-
       .radius-option {
         pointer-events: none;
       }
@@ -377,9 +368,6 @@
     /* 禁用状态 */
     &.disabled,
     &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.5;
-
       &:hover .layout-preset-label {
         color: var(--muted-foreground);
       }
@@ -443,9 +431,6 @@
     /* 禁用状态 */
     &.disabled,
     &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.5;
-
       &:hover .content-width-label {
         color: var(--muted-foreground);
       }

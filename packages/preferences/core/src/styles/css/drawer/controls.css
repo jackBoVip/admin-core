@@ -614,9 +614,6 @@
     /* 禁用状态 */
     &.disabled,
     &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.5;
-
       &:hover .transition-preset-label {
         color: var(--muted-foreground);
       }
@@ -629,10 +626,6 @@
     padding: 4px;
     border-radius: 8px;
     transition: opacity var(--pref-transition);
-  }
-
-  :is(.transition-preset-box.disabled, .transition-preset-box[data-disabled="true"]) {
-    opacity: 0.5;
   }
 
   .transition-preset-label {
@@ -653,11 +646,9 @@
     align-items: center;
     width: 100%;
     height: 100%;
+    --pref-disabled-opacity: 0.6;
   }
 
-  :is(.transition-preview.disabled, .transition-preview[data-disabled="true"]) {
-    opacity: 0.6;
-  }
 
   .transition-preview-screen {
     width: 100%;

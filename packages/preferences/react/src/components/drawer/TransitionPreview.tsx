@@ -159,7 +159,7 @@ export const TransitionPreview: React.FC<TransitionPreviewProps> = memo(({
   }, [shouldAnimate, startLoop, stopLoop]);
 
   const classNames = (() => {
-    const classes = ['transition-preview'];
+    const classes = ['transition-preview', 'pref-disabled'];
     if (!enabled) classes.push('disabled');
     if (compact) classes.push('compact');
     return classes.join(' ');

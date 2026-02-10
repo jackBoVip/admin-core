@@ -181,7 +181,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="transition-preview"
+    class="transition-preview pref-disabled"
     :class="{ disabled: !enabled, compact: compact }"
     :data-disabled="!enabled ? 'true' : undefined"
   >

@@ -454,7 +454,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
                     }}
                   >
                     <div
-                      className={`outline-box flex-center transition-preset-box ${
+                      className={`outline-box flex-center transition-preset-box pref-disabled ${
                         preferences.transition.name === opt.value ? 'outline-box-active' : ''
                       } ${isDisabled ? 'disabled' : ''}`}
                       data-disabled={isDisabled ? 'true' : undefined}
