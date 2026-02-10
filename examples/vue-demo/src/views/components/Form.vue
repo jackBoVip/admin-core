@@ -14,46 +14,46 @@ const formData = ref({
     <h1 class="page-title">表单</h1>
     <p class="page-description">表单组件示例</p>
 
-    <div class="card" style="max-width: 500px;">
+    <div class="card max-w-[500px]">
       <h2 class="card-title">登录表单</h2>
-      <form @submit.prevent style="display: flex; flex-direction: column; gap: 16px;">
+      <form @submit.prevent class="flex flex-col gap-4">
         <div>
-          <label style="display: block; margin-bottom: 4px; font-weight: 500;">用户名</label>
+          <label class="block mb-1 font-medium">用户名</label>
           <input
             v-model="formData.username"
             type="text"
             placeholder="请输入用户名"
-            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px;"
+            class="w-full rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
         </div>
         <div>
-          <label style="display: block; margin-bottom: 4px; font-weight: 500;">邮箱</label>
+          <label class="block mb-1 font-medium">邮箱</label>
           <input
             v-model="formData.email"
             type="email"
             placeholder="请输入邮箱"
-            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px;"
+            class="w-full rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
         </div>
         <div>
-          <label style="display: block; margin-bottom: 4px; font-weight: 500;">密码</label>
+          <label class="block mb-1 font-medium">密码</label>
           <input
             v-model="formData.password"
             type="password"
             placeholder="请输入密码"
-            style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px;"
+            class="w-full rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           >
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="flex items-center gap-2">
           <input
             v-model="formData.remember"
             type="checkbox"
             id="remember"
-            style="width: 16px; height: 16px;"
+            class="h-4 w-4"
           >
           <label for="remember">记住我</label>
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">登录</button>
+        <button type="submit" class="btn btn-primary w-full">登录</button>
       </form>
     </div>
   </div>

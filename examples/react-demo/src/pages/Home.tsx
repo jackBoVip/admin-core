@@ -30,7 +30,7 @@ export default function Home() {
       <div className="card">
         <h2 className="card-title">快速开始</h2>
         <p>这是一个基于 <code>@admin-core/layout-react</code> 的布局演示项目。</p>
-        <ul style={{ marginTop: 16, paddingLeft: 20 }}>
+        <ul className="mt-4 pl-5 list-disc">
           <li>✅ 自动标签页管理</li>
           <li>✅ 自动面包屑导航</li>
           <li>✅ 内置路由处理</li>

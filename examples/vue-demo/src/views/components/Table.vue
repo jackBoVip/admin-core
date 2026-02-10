@@ -33,13 +33,13 @@ const tableData = [
             <td>¥{{ item.price.toFixed(2) }}</td>
             <td>{{ item.stock }}</td>
             <td>
-              <span :style="{ color: item.status === '上架' ? '#10b981' : '#ef4444' }">
+              <span :class="item.status === '上架' ? 'text-success' : 'text-destructive'">
                 {{ item.status }}
               </span>
             </td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; margin-right: 8px;">编辑</button>
-              <button class="btn" style="padding: 4px 8px; font-size: 12px; background: #ef4444; color: white;">删除</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs mr-2">编辑</button>
+              <button class="btn bg-destructive text-white hover:opacity-90 px-2 py-1 text-xs">删除</button>
             </td>
           </tr>
         </tbody>

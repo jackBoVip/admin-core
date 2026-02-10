@@ -33,7 +33,7 @@
     <div class="card">
       <h2 class="card-title">快速开始</h2>
       <p>这是一个基于 <code>@admin-core/layout-vue</code> 的布局演示项目。</p>
-      <ul style="margin-top: 16px; padding-left: 20px;">
+      <ul class="mt-4 pl-5 list-disc">
         <li>✅ 自动标签页管理</li>
         <li>✅ 自动面包屑导航</li>
         <li>✅ 内置路由处理</li>

@@ -5,7 +5,7 @@ export default function SystemRole() {
       <p className="page-description">管理系统角色与权限</p>
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <div className="flex justify-end mb-4">
           <button className="btn btn-primary">+ 新增角色</button>
         </div>
 
@@ -24,27 +24,27 @@ export default function SystemRole() {
               <td>超级管理员</td>
               <td>admin</td>
               <td>拥有所有权限</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
             <tr>
               <td>普通用户</td>
               <td>user</td>
               <td>基础权限</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
             <tr>
               <td>访客</td>
               <td>guest</td>
               <td>只读权限</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
           </tbody>

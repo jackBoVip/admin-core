@@ -16,6 +16,7 @@
   --demo-card-foreground: #111827;
   --demo-success: #10b981;
   --demo-danger: #ef4444;
+  --demo-warning: #f59e0b;
   --demo-radius: 8px;
   --demo-radius-sm: 6px;
   --demo-radius-lg: 12px;
@@ -38,6 +39,7 @@
   --color-card-foreground: var(--demo-card-foreground);
   --color-success: var(--demo-success);
   --color-destructive: var(--demo-danger);
+  --color-warning: var(--demo-warning);
   --radius-sm: var(--demo-radius-sm);
   --radius-DEFAULT: var(--demo-radius);
   --radius-lg: var(--demo-radius-lg);

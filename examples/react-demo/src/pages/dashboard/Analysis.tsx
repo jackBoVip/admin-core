@@ -13,8 +13,8 @@ function StatCard({ title, value, trend, isUp, loading }: StatCardProps) {
     return (
       <div className="stat-card">
         <div className="stat-card-title">{title}</div>
-        <div className="stat-card-value skeleton-loading" style={{ width: '80px', height: '24px' }}></div>
-        <div className="stat-card-trend skeleton-loading" style={{ width: '60px', height: '16px', marginTop: '8px' }}></div>
+        <div className="stat-card-value skeleton-loading w-20 h-6"></div>
+        <div className="stat-card-trend skeleton-loading w-[60px] h-4 mt-2"></div>
       </div>
     );
   }
@@ -40,38 +40,21 @@ function ChartPlaceholder() {
 
   if (isLoading) {
     return (
-      <div style={{ 
-        height: 300, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        background: '#f9fafb', 
-        borderRadius: 8,
-        flexDirection: 'column'
-      }}>
-        <div className="skeleton-loading" style={{ width: '40px', height: '40px', borderRadius: '50%', marginBottom: '12px' }}></div>
-        <div className="skeleton-loading" style={{ width: '120px', height: '16px' }}></div>
+      <div className="h-[300px] flex flex-col items-center justify-center rounded bg-muted">
+        <div className="skeleton-loading w-10 h-10 rounded-full mb-3"></div>
+        <div className="skeleton-loading w-[120px] h-4"></div>
       </div>
     );
   }
 
   return (
-    <div style={{ 
-      height: 300, 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
-      borderRadius: 8,
-      color: 'white',
-      flexDirection: 'column'
-    }}>
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginBottom: '16px' }}>
+    <div className="h-[300px] flex flex-col items-center justify-center rounded text-white bg-gradient-to-br from-[#667eea] to-[#764ba2]">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mb-4">
         <path d="M3 3v18h18" />
         <path d="m19 9-5 5-4-4-3 3" />
       </svg>
-      <div style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>数据可视化图表</div>
-      <div style={{ fontSize: '14px', opacity: 0.8 }}>集成 ECharts 或其他图表库</div>
+      <div className="text-lg font-semibold mb-2">数据可视化图表</div>
+      <div className="text-sm opacity-80">集成 ECharts 或其他图表库</div>
     </div>
   );
 }
@@ -108,16 +91,16 @@ export default function DashboardAnalysis() {
 
   return (
     <div className="page-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="page-title">数据分析</h1>
           <p className="page-description">实时监控关键业务指标</p>
         </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="btn btn-secondary" style={{ padding: '8px 16px' }}>
+        <div className="flex gap-3">
+          <button className="btn btn-secondary">
             导出数据
           </button>
-          <button className="btn btn-primary" style={{ padding: '8px 16px' }}>
+          <button className="btn btn-primary">
             刷新数据
           </button>
         </div>
@@ -136,11 +119,11 @@ export default function DashboardAnalysis() {
         ))}
       </div>
 
-      <div className="card" style={{ marginTop: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div className="card mt-6">
+        <div className="flex items-center justify-between mb-5">
           <h2 className="card-title">业务趋势分析</h2>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <select className="form-select" style={{ padding: '6px 12px', fontSize: '14px' }}>
+          <div className="flex gap-2">
+            <select className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
               <option>最近7天</option>
               <option>最近30天</option>
               <option>最近90天</option>
@@ -150,9 +133,9 @@ export default function DashboardAnalysis() {
         <ChartPlaceholder />
       </div>
 
-      <div className="card" style={{ marginTop: '24px' }}>
+      <div className="card mt-6">
         <h2 className="card-title">数据详情</h2>
-        <div style={{ overflowX: 'auto' }}>
+        <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
@@ -169,21 +152,21 @@ export default function DashboardAnalysis() {
                 <td>1,234</td>
                 <td className="text-success">+12.5%</td>
                 <td className="text-success">+8.3%</td>
-                <td><span className="status-badge status-success">正常</span></td>
+                <td><span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-success/20 text-success">正常</span></td>
               </tr>
               <tr>
                 <td>付费转化率</td>
                 <td>3.2%</td>
-                <td className="text-danger">-2.1%</td>
+                <td className="text-destructive">-2.1%</td>
                 <td className="text-success">+1.8%</td>
-                <td><span className="status-badge status-warning">关注</span></td>
+                <td><span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-warning/20 text-warning">关注</span></td>
               </tr>
               <tr>
                 <td>用户留存率</td>
                 <td>68.5%</td>
                 <td className="text-success">+5.2%</td>
                 <td className="text-success">+3.7%</td>
-                <td><span className="status-badge status-success">良好</span></td>
+                <td><span className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-success/20 text-success">良好</span></td>
               </tr>
             </tbody>
           </table>

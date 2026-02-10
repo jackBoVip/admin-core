@@ -8,7 +8,7 @@
     <p class="page-description">管理系统角色与权限</p>
 
     <div class="card">
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+      <div class="flex justify-end mb-4">
         <button class="btn btn-primary">+ 新增角色</button>
       </div>
 
@@ -27,27 +27,27 @@
             <td>超级管理员</td>
             <td>admin</td>
             <td>拥有所有权限</td>
-            <td><span style="color: #10b981;">启用</span></td>
+            <td><span class="text-success">启用</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs">编辑</button>
             </td>
           </tr>
           <tr>
             <td>普通用户</td>
             <td>user</td>
             <td>基础权限</td>
-            <td><span style="color: #10b981;">启用</span></td>
+            <td><span class="text-success">启用</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs">编辑</button>
             </td>
           </tr>
           <tr>
             <td>访客</td>
             <td>guest</td>
             <td>只读权限</td>
-            <td><span style="color: #10b981;">启用</span></td>
+            <td><span class="text-success">启用</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs">编辑</button>
             </td>
           </tr>
         </tbody>

@@ -13,50 +13,50 @@ export default function ComponentsForm() {
       <h1 className="page-title">表单</h1>
       <p className="page-description">表单组件示例</p>
 
-      <div className="card" style={{ maxWidth: 500 }}>
+      <div className="card max-w-[500px]">
         <h2 className="card-title">登录表单</h2>
-        <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form onSubmit={(e) => e.preventDefault()} className="flex flex-col gap-4">
           <div>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>用户名</label>
+            <label className="block mb-1 font-medium">用户名</label>
             <input
               type="text"
               placeholder="请输入用户名"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6 }}
+              className="w-full rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>邮箱</label>
+            <label className="block mb-1 font-medium">邮箱</label>
             <input
               type="email"
               placeholder="请输入邮箱"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6 }}
+              className="w-full rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
           <div>
-            <label style={{ display: 'block', marginBottom: 4, fontWeight: 500 }}>密码</label>
+            <label className="block mb-1 font-medium">密码</label>
             <input
               type="password"
               placeholder="请输入密码"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              style={{ width: '100%', padding: '8px 12px', border: '1px solid #e5e7eb', borderRadius: 6 }}
+              className="w-full rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="flex items-center gap-2">
             <input
               type="checkbox"
               id="remember"
               checked={formData.remember}
               onChange={(e) => setFormData({ ...formData, remember: e.target.checked })}
-              style={{ width: 16, height: 16 }}
+              className="h-4 w-4"
             />
             <label htmlFor="remember">记住我</label>
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>登录</button>
+          <button type="submit" className="btn btn-primary w-full">登录</button>
         </form>
       </div>
     </div>

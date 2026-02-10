@@ -12,25 +12,25 @@
       <table class="data-table">
         <tbody>
           <tr>
-            <td style="width: 200px; font-weight: 500;">项目名称</td>
+            <td class="w-[200px] font-medium">项目名称</td>
             <td>@admin-core/layout-vue</td>
           </tr>
           <tr>
-            <td style="font-weight: 500;">版本</td>
+            <td class="font-medium">版本</td>
             <td>0.0.1</td>
           </tr>
           <tr>
-            <td style="font-weight: 500;">框架</td>
+            <td class="font-medium">框架</td>
             <td>Vue 3 + TypeScript</td>
           </tr>
           <tr>
-            <td style="font-weight: 500;">样式</td>
+            <td class="font-medium">样式</td>
             <td>Tailwind CSS v4</td>
           </tr>
           <tr>
-            <td style="font-weight: 500;">特性</td>
+            <td class="font-medium">特性</td>
             <td>
-              <ul style="margin: 0; padding-left: 20px;">
+              <ul class="m-0 pl-5 list-disc">
                 <li>开箱即用</li>
                 <li>深度集成 @preferences</li>
                 <li>自动标签页/面包屑</li>

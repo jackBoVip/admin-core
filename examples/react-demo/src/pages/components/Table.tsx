@@ -33,13 +33,13 @@ export default function ComponentsTable() {
                 <td>¥{item.price.toFixed(2)}</td>
                 <td>{item.stock}</td>
                 <td>
-                  <span style={{ color: item.status === '上架' ? '#10b981' : '#ef4444' }}>
+                  <span className={item.status === '上架' ? 'text-success' : 'text-destructive'}>
                     {item.status}
                   </span>
                 </td>
                 <td>
-                  <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12, marginRight: 8 }}>编辑</button>
-                  <button className="btn" style={{ padding: '4px 8px', fontSize: 12, background: '#ef4444', color: 'white' }}>删除</button>
+                  <button className="btn btn-secondary px-2 py-1 text-xs mr-2">编辑</button>
+                  <button className="btn bg-destructive text-white hover:opacity-90 px-2 py-1 text-xs">删除</button>
                 </td>
               </tr>
             ))}

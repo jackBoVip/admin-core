@@ -5,7 +5,7 @@ export default function SystemDept() {
       <p className="page-description">管理组织部门结构</p>
 
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+        <div className="flex justify-end mb-4">
           <button className="btn btn-primary">+ 新增部门</button>
         </div>
 
@@ -24,36 +24,36 @@ export default function SystemDept() {
               <td>总公司</td>
               <td>王总</td>
               <td>100</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
             <tr>
-              <td style={{ paddingLeft: 24 }}>├ 技术部</td>
+              <td className="pl-6">├ 技术部</td>
               <td>张经理</td>
               <td>30</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
             <tr>
-              <td style={{ paddingLeft: 24 }}>├ 产品部</td>
+              <td className="pl-6">├ 产品部</td>
               <td>李经理</td>
               <td>20</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
             <tr>
-              <td style={{ paddingLeft: 24 }}>└ 运营部</td>
+              <td className="pl-6">└ 运营部</td>
               <td>赵经理</td>
               <td>15</td>
-              <td><span style={{ color: '#10b981' }}>启用</span></td>
+              <td><span className="text-success">启用</span></td>
               <td>
-                <button className="btn btn-secondary" style={{ padding: '4px 8px', fontSize: 12 }}>编辑</button>
+                <button className="btn btn-secondary px-2 py-1 text-xs">编辑</button>
               </td>
             </tr>
           </tbody>

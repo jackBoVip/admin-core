@@ -32,8 +32,8 @@
 
     <div class="card">
       <h2 class="card-title">图表区域</h2>
-      <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 8px;">
-        <span style="color: #9ca3af;">图表占位符</span>
+      <div class="h-[300px] flex items-center justify-center rounded bg-muted">
+        <span class="text-muted-foreground">图表占位符</span>
       </div>
     </div>
   </div>

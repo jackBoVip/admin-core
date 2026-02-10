@@ -9,25 +9,25 @@ export default function About() {
         <table className="data-table">
           <tbody>
             <tr>
-              <td style={{ width: 200, fontWeight: 500 }}>项目名称</td>
+              <td className="w-[200px] font-medium">项目名称</td>
               <td>@admin-core/layout-react</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 500 }}>版本</td>
+              <td className="font-medium">版本</td>
               <td>0.0.1</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 500 }}>框架</td>
+              <td className="font-medium">框架</td>
               <td>React 18 + TypeScript</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 500 }}>样式</td>
+              <td className="font-medium">样式</td>
               <td>Tailwind CSS v4</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 500 }}>特性</td>
+              <td className="font-medium">特性</td>
               <td>
-                <ul style={{ margin: 0, paddingLeft: 20 }}>
+                <ul className="m-0 pl-5 list-disc">
                   <li>开箱即用</li>
                   <li>深度集成 @preferences</li>
                   <li>自动标签页/面包屑</li>

@@ -8,9 +8,13 @@
     <p class="page-description">管理系统用户</p>
 
     <div class="card">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
-        <div style="display: flex; gap: 8px;">
-          <input type="text" placeholder="搜索用户..." style="padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; width: 240px;">
+      <div class="flex justify-between mb-4">
+        <div class="flex gap-2">
+          <input
+            type="text"
+            placeholder="搜索用户..."
+            class="w-60 rounded-md border border-border px-3 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          >
           <button class="btn btn-primary">搜索</button>
         </div>
         <button class="btn btn-primary">+ 新增用户</button>
@@ -33,9 +37,9 @@
             <td>管理员</td>
             <td>admin@example.com</td>
             <td>超级管理员</td>
-            <td><span style="color: #10b981;">启用</span></td>
+            <td><span class="text-success">启用</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs">编辑</button>
             </td>
           </tr>
           <tr>
@@ -43,9 +47,9 @@
             <td>张三</td>
             <td>zhangsan@example.com</td>
             <td>普通用户</td>
-            <td><span style="color: #10b981;">启用</span></td>
+            <td><span class="text-success">启用</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs">编辑</button>
             </td>
           </tr>
           <tr>
@@ -53,9 +57,9 @@
             <td>李四</td>
             <td>lisi@example.com</td>
             <td>普通用户</td>
-            <td><span style="color: #ef4444;">禁用</span></td>
+            <td><span class="text-destructive">禁用</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;">编辑</button>
+              <button class="btn btn-secondary px-2 py-1 text-xs">编辑</button>
             </td>
           </tr>
         </tbody>
