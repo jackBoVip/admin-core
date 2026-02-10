@@ -101,6 +101,31 @@
   user-select: none;
 }
 
+/* 统一禁用态（依赖 data-disabled / aria-disabled / .disabled） */
+@utility pref-disabled {
+  &:where([data-disabled="true"]),
+  &:where([aria-disabled="true"]),
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    & * {
+      cursor: not-allowed;
+    }
+
+    .pref-disabled-label {
+      color: var(--muted-foreground);
+    }
+
+    .pref-disabled-trigger {
+      background-color: var(--muted);
+      border-color: var(--border);
+      box-shadow: none;
+      color: var(--muted-foreground);
+    }
+  }
+}
+
 /* 焦点可见环 */
 @utility focus-ring {
   &:focus-visible {

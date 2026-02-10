@@ -38,7 +38,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 <template>
   <div
-    class="switch-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.switch-item-label]:text-muted-foreground"
+    class="switch-item pref-disabled"
     :class="{ disabled }"
     :data-disabled="disabled ? 'true' : undefined"
     :title="tip"
@@ -50,7 +50,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
     @click="toggle"
     @keydown="handleKeyDown"
   >
-    <span :id="`${switchId}-label`" class="switch-item-label">
+    <span :id="`${switchId}-label`" class="switch-item-label pref-disabled-label">
       <span v-if="icon" class="switch-item-icon" v-html="icon" />
       {{ label }}
     </span>

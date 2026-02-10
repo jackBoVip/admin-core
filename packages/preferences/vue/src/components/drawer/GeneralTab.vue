@@ -427,7 +427,7 @@ const handleTransitionOptionActivate = (e: Event) => {
       <div
         v-for="opt in visibleAnimationOptions"
         :key="opt.value"
-        class="transition-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground"
+        class="transition-preset-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
         role="radio"
         :tabindex="(!transitionEnable || configs.transitionName.disabled) ? -1 : 0"
         :aria-checked="transitionName === opt.value"

@@ -46,7 +46,7 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
 
   return (
     <div
-      className={`switch-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.switch-item-label]:text-muted-foreground ${disabled ? 'disabled' : ''}`}
+      className={`switch-item pref-disabled ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -57,7 +57,7 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
       aria-labelledby={`${switchId}-label`}
       tabIndex={disabled ? -1 : 0}
     >
-      <span id={`${switchId}-label`} className="switch-item-label">
+      <span id={`${switchId}-label`} className="switch-item-label pref-disabled-label">
         {icon && <span className="switch-item-icon" dangerouslySetInnerHTML={{ __html: icon }} />}
         {label}
       </span>

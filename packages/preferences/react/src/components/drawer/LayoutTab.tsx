@@ -201,7 +201,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
             {layoutOptions.map((opt) => (
               <div
                 key={opt.value}
-                className={`layout-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.layoutType.disabled ? ' disabled' : ''}`}
+                className={`layout-preset-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground${configs.layoutType.disabled ? ' disabled' : ''}`}
                 role="radio"
                 tabIndex={configs.layoutType.disabled ? -1 : 0}
                 aria-checked={preferences.app.layout === opt.value}
@@ -235,7 +235,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
         <Block title={locale.layout.contentWidth}>
           <div className="content-width-grid" role="radiogroup" aria-label={locale.layout.contentWidth}>
             <div 
-              className={`content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.contentWidth.disabled ? ' disabled' : ''}`}
+              className={`content-width-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground${configs.contentWidth.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.contentWidth.disabled ? -1 : 0}
               aria-checked={preferences.app.contentCompact === 'wide'}
@@ -260,7 +260,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
               <span className="content-width-label">{locale.layout.contentWide}</span>
             </div>
             <div 
-              className={`content-width-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${configs.contentWidth.disabled ? ' disabled' : ''}`}
+              className={`content-width-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground${configs.contentWidth.disabled ? ' disabled' : ''}`}
               role="radio"
               tabIndex={configs.contentWidth.disabled ? -1 : 0}
               aria-checked={preferences.app.contentCompact === 'compact'}

@@ -172,7 +172,7 @@ const openColorPicker = () => {
   <Block v-if="configs.themeMode.visible" :title="locale.theme.mode">
     <div class="theme-mode-grid" role="radiogroup" :aria-label="locale.theme.mode">
       <div 
-        class="theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground" 
+        class="theme-mode-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground" 
         :class="{ disabled: configs.themeMode.disabled }"
         role="radio"
         :tabindex="configs.themeMode.disabled ? -1 : 0"
@@ -194,7 +194,7 @@ const openColorPicker = () => {
         <span class="theme-mode-label">{{ locale.theme.modeLight }}</span>
       </div>
       <div 
-        class="theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground" 
+        class="theme-mode-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground" 
         :class="{ disabled: configs.themeMode.disabled }"
         role="radio"
         :tabindex="configs.themeMode.disabled ? -1 : 0"
@@ -216,7 +216,7 @@ const openColorPicker = () => {
         <span class="theme-mode-label">{{ locale.theme.modeDark }}</span>
       </div>
       <div 
-        class="theme-mode-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground" 
+        class="theme-mode-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground" 
         :class="{ disabled: configs.themeMode.disabled }"
         role="radio"
         :tabindex="configs.themeMode.disabled ? -1 : 0"
@@ -246,7 +246,7 @@ const openColorPicker = () => {
       <div
         v-for="preset in visibleThemePresets"
         :key="preset.type"
-        class="theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground"
+        class="theme-preset-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
         :class="{ disabled: configs.builtinTheme.disabled }"
         role="radio"
         :tabindex="configs.builtinTheme.disabled ? -1 : 0"
@@ -273,7 +273,7 @@ const openColorPicker = () => {
       </div>
       <!-- 自定义颜色 -->
       <div
-        class="theme-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground"
+        class="theme-preset-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
         :class="{ disabled: configs.builtinTheme.disabled }"
         role="radio"
         :tabindex="configs.builtinTheme.disabled ? -1 : 0"
@@ -313,14 +313,14 @@ const openColorPicker = () => {
   <!-- 圆角 -->
   <Block v-if="configs.radius.visible" :title="locale.theme.radius">
     <div
-      class="radius-options data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed"
+      class="radius-options pref-disabled"
       :class="{ disabled: configs.radius.disabled }"
       :data-disabled="configs.radius.disabled ? 'true' : undefined"
     >
       <button
         v-for="r in RADIUS_OPTIONS"
         :key="r"
-        class="radius-option data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed"
+        class="radius-option data-active:text-foreground data-active:font-semibold"
         :class="{ active: radius === r }"
         :disabled="configs.radius.disabled"
         :data-state="radius === r ? 'active' : 'inactive'"

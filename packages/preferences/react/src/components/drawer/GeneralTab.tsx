@@ -436,7 +436,7 @@ export const GeneralTab: React.FC<GeneralTabProps> = memo(({ locale, uiConfig })
                 return (
                   <div
                     key={opt.value}
-                    className={`transition-preset-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed aria-checked:text-foreground${isDisabled ? ' disabled' : ''}`}
+                    className={`transition-preset-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground${isDisabled ? ' disabled' : ''}`}
                     role="radio"
                     tabIndex={isDisabled ? -1 : 0}
                     aria-checked={preferences.transition.name === opt.value}

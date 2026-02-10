@@ -49,7 +49,7 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
 
   return (
     <div
-      className={`slider-item data-disabled:opacity-50 data-disabled:cursor-not-allowed ${disabled ? 'disabled' : ''}`}
+      className={`slider-item pref-disabled ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
     >
       <div className="slider-item-header">
@@ -58,7 +58,7 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
       </div>
       <input
         type="range"
-        className="preferences-slider data-disabled:cursor-not-allowed data-disabled:opacity-60"
+        className="preferences-slider"
         min={min}
         max={max}
         step={step}

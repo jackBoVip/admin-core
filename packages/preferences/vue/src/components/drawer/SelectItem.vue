@@ -291,16 +291,16 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="select-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_.select-item-label]:text-muted-foreground"
+    class="select-item pref-disabled"
     :class="{ disabled }"
     :data-disabled="disabled ? 'true' : undefined"
   >
-    <label :id="selectId" class="select-item-label">{{ label }}</label>
+    <label :id="selectId" class="select-item-label pref-disabled-label">{{ label }}</label>
     <div ref="containerRef" class="select-item-control">
       <button
         ref="triggerRef"
         type="button"
-        class="custom-select-trigger data-open:ring-1 data-open:ring-ring/30 data-open:border-primary data-open:shadow-md data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:bg-muted data-disabled:border-border data-disabled:shadow-none data-disabled:text-muted-foreground"
+        class="custom-select-trigger pref-disabled-trigger data-open:ring-1 data-open:ring-ring/30 data-open:border-primary data-open:shadow-md"
         :class="{ open: isOpen }"
         :disabled="disabled"
         :data-state="isOpen ? 'open' : 'closed'"

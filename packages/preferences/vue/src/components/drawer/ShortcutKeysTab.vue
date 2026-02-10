@@ -90,7 +90,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 启用快捷键 - 主开关 -->
     <div
       v-if="configs.enable.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
+      class="shortcut-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
       :class="{ disabled: configs.enable.disabled }"
       role="switch"
       :aria-checked="shortcutKeysEnable"
@@ -101,7 +101,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
       @click="!configs.enable.disabled && toggleEnable()"
       @keydown.enter.space.prevent="!configs.enable.disabled && toggleEnable()"
     >
-      <span class="shortcut-item-label">{{ locale.shortcutKeys.enable }}</span>
+      <span class="shortcut-item-label pref-disabled-label">{{ locale.shortcutKeys.enable }}</span>
       <div class="shortcut-item-right">
         <div
           class="preferences-switch data-checked:border-primary data-checked:ring-1 data-checked:ring-ring/30"
@@ -117,7 +117,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 打开设置 -->
     <div
       v-if="configs.globalPreferences.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
+      class="shortcut-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalPreferences.disabled }"
       role="switch"
       :aria-checked="globalPreferences"
@@ -128,7 +128,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
       @click="shortcutKeysEnable && !configs.globalPreferences.disabled && togglePreferences()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalPreferences.disabled && togglePreferences()"
     >
-      <span class="shortcut-item-label">{{ locale.shortcutKeys.globalPreferences }}</span>
+      <span class="shortcut-item-label pref-disabled-label">{{ locale.shortcutKeys.globalPreferences }}</span>
       <div class="shortcut-item-right">
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalPreferences')" :key="k" class="shortcut-key">{{ k }}</kbd>
@@ -147,7 +147,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 全局搜索 -->
     <div
       v-if="configs.globalSearch.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
+      class="shortcut-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalSearch.disabled }"
       role="switch"
       :aria-checked="globalSearch"
@@ -158,7 +158,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
       @click="shortcutKeysEnable && !configs.globalSearch.disabled && toggleSearch()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalSearch.disabled && toggleSearch()"
     >
-      <span class="shortcut-item-label">{{ locale.shortcutKeys.globalSearch }}</span>
+      <span class="shortcut-item-label pref-disabled-label">{{ locale.shortcutKeys.globalSearch }}</span>
       <div class="shortcut-item-right">
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalSearch')" :key="k" class="shortcut-key">{{ k }}</kbd>
@@ -177,7 +177,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 锁屏 -->
     <div
       v-if="configs.globalLockScreen.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
+      class="shortcut-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalLockScreen.disabled }"
       role="switch"
       :aria-checked="globalLockScreen"
@@ -188,7 +188,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
       @click="shortcutKeysEnable && !configs.globalLockScreen.disabled && toggleLockScreen()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalLockScreen.disabled && toggleLockScreen()"
     >
-      <span class="shortcut-item-label">{{ locale.shortcutKeys.globalLockScreen }}</span>
+      <span class="shortcut-item-label pref-disabled-label">{{ locale.shortcutKeys.globalLockScreen }}</span>
       <div class="shortcut-item-right">
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalLockScreen')" :key="k" class="shortcut-key">{{ k }}</kbd>
@@ -207,7 +207,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
     <!-- 登出 -->
     <div
       v-if="configs.globalLogout.visible"
-      class="shortcut-item data-active:text-foreground data-active:font-semibold data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.shortcut-item-label]:text-muted-foreground aria-checked:text-foreground"
+      class="shortcut-item pref-disabled data-active:text-foreground data-active:font-semibold aria-checked:text-foreground"
       :class="{ disabled: !shortcutKeysEnable || configs.globalLogout.disabled }"
       role="switch"
       :aria-checked="globalLogout"
@@ -218,7 +218,7 @@ const toggleLogout = () => { globalLogout.value = !globalLogout.value; };
       @click="shortcutKeysEnable && !configs.globalLogout.disabled && toggleLogout()"
       @keydown.enter.space.prevent="shortcutKeysEnable && !configs.globalLogout.disabled && toggleLogout()"
     >
-      <span class="shortcut-item-label">{{ locale.shortcutKeys.globalLogout }}</span>
+      <span class="shortcut-item-label pref-disabled-label">{{ locale.shortcutKeys.globalLogout }}</span>
       <div class="shortcut-item-right">
         <div class="shortcut-keys">
           <kbd v-for="k in getKeys('globalLogout')" :key="k" class="shortcut-key">{{ k }}</kbd>

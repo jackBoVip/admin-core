@@ -62,7 +62,7 @@ const sliderId = `slider-${instance?.uid ?? Math.random().toString(36).slice(2, 
 
 <template>
   <div
-    class="slider-item data-disabled:opacity-50 data-disabled:cursor-not-allowed"
+    class="slider-item pref-disabled"
     :class="{ disabled }"
     :data-disabled="disabled ? 'true' : undefined"
   >
@@ -72,7 +72,7 @@ const sliderId = `slider-${instance?.uid ?? Math.random().toString(36).slice(2, 
     </div>
     <input
       type="range"
-      class="preferences-slider data-disabled:cursor-not-allowed data-disabled:opacity-60"
+      class="preferences-slider"
       :min="min"
       :max="max"
       :step="step"

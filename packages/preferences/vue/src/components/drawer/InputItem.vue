@@ -60,7 +60,7 @@ const inputId = `input-${instance?.uid ?? Math.random().toString(36).slice(2, 9)
 
 <template>
   <div
-    class="input-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_.preferences-input]:cursor-not-allowed"
+    class="input-item pref-disabled"
     :class="{ disabled, 'input-item--inline': inline }"
     :data-disabled="disabled ? 'true' : undefined"
   >
