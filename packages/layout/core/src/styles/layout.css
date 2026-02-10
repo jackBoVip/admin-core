@@ -394,38 +394,38 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 .layout-header-sidebar-nav .layout-content,
 .layout-mixed-nav .layout-content,
 .layout-header-mixed-nav .layout-content {
-  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left)) !important;
-  margin-right: var(--layout-panel-offset-right) !important;
+  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left));
+  margin-right: var(--layout-panel-offset-right);
 }
 
 .layout-header-sidebar-nav .layout-tabbar,
 .layout-mixed-nav .layout-tabbar,
 .layout-header-mixed-nav .layout-tabbar {
-  left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left)) !important;
-  right: var(--layout-panel-offset-right) !important;
-  width: calc(100% - var(--admin-sidebar-width) - var(--layout-panel-offset-left) - var(--layout-panel-offset-right)) !important;
+  left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left));
+  right: var(--layout-panel-offset-right);
+  width: calc(100% - var(--admin-sidebar-width) - var(--layout-panel-offset-left) - var(--layout-panel-offset-right));
 }
 
 /* 侧边混合导航布局 */
 .layout-sidebar-mixed-nav .layout-header {
-  left: var(--admin-sidebar-width) !important;
-  width: calc(100% - var(--admin-sidebar-width)) !important;
+  left: var(--admin-sidebar-width);
+  width: calc(100% - var(--admin-sidebar-width));
 }
 
 .layout-sidebar-mixed-nav .layout-content {
-  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left)) !important;
-  margin-right: var(--layout-panel-offset-right) !important;
+  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left));
+  margin-right: var(--layout-panel-offset-right);
 }
 
 .layout-sidebar-mixed-nav .layout-tabbar {
-  left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left)) !important;
-  right: var(--layout-panel-offset-right) !important;
-  width: calc(100% - var(--admin-sidebar-width) - var(--layout-panel-offset-left) - var(--layout-panel-offset-right)) !important;
+  left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left));
+  right: var(--layout-panel-offset-right);
+  width: calc(100% - var(--admin-sidebar-width) - var(--layout-panel-offset-left) - var(--layout-panel-offset-right));
 }
 
 .layout-sidebar-mixed-nav .layout-footer {
-  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left)) !important;
-  margin-right: var(--layout-panel-offset-right) !important;
+  margin-left: calc(var(--admin-sidebar-width) + var(--layout-panel-offset-left));
+  margin-right: var(--layout-panel-offset-right);
 }
 
 /* 侧边栏 */
