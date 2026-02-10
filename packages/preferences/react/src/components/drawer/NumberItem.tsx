@@ -60,7 +60,7 @@ export const NumberItem: React.FC<NumberItemProps> = memo(({
 
   return (
     <div
-      className={`number-item ${disabled ? 'disabled' : ''}`}
+      className={`number-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_.preferences-stepper__btn]:cursor-not-allowed data-disabled:[&_.preferences-stepper__input]:cursor-not-allowed ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
     >
       <label id={`${inputId}-label`} className="number-item__label">

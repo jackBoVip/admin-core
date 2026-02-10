@@ -61,7 +61,11 @@ const sliderId = `slider-${instance?.uid ?? Math.random().toString(36).slice(2, 
 </script>
 
 <template>
-  <div class="slider-item" :class="{ disabled }" :data-disabled="disabled ? 'true' : undefined">
+  <div
+    class="slider-item data-disabled:opacity-50 data-disabled:cursor-not-allowed"
+    :class="{ disabled }"
+    :data-disabled="disabled ? 'true' : undefined"
+  >
     <div class="slider-item-header">
       <label :id="`${sliderId}-label`" class="slider-item-label">{{ label }}</label>
       <span class="slider-item-value">{{ localValue }}{{ unit }}</span>

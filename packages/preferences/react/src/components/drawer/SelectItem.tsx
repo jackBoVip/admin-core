@@ -272,7 +272,7 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
 
   return (
     <div
-      className={`select-item ${disabled ? 'disabled' : ''}`}
+      className={`select-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_.select-item-label]:text-muted-foreground ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
     >
       <label id={selectId} className="select-item-label">
@@ -282,7 +282,7 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
         <button
           ref={triggerRef}
           type="button"
-          className={`custom-select-trigger data-open:ring-1 data-open:ring-ring/30 data-open:border-primary data-open:shadow-md data-disabled:opacity-50 ${isOpen ? 'open' : ''}`}
+          className={`custom-select-trigger data-open:ring-1 data-open:ring-ring/30 data-open:border-primary data-open:shadow-md data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:bg-muted data-disabled:border-border data-disabled:shadow-none data-disabled:text-muted-foreground ${isOpen ? 'open' : ''}`}
           onClick={toggleDropdown}
           onKeyDown={handleKeyDown}
           disabled={disabled}

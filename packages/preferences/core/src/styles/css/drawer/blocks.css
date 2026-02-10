@@ -140,20 +140,6 @@
     color: var(--muted-foreground);
   }
 
-  /* 禁用状态 */
-  :is(.switch-item.disabled, .switch-item[data-disabled="true"]) {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  :is(.switch-item.disabled, .switch-item[data-disabled="true"]) .switch-item-label {
-    color: var(--muted-foreground);
-  }
-
-  :is(.switch-item.disabled, .switch-item[data-disabled="true"]) .preferences-switch {
-    cursor: not-allowed;
-  }
-
   /* ========== 下拉选择项 ========== */
   .select-item {
     display: flex;
@@ -237,23 +223,6 @@
     color: var(--foreground);
     padding: 12px;
     font-size: 14px;
-  }
-
-  /* 禁用状态 */
-  :is(.select-item.disabled, .select-item[data-disabled="true"]) {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  :is(.select-item.disabled, .select-item[data-disabled="true"]) .select-item-label {
-    color: var(--muted-foreground);
-  }
-
-  :is(.select-item.disabled, .select-item[data-disabled="true"]) .select-item-select,
-  :is(.select-item.disabled, .select-item[data-disabled="true"]) .custom-select-trigger {
-    cursor: not-allowed;
-    background-color: var(--muted);
-    border-color: var(--border);
   }
 
   /* ========== 滑动条项 ========== */
@@ -365,15 +334,6 @@
     box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 30%, transparent);
   }
 
-  :is(.slider-item.disabled, .slider-item[data-disabled="true"]) {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  :is(.slider-item.disabled, .slider-item[data-disabled="true"]) .preferences-slider {
-    cursor: not-allowed;
-  }
-
   /* ========== 输入框项 ========== */
   .input-item {
     display: flex;
@@ -476,16 +436,6 @@
 
   .preferences-stepper__input[type=number] {
     -moz-appearance: textfield;
-  }
-
-  :is(.number-item.disabled, .number-item[data-disabled="true"]) {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  :is(.number-item.disabled, .number-item[data-disabled="true"]) .preferences-stepper__btn,
-  :is(.number-item.disabled, .number-item[data-disabled="true"]) .preferences-stepper__input {
-    cursor: not-allowed;
   }
 
   .input-item--inline {

@@ -49,7 +49,7 @@ export const SliderItem: React.FC<SliderItemProps> = memo(({
 
   return (
     <div
-      className={`slider-item ${disabled ? 'disabled' : ''}`}
+      className={`slider-item data-disabled:opacity-50 data-disabled:cursor-not-allowed ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
     >
       <div className="slider-item-header">

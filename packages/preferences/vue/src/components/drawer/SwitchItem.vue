@@ -38,7 +38,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
 <template>
   <div
-    class="switch-item"
+    class="switch-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.switch-item-label]:text-muted-foreground"
     :class="{ disabled }"
     :data-disabled="disabled ? 'true' : undefined"
     :title="tip"

@@ -46,7 +46,7 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
 
   return (
     <div
-      className={`switch-item ${disabled ? 'disabled' : ''}`}
+      className={`switch-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_*]:cursor-not-allowed data-disabled:[&_.switch-item-label]:text-muted-foreground ${disabled ? 'disabled' : ''}`}
       data-disabled={disabled ? 'true' : undefined}
       onClick={handleClick}
       onKeyDown={handleKeyDown}

@@ -70,7 +70,7 @@ const inputId = `number-${instance?.uid ?? Math.random().toString(36).slice(2, 9
 
 <template>
   <div
-    class="number-item"
+    class="number-item data-disabled:opacity-50 data-disabled:cursor-not-allowed data-disabled:[&_.preferences-stepper__btn]:cursor-not-allowed data-disabled:[&_.preferences-stepper__input]:cursor-not-allowed"
     :class="{ disabled }"
     :data-disabled="disabled ? 'true' : undefined"
   >
