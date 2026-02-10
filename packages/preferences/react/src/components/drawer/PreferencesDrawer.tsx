@@ -432,7 +432,7 @@ export const PreferencesDrawer: React.FC<PreferencesDrawerProps> = memo(({
         {showCopyButton && (
           <div className="preferences-drawer-footer">
             <button
-              className={`preferences-btn preferences-btn-primary pref-disabled${copyState.isCopied ? ' is-copied' : ''}`}
+              className={`preferences-btn preferences-btn-primary pref-disabled pref-disabled-trigger${copyState.isCopied ? ' is-copied' : ''}`}
               disabled={copyButtonDisabled}
               aria-disabled={copyButtonDisabled || undefined}
               data-disabled={copyButtonDisabled ? 'true' : undefined}

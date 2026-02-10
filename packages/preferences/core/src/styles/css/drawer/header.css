@@ -105,12 +105,6 @@
       outline-offset: 2px;
     }
 
-    &:disabled,
-    &[data-disabled="true"] {
-      cursor: not-allowed;
-      opacity: 0.3;
-    }
-
     svg {
       width: 18px;
       height: 18px;

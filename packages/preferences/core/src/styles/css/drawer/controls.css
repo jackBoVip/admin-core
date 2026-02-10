@@ -219,14 +219,10 @@
     box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring);
   }
 
-  :is(.preferences-btn:disabled, .preferences-btn[data-disabled="true"]) {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background: var(--muted);
-    border-color: var(--border);
-    color: var(--muted-foreground);
-    transform: none;
-    box-shadow: none;
+  .preferences-btn.pref-disabled {
+    --pref-disabled-trigger-bg: var(--muted);
+    --pref-disabled-trigger-border: var(--border);
+    --pref-disabled-trigger-color: var(--muted-foreground);
   }
 
   /* 主要按钮 */
@@ -245,11 +241,11 @@
     border-color: var(--primary-700, color-mix(in oklch, var(--primary) 80%, black));
   }
 
-  :is(.preferences-btn-primary:disabled, .preferences-btn-primary[data-disabled="true"]) {
-    background: var(--primary);
-    border-color: var(--primary);
-    color: var(--primary-foreground);
-    opacity: 0.4;
+  .preferences-btn-primary.pref-disabled {
+    --pref-disabled-trigger-bg: var(--primary);
+    --pref-disabled-trigger-border: var(--primary);
+    --pref-disabled-trigger-color: var(--primary-foreground);
+    --pref-disabled-opacity: 0.4;
   }
 
   /* 主要按钮 - 已复制状态 */
@@ -258,9 +254,8 @@
     border-color: var(--primary-500, var(--primary));
   }
 
-  :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"]):disabled,
-  :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"])[data-disabled="true"] {
-    opacity: 0.7;
+  :is(.preferences-btn-primary.pref-disabled.is-copied, .preferences-btn-primary.pref-disabled[data-state="copied"]) {
+    --pref-disabled-opacity: 0.7;
   }
 
   :is(.preferences-btn-primary.is-copied, .preferences-btn-primary[data-state="copied"]):hover:not(:disabled):not([data-disabled="true"]) {
@@ -308,9 +303,8 @@
     background: var(--accent);
   }
 
-  :is(.preferences-btn-icon:disabled, .preferences-btn-icon[data-disabled="true"]) {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .preferences-btn-icon.pref-disabled {
+    --pref-disabled-opacity: 0.3;
   }
 
   .preferences-btn-icon.relative {

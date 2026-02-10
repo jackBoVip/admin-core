@@ -381,7 +381,7 @@ const iconStyleSm = getIconStyleString('sm');
     <!-- 底部 -->
     <div v-if="showCopyButton" class="preferences-drawer-footer">
       <button
-        class="preferences-btn preferences-btn-primary pref-disabled"
+        class="preferences-btn preferences-btn-primary pref-disabled pref-disabled-trigger"
         :class="{ 'is-copied': copyState.isCopied }"
         :disabled="copyButtonDisabled"
         :aria-disabled="copyButtonDisabled || undefined"
