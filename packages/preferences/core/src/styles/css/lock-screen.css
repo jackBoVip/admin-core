@@ -391,21 +391,6 @@
     }
   }
 
-  /* 减少动画 - 无障碍支持 */
-  @media (prefers-reduced-motion: reduce) {
-    .preferences-lock-orb,
-    .preferences-lock-time-divider,
-    .preferences-lock-time-center,
-    .preferences-lock-unlock,
-    .preferences-lock-cta,
-    .preferences-lock-unlock-btn,
-    .preferences-lock-unlock-input,
-    .preferences-lock-modal-card {
-      animation: none !important;
-      transition: none !important;
-    }
-  }
-
   /* ========== 锁屏密码设置弹窗 ========== */
   
   .preferences-lock-modal-overlay {
@@ -605,5 +590,20 @@
     background: rgba(220, 38, 38, 0.1);
     border-color: rgba(220, 38, 38, 0.2);
     color: #f87171;
+  }
+
+  /* 减少动画 - 无障碍支持 */
+  @media (prefers-reduced-motion: reduce) {
+    .preferences-lock-orb,
+    .preferences-lock-time-divider,
+    .preferences-lock-time-center,
+    .preferences-lock-unlock,
+    .preferences-lock-cta,
+    .preferences-lock-unlock-btn,
+    .preferences-lock-unlock-input,
+    .preferences-lock-modal-card {
+      animation: none;
+      transition: none;
+    }
   }
 }

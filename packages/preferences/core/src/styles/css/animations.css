@@ -18,7 +18,7 @@
 
 .fade-enter-from,
 .fade-leave-to {
-  opacity: 0 !important;
+  opacity: 0;
 }
 
 /* Fade Slide - 淡入滑动 */
@@ -30,13 +30,13 @@
 }
 
 .fade-slide-enter-from {
-  opacity: 0 !important;
-  transform: translateX(10px) !important;
+  opacity: 0;
+  transform: translateX(10px);
 }
 
 .fade-slide-leave-to {
-  opacity: 0 !important;
-  transform: translateX(-10px) !important;
+  opacity: 0;
+  transform: translateX(-10px);
 }
 
 /* Fade Up - 淡入上滑 */
@@ -48,13 +48,13 @@
 }
 
 .fade-up-enter-from {
-  opacity: 0 !important;
-  transform: translateY(10px) !important;
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 .fade-up-leave-to {
-  opacity: 0 !important;
-  transform: translateY(-10px) !important;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 /* Fade Down - 淡入下滑 */
@@ -66,13 +66,13 @@
 }
 
 .fade-down-enter-from {
-  opacity: 0 !important;
-  transform: translateY(-10px) !important;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 .fade-down-leave-to {
-  opacity: 0 !important;
-  transform: translateY(10px) !important;
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 /* Slide Left/Right - 滑动 */
@@ -83,10 +83,10 @@
   transition: transform var(--admin-duration-normal) var(--admin-easing-default);
 }
 
-.slide-left-enter-from { transform: translateX(100%) !important; }
-.slide-left-leave-to { transform: translateX(-100%) !important; }
-.slide-right-enter-from { transform: translateX(-100%) !important; }
-.slide-right-leave-to { transform: translateX(100%) !important; }
+.slide-left-enter-from { transform: translateX(100%); }
+.slide-left-leave-to { transform: translateX(-100%); }
+.slide-right-enter-from { transform: translateX(-100%); }
+.slide-right-leave-to { transform: translateX(100%); }
 
 /* Scale - 缩放 */
 .scale-enter-active,
@@ -164,7 +164,7 @@
   .expand-enter-active,
   .expand-leave-active,
   .animate-shimmer::after {
-    transition: none !important;
-    animation: none !important;
+    transition: none;
+    animation: none;
   }
 }

@@ -1495,7 +1495,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 .layout-preferences-button--dragging {
-  transition: none !important;
+  transition: none;
 }
 
 .layout-preferences-button--floating[data-edge="left"] {
@@ -1520,26 +1520,6 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   }
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .layout-container,
-  .layout-header,
-  .layout-sidebar,
-  .layout-tabbar,
-  .layout-content,
-  .layout-footer,
-  .layout-panel,
-  .layout-overlay,
-  .sidebar-menu,
-  .sidebar-menu__submenu {
-    transition: none !important;
-    animation: none !important;
-  }
-
-  .layout-preferences-button svg {
-    animation: none !important;
   }
 }
 
@@ -3499,4 +3479,24 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 .header-widget-btn[data-widget="preferences"] svg {
   transition: transform var(--admin-duration-fast, 150ms) var(--admin-easing-default, ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout-container,
+  .layout-header,
+  .layout-sidebar,
+  .layout-tabbar,
+  .layout-content,
+  .layout-footer,
+  .layout-panel,
+  .layout-overlay,
+  .sidebar-menu,
+  .sidebar-menu__submenu {
+    transition: none;
+    animation: none;
+  }
+
+  .layout-preferences-button svg {
+    animation: none;
+  }
 }
