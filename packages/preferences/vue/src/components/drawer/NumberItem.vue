@@ -87,7 +87,7 @@ const inputId = `number-${instance?.uid ?? Math.random().toString(36).slice(2, 9
     <div class="preferences-stepper">
       <button
         type="button"
-        class="preferences-stepper__btn"
+        class="preferences-stepper__btn pref-disabled"
         :disabled="disabled"
         aria-label="decrease"
         @click="handleStep(-1)"
@@ -110,7 +110,7 @@ const inputId = `number-${instance?.uid ?? Math.random().toString(36).slice(2, 9
       />
       <button
         type="button"
-        class="preferences-stepper__btn"
+        class="preferences-stepper__btn pref-disabled"
         :disabled="disabled"
         aria-label="increase"
         @click="handleStep(1)"

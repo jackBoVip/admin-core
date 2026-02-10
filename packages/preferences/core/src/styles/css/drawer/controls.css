@@ -122,8 +122,12 @@
     background: var(--accent);
   }
 
-  :is(.number-field-btn:disabled, .number-field-btn[data-disabled="true"]) {
-    opacity: 0.2;
+  .number-field-btn.pref-disabled {
+    --pref-disabled-opacity: 0.2;
+  }
+
+  :is(.number-field-btn:disabled, .number-field-btn[data-disabled="true"], .number-field-btn.pref-disabled) {
+    opacity: var(--pref-disabled-opacity, 0.2);
     cursor: not-allowed;
   }
 

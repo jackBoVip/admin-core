@@ -105,10 +105,15 @@
   }
 
   /* 禁用状态 */
+  .slider-native.pref-disabled {
+    --pref-disabled-opacity: 0.5;
+  }
+
   .slider-native:disabled,
-  .slider-native[data-disabled="true"] {
+  .slider-native[data-disabled="true"],
+  .slider-native.pref-disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: var(--pref-disabled-opacity, 0.5);
   }
 
   /* 当前值显示 */

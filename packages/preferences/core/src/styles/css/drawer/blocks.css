@@ -412,9 +412,8 @@
     background: color-mix(in oklch, var(--foreground) 6%, transparent);
   }
 
-  .preferences-stepper__btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  .preferences-stepper__btn.pref-disabled {
+    --pref-disabled-opacity: 0.4;
   }
 
   .preferences-stepper__input {

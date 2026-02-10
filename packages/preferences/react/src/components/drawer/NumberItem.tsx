@@ -77,7 +77,7 @@ export const NumberItem: React.FC<NumberItemProps> = memo(({
       <div className="preferences-stepper">
         <button
           type="button"
-          className="preferences-stepper__btn"
+          className="preferences-stepper__btn pref-disabled"
           disabled={disabled}
           aria-label="decrease"
           onClick={() => handleStep(-1)}
@@ -100,7 +100,7 @@ export const NumberItem: React.FC<NumberItemProps> = memo(({
         />
         <button
           type="button"
-          className="preferences-stepper__btn"
+          className="preferences-stepper__btn pref-disabled"
           disabled={disabled}
           aria-label="increase"
           onClick={() => handleStep(1)}
