@@ -1,0 +1,47 @@
+/* Shared Tailwind v4 demo theme tokens */
+
+:root {
+  --demo-primary: #3b82f6;
+  --demo-primary-hover: #2563eb;
+  --demo-primary-foreground: #ffffff;
+  --demo-secondary: #e5e7eb;
+  --demo-secondary-hover: #d1d5db;
+  --demo-secondary-foreground: #374151;
+  --demo-background: #ffffff;
+  --demo-foreground: #0f172a;
+  --demo-muted: #f9fafb;
+  --demo-muted-foreground: #6b7280;
+  --demo-border: #e5e7eb;
+  --demo-card: #ffffff;
+  --demo-card-foreground: #111827;
+  --demo-success: #10b981;
+  --demo-danger: #ef4444;
+  --demo-radius: 8px;
+  --demo-radius-sm: 6px;
+  --demo-radius-lg: 12px;
+  --demo-spacing-page: 24px;
+  --demo-duration-fast: 150ms;
+  --demo-duration-normal: 300ms;
+}
+
+@theme {
+  --color-primary: var(--demo-primary);
+  --color-primary-foreground: var(--demo-primary-foreground);
+  --color-secondary: var(--demo-secondary);
+  --color-secondary-foreground: var(--demo-secondary-foreground);
+  --color-background: var(--demo-background);
+  --color-foreground: var(--demo-foreground);
+  --color-muted: var(--demo-muted);
+  --color-muted-foreground: var(--demo-muted-foreground);
+  --color-border: var(--demo-border);
+  --color-card: var(--demo-card);
+  --color-card-foreground: var(--demo-card-foreground);
+  --color-success: var(--demo-success);
+  --color-destructive: var(--demo-danger);
+  --radius-sm: var(--demo-radius-sm);
+  --radius-DEFAULT: var(--demo-radius);
+  --radius-lg: var(--demo-radius-lg);
+  --spacing-content: var(--demo-spacing-page);
+  --duration-fast: var(--demo-duration-fast);
+  --duration-normal: var(--demo-duration-normal);
+}

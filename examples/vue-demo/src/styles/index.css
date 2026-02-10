@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* 共享 Tailwind v4 主题令牌 */
+@import "../../../shared/styles/tailwind-theme.css";
+
 /* 引入布局样式 */
 @import "@admin-core/layout-vue/styles";
 
