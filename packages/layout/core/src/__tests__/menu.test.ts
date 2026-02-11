@@ -10,6 +10,8 @@ import {
   resolveAutoBreadcrumbOptions,
   getCachedFilteredMenus,
   getCachedHeaderMenus,
+  getCachedMenuPathIndex,
+  clearMenuCaches,
   findMenuByPath,
   getMenuPathByPath,
   findMenuByKey,
@@ -264,6 +266,20 @@ describe('菜单数据处理', () => {
       const second = getCachedFilteredMenus(mockMenus);
       expect(first).toBe(second);
     });
+
+    it('应在原地修改菜单并清理缓存后失效缓存', () => {
+      const menus: MenuItem[] = [
+        { key: 'a', name: 'A', path: '/a', hidden: true },
+      ];
+      const first = getCachedFilteredMenus(menus);
+      expect(first).toHaveLength(0);
+
+      menus[0].hidden = false;
+      clearMenuCaches(menus);
+      const second = getCachedFilteredMenus(menus);
+      expect(second).not.toBe(first);
+      expect(second).toHaveLength(1);
+    });
   });
 });
 
@@ -275,6 +291,39 @@ describe('顶部菜单缓存', () => {
     const first = getCachedHeaderMenus(mockMenus, { isHeaderNav: true });
     const second = getCachedHeaderMenus(mockMenus, { isHeaderNav: true });
     expect(first).toBe(second);
+  });
+
+  it('应在原地修改菜单并清理缓存后失效顶部菜单缓存', () => {
+    const menus: MenuItem[] = [
+      {
+        key: 'root',
+        name: 'Root',
+        path: '/root',
+        children: [{ key: 'child-a', name: 'A', path: '/root/a' }],
+      },
+    ];
+    const first = getCachedHeaderMenus(menus, { isMixedNav: true });
+
+    menus[0].children = [
+      { key: 'child-a', name: 'A', path: '/root/a' },
+      { key: 'child-b', name: 'B', path: '/root/b' },
+    ];
+    clearMenuCaches(menus);
+    const second = getCachedHeaderMenus(menus, { isMixedNav: true });
+    expect(second).not.toBe(first);
+  });
+
+  it('应在原地修改菜单并清理缓存后失效路径索引缓存', () => {
+    const menus: MenuItem[] = [{ key: 'a', name: 'A', path: '/a' }];
+    const first = getCachedMenuPathIndex(menus);
+    expect(first.byPath.has('/a')).toBe(true);
+
+    menus[0].path = '/b';
+    clearMenuCaches(menus);
+    const second = getCachedMenuPathIndex(menus);
+    expect(second).not.toBe(first);
+    expect(second.byPath.has('/b')).toBe(true);
+    expect(second.byPath.has('/a')).toBe(false);
   });
 });
 

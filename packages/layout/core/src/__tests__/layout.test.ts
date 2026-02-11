@@ -17,6 +17,7 @@ import {
   calculateHeaderHeight,
   calculateTabbarHeight,
   calculateFooterHeight,
+  calculateLayoutComputed,
   mergeConfig,
   generateThemeCSSVariables,
   generateThemeClasses,
@@ -123,6 +124,13 @@ describe('布局尺寸计算', () => {
       const width = calculateSidebarWidth(props, state);
       expect(width).toBe(0);
     });
+
+    it('移动端应按 sidebar-nav 计算（即使传入 header-nav）', () => {
+      const props = { layout: 'header-nav' as const, isMobile: true };
+      const state = { ...DEFAULT_LAYOUT_STATE, sidebarCollapsed: false };
+      const width = calculateSidebarWidth(props, state);
+      expect(width).toBe(DEFAULT_SIDEBAR_CONFIG.width);
+    });
   });
 
   describe('calculateHeaderHeight', () => {
@@ -138,6 +146,29 @@ describe('布局尺寸计算', () => {
       const state = DEFAULT_LAYOUT_STATE;
       const height = calculateHeaderHeight(props, state);
       expect(height).toBe(0);
+    });
+
+    it('移动端应按 sidebar-nav 计算（即使传入 full-content）', () => {
+      const props = { layout: 'full-content' as const, isMobile: true };
+      const state = { ...DEFAULT_LAYOUT_STATE, headerHidden: false };
+      const height = calculateHeaderHeight(props, state);
+      expect(height).toBe(DEFAULT_HEADER_CONFIG.height);
+    });
+  });
+
+  describe('calculateLayoutComputed', () => {
+    it('移动端布局计算应保持显示状态和尺寸一致', () => {
+      const props = {
+        layout: 'header-nav' as const,
+        isMobile: true,
+      };
+      const state = { ...DEFAULT_LAYOUT_STATE, sidebarCollapsed: false };
+      const computed = calculateLayoutComputed(props, state);
+
+      expect(computed.currentLayout).toBe('sidebar-nav');
+      expect(computed.showSidebar).toBe(true);
+      expect(computed.sidebarWidth).toBe(DEFAULT_SIDEBAR_CONFIG.width);
+      expect(computed.mainStyle.marginLeft).toBe(`${DEFAULT_SIDEBAR_CONFIG.width}px`);
     });
   });
 });
@@ -273,6 +304,29 @@ describe('TabManager', () => {
 
     it('应返回 false 当标签不存在', () => {
       expect(tabManager.hasTab('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('setAffixTabs', () => {
+    it('应在 affix 状态未变化时保持幂等', () => {
+      const onChange = vi.fn();
+      const manager = new TabManager({ onChange });
+      manager.addTab({ key: 'a', name: 'A', path: '/a' });
+      onChange.mockClear();
+
+      manager.setAffixTabs([]);
+      expect(onChange).toHaveBeenCalledTimes(1);
+      onChange.mockClear();
+
+      manager.setAffixTabs([]);
+      expect(onChange).not.toHaveBeenCalled();
+
+      manager.setAffixTabs(['a']);
+      expect(onChange).toHaveBeenCalledTimes(1);
+      onChange.mockClear();
+
+      manager.setAffixTabs(['a']);
+      expect(onChange).not.toHaveBeenCalled();
     });
   });
 });

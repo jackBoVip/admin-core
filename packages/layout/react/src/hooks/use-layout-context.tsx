@@ -5,12 +5,13 @@
 
 import {
   DEFAULT_LAYOUT_CONFIG,
+  applyStatePatch,
   calculateLayoutComputed,
+  createLayoutContextActionsController,
+  createLayoutPropsStateSyncController,
   createI18n,
   generateCSSVariables,
   getInitialLayoutState,
-  getLayoutStatePatchFromProps,
-  isSidebarMixedLayout,
   mergeConfig,
   type BasicLayoutProps,
   type LayoutComputed,
@@ -30,21 +31,18 @@ import React, {
   type ReactNode,
 } from 'react';
 
-/**
- * 布局上下文类型
- */
-interface LayoutContextValue {
-  context: LayoutContext;
-  computed: LayoutComputed;
-  cssVars: Record<string, string>;
+interface LayoutStateContextValue {
   state: LayoutState;
   setState: React.Dispatch<React.SetStateAction<LayoutState>>;
 }
 
 /**
- * 布局上下文
+ * 拆分 Context，避免单一 value 导致全量扇出重渲染
  */
-const LayoutContextInstance = createContext<LayoutContextValue | null>(null);
+const LayoutContextInstance = createContext<LayoutContext | null>(null);
+const LayoutComputedInstance = createContext<LayoutComputed | null>(null);
+const LayoutCSSVarsInstance = createContext<Record<string, string> | null>(null);
+const LayoutStateInstance = createContext<LayoutStateContextValue | null>(null);
 
 /**
  * 布局 Provider Props
@@ -104,10 +102,30 @@ export function LayoutProvider({
 
   // 布局状态（从 props 初始化）
   const [state, setState] = useState<LayoutState>(getInitialState);
-  
+
+  // 使用 ref 存储 state，避免 context 因 state 变化而频繁重建
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  const applyLayoutStatePatch = useCallback((patch: Partial<LayoutState>) => {
+    setState((prev) => applyStatePatch(prev, patch).nextState);
+  }, []);
+
+  const propsSyncController = useMemo(
+    () =>
+      createLayoutPropsStateSyncController({
+        getState: () => stateRef.current,
+        setState: applyLayoutStatePatch,
+        onSidebarCollapse: (collapsed) => {
+          events.onSidebarCollapse?.(collapsed);
+        },
+      }),
+    [events, applyLayoutStatePatch]
+  );
+
   // 用于跟踪是否是首次渲染
   const isFirstRender = useRef(true);
-  
+
   // 监听 props 中折叠状态的变化
   useEffect(() => {
     // 跳过首次渲染
@@ -115,22 +133,9 @@ export function LayoutProvider({
       isFirstRender.current = false;
       return;
     }
-    
-    setState((prev) => {
-      const { patch, changed, sidebarCollapseChanged } = getLayoutStatePatchFromProps(
-        prev,
-        syncProps
-      );
-      if (!changed) return prev;
-      if (sidebarCollapseChanged !== undefined) {
-        events.onSidebarCollapse?.(sidebarCollapseChanged);
-      }
-      return { ...prev, ...patch };
-    });
-  }, [
-    syncProps,
-    events,
-  ]);
+
+    propsSyncController.syncProps(syncProps);
+  }, [syncProps, propsSyncController]);
 
   // 国际化实例
   const i18n = useMemo(
@@ -138,39 +143,36 @@ export function LayoutProvider({
     [locale, customMessages]
   );
 
-  // 切换侧边栏折叠
+  const mergedPropsRef = useRef(mergedProps);
+  mergedPropsRef.current = mergedProps;
+
+  const contextActionsController = useMemo(
+    () =>
+      createLayoutContextActionsController({
+        getProps: () => mergedPropsRef.current,
+        getState: () => stateRef.current,
+        setState: applyLayoutStatePatch,
+        onSidebarCollapse: (collapsed) => {
+          events.onSidebarCollapse?.(collapsed);
+        },
+        onPanelCollapse: (collapsed) => {
+          events.onPanelCollapse?.(collapsed);
+        },
+      }),
+    [events, applyLayoutStatePatch]
+  );
+
   const toggleSidebarCollapse = useCallback(() => {
-    setState((prev) => {
-      if (isSidebarMixedLayout(mergedProps)) {
-        if (prev.sidebarCollapsed) {
-          events.onSidebarCollapse?.(false);
-          return { ...prev, sidebarCollapsed: false };
-        }
-        return prev;
-      }
-      const newCollapsed = !prev.sidebarCollapsed;
-      events.onSidebarCollapse?.(newCollapsed);
-      return { ...prev, sidebarCollapsed: newCollapsed };
-    });
-  }, [events, mergedProps]);
+    contextActionsController.toggleSidebarCollapse();
+  }, [contextActionsController]);
 
-  // 切换功能区折叠
   const togglePanelCollapse = useCallback(() => {
-    setState((prev) => {
-      const newCollapsed = !prev.panelCollapsed;
-      events.onPanelCollapse?.(newCollapsed);
-      return { ...prev, panelCollapsed: newCollapsed };
-    });
-  }, [events]);
+    contextActionsController.togglePanelCollapse();
+  }, [contextActionsController]);
 
-  // 设置展开的菜单
   const setOpenMenuKeys = useCallback((keys: string[]) => {
-    setState((prev) => ({ ...prev, openMenuKeys: keys }));
-  }, []);
-
-  // 使用 ref 存储 state，避免 context 因 state 变化而频繁重建
-  const stateRef = useRef(state);
-  stateRef.current = state;
+    contextActionsController.setOpenMenuKeys(keys);
+  }, [contextActionsController]);
 
   // 创建上下文 - 只依赖稳定的引用
   const context: LayoutContext = useMemo(
@@ -201,21 +203,23 @@ export function LayoutProvider({
     [mergedProps, state]
   );
 
-  // Provider 值
-  const value: LayoutContextValue = useMemo(
+  const stateValue = useMemo<LayoutStateContextValue>(
     () => ({
-      context,
-      computed,
-      cssVars,
       state,
       setState,
     }),
-    [context, computed, cssVars, state]
+    [state]
   );
 
   return (
-    <LayoutContextInstance.Provider value={value}>
-      {children}
+    <LayoutContextInstance.Provider value={context}>
+      <LayoutComputedInstance.Provider value={computed}>
+        <LayoutCSSVarsInstance.Provider value={cssVars}>
+          <LayoutStateInstance.Provider value={stateValue}>
+            {children}
+          </LayoutStateInstance.Provider>
+        </LayoutCSSVarsInstance.Provider>
+      </LayoutComputedInstance.Provider>
     </LayoutContextInstance.Provider>
   );
 }
@@ -224,40 +228,40 @@ export function LayoutProvider({
  * 使用布局上下文
  */
 export function useLayoutContext(): LayoutContext {
-  const value = useContext(LayoutContextInstance);
-  if (!value) {
+  const context = useContext(LayoutContextInstance);
+  if (!context) {
     throw new Error('useLayoutContext must be used within a LayoutProvider');
   }
-  return value.context;
+  return context;
 }
 
 /**
  * 使用布局计算属性
  */
 export function useLayoutComputed(): LayoutComputed {
-  const value = useContext(LayoutContextInstance);
-  if (!value) {
+  const computed = useContext(LayoutComputedInstance);
+  if (!computed) {
     throw new Error('useLayoutComputed must be used within a LayoutProvider');
   }
-  return value.computed;
+  return computed;
 }
 
 /**
  * 使用布局 CSS 变量
  */
 export function useLayoutCSSVars(): Record<string, string> {
-  const value = useContext(LayoutContextInstance);
-  if (!value) {
+  const cssVars = useContext(LayoutCSSVarsInstance);
+  if (!cssVars) {
     throw new Error('useLayoutCSSVars must be used within a LayoutProvider');
   }
-  return value.cssVars;
+  return cssVars;
 }
 
 /**
  * 使用布局状态（带 setter）
  */
 export function useLayoutState(): [LayoutState, React.Dispatch<React.SetStateAction<LayoutState>>] {
-  const value = useContext(LayoutContextInstance);
+  const value = useContext(LayoutStateInstance);
   if (!value) {
     throw new Error('useLayoutState must be used within a LayoutProvider');
   }

@@ -5,6 +5,11 @@
 import { matchShortcutKey, type ShortcutKeyPreferences } from '@admin-core/preferences';
 
 export type ShortcutAction = 'globalSearch' | 'globalLockScreen' | 'globalLogout';
+export interface ShortcutActionHandlers {
+  onLockScreen?: () => void;
+  onLogout?: () => void;
+  onGlobalSearch?: (keyword: string) => void;
+}
 
 /**
  * 是否忽略快捷键事件（避免影响输入）
@@ -41,4 +46,28 @@ export function resolveShortcutAction(
   }
 
   return null;
+}
+
+/**
+ * 分发快捷键动作
+ * @returns 是否命中了可执行动作
+ */
+export function dispatchShortcutAction(
+  action: ShortcutAction,
+  handlers: ShortcutActionHandlers
+): boolean {
+  if (!action) return false;
+  if (action === 'globalLockScreen') {
+    handlers.onLockScreen?.();
+    return true;
+  }
+  if (action === 'globalLogout') {
+    handlers.onLogout?.();
+    return true;
+  }
+  if (action === 'globalSearch') {
+    handlers.onGlobalSearch?.('');
+    return true;
+  }
+  return false;
 }

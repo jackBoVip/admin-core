@@ -268,14 +268,21 @@ export function filterHiddenMenus(menus: MenuItem[]): MenuItem[] {
  * 过滤隐藏菜单（带缓存）
  */
 const EMPTY_MENU_LIST: MenuItem[] = [];
-let hiddenMenusCache = new WeakMap<MenuItem[], { value: MenuItem[]; length: number }>();
+let menuCacheVersion = new WeakMap<MenuItem[], number>();
+const getMenuCacheVersion = (menus: MenuItem[]) => menuCacheVersion.get(menus) ?? 0;
+const bumpMenuCacheVersion = (menus: MenuItem[]) => {
+  menuCacheVersion.set(menus, getMenuCacheVersion(menus) + 1);
+};
+
+let hiddenMenusCache = new WeakMap<MenuItem[], { value: MenuItem[]; version: number }>();
 
 export function getCachedFilteredMenus(menus: MenuItem[]): MenuItem[] {
   if (!menus.length) return EMPTY_MENU_LIST;
+  const version = getMenuCacheVersion(menus);
   const cached = hiddenMenusCache.get(menus);
-  if (cached && cached.length === menus.length) return cached.value;
+  if (cached && cached.version === version) return cached.value;
   const filtered = filterHiddenMenus(menus);
-  hiddenMenusCache.set(menus, { value: filtered, length: menus.length });
+  hiddenMenusCache.set(menus, { value: filtered, version });
   return filtered;
 }
 
@@ -522,13 +529,14 @@ export function buildMenuPathIndex(menus: MenuItem[]): {
 /**
  * 获取缓存的菜单索引（按 menus 引用缓存）
  */
-let menuIndexCache = new WeakMap<MenuItem[], { length: number; index: ReturnType<typeof buildMenuPathIndex> }>();
+let menuIndexCache = new WeakMap<MenuItem[], { version: number; index: ReturnType<typeof buildMenuPathIndex> }>();
 
 export function getCachedMenuPathIndex(menus: MenuItem[]): ReturnType<typeof buildMenuPathIndex> {
+  const version = getMenuCacheVersion(menus);
   const cached = menuIndexCache.get(menus);
-  if (cached && cached.length === menus.length) return cached.index;
+  if (cached && cached.version === version) return cached.index;
   const index = buildMenuPathIndex(menus);
-  menuIndexCache.set(menus, { length: menus.length, index });
+  menuIndexCache.set(menus, { version, index });
   return index;
 }
 
@@ -685,7 +693,7 @@ export function resolveHeaderMenus(
 /**
  * 解析顶部菜单数据（带缓存）
  */
-let headerMenuCache = new WeakMap<MenuItem[], { length: number; menuMap: Map<string, MenuItem[]> }>();
+let headerMenuCache = new WeakMap<MenuItem[], { version: number; menuMap: Map<string, MenuItem[]> }>();
 
 export function getCachedHeaderMenus(
   menus: MenuItem[] | undefined,
@@ -693,12 +701,13 @@ export function getCachedHeaderMenus(
 ): MenuItem[] {
   const list = menus ?? [];
   if (!list.length) return EMPTY_MENU_LIST;
+  const version = getMenuCacheVersion(list);
   const key = `${options.isHeaderNav ? 1 : 0}${options.isMixedNav ? 1 : 0}${options.isHeaderMixedNav ? 1 : 0}${options.isHeaderSidebarNav ? 1 : 0}`;
   const cacheEntry = headerMenuCache.get(list);
   let menuMap = cacheEntry?.menuMap;
-  if (!menuMap || cacheEntry?.length !== list.length) {
+  if (!menuMap || cacheEntry?.version !== version) {
     menuMap = new Map<string, MenuItem[]>();
-    headerMenuCache.set(list, { length: list.length, menuMap });
+    headerMenuCache.set(list, { version, menuMap });
   }
   const cached = menuMap.get(key);
   if (cached) return cached;
@@ -712,14 +721,16 @@ export function getCachedHeaderMenus(
  */
 export function clearMenuCaches(menus?: MenuItem[]): void {
   if (menus) {
+    bumpMenuCacheVersion(menus);
     hiddenMenusCache.delete(menus);
     headerMenuCache.delete(menus);
     menuIndexCache.delete(menus);
     return;
   }
-  hiddenMenusCache = new WeakMap<MenuItem[], { value: MenuItem[]; length: number }>();
-  headerMenuCache = new WeakMap<MenuItem[], { length: number; menuMap: Map<string, MenuItem[]> }>();
-  menuIndexCache = new WeakMap<MenuItem[], { length: number; index: ReturnType<typeof buildMenuPathIndex> }>();
+  hiddenMenusCache = new WeakMap<MenuItem[], { value: MenuItem[]; version: number }>();
+  headerMenuCache = new WeakMap<MenuItem[], { version: number; menuMap: Map<string, MenuItem[]> }>();
+  menuIndexCache = new WeakMap<MenuItem[], { version: number; index: ReturnType<typeof buildMenuPathIndex> }>();
+  menuCacheVersion = new WeakMap<MenuItem[], number>();
 }
 
 export interface HeaderActiveKeyOptions extends HeaderMenuOptions {

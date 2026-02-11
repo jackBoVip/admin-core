@@ -15,6 +15,23 @@ export interface MenuNavigationResult {
 }
 
 export type CurrentPathValue = string | { value?: string } | null | undefined;
+export interface LocationPathLike {
+  pathname?: string;
+  search?: string;
+  hash?: string;
+}
+
+export interface WindowLikeWithLocation {
+  location: LocationPathLike;
+}
+
+export interface ResolveCurrentPathOptions {
+  routerCurrentPath?: CurrentPathValue;
+  currentPath?: CurrentPathValue;
+  location?: LocationPathLike | null;
+  mode?: 'hash' | 'history';
+  targetWindow?: WindowLikeWithLocation | null;
+}
 
 /**
  * 解析当前路径（支持 Ref-like 对象）
@@ -27,6 +44,62 @@ export function resolveCurrentPath(value: CurrentPathValue): string {
     return typeof resolved === 'string' ? resolved : '';
   }
   return '';
+}
+
+/**
+ * 从 location 对象解析路径
+ */
+export function resolveLocationPath(location?: LocationPathLike | null): string {
+  if (!location) return '';
+  const hash = location.hash || '';
+  if (hash) {
+    const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
+    if (normalized) return normalized.startsWith('/') ? normalized : `/${normalized}`;
+  }
+  if (location.pathname) {
+    return `${location.pathname}${location.search || ''}`;
+  }
+  return '';
+}
+
+/**
+ * 从 window.location 解析路径
+ */
+export function resolveWindowPath(
+  preferHash: boolean,
+  targetWindow?: WindowLikeWithLocation | null
+): string {
+  const win =
+    targetWindow ??
+    (typeof window !== 'undefined' ? ({ location: window.location } as WindowLikeWithLocation) : null);
+  if (!win?.location) return '';
+
+  const { pathname, search, hash } = win.location;
+  if (preferHash && hash) {
+    const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
+    if (normalized) return normalized.startsWith('/') ? normalized : `/${normalized}`;
+  }
+  return `${pathname || ''}${search || ''}`;
+}
+
+/**
+ * 统一解析当前路径（router.currentPath -> currentPath -> location -> window）
+ */
+export function resolvePreferredCurrentPath(options: ResolveCurrentPathOptions): string {
+  const resolvedFromProps =
+    resolveCurrentPath(options.routerCurrentPath) ||
+    resolveCurrentPath(options.currentPath);
+  if (resolvedFromProps) return resolvedFromProps;
+
+  const resolvedFromLocation = resolveLocationPath(options.location);
+  if (resolvedFromLocation) return resolvedFromLocation;
+
+  const hasWindowHash = Boolean(
+    options.targetWindow?.location?.hash ||
+      (typeof window !== 'undefined' && window.location.hash)
+  );
+  const preferHash = options.mode === 'hash' || hasWindowHash;
+  return resolveWindowPath(preferHash, options.targetWindow);
 }
 
 /**

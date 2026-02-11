@@ -41,6 +41,14 @@ describe('route-access utils', () => {
     expect(resolved).toBe(DummyComponent);
   });
 
+  it('resolveComponentFromMap should fallback to case-insensitive match', () => {
+    const pageMap = {
+      '/src/views/components/Card.vue': DummyComponent,
+    };
+    const resolved = resolveComponentFromMap('/components/card', pageMap, undefined, 'src/views');
+    expect(resolved).toBe(DummyComponent);
+  });
+
   it('mergeStaticRoutes should override by name', () => {
     const staticRoutes = [
       { name: 'A', path: '/a', component: 'A' },

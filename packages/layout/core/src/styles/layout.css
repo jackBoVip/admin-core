@@ -118,13 +118,13 @@ body[data-theme='dark'] {
 
   html[data-platform='macOs']:not(.dark):not([data-theme='dark'])::-webkit-scrollbar-thumb {
     background: var(--border);
-    border-radius: 4px;
+    border-radius: var(--scrollbar-radius, 4px);
     border: none;
   }
 
   html[data-platform='macOs']:not(.dark):not([data-theme='dark'])::-webkit-scrollbar-track {
     background: transparent;
-    border-radius: 4px;
+    border-radius: var(--scrollbar-radius, 4px);
     border: none;
     box-shadow: none;
   }
@@ -242,6 +242,15 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --layout-panel-width: 280px;
   --layout-panel-collapse-width: 0px;
   --layout-content-compact-width: 1200px;
+  /* 圆角变量（联动偏好设置 --radius） */
+  --layout-radius-base: var(--radius, 8px);
+  --layout-radius-xs: max(0px, calc(var(--layout-radius-base) - 6px));
+  --layout-radius-sm: max(0px, calc(var(--layout-radius-base) - 4px));
+  --layout-radius-md: max(0px, calc(var(--layout-radius-base) - 2px));
+  --layout-radius-lg: calc(var(--layout-radius-base) + 4px);
+  --layout-tab-radius: max(0px, calc(var(--layout-radius-base) - 3px));
+  --layout-accent-bar-radius: max(0px, calc(var(--layout-radius-base) / 4));
+  --layout-radius-pill: 9999px;
   
   /* z-index 层级 */
   --layout-z-index: 200;
@@ -663,7 +672,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   color: inherit;
   cursor: pointer;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: var(--layout-radius-base, 8px);
   font-size: 14px;
   line-height: 1.4;
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -903,8 +912,8 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   margin: 0 1rem 0 0.75rem;
   padding-right: 0.75rem;
   overflow: hidden;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
+  border-top-left-radius: var(--layout-tab-radius, 5px);
+  border-top-right-radius: var(--layout-tab-radius, 5px);
   color: var(--accent-foreground);
   transition: all 300ms ease;
 }
@@ -1095,15 +1104,15 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 .layout-tabbar__chrome-bg-content {
   height: 100%;
-  border-top-left-radius: var(--tab-chrome-gap);
-  border-top-right-radius: var(--tab-chrome-gap);
+  border-top-left-radius: var(--layout-tab-radius, var(--tab-chrome-gap));
+  border-top-right-radius: var(--layout-tab-radius, var(--tab-chrome-gap));
   background-color: transparent;
   transition: all var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
 }
 
 :is(.layout-tabbar__tab--chrome, .layout-tabbar__tab[data-style="chrome"]):not([data-state="active"]):hover .layout-tabbar__chrome-bg-content {
   margin: 0 2px;
-  border-radius: 0.375rem;
+  border-radius: var(--layout-radius-md, 0.375rem);
   background-color: var(--accent);
 }
 
@@ -1156,8 +1165,8 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   margin: 0 calc(var(--tab-chrome-gap) * 2);
   padding: 0 1rem 0 0.5rem;
   overflow: hidden;
-  border-top-left-radius: 5px;
-  border-top-right-radius: 5px;
+  border-top-left-radius: var(--layout-tab-radius, 5px);
+  border-top-right-radius: var(--layout-tab-radius, 5px);
   color: inherit;
 }
 
@@ -1206,7 +1215,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   margin-bottom: 3px;
   margin-left: 0.5rem;
   border: 1px solid var(--border);
-  border-radius: 0.375rem;
+  border-radius: var(--layout-radius-md, 0.375rem);
 }
 
 /* Brisk 风格标签 */
@@ -1265,7 +1274,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   width: 3px;
   height: 60%;
   background-color: var(--primary);
-  border-radius: 2px;
+  border-radius: var(--layout-accent-bar-radius, 2px);
   animation: drop-indicator var(--admin-duration-normal, 300ms) var(--admin-easing-default, ease);
 }
 
@@ -1300,22 +1309,36 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 :is(body.layout-content-maximized, body[data-content-maximized="true"]) .layout-tabbar {
-  left: 0 !important;
+  left: var(--layout-panel-offset-left, 0px) !important;
+  right: var(--layout-panel-offset-right, 0px) !important;
+  width: calc(100% - var(--layout-panel-offset-left, 0px) - var(--layout-panel-offset-right, 0px)) !important;
   top: 0 !important;
 }
 
 :is(body.layout-content-maximized, body[data-content-maximized="true"]) .layout-content {
-  margin-left: 0 !important;
+  margin-left: var(--layout-panel-offset-left, 0px) !important;
+  margin-right: var(--layout-panel-offset-right, 0px) !important;
   margin-top: var(--admin-tabbar-height, 38px) !important;
 }
 
 :is(body.layout-content-maximized, body[data-content-maximized="true"]) .layout-footer {
-  left: 0 !important;
-  margin-left: 0 !important;
+  left: var(--layout-panel-offset-left, 0px) !important;
+  margin-left: var(--layout-panel-offset-left, 0px) !important;
+  margin-right: var(--layout-panel-offset-right, 0px) !important;
 }
 
 :is(body.layout-content-maximized, body[data-content-maximized="true"]) .layout-panel {
   top: var(--admin-tabbar-height, 38px) !important;
+}
+
+:is(body.layout-content-maximized, body[data-content-maximized="true"])
+  :is(.layout-panel--left, .layout-panel[data-position="left"]) {
+  left: 0 !important;
+}
+
+:is(body.layout-content-maximized, body[data-content-maximized="true"])
+  :is(.layout-panel--right, .layout-panel[data-position="right"]) {
+  right: 0 !important;
 }
 
 /* 最大化过渡动画 */
@@ -1372,6 +1395,10 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   @apply fixed bottom-0;
   z-index: var(--layout-z-index-panel);
   background-color: var(--background, var(--sidebar-dark-foreground));
+  --layout-panel-toggle-width: 14px;
+  --layout-panel-toggle-height: 42px;
+  --layout-panel-toggle-radius: var(--layout-radius-md, 6px);
+  --layout-panel-toggle-icon-size: 12px;
   will-change: left, right, width;
   transition: width var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
     left var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
@@ -1398,10 +1425,86 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   border-left: 1px solid var(--border);
 }
 
+.layout-panel__collapse-btn {
+  --layout-panel-toggle-shift-x: 100%;
+  --layout-panel-toggle-attach-overlap: 1px;
+  position: absolute;
+  top: 50%;
+  z-index: calc(var(--layout-z-index-panel) + 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--layout-panel-toggle-width);
+  min-width: var(--layout-panel-toggle-width);
+  height: var(--layout-panel-toggle-height);
+  padding: 0;
+  border: 1px solid color-mix(in oklch, var(--primary) 82%, transparent);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 6px 14px color-mix(in oklch, var(--primary) 26%, transparent);
+  cursor: pointer;
+  transform: translate(
+      calc(var(--layout-panel-toggle-shift-x) - var(--layout-panel-toggle-attach-overlap)),
+      -50%
+    );
+  transition:
+    transform var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    filter var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1)),
+    box-shadow var(--admin-duration-fast, 150ms) var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1));
+}
+
+.layout-panel__collapse-btn:hover {
+  filter: brightness(1.03);
+  box-shadow: 0 8px 18px color-mix(in oklch, var(--primary) 32%, transparent);
+  transform: translate(
+      calc(var(--layout-panel-toggle-shift-x) - var(--layout-panel-toggle-attach-overlap)),
+      -50%
+    ) scale(1.02);
+}
+
+.layout-panel__collapse-btn:active {
+  transform: translate(
+      calc(var(--layout-panel-toggle-shift-x) - var(--layout-panel-toggle-attach-overlap)),
+      -50%
+    ) scale(0.97);
+}
+
+.layout-panel__collapse-btn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px color-mix(in oklch, var(--background) 94%, transparent),
+    0 0 0 4px color-mix(in oklch, var(--primary) 32%, transparent);
+}
+
+.layout-panel__collapse-btn svg {
+  width: var(--layout-panel-toggle-icon-size) !important;
+  height: var(--layout-panel-toggle-icon-size) !important;
+}
+
+:is(.layout-panel--left, .layout-panel[data-position="left"]) .layout-panel__collapse-btn {
+  right: 0;
+  --layout-panel-toggle-shift-x: 100%;
+  border-radius: 0 var(--layout-panel-toggle-radius) var(--layout-panel-toggle-radius) 0;
+  transform-origin: left center;
+}
+
+:is(.layout-panel--right, .layout-panel[data-position="right"]) .layout-panel__collapse-btn {
+  left: 0;
+  --layout-panel-toggle-shift-x: -100%;
+  --layout-panel-toggle-attach-overlap: -1px;
+  border-radius: var(--layout-panel-toggle-radius) 0 0 var(--layout-panel-toggle-radius);
+  transform-origin: right center;
+}
+
 :is(.layout-panel--collapsed, .layout-panel[data-collapsed="true"]) .layout-panel__content,
 :is(.layout-panel--collapsed, .layout-panel[data-collapsed="true"]) .layout-panel__header span,
 :is(.layout-panel--collapsed, .layout-panel[data-collapsed="true"]) .layout-panel__footer {
   display: none;
+}
+
+:is(.layout-panel--collapsed, .layout-panel[data-collapsed="true"]) {
+  border-left: 0;
+  border-right: 0;
 }
 
 /* 遮罩层 */
@@ -1482,7 +1585,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   width: 48px;
   height: 48px;
   border: none;
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--layout-radius-base, 8px) 0 0 var(--layout-radius-base, 8px);
   background-color: var(--primary);
   color: var(--primary-foreground);
   cursor: pointer;
@@ -1507,7 +1610,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   right: auto;
   top: auto;
   transform: none;
-  border-radius: 999px;
+  border-radius: var(--layout-radius-pill, 999px);
   touch-action: none;
 }
 
@@ -1524,19 +1627,19 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 }
 
 .layout-preferences-button--floating[data-edge="left"] {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--layout-radius-base, 8px) var(--layout-radius-base, 8px) 0;
 }
 
 .layout-preferences-button--floating[data-edge="right"] {
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--layout-radius-base, 8px) 0 0 var(--layout-radius-base, 8px);
 }
 
 .layout-preferences-button--floating[data-edge="top"] {
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 var(--layout-radius-base, 8px) var(--layout-radius-base, 8px);
 }
 
 .layout-preferences-button--floating[data-edge="bottom"] {
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--layout-radius-base, 8px) var(--layout-radius-base, 8px) 0 0;
 }
 
 @keyframes layout-preferences-spin {
@@ -1562,7 +1665,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   @apply flex items-center cursor-pointer select-none text-sm;
   padding: 0.625rem 0.75rem;
   margin: 0.125rem 0;
-  border-radius: 0.375rem;
+  border-radius: var(--layout-radius-md, 0.375rem);
   color: var(--sidebar-dark-muted);
   transition: all var(--admin-duration-fast, 150ms) var(--admin-easing-default, ease);
   line-height: 1.25rem;
@@ -1729,7 +1832,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   content-visibility: auto;
   contain-intrinsic-size: 400px 600px;
   background-color: var(--sidebar-bg, var(--sidebar-light-foreground));
-  border-radius: 0.5rem;
+  border-radius: var(--layout-radius-base, 0.5rem);
   box-shadow: 0 10px 40px color-mix(in oklch, var(--foreground) 30%, transparent);
   padding: 0.5rem 0;
   animation: popup-fade-in var(--admin-duration-fast, 150ms) var(--admin-easing-default, ease);
@@ -1941,7 +2044,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --menu-item-padding-y: 0;
   --menu-item-margin-x: 1px;
   --menu-item-margin-y: 0;
-  --menu-item-radius: 6px;
+  --menu-item-radius: var(--layout-radius-md, 6px);
   --menu-font-size: 0.875rem;
   --menu-icon-size: 1rem;
   --menu-indent: 16px;
@@ -1959,7 +2062,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --menu-popup-bg: var(--background);
   --menu-popup-border: var(--border);
   --menu-popup-shadow: 0 10px 40px hsl(var(--foreground) / 0.12);
-  --menu-popup-radius: 8px;
+  --menu-popup-radius: var(--layout-radius-base, 8px);
   --menu-popup-padding: 8px;
   --menu-popup-min-width: 180px;
   --menu-popup-max-width: 240px;
@@ -2290,7 +2393,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   margin-left: 8px;
   color: var(--primary-foreground);
   background-color: var(--primary);
-  border-radius: 9px;
+  border-radius: var(--layout-radius-pill, 9px);
 }
 
 :is(.menu__badge--dot, .menu__badge[data-badge="dot"]) {
@@ -2392,7 +2495,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   @apply flex flex-col items-center justify-center cursor-pointer relative;
   padding: 0.75rem 0.5rem;
   margin: 0.25rem 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--layout-radius-base, 0.5rem);
   color: var(--sidebar-dark-muted);
   transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
   content-visibility: auto;
@@ -2428,7 +2531,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   width: 3px;
   height: 60%;
   background-color: var(--primary);
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 var(--layout-accent-bar-radius, 2px) var(--layout-accent-bar-radius, 2px) 0;
   opacity: 0;
 }
 
@@ -2501,7 +2604,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   @apply flex items-center cursor-pointer text-sm relative;
   padding: 0.5rem 0.75rem;
   margin: 0.125rem 0;
-  border-radius: 0.375rem;
+  border-radius: var(--layout-radius-md, 0.375rem);
   color: var(--foreground, var(--muted-foreground));
   transition: background 0.15s ease, color 0.15s ease, padding 0.15s ease;
   content-visibility: auto;
@@ -2529,7 +2632,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   width: 3px;
   height: 60%;
   background-color: var(--primary);
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 var(--layout-accent-bar-radius, 2px) var(--layout-accent-bar-radius, 2px) 0;
 }
 
 /* 原有的 active 带背景色样式改为深色模式使用 */
@@ -2636,7 +2739,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   @apply absolute bottom-2 left-3 flex items-center justify-center cursor-pointer;
   z-index: var(--layout-z-index-fixed);
   padding: 0.25rem;
-  border-radius: 0.25rem;
+  border-radius: var(--layout-radius-sm, 0.25rem);
   color: var(--foreground, var(--muted-foreground));
   opacity: 0.6;
   background-color: var(--accent);
@@ -2655,7 +2758,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   @apply absolute bottom-2 right-3 flex items-center justify-center cursor-pointer;
   z-index: var(--layout-z-index-fixed);
   padding: 5px;
-  border-radius: 0.25rem;
+  border-radius: var(--layout-radius-sm, 0.25rem);
   color: var(--foreground, var(--muted-foreground));
   opacity: 0.6;
   background-color: var(--accent);
@@ -2706,9 +2809,9 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --header-dropdown-accent-bg: var(--accent, #f1f5f9);
   --header-dropdown-accent-fg: var(--accent-foreground, #0f172a);
   --header-dropdown-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
-  --header-dropdown-radius: 0.375rem;
+  --header-dropdown-radius: var(--layout-radius-md, 0.375rem);
   --header-dropdown-padding: 0.25rem;
-  --header-dropdown-item-radius: 0.125rem;
+  --header-dropdown-item-radius: var(--layout-radius-xs, 0.125rem);
   --header-dropdown-item-padding: 0.375rem 0.5rem;
   --header-dropdown-width: 8rem;
   --header-notification-width: 18rem;
@@ -2716,7 +2819,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --header-search-modal-bg: var(--card, var(--background, #ffffff));
   --header-search-modal-border: var(--header-dropdown-border);
   --header-search-modal-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --header-search-modal-radius: 0.75rem;
+  --header-search-modal-radius: var(--layout-radius-lg, 0.75rem);
   --header-search-bg: color-mix(in oklch, var(--muted) 68%, var(--background));
   --header-search-hover-bg: color-mix(in oklch, var(--muted) 80%, var(--background));
   --header-search-border: transparent;
@@ -2725,9 +2828,9 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --header-widget-muted-fg: var(--muted-foreground);
   --header-widget-disabled-opacity: 0.45;
   --header-widget-size: 36px;
-  --header-widget-radius: 8px;
+  --header-widget-radius: var(--layout-radius-base, 8px);
   --header-search-height: 32px;
-  --header-search-radius: 16px;
+  --header-search-radius: calc(var(--layout-radius-base, 8px) * 2);
   --header-search-padding-x: 8px;
   --header-search-gap: 12px;
   --header-toolbar-gap: 4px;
@@ -2749,7 +2852,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   --header-widget-font-weight: 500;
   --header-user-text-max-width: 96px;
   --header-search-kbd-font-size: 11px;
-  --header-search-kbd-radius: 6px;
+  --header-search-kbd-radius: var(--layout-radius-md, 6px);
   --header-search-gap: 8px;
   --header-user-gap: 8px;
   --header-user-padding: 4px 8px 4px 4px;
@@ -3144,7 +3247,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: var(--layout-radius-base, 0.5rem);
   cursor: pointer;
   transition: all var(--admin-duration-fast);
 }
@@ -3160,7 +3263,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   width: 2rem;
   align-items: center;
   justify-content: center;
-  border-radius: 0.375rem;
+  border-radius: var(--layout-radius-md, 0.375rem);
   background-color: color-mix(in oklch, var(--foreground) 5%, transparent);
   font-size: 1.125rem;
 }
@@ -3205,7 +3308,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 .header-search-modal__kbd {
   padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
+  border-radius: var(--layout-radius-sm, 0.25rem);
   border: 1px solid var(--header-dropdown-border, var(--border, #e2e8f0));
   background-color: color-mix(in oklch, var(--foreground) 5%, transparent);
   font-family: inherit;

@@ -2,7 +2,7 @@
  * 内容区组件
  */
 
-import { DEFAULT_CONTENT_CONFIG } from '@admin-core/layout';
+import { DEFAULT_CONTENT_CONFIG, getTabCacheName } from '@admin-core/layout';
 import { cloneElement, isValidElement, memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { useLayoutContext, useLayoutComputed, useLayoutState, useRouter } from '../../hooks';
 import { usePageTransition, usePanelState, useSidebarState, useTabsState } from '../../hooks/use-layout-state';
@@ -35,6 +35,10 @@ export const LayoutContent = memo(function LayoutContent({
   const contentCompact = context.props.contentCompact || DEFAULT_CONTENT_CONFIG.contentCompact;
   const contentCompactWidth = context.props.contentCompactWidth || DEFAULT_CONTENT_CONFIG.contentCompactWidth;
   const keepAliveEnabled = context.props.tabbar?.keepAlive !== false;
+  const keepAliveCacheLimit = useMemo(() => {
+    const max = context.props.tabbar?.maxCount ?? context.props.autoTab?.maxCount ?? 0;
+    return max > 0 ? max : 0;
+  }, [context.props.tabbar?.maxCount, context.props.autoTab?.maxCount]);
   const routerLocation = context.props.router?.location;
   const keepAliveAvailable = keepAliveEnabled && !!routerLocation;
   const footerOffset =
@@ -154,9 +158,7 @@ export const LayoutContent = memo(function LayoutContent({
     return () => {
       clearTransitionTimers();
       clearTransitionClasses();
-      if (innerRef.current) {
-        clearTransitionInlineFrom(innerRef.current);
-      }
+      clearTransitionInlineFrom(el);
     };
   }, [
     transitionEnabled,
@@ -204,6 +206,8 @@ export const LayoutContent = memo(function LayoutContent({
       return;
     }
     if (!activeKey) return;
+
+    let changed = false;
     const refreshKey = layoutState.refreshKey;
     const existing = cacheRef.current.get(activeKey);
     if (!existing || existing.refreshKey !== refreshKey) {
@@ -211,9 +215,44 @@ export const LayoutContent = memo(function LayoutContent({
         element: buildCachedElement(activeKey, refreshKey),
         refreshKey,
       });
+      changed = true;
+    } else {
+      // 访问活跃页时刷新 LRU 顺序
+      cacheRef.current.delete(activeKey);
+      cacheRef.current.set(activeKey, existing);
+    }
+
+    if (keepAliveCacheLimit > 0 && cacheRef.current.size > keepAliveCacheLimit) {
+      const tabMap = new Map(tabs.map((tab) => [tab.key, tab]));
+      for (const key of cacheRef.current.keys()) {
+        if (cacheRef.current.size <= keepAliveCacheLimit) break;
+        if (key === activeKey) continue;
+        if (tabMap.get(key)?.affix) continue;
+        cacheRef.current.delete(key);
+        changed = true;
+      }
+      // 兜底：当均为 affix 时，至少保留当前激活页
+      if (cacheRef.current.size > keepAliveCacheLimit) {
+        for (const key of cacheRef.current.keys()) {
+          if (cacheRef.current.size <= keepAliveCacheLimit) break;
+          if (key === activeKey) continue;
+          cacheRef.current.delete(key);
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
       forceUpdate((val) => val + 1);
     }
-  }, [activeKey, keepAliveAvailable, layoutState.refreshKey, buildCachedElement]);
+  }, [
+    activeKey,
+    keepAliveAvailable,
+    keepAliveCacheLimit,
+    layoutState.refreshKey,
+    buildCachedElement,
+    tabs,
+  ]);
 
   useEffect(() => {
     if (!keepAliveAvailable) return;
@@ -229,6 +268,27 @@ export const LayoutContent = memo(function LayoutContent({
       forceUpdate((val) => val + 1);
     }
   }, [tabs, keepAliveAvailable]);
+
+  useEffect(() => {
+    if (!keepAliveAvailable) return;
+    const excludes = layoutState.keepAliveExcludes || [];
+    if (excludes.length === 0) return;
+
+    const excludeSet = new Set(excludes);
+    const tabMap = new Map(tabs.map((tab) => [tab.key, tab]));
+    let changed = false;
+    cacheRef.current.forEach((_entry, key) => {
+      const tab = tabMap.get(key);
+      const cacheName = tab ? getTabCacheName(tab) : undefined;
+      if (!cacheName || !excludeSet.has(cacheName)) return;
+      cacheRef.current.delete(key);
+      changed = true;
+    });
+
+    if (changed) {
+      forceUpdate((val) => val + 1);
+    }
+  }, [tabs, layoutState.keepAliveExcludes, keepAliveAvailable]);
 
   // 类名
   const contentClassName = useMemo(() => {

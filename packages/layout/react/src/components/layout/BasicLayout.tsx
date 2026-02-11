@@ -43,6 +43,7 @@ import type { SupportedLocale, BasicLayoutProps, LayoutEvents, RouterConfig, Men
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
 const EMPTY_MENUS: MenuItem[] = [];
+const EMPTY_MENU_INDEX = getCachedMenuPathIndex(EMPTY_MENUS);
 
 /**
  * 布局插槽 Props
@@ -165,13 +166,24 @@ const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: P
     if (hasCalledRef.current) {
       return;
     }
-    
-    // 延迟调用，避免在渲染期间更新状态
+
+    // 延迟到当前渲染提交后调用，避免渲染期状态更新告警
     if (onReadyRef.current) {
       hasCalledRef.current = true;
-      setTimeout(() => {
+      let cancelled = false;
+      const schedule =
+        typeof queueMicrotask === 'function'
+          ? queueMicrotask
+          : (callback: () => void) => {
+              Promise.resolve().then(callback);
+            };
+      schedule(() => {
+        if (cancelled) return;
         onReadyRef.current?.(lockRef.current);
-      }, 0);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
   }, []); // 只在挂载时执行一次
 
@@ -264,8 +276,9 @@ function LayoutInner({
     : EMPTY_MENUS;
 
   const launcherMenus = useMemo(() => {
+    if (!menuLauncherEnabled || !menuLauncherOpen) return EMPTY_MENUS;
     return getCachedFilteredMenus(menus);
-  }, [menus]);
+  }, [menuLauncherEnabled, menuLauncherOpen, menus]);
 
   const showFloatingPreferencesButton = showPreferencesButton && computed.isFullContent;
   const showFixedPreferencesButton =
@@ -484,20 +497,28 @@ function LayoutInner({
   }, [computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]);
 
   // 顶部导航菜单数据
-  const headerMenus = useMemo(
-    () =>
-      getCachedHeaderMenus(menus, {
-        isHeaderNav: computed.isHeaderNav,
-        isMixedNav: computed.isMixedNav,
-        isHeaderMixedNav: computed.isHeaderMixedNav,
-        isHeaderSidebarNav,
-      }),
-    [menus, computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]
-  );
+  const headerMenus = useMemo(() => {
+    if (!showHeaderMenu) return EMPTY_MENUS;
+    return getCachedHeaderMenus(menus, {
+      isHeaderNav: computed.isHeaderNav,
+      isMixedNav: computed.isMixedNav,
+      isHeaderMixedNav: computed.isHeaderMixedNav,
+      isHeaderSidebarNav,
+    });
+  }, [
+    showHeaderMenu,
+    menus,
+    computed.isHeaderNav,
+    computed.isMixedNav,
+    computed.isHeaderMixedNav,
+    isHeaderSidebarNav,
+  ]);
 
+  const needHeaderMenuIndex =
+    menuLauncherEnabled || showHeaderMenu || computed.isMixedNav || computed.isHeaderMixedNav;
   const headerMenuIndex = useMemo(
-    () => getCachedMenuPathIndex(menus),
-    [menus]
+    () => (needHeaderMenuIndex ? getCachedMenuPathIndex(menus) : EMPTY_MENU_INDEX),
+    [needHeaderMenuIndex, menus]
   );
 
   // 顶部导航菜单激活 key
@@ -551,13 +572,16 @@ function LayoutInner({
     }
   }, [menuLauncherEnabled]);
 
+  const previousPathRef = useRef(currentPath);
   useEffect(() => {
-    if (menuLauncherOpen) {
-      // 使用 startTransition 避免在渲染期间更新组件
-      startTransition(() => {
+    const previousPath = previousPathRef.current;
+    previousPathRef.current = currentPath;
+    if (previousPath === currentPath) return;
+    if (!menuLauncherOpen) return;
+    // 仅在路由变化后自动关闭，避免点击打开后立即关闭
+    startTransition(() => {
       setMenuLauncherOpen(false);
-      });
-    }
+    });
   }, [currentPath, menuLauncherOpen]);
 
   useEffect(() => {

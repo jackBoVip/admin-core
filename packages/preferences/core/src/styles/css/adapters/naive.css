@@ -147,7 +147,7 @@
   --scrollbar-color-hover: rgba(0, 0, 0, 0.4);
   --scrollbar-width: 5px;
   --scrollbar-height: 5px;
-  --scrollbar-border-radius: 5px;
+  --scrollbar-border-radius: var(--scrollbar-radius, 5px);
 }
 
 /* ========== 暗色模式 ========== */

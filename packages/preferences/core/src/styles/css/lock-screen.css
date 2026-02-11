@@ -334,7 +334,7 @@
   .preferences-lock-unlock-logout {
     padding: 0.5rem 1rem;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius, 8px);
     background: transparent;
     color: rgba(255, 255, 255, 0.5);
     font-size: 0.8125rem;
@@ -414,7 +414,7 @@
   .preferences-lock-modal-card {
     width: min(380px, 90vw);
     padding: 2rem;
-    border-radius: 20px;
+    border-radius: calc(var(--radius, 8px) * 2.5);
     background: var(--card, #fff);
     color: var(--card-foreground, #0f172a);
     border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
@@ -466,7 +466,7 @@
   .preferences-lock-modal-close {
     width: 32px;
     height: 32px;
-    border-radius: 10px;
+    border-radius: calc(var(--radius, 8px) + 2px);
     border: none;
     background: var(--muted, rgba(0, 0, 0, 0.04));
     color: var(--muted-foreground, #64748b);
@@ -503,7 +503,7 @@
     width: 100%;
     height: 48px;
     padding: 0 2.75rem 0 1rem;
-    border-radius: 12px;
+    border-radius: calc(var(--radius, 8px) + 4px);
     border: 1.5px solid var(--border, rgba(0, 0, 0, 0.1));
     background: var(--muted, rgba(0, 0, 0, 0.02));
     color: var(--foreground, #0f172a);
@@ -531,7 +531,7 @@
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: 6px;
+    border-radius: max(0px, calc(var(--radius, 8px) - 2px));
     background: transparent;
     color: var(--muted-foreground, #94a3b8);
     display: grid;
@@ -553,7 +553,7 @@
   .preferences-lock-modal-submit {
     height: 48px;
     margin-top: 0.5rem;
-    border-radius: 12px;
+    border-radius: calc(var(--radius, 8px) + 4px);
     border: none;
     font-weight: 600;
     font-size: 0.9375rem;
@@ -577,7 +577,7 @@
 
   .preferences-lock-modal-error {
     padding: 0.625rem 0.875rem;
-    border-radius: 8px;
+    border-radius: var(--radius, 8px);
     background: var(--destructive-background, #fef2f2);
     border: 1px solid var(--destructive-border, #fecaca);
     color: var(--destructive, #dc2626);

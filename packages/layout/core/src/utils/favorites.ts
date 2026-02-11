@@ -197,6 +197,7 @@ export class FavoritesManager {
 // ============================================================
 
 const favoritesManagerCache = new Map<string, FavoritesManager>();
+const FAVORITES_MANAGER_CACHE_LIMIT = 50;
 
 export function getOrCreateFavoritesManager(options: {
   persistKey?: string | null;
@@ -205,9 +206,18 @@ export function getOrCreateFavoritesManager(options: {
   const cacheKey = options.persistKey || '__default__';
   let manager = favoritesManagerCache.get(cacheKey);
   if (!manager) {
+    if (favoritesManagerCache.size >= FAVORITES_MANAGER_CACHE_LIMIT) {
+      const oldestKey = favoritesManagerCache.keys().next().value;
+      if (oldestKey) {
+        favoritesManagerCache.delete(oldestKey);
+      }
+    }
     manager = new FavoritesManager(options);
     favoritesManagerCache.set(cacheKey, manager);
   } else {
+    // 更新访问顺序，便于按最近使用淘汰
+    favoritesManagerCache.delete(cacheKey);
+    favoritesManagerCache.set(cacheKey, manager);
     manager.setOnChange(options.onChange);
   }
   return manager;

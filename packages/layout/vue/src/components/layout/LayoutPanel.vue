@@ -19,6 +19,14 @@ const showCollapseButton = computed(() =>
   context.props.disabled?.panelCollapseButton !== true
 );
 
+const collapseIconClass = computed(() =>
+  `layout-panel__collapse-icon transition-transform duration-layout-normal ${
+    position.value === 'left'
+      ? (!collapsed.value ? 'rotate-180' : '')
+      : (collapsed.value ? 'rotate-180' : '')
+  }`
+);
+
 // 类名
 const panelClass = computed(() => [
   'layout-panel',
@@ -49,30 +57,11 @@ const panelStyle = computed(() => {
     :data-collapsed="collapsed ? 'true' : undefined"
   >
     <div class="layout-panel__inner flex h-full flex-col">
-      <!-- 头部 -->
-      <div v-if="$slots.header || showCollapseButton" class="layout-panel__header flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-        <slot name="header">
-          <span class="font-medium">{{ context.t('layout.panel.title') }}</span>
-        </slot>
-        
-        <!-- 折叠按钮 -->
-        <button
-          v-if="showCollapseButton"
-          type="button"
-          class="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-black/5"
-          :title="collapsed ? context.t('layout.panel.expand') : context.t('layout.panel.collapse')"
-          @click="toggle"
-        >
-          <LayoutIcon
-            name="panel-collapse"
-            size="sm"
-            :class-name="`transition-transform duration-layout-normal ${position === 'left' ? (!collapsed ? 'rotate-180' : '') : collapsed ? 'rotate-180' : ''}`"
-          />
-        </button>
-      </div>
-
       <!-- 内容 -->
       <div class="layout-panel__content layout-scroll-container flex-1 overflow-y-auto overflow-x-hidden p-4">
+        <div v-if="$slots.header" class="layout-panel__header-content mb-3">
+          <slot name="header" />
+        </div>
         <slot />
       </div>
 
@@ -81,6 +70,22 @@ const panelStyle = computed(() => {
         <slot name="footer" />
       </div>
     </div>
+
+    <!-- 折叠按钮（附着在靠内容区一侧边框） -->
+    <button
+      v-if="showCollapseButton"
+      type="button"
+      class="layout-panel__collapse-btn"
+      :title="collapsed ? context.t('layout.panel.expand') : context.t('layout.panel.collapse')"
+      :aria-label="collapsed ? context.t('layout.panel.expand') : context.t('layout.panel.collapse')"
+      @click="toggle"
+    >
+      <LayoutIcon
+        name="panel-collapse"
+        size="sm"
+        :class-name="collapseIconClass"
+      />
+    </button>
   </aside>
 </template>
 

@@ -100,6 +100,13 @@ const handleSetContentCompact = () => {
   updater.setContentCompactMode();
 };
 
+const createSelectUpdateHandler =
+  (setter: (value: string | number) => void) =>
+  (value: string | number | undefined) => {
+    if (value === undefined) return;
+    setter(value);
+  };
+
 // 是否允许显示折叠按钮的布局（仅 sidebar-nav）
 const isCollapseButtonAllowedLayout = computed(() => {
   return layout.value === 'sidebar-nav';
@@ -211,6 +218,11 @@ const handleContentWidthActivate = (e: Event) => {
     handleSetContentCompact();
   }
 };
+
+const handlePanelPositionChange = createSelectUpdateHandler(updater.setPanelPosition);
+const handleHeaderModeChange = createSelectUpdateHandler(updater.setHeaderMode);
+const handleHeaderMenuAlignChange = createSelectUpdateHandler(updater.setHeaderMenuAlign);
+const handleTabbarStyleTypeChange = createSelectUpdateHandler(updater.setTabbarStyleType);
 
 </script>
 
@@ -338,7 +350,7 @@ const handleContentWidthActivate = (e: Event) => {
     <SelectItem
       v-if="configs.panelPosition.visible"
       :model-value="panelPosition"
-      @update:modelValue="updater.setPanelPosition"
+      @update:modelValue="handlePanelPositionChange"
       :label="locale.panel.position"
       :options="[
         { label: locale.panel.positionLeft, value: 'left' },
@@ -367,7 +379,7 @@ const handleContentWidthActivate = (e: Event) => {
     <SelectItem
       v-if="configs.headerMode.visible"
       :model-value="headerMode"
-      @update:modelValue="updater.setHeaderMode"
+      @update:modelValue="handleHeaderModeChange"
       :label="locale.header.mode"
       :options="[
         { label: locale.header.modeFixed, value: 'fixed' },
@@ -380,7 +392,7 @@ const handleContentWidthActivate = (e: Event) => {
     <SelectItem
       v-if="configs.headerMenuAlign.visible"
       :model-value="headerMenuAlign"
-      @update:modelValue="updater.setHeaderMenuAlign"
+      @update:modelValue="handleHeaderMenuAlignChange"
       :label="locale.header.menuAlign"
       :options="headerMenuAlignOptions"
       :disabled="!menuAlignEnabled || configs.headerMenuAlign.disabled"
@@ -473,7 +485,7 @@ const handleContentWidthActivate = (e: Event) => {
     <SelectItem 
       v-if="configs.tabbarStyleType.visible"
       :model-value="tabbarStyleType"
-      @update:modelValue="updater.setTabbarStyleType"
+      @update:modelValue="handleTabbarStyleTypeChange"
       :label="locale.tabbar.styleType" 
       :options="tabsStyleOptions" 
       :disabled="!tabbarEnable || configs.tabbarStyleType.disabled" 

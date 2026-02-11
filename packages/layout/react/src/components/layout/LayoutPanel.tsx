@@ -44,6 +44,20 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
     return style;
   }, [width, computed.headerHeight, position, computed.showSidebar, computed.sidebarWidth, context.props.isMobile]);
 
+  const collapseIconClass = useMemo(
+    () =>
+      `layout-panel__collapse-icon transition-transform duration-200 ${
+        position === 'left'
+          ? !collapsed
+            ? 'rotate-180'
+            : ''
+          : collapsed
+            ? 'rotate-180'
+            : ''
+      }`,
+    [position, collapsed]
+  );
+
   return (
     <aside
       className={panelClassName}
@@ -52,37 +66,9 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
       data-collapsed={collapsed ? 'true' : undefined}
     >
       <div className="layout-panel__inner flex h-full flex-col">
-        {/* 头部 */}
-        {(header || showCollapseButton) && (
-          <div className="layout-panel__header flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
-            {header || <span className="font-medium">{context.t('layout.panel.title')}</span>}
-
-            {/* 折叠按钮 */}
-            {showCollapseButton && (
-              <button
-                type="button"
-                className="flex h-7 w-7 items-center justify-center rounded transition-colors hover:bg-black/5"
-                title={
-                  collapsed
-                    ? context.t('layout.panel.expand')
-                    : context.t('layout.panel.collapse')
-                }
-                onClick={toggle}
-              >
-                {renderLayoutIcon(
-                  'panel-collapse',
-                  'sm',
-                  `transition-transform duration-200 ${
-                    position === 'left' ? (!collapsed ? 'rotate-180' : '') : collapsed ? 'rotate-180' : ''
-                  }`
-                )}
-              </button>
-            )}
-          </div>
-        )}
-
         {/* 内容 */}
         <div className="layout-panel__content layout-scroll-container flex-1 overflow-y-auto overflow-x-hidden p-4">
+          {header && <div className="layout-panel__header-content mb-3">{header}</div>}
           {children}
         </div>
 
@@ -93,6 +79,27 @@ export const LayoutPanel = memo(function LayoutPanel({ children, header, footer 
           </div>
         )}
       </div>
+
+      {/* 折叠按钮（附着在靠内容区一侧边框） */}
+      {showCollapseButton && (
+        <button
+          type="button"
+          className="layout-panel__collapse-btn"
+          title={
+            collapsed
+              ? context.t('layout.panel.expand')
+              : context.t('layout.panel.collapse')
+          }
+          aria-label={
+            collapsed
+              ? context.t('layout.panel.expand')
+              : context.t('layout.panel.collapse')
+          }
+          onClick={toggle}
+        >
+          {renderLayoutIcon('panel-collapse', 'sm', collapseIconClass)}
+        </button>
+      )}
     </aside>
   );
 });

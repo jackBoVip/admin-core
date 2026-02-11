@@ -29,7 +29,7 @@
     appearance: none;
     background: transparent;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: var(--pref-control-radius-xs);
     outline: none;
   }
 
@@ -37,7 +37,7 @@
   .slider-native::-webkit-slider-runnable-track {
     height: 4px;
     background: transparent; /* 透明轨道，显示 input 的渐变背景 */
-    border-radius: 2px;
+    border-radius: var(--pref-control-radius-xs);
   }
 
   /* Webkit 滑块 */
@@ -74,7 +74,7 @@
   .slider-native::-moz-range-track {
     height: 4px;
     background: transparent;
-    border-radius: 2px;
+    border-radius: var(--pref-control-radius-xs);
     border: none;
   }
 
@@ -101,7 +101,7 @@
   .slider-native::-moz-range-progress {
     height: 4px;
     background: var(--primary);
-    border-radius: 2px;
+    border-radius: var(--pref-control-radius-xs);
   }
 
   /* 禁用状态 */
@@ -127,6 +127,6 @@
     user-select: none;
     padding: 2px 6px;
     background: color-mix(in oklch, var(--primary) 10%, transparent);
-    border-radius: 4px;
+    border-radius: var(--pref-control-radius-sm);
   }
 }

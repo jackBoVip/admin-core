@@ -83,7 +83,7 @@ const animateTabPositions = () => {
   if (!flipPending.value) return;
   const prevPositions = flipPositions.value;
   flipPending.value = false;
-  const animated: HTMLElement[] = [];
+  const movements: Array<{ el: HTMLElement; dx: number; dy: number }> = [];
   tabRefs.forEach((el, key) => {
     const prevRect = prevPositions.get(key);
     if (!prevRect) return;
@@ -91,19 +91,21 @@ const animateTabPositions = () => {
     const dx = prevRect.left - nextRect.left;
     const dy = prevRect.top - nextRect.top;
     if (dx || dy) {
-      el.style.transition = 'transform 0s';
-      el.style.transform = `translate(${dx}px, ${dy}px)`;
-      animated.push(el);
+      movements.push({ el, dx, dy });
     }
   });
-  if (!animated.length) return;
+  if (!movements.length) return;
+  for (const { el, dx, dy } of movements) {
+    el.style.transition = 'transform 0s';
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
   requestAnimationFrame(() => {
-    animated.forEach((el) => {
+    movements.forEach(({ el }) => {
       el.style.transition = 'transform 300ms var(--admin-easing-default, cubic-bezier(0.4, 0, 0.2, 1))';
       el.style.transform = '';
     });
     window.setTimeout(() => {
-      animated.forEach((el) => {
+      movements.forEach(({ el }) => {
         el.style.transition = '';
       });
     }, LAYOUT_UI_TOKENS.TABBAR_SCROLL_DELAY);

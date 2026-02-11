@@ -5,12 +5,13 @@
 
 import {
   DEFAULT_LAYOUT_CONFIG,
+  applyStatePatchMutable,
   calculateLayoutComputed,
+  createLayoutContextActionsController,
+  createLayoutPropsStateSyncController,
   createI18n,
   generateCSSVariables,
   getInitialLayoutState,
-  getLayoutStatePatchFromProps,
-  isSidebarMixedLayout,
   mergeConfig,
   type BasicLayoutProps,
   type LayoutComputed,
@@ -97,33 +98,42 @@ export function createLayoutContext(
     }
   };
 
+  const contextActionsController = createLayoutContextActionsController({
+    getProps: () => mergedProps.value,
+    getState: () => state,
+    setState: (patch) => {
+      applyStatePatchMutable(state, patch);
+    },
+    onSidebarCollapse: (collapsed) => {
+      events.onSidebarCollapse?.(collapsed);
+    },
+    onPanelCollapse: (collapsed) => {
+      events.onPanelCollapse?.(collapsed);
+    },
+  });
+  const propsSyncController = createLayoutPropsStateSyncController({
+    getState: () => state,
+    setState: (patch) => {
+      applyStatePatchMutable(state, patch);
+    },
+    onSidebarCollapse: (collapsed) => {
+      events.onSidebarCollapse?.(collapsed);
+    },
+  });
+
   // 切换侧边栏折叠
   const toggleSidebarCollapse = () => {
-    if (isSidebarMixedLayout(mergedProps.value)) return;
-    state.sidebarCollapsed = !state.sidebarCollapsed;
-    events.onSidebarCollapse?.(state.sidebarCollapsed);
+    contextActionsController.toggleSidebarCollapse();
   };
 
   // 切换功能区折叠
   const togglePanelCollapse = () => {
-    state.panelCollapsed = !state.panelCollapsed;
-    events.onPanelCollapse?.(state.panelCollapsed);
+    contextActionsController.togglePanelCollapse();
   };
 
   // 设置展开的菜单
   const setOpenMenuKeys = (keys: string[]) => {
-    const prevKeys = state.openMenuKeys;
-    if (prevKeys.length === keys.length) {
-      let same = true;
-      for (let i = 0; i < keys.length; i += 1) {
-        if (prevKeys[i] !== keys[i]) {
-          same = false;
-          break;
-        }
-      }
-      if (same) return;
-    }
-    state.openMenuKeys = keys;
+    contextActionsController.setOpenMenuKeys(keys);
   };
 
   // 创建响应式 props 代理
@@ -144,41 +154,32 @@ export function createLayoutContext(
     setOpenMenuKeys,
   });
 
-  // 监听并同步 props 变化
-  // 注意：deep: true 是必要的，因为需要检测嵌套属性（如 sidebar.collapsed）的变化
-  // 以正确同步偏好设置更新到布局状态
+  const syncTopLevelProps = (nextProps: BasicLayoutProps) => {
+    const propsRecord = reactiveProps as Record<string, unknown>;
+    const nextRecord = nextProps as Record<string, unknown>;
+
+    for (const key of Object.keys(nextRecord)) {
+      const nextValue = nextRecord[key];
+      if (propsRecord[key] !== nextValue) {
+        propsRecord[key] = nextValue;
+      }
+    }
+
+    for (const key of Object.keys(propsRecord)) {
+      if (!(key in nextRecord)) {
+        delete propsRecord[key];
+      }
+    }
+  };
+
+  // 监听并同步 props 变化（基于 mergedProps 的新引用触发，避免 deep watch 的深层遍历开销）
   watch(
     mergedProps,
     (newProps) => {
-      // 使用 Object.assign 直接更新所有顶层属性
-      // 这会触发 Vue 的响应式系统，因为每个属性都会被单独赋值
-      const propsRecord = reactiveProps as Record<string, unknown>;
-      const newPropsRecord = newProps as Record<string, unknown>;
-      
-      // 更新所有属性（直接替换，不做深度比较）
-      for (const key of Object.keys(newPropsRecord)) {
-        propsRecord[key] = newPropsRecord[key];
-      }
-      
-      // 删除不再存在的属性
-      for (const key of Object.keys(propsRecord)) {
-        if (!(key in newPropsRecord)) {
-          delete propsRecord[key];
-        }
-      }
-      
-      const { patch, changed, sidebarCollapseChanged } = getLayoutStatePatchFromProps(
-        state,
-        newProps
-      );
-      if (changed) {
-        if (sidebarCollapseChanged !== undefined) {
-          events.onSidebarCollapse?.(sidebarCollapseChanged);
-        }
-        Object.assign(state, patch);
-      }
+      syncTopLevelProps(newProps);
+      propsSyncController.syncProps(newProps);
     },
-    { immediate: true, deep: true }
+    { immediate: true }
   );
 
   // 监听 locale 变化并更新 i18n

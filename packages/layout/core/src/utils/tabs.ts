@@ -154,6 +154,13 @@ export class TabManager {
   }
 
   /**
+   * 更新变更回调（用于复用缓存实例时重绑订阅）
+   */
+  setOnChange(onChange?: (tabs: TabItem[]) => void): void {
+    this.onChange = onChange;
+  }
+
+  /**
    * 验证标签数据格式
    */
   private isValidTabData(data: unknown): data is TabItem[] {
@@ -483,16 +490,27 @@ export class TabManager {
    * 设置固定标签
    */
   setAffixTabs(keys: string[]): void {
-    this.affixTabs = new Set(keys);
-    // 更新现有标签的 affix 状态
+    const nextAffixTabs = new Set(
+      (keys || []).map((key) => String(key ?? '').trim()).filter(Boolean)
+    );
+    this.affixTabs = nextAffixTabs;
+
+    let changed = false;
+    // 更新现有标签的 affix 状态，仅在实际变化时触发更新
     for (const tab of this.tabs) {
       const meta = tab.meta as Record<string, unknown> | undefined;
       const menuKey = meta?.menuKey as string | undefined;
       const isAffix =
-        this.affixTabs.has(tab.key) || (menuKey ? this.affixTabs.has(menuKey) : false);
-      tab.affix = isAffix;
-      tab.closable = !isAffix;
+        nextAffixTabs.has(tab.key) || (menuKey ? nextAffixTabs.has(menuKey) : false);
+      const closable = !isAffix;
+      if (tab.affix !== isAffix || tab.closable !== closable) {
+        tab.affix = isAffix;
+        tab.closable = closable;
+        changed = true;
+      }
     }
+
+    if (!changed) return;
     this.normalizeAffixOrder();
     this.syncTabMaps();
     this.notifyChange();

@@ -73,28 +73,40 @@ function isLazyComponent(value: unknown): value is React.LazyExoticComponent<Rea
 
 function isImportFunction(value: unknown): value is () => Promise<unknown> {
   if (typeof value !== 'function') return false;
+  if (value.name.includes('/')) return true;
   const source = Function.prototype.toString.call(value);
-  return source.includes('import(');
+  return (
+    source.includes('import(') ||
+    source.includes('__vite_ssr_dynamic_import__') ||
+    source.includes('__vitePreload(') ||
+    (source.includes('Promise.resolve().then') && source.includes('require('))
+  );
 }
 
 function normalizeReactComponent(value: ReactPageMapValue | undefined): React.ComponentType | undefined {
   if (!value) return undefined;
-  if (isReactRenderable(value)) return value as React.ComponentType;
+  if (isLazyComponent(value)) return value as React.ComponentType;
   if (typeof value === 'object' && 'default' in value && value.default) {
     return value.default as React.ComponentType;
   }
-  if (typeof value === 'function' && isImportFunction(value)) {
-    return React.lazy(async () => {
-      const mod = await value();
-      if (mod && typeof mod === 'object' && 'default' in (mod as Record<string, unknown>)) {
-        const resolved = (mod as { default?: React.ComponentType }).default;
-        return { default: resolved ?? (() => null) };
-      }
-      const fallback = mod as React.ComponentType;
-      return { default: fallback ?? (() => null) };
-    });
+  if (typeof value === 'function') {
+    if (isImportFunction(value)) {
+      return React.lazy(async () => {
+        const mod = await value();
+        if (mod && typeof mod === 'object' && 'default' in (mod as Record<string, unknown>)) {
+          const resolved = (mod as { default?: React.ComponentType }).default;
+          return { default: resolved ?? (() => null) };
+        }
+        const fallback = mod as React.ComponentType;
+        return { default: fallback ?? (() => null) };
+      });
+    }
+    if (isClassComponent(value)) {
+      return value as React.ComponentType;
+    }
+    return value as React.ComponentType;
   }
-  if (typeof value === 'function' && isClassComponent(value)) {
+  if (isReactRenderable(value)) {
     return value as React.ComponentType;
   }
   return undefined;

@@ -33,5 +33,37 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalized = id.replace(/\\/g, '/');
+          if (
+            normalized.includes('/packages/layout/') ||
+            normalized.includes('/node_modules/@admin-core/layout')
+          ) {
+            return 'admin-layout';
+          }
+          if (
+            normalized.includes('/packages/preferences/') ||
+            normalized.includes('/node_modules/@admin-core/preferences')
+          ) {
+            return 'admin-preferences';
+          }
+          if (normalized.includes('/node_modules/vue/') || normalized.includes('/node_modules/@vue/')) {
+            return 'vendor-vue';
+          }
+          if (normalized.includes('/node_modules/vue-router/')) {
+            return 'vendor-vue-router';
+          }
+          if (normalized.includes('/node_modules/@floating-ui/')) {
+            return 'vendor-floating-ui';
+          }
+          if (normalized.includes('/node_modules/')) {
+            return 'vendor';
+          }
+          return undefined;
+        },
+      },
+    },
   },
 });

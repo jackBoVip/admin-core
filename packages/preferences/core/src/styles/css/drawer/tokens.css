@@ -22,7 +22,9 @@
   /* ========== 2. 控件令牌 ========== */
   --pref-control-height: 36px;
   --pref-control-min-width: 120px;
-  --pref-control-radius: 8px;
+  --pref-control-radius: var(--radius, 8px);
+  --pref-control-radius-sm: max(0px, calc(var(--pref-control-radius) - 4px));
+  --pref-control-radius-xs: max(0px, calc(var(--pref-control-radius) - 6px));
 
   /* ========== 3. 开关令牌 ========== */
   --pref-switch-width: 40px;

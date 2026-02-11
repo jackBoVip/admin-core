@@ -143,6 +143,10 @@ onBeforeUnmount(() => {
 const contentCompact = computed(() => context.props.contentCompact || DEFAULT_CONTENT_CONFIG.contentCompact);
 const contentCompactWidth = computed(() => context.props.contentCompactWidth || DEFAULT_CONTENT_CONFIG.contentCompactWidth);
 const keepAliveEnabled = computed(() => context.props.tabbar?.keepAlive !== false);
+const keepAliveMax = computed(() => {
+  const max = context.props.tabbar?.maxCount ?? context.props.autoTab?.maxCount ?? 0;
+  return max > 0 ? max : undefined;
+});
 const keepAliveInclude = computed(() => context.state.keepAliveIncludes || []);
 const keepAliveExclude = computed(() => context.state.keepAliveExcludes || []);
 const footerOffset = computed(() => {
@@ -260,7 +264,12 @@ const transitionClasses = computed(() => {
         :style="transitionStyle"
       >
         <LayoutRefreshView>
-          <KeepAlive v-if="keepAliveEnabled" :include="keepAliveInclude" :exclude="keepAliveExclude">
+          <KeepAlive
+            v-if="keepAliveEnabled"
+            :max="keepAliveMax"
+            :include="keepAliveInclude"
+            :exclude="keepAliveExclude"
+          >
             <slot />
           </KeepAlive>
           <slot v-else />

@@ -47,16 +47,22 @@ export function normalizePageMap<TComponent = unknown>(
   viewsRoot?: string
 ): Record<string, TComponent> {
   const normalized: Record<string, TComponent> = {};
+  const register = (path: string, value: TComponent) => {
+    if (!(path in normalized)) {
+      normalized[path] = value;
+    }
+    const lowerPath = path.toLowerCase();
+    if (!(lowerPath in normalized)) {
+      normalized[lowerPath] = value;
+    }
+  };
+
   for (const [key, value] of Object.entries(pageMap)) {
     const normalizedKey = normalizeViewPath(key, viewsRoot);
-    if (!(normalizedKey in normalized)) {
-      normalized[normalizedKey] = value;
-    }
+    register(normalizedKey, value);
     if (normalizedKey.endsWith('/index')) {
       const alias = normalizedKey.slice(0, -'/index'.length) || '/';
-      if (!(alias in normalized)) {
-        normalized[alias] = value;
-      }
+      register(alias, value);
     }
   }
   return normalized;
@@ -77,7 +83,8 @@ export function resolveComponentFromMap<TComponent = unknown>(
   component: unknown,
   pageMap: Record<string, TComponent>,
   layoutMap?: Record<string, TComponent>,
-  viewsRoot?: string
+  viewsRoot?: string,
+  normalizedPageMap?: Record<string, TComponent>
 ): TComponent | undefined {
   if (!component) return undefined;
   if (typeof component !== 'string') {
@@ -87,14 +94,22 @@ export function resolveComponentFromMap<TComponent = unknown>(
     return layoutMap[component];
   }
 
-  const normalizedMap = normalizePageMap(pageMap, viewsRoot);
+  const normalizedMap = normalizedPageMap ?? normalizePageMap(pageMap, viewsRoot);
   const normalizedPath = normalizeViewPath(component, viewsRoot);
   if (normalizedPath in normalizedMap) {
     return normalizedMap[normalizedPath];
   }
+  const lowerPath = normalizedPath.toLowerCase();
+  if (lowerPath in normalizedMap) {
+    return normalizedMap[lowerPath];
+  }
   const indexPath = `${normalizedPath}/index`;
   if (indexPath in normalizedMap) {
     return normalizedMap[indexPath];
+  }
+  const lowerIndexPath = `${lowerPath}/index`;
+  if (lowerIndexPath in normalizedMap) {
+    return normalizedMap[lowerIndexPath];
   }
 
   return undefined;
@@ -109,23 +124,27 @@ function resolveRouteRecords<TComponent = unknown>(
   layoutMap?: Record<string, TComponent>,
   viewsRoot?: string
 ): RouteRecord<TComponent>[] {
-  return routes.map((route) => {
-    const resolvedComponent = resolveComponentFromMap(
-      route.component,
-      pageMap,
-      layoutMap,
-      viewsRoot
-    );
-    const children = route.children
-      ? resolveRouteRecords(route.children, pageMap, layoutMap, viewsRoot)
-      : undefined;
+  const normalizedMap = normalizePageMap(pageMap, viewsRoot);
 
-    return {
-      ...route,
-      component: resolvedComponent,
-      children,
-    };
-  });
+  const resolve = (items: RouteRecordStringComponent[]): RouteRecord<TComponent>[] =>
+    items.map((route) => {
+      const resolvedComponent = resolveComponentFromMap(
+        route.component,
+        pageMap,
+        layoutMap,
+        viewsRoot,
+        normalizedMap
+      );
+      const children = route.children ? resolve(route.children) : undefined;
+
+      return {
+        ...route,
+        component: resolvedComponent,
+        children,
+      };
+    });
+
+  return resolve(routes);
 }
 
 /**

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate, useRoutes } from 'react-router-dom';
 import {
   BasicLayout,
@@ -13,36 +13,10 @@ import {
 import { staticRoutes } from './router/static-routes';
 import { fetchMenuList } from './router/menu-api';
 
-// 页面组件
-import Home from './pages/Home';
-import DashboardAnalysis from './pages/dashboard/Analysis';
-import DashboardMonitor from './pages/dashboard/Monitor';
-import DashboardWorkplace from './pages/dashboard/Workplace';
-import SystemUser from './pages/system/User';
-import SystemRole from './pages/system/Role';
-import SystemMenu from './pages/system/Menu';
-import SystemDept from './pages/system/Dept';
-import ComponentsButton from './pages/components/Button';
-import ComponentsCard from './pages/components/Card';
-import ComponentsForm from './pages/components/Form';
-import ComponentsTable from './pages/components/Table';
-import About from './pages/About';
-
-const pageMap = {
-  '/Home': Home,
-  '/dashboard/Analysis': DashboardAnalysis,
-  '/dashboard/Monitor': DashboardMonitor,
-  '/dashboard/Workplace': DashboardWorkplace,
-  '/system/User': SystemUser,
-  '/system/Role': SystemRole,
-  '/system/Menu': SystemMenu,
-  '/system/Dept': SystemDept,
-  '/components/Button': ComponentsButton,
-  '/components/Card': ComponentsCard,
-  '/components/Form': ComponentsForm,
-  '/components/Table': ComponentsTable,
-  '/About': About,
-};
+const pageMap = import.meta.glob('/src/pages/**/*.tsx') as Record<
+  string,
+  () => Promise<{ default: ComponentType }>
+>;
 
 // 用户信息
 const userInfo = {

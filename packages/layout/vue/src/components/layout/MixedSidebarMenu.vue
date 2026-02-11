@@ -1056,7 +1056,7 @@ export const MixedSidebarSubMenu = defineComponent({
   justify-content: center;
   padding: 0.75rem 0.5rem;
   margin: 0.25rem 0.5rem;
-  border-radius: 0.5rem;
+  border-radius: var(--layout-radius-base, var(--radius, 8px));
   cursor: pointer;
   color: rgba(255, 255, 255, 0.7);
   transition: all var(--admin-duration-fast, 150ms) ease;
@@ -1120,7 +1120,7 @@ export const MixedSidebarSubMenu = defineComponent({
   align-items: center;
   padding: 0.625rem 0.75rem;
   margin: 0.125rem 0;
-  border-radius: 0.375rem;
+  border-radius: var(--layout-radius-md, var(--radius-md, 6px));
   cursor: pointer;
   color: var(--foreground, #4b5563);
   transition: all var(--admin-duration-fast, 150ms) ease;

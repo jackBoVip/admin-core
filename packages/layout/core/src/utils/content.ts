@@ -209,8 +209,8 @@ export function computePanelStyle(
   config: PanelConfig,
   collapsed: boolean
 ): CSSProperties {
-  const width = collapsed 
-    ? (config.collapsedWidth || 48)
+  const width = collapsed
+    ? 0
     : (config.width || 260);
   
   return {

@@ -142,6 +142,7 @@ export function unwrapCurrentPath(path: string | { value: string } | undefined):
  * 全局 TabManager 实例缓存
  */
 const tabManagerCache = new Map<string, TabManager>();
+const TAB_MANAGER_CACHE_LIMIT = 50;
 
 /**
  * 获取或创建 TabManager 实例
@@ -157,9 +158,19 @@ export function getOrCreateTabManager(options: {
   
   let manager = tabManagerCache.get(cacheKey);
   if (!manager) {
+    if (tabManagerCache.size >= TAB_MANAGER_CACHE_LIMIT) {
+      const oldestKey = tabManagerCache.keys().next().value;
+      if (oldestKey) {
+        tabManagerCache.delete(oldestKey);
+      }
+    }
     manager = new TabManager(options);
     tabManagerCache.set(cacheKey, manager);
   } else {
+    // 更新访问顺序，便于按最近使用淘汰
+    tabManagerCache.delete(cacheKey);
+    tabManagerCache.set(cacheKey, manager);
+    manager.setOnChange(options.onChange);
     // 更新配置
     manager.updateOptions({
       maxCount: options.maxCount,

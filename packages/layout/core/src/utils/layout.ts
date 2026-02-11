@@ -116,6 +116,13 @@ export function isHeaderMixedNavLayout(layout: LayoutType): boolean {
 }
 
 /**
+ * 解析真实布局类型（移动端统一回退为 sidebar-nav）
+ */
+export function resolveLayoutType(props: Pick<BasicLayoutProps, 'layout' | 'isMobile'>): LayoutType {
+  return (props.isMobile ? 'sidebar-nav' : (props.layout || 'sidebar-nav')) as LayoutType;
+}
+
+/**
  * 判断是否应该显示侧边栏
  */
 export function shouldShowSidebar(layout: LayoutType, _isMobile?: boolean): boolean {
@@ -142,7 +149,7 @@ export function calculateSidebarWidth(
   props: BasicLayoutProps,
   state: LayoutState
 ): number {
-  const layout = props.layout || 'sidebar-nav';
+  const layout = resolveLayoutType(props);
   const sidebar = { ...DEFAULT_SIDEBAR_CONFIG, ...props.sidebar };
   const isMobile = props.isMobile || false;
 
@@ -198,7 +205,7 @@ export function calculateHeaderHeight(
   props: BasicLayoutProps,
   state: LayoutState
 ): number {
-  const layout = props.layout || 'sidebar-nav';
+  const layout = resolveLayoutType(props);
   const header = { ...DEFAULT_HEADER_CONFIG, ...props.header };
 
   if (isFullContentLayout(layout)) {
@@ -256,7 +263,8 @@ export function calculatePanelWidth(
   }
 
   if (state.panelCollapsed) {
-    return panel.collapsedWidth;
+    // 业务要求：功能区折叠后完全收起，不保留可见宽度
+    return 0;
   }
 
   return panel.width;
@@ -269,7 +277,7 @@ export function calculateLayoutComputed(
   props: BasicLayoutProps,
   state: LayoutState
 ): LayoutComputed {
-  const layout = props.isMobile ? 'sidebar-nav' : (props.layout || 'sidebar-nav');
+  const layout = resolveLayoutType(props);
   const visibility = props.visibility || {};
   const header = { ...DEFAULT_HEADER_CONFIG, ...props.header };
   const tabbar = { ...DEFAULT_TABBAR_CONFIG, ...props.tabbar };
@@ -408,7 +416,7 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
   const layoutOnlyVars: Record<string, string> = {
     [CSS_VAR_NAMES.sidebarMixedWidth]: `${sidebar.mixedWidth}px`,
     [CSS_VAR_NAMES.panelWidth]: `${panelWidth}px`,
-    [CSS_VAR_NAMES.panelCollapseWidth]: `${panel.collapsedWidth}px`,
+    [CSS_VAR_NAMES.panelCollapseWidth]: `${0}px`,
     [CSS_VAR_NAMES.panelOffsetLeft]: `${panelOffsetLeft}px`,
     [CSS_VAR_NAMES.panelOffsetRight]: `${panelOffsetRight}px`,
     [CSS_VAR_NAMES.contentCompactWidth]: `${props.contentCompactWidth ?? 1200}px`,

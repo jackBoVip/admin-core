@@ -30,6 +30,7 @@ import { HeaderToolbar, Breadcrumb } from '../widgets';
 import LayoutIcon from '../common/LayoutIcon.vue';
 
 const EMPTY_MENUS: MenuItem[] = [];
+const EMPTY_MENU_INDEX = getCachedMenuPathIndex(EMPTY_MENUS);
 
 // 自动初始化偏好设置（如果尚未初始化）
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
@@ -555,11 +556,32 @@ const menus = computed(() =>
     : EMPTY_MENUS
 );
 
+// 是否显示顶部菜单
+const showHeaderMenu = computed(() => {
+  return (layoutComputed.value.isHeaderNav ||
+         layoutComputed.value.isMixedNav ||
+         layoutComputed.value.isHeaderMixedNav) && !isHeaderSidebarNav.value;
+});
+
+const menuLauncherEnabled = computed(() => {
+  const isHeaderMenuLayout =
+    layoutComputed.value.isHeaderNav || layoutComputed.value.isMixedNav;
+  return (
+    isHeaderMenuLayout &&
+    !layoutComputed.value.isHeaderMixedNav &&
+    !!contextProps.value.header?.menuLauncher
+  );
+});
+
 // 顶部导航菜单数据（用于 header-nav、mixed-nav、header-mixed-nav 模式）
 const headerMenus = shallowRef<MenuItem[]>([]);
 watch(
-  [menus, () => layoutComputed.value.currentLayout],
-  ([nextMenus, layout]) => {
+  [menus, () => layoutComputed.value.currentLayout, () => showHeaderMenu.value],
+  ([nextMenus, layout, visible]) => {
+    if (!visible) {
+      headerMenus.value = EMPTY_MENUS;
+      return;
+    }
     headerMenus.value = getCachedHeaderMenus(nextMenus, {
       isHeaderNav: layout === 'header-nav',
       isMixedNav: layout === 'mixed-nav',
@@ -570,7 +592,17 @@ watch(
   { immediate: true }
 );
 
-const headerMenuIndex = computed(() => getCachedMenuPathIndex(menus.value));
+const needHeaderMenuIndex = computed(() => {
+  return (
+    showHeaderMenu.value ||
+    menuLauncherEnabled.value ||
+    layoutComputed.value.isMixedNav ||
+    layoutComputed.value.isHeaderMixedNav
+  );
+});
+const headerMenuIndex = computed(() =>
+  needHeaderMenuIndex.value ? getCachedMenuPathIndex(menus.value) : EMPTY_MENU_INDEX
+);
 
 // 顶部菜单激活的 key
 const headerActiveKey = computed(() => {
@@ -597,23 +629,6 @@ const handleHeaderMenuSelect = (item: MenuItem, key: string) => {
   }
 };
 
-// 是否显示顶部菜单
-const showHeaderMenu = computed(() => {
-  return (layoutComputed.value.isHeaderNav ||
-         layoutComputed.value.isMixedNav ||
-         layoutComputed.value.isHeaderMixedNav) && !isHeaderSidebarNav.value;
-});
-
-const menuLauncherEnabled = computed(() => {
-  const isHeaderMenuLayout =
-    layoutComputed.value.isHeaderNav || layoutComputed.value.isMixedNav;
-  return (
-    isHeaderMenuLayout &&
-    !layoutComputed.value.isHeaderMixedNav &&
-    !!contextProps.value.header?.menuLauncher
-  );
-});
-
 const menuLauncherLabel = computed(() => {
   return context.t('layout.header.menuLauncher');
 });
@@ -623,6 +638,7 @@ const preferencesTitle = computed(() => {
 });
 
 const launcherMenus = computed(() => {
+  if (!menuLauncherEnabled.value || !menuLauncherOpen.value) return EMPTY_MENUS;
   return getCachedFilteredMenus(menus.value);
 });
 

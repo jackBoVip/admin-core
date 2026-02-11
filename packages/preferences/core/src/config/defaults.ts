@@ -265,7 +265,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     /** 展开宽度 (px) */
     width: 260,
     /** 折叠宽度 (px) */
-    collapsedWidth: 48,
+    collapsedWidth: 0,
   },
 
   // ========== 快捷键配置 ==========

@@ -261,4 +261,30 @@ describe('TabManager 缓存', () => {
     const manager2 = getOrCreateTabManager({ persistKey: 'test' });
     expect(manager1).not.toBe(manager2);
   });
+
+  it('复用缓存实例时应更新 onChange 回调', () => {
+    const onChangeA = vi.fn();
+    const onChangeB = vi.fn();
+
+    const managerA = getOrCreateTabManager({
+      persistKey: 'test',
+      onChange: onChangeA,
+    });
+
+    const managerB = getOrCreateTabManager({
+      persistKey: 'test',
+      onChange: onChangeB,
+    });
+
+    expect(managerA).toBe(managerB);
+
+    managerB.addTab({
+      key: '/dashboard',
+      name: 'dashboard',
+      path: '/dashboard',
+    });
+
+    expect(onChangeA).not.toHaveBeenCalled();
+    expect(onChangeB).toHaveBeenCalled();
+  });
 });
