@@ -9,7 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@admin-core/form-react": "workspace:*",
     "@admin-core/layout-react": "workspace:*",
+    "@admin-core/table-react": "workspace:*",
+    "antd": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router-dom": "^7.6.1"

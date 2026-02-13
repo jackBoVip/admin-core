@@ -144,11 +144,95 @@ export async function fetchMenuList(): Promise<RouteRecordStringComponent[]> {
         {
           name: 'ComponentsTable',
           path: '/components/table',
-          component: '/components/Table',
+          component: 'LAYOUT',
+          redirect: '/components/table/basic',
           meta: {
             title: '表格',
             icon: '📊',
           },
+          children: [
+            {
+              name: 'ComponentsTableBasic',
+              path: '/components/table/basic',
+              component: '/components/table/Basic',
+              meta: {
+                title: '基础表格',
+                icon: '📄',
+              },
+            },
+            {
+              name: 'ComponentsTableRemote',
+              path: '/components/table/remote',
+              component: '/components/table/Remote',
+              meta: {
+                title: '远程请求',
+                icon: '🌐',
+              },
+            },
+            {
+              name: 'ComponentsTableForm',
+              path: '/components/table/form',
+              component: '/components/table/Form',
+              meta: {
+                title: '搜索表单',
+                icon: '🔎',
+              },
+            },
+            {
+              name: 'ComponentsTableTree',
+              path: '/components/table/tree',
+              component: '/components/table/Tree',
+              meta: {
+                title: '树形表格',
+                icon: '🌳',
+              },
+            },
+            {
+              name: 'ComponentsTableFixed',
+              path: '/components/table/fixed',
+              component: '/components/table/Fixed',
+              meta: {
+                title: '固定列',
+                icon: '📌',
+              },
+            },
+            {
+              name: 'ComponentsTableCustomCell',
+              path: '/components/table/custom-cell',
+              component: '/components/table/CustomCell',
+              meta: {
+                title: '自定义单元格',
+                icon: '🧩',
+              },
+            },
+            {
+              name: 'ComponentsTableEditCell',
+              path: '/components/table/edit-cell',
+              component: '/components/table/EditCell',
+              meta: {
+                title: '单元格编辑',
+                icon: '✏️',
+              },
+            },
+            {
+              name: 'ComponentsTableEditRow',
+              path: '/components/table/edit-row',
+              component: '/components/table/EditRow',
+              meta: {
+                title: '行编辑',
+                icon: '📝',
+              },
+            },
+            {
+              name: 'ComponentsTableVirtual',
+              path: '/components/table/virtual',
+              component: '/components/table/Virtual',
+              meta: {
+                title: '虚拟滚动',
+                icon: '🚀',
+              },
+            },
+          ],
         },
       ],
     },

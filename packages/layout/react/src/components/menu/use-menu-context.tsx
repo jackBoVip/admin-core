@@ -56,6 +56,7 @@ export interface SubMenuContextValue {
   mouseInChild: boolean;
   setMouseInChild: (value: boolean) => void;
   handleMouseleave?: (deepDispatch?: boolean) => void;
+  parent?: SubMenuContextValue | null;
 }
 
 // 上下文

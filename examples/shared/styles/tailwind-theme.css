@@ -1,28 +1,34 @@
-/* Shared Tailwind v4 demo theme tokens */
+/* Shared Tailwind v4 demo theme tokens
+ * 直接映射到偏好设置系统的全局语义变量，确保示例页跟随主题切换。
+ */
 
 :root {
-  --demo-primary: #3b82f6;
-  --demo-primary-hover: #2563eb;
-  --demo-primary-foreground: #ffffff;
-  --demo-secondary: #e5e7eb;
-  --demo-secondary-hover: #d1d5db;
-  --demo-secondary-foreground: #374151;
-  --demo-background: #ffffff;
-  --demo-foreground: #0f172a;
-  --demo-muted: #f9fafb;
-  --demo-muted-foreground: #6b7280;
-  --demo-border: #e5e7eb;
-  --demo-card: #ffffff;
-  --demo-card-foreground: #111827;
-  --demo-success: #10b981;
-  --demo-danger: #ef4444;
-  --demo-warning: #f59e0b;
-  --demo-radius: 8px;
-  --demo-radius-sm: 6px;
-  --demo-radius-lg: 12px;
-  --demo-spacing-page: 24px;
-  --demo-duration-fast: 150ms;
-  --demo-duration-normal: 300ms;
+  --demo-primary: var(--primary, #3b82f6);
+  --demo-primary-hover: var(--primary-600, var(--primary, #2563eb));
+  --demo-primary-foreground: var(--primary-foreground, #ffffff);
+  --demo-secondary: var(--secondary, var(--muted, #e5e7eb));
+  --demo-secondary-hover: color-mix(
+    in oklch,
+    var(--secondary, var(--muted, #e5e7eb)) 84%,
+    var(--foreground, #0f172a)
+  );
+  --demo-secondary-foreground: var(--secondary-foreground, var(--foreground, #374151));
+  --demo-background: var(--background, #ffffff);
+  --demo-foreground: var(--foreground, #0f172a);
+  --demo-muted: var(--muted, #f9fafb);
+  --demo-muted-foreground: var(--muted-foreground, #6b7280);
+  --demo-border: var(--border, #e5e7eb);
+  --demo-card: var(--card, var(--background, #ffffff));
+  --demo-card-foreground: var(--card-foreground, var(--foreground, #111827));
+  --demo-success: var(--success, #10b981);
+  --demo-danger: var(--destructive, #ef4444);
+  --demo-warning: var(--warning, #f59e0b);
+  --demo-radius: var(--radius, 8px);
+  --demo-radius-sm: calc(var(--radius, 8px) - 2px);
+  --demo-radius-lg: calc(var(--radius, 8px) + 4px);
+  --demo-spacing-page: var(--admin-content-padding, 24px);
+  --demo-duration-fast: var(--admin-duration-fast, 150ms);
+  --demo-duration-normal: var(--admin-duration-normal, 300ms);
 }
 
 @theme {

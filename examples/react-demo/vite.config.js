@@ -10,6 +10,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': resolve(__dirname, 'src'),
+            '@admin-core/preferences/styles/antd': resolve(__dirname, '../../packages/preferences/core/src/styles/css/adapters/antd.css'),
         },
         // 确保 monorepo 中依赖正确去重
         dedupe: ['react', 'react-dom'],
@@ -44,15 +45,11 @@ export default defineConfig({
                         normalized.includes('/node_modules/@admin-core/preferences')) {
                         return 'admin-preferences';
                     }
-                    if (normalized.includes('/node_modules/react-dom/') ||
-                        normalized.includes('/node_modules/react/')) {
-                        return 'vendor-react';
+                    if (normalized.includes('/node_modules/@floating-ui/')) {
+                        return 'vendor-floating-ui';
                     }
                     if (normalized.includes('/node_modules/react-router')) {
                         return 'vendor-react-router';
-                    }
-                    if (normalized.includes('/node_modules/@floating-ui/')) {
-                        return 'vendor-floating-ui';
                     }
                     if (normalized.includes('/node_modules/')) {
                         return 'vendor';

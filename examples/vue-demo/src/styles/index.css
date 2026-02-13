@@ -5,6 +5,11 @@
 
 /* 引入布局样式 */
 @import "@admin-core/layout-vue/styles";
+/* 引入 vxe 组件库样式（当前示例表单适配使用 vxe） */
+@import "vxe-table/lib/style.css";
+@import "vxe-pc-ui/lib/style.css";
+/* 引入表单系统内置 UI 样式（放在 vxe 后，确保状态样式可覆盖） */
+@import "@admin-core/form-vue/style.css";
 
 /* React/Vue demo shared base styles */
 @import "../../../shared/styles/demo-base.css";

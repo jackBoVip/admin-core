@@ -16,11 +16,19 @@ Modern admin system core package collection built with TypeScript, supporting bo
 
 ```
 packages/
+├── form/                  # Form system
+│   ├── core/             # Core package (framework agnostic)
+│   ├── react/            # React integration package
+│   └── vue/              # Vue integration package
+├── table/                 # Table system
+│   ├── core/             # Core package (framework agnostic)
+│   ├── react/            # React integration package
+│   └── vue/              # Vue integration package
 ├── preferences/           # Preference system
 │   ├── core/             # Core package (framework agnostic)
 │   ├── react/            # React integration package
 │   └── vue/              # Vue integration package
-└── layout/               # Layout system
+└── layout/                # Layout system
     ├── core/             # Core package (framework agnostic)
     ├── react/            # React integration package
     └── vue/              # Vue integration package
@@ -212,6 +220,7 @@ admin-core/
 │   ├── eslint-config/    # ESLint configuration
 │   └── tsconfig/         # TypeScript configuration
 ├── packages/             # Core packages
+│   ├── form/             # Form system
 │   ├── layout/           # Layout system
 │   └── preferences/      # Preference system
 ├── scripts/              # Script tools
@@ -252,7 +261,22 @@ admin-core/
 
 - [Preference System API Docs](./packages/preferences/core/API.md)
 - [Layout System Docs](./packages/layout/core/README.md)
+- [Form System Core Docs](./packages/form/core/README.en.md)
+- [Form System Vue Docs](./packages/form/vue/README.en.md)
+- [Form System React Docs](./packages/form/react/README.en.md)
+- [Table System Core Docs](./packages/table/core/README.en.md)
+- [Table System Vue Docs](./packages/table/vue/README.en.md)
+- [Table System React Docs](./packages/table/react/README.en.md)
 - [TypeScript Configuration Guide](./internal/tsconfig/README.md)
+
+## 🔁 vben Table Migration Quick Map
+
+| vben | admin-core |
+| --- | --- |
+| `setupVbenVxeTable` | `setupAdminTableVue` / `setupAdminTableReact` |
+| `useVbenVxeGrid` | `useAdminTable` |
+| `VxeGridApi` | `AdminTableApi` |
+| `CellTag/CellSwitch/CellOperation` | Same renderer names retained |
 
 ## 🤝 Contributing
 

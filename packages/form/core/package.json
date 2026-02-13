@@ -1,0 +1,75 @@
+{
+  "name": "@admin-core/form-core",
+  "version": "0.0.1",
+  "description": "框架无关的表单核心引擎，提供 schema 驱动、校验、联动与适配器协议",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./styles": {
+      "import": "./dist/styles/index.js",
+      "require": "./dist/styles/index.cjs"
+    },
+    "./styles/form.css": "./dist/styles/form.css",
+    "./locales/*": {
+      "import": "./dist/locales/*.js",
+      "require": "./dist/locales/*.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "styles",
+    "src/styles"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "postbuild": "node ./scripts/copy-form-css.mjs",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "keywords": [
+    "admin",
+    "form",
+    "schema",
+    "zod",
+    "adapter"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/form/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

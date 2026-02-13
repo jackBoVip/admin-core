@@ -64,9 +64,10 @@ export const SubMenu = memo(function SubMenu({
   // 父级路径
   const parentPaths = useMemo(() => {
     const paths: string[] = [];
-    // 简化处理，从父级上下文获取
-    if (parentSubMenu) {
-      paths.push(String(parentSubMenu.path));
+    let parent = parentSubMenu;
+    while (parent) {
+      paths.unshift(String(parent.path));
+      parent = parent.parent ?? null;
     }
     return paths;
   }, [parentSubMenu]);
@@ -374,7 +375,8 @@ export const SubMenu = memo(function SubMenu({
     mouseInChild,
     setMouseInChild,
     handleMouseleave,
-  }), [path, level, mouseInChild, handleMouseleave]);
+    parent: parentSubMenu,
+  }), [path, level, mouseInChild, handleMouseleave, parentSubMenu]);
 
   // 渲染子菜单内容
   const popupChildren = useMemo(() => item.children ?? [], [item.children]);

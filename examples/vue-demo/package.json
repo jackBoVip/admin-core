@@ -9,9 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@admin-core/form-vue": "workspace:*",
     "@admin-core/layout-vue": "workspace:*",
+    "@admin-core/table-vue": "workspace:*",
     "vue": "catalog:",
-    "vue-router": "^4.5.1"
+    "vue-router": "^4.5.1",
+    "vxe-pc-ui": "catalog:",
+    "vxe-table": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.10",

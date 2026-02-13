@@ -1,0 +1,1329 @@
+/**
+ * @admin-core/form-core base styles
+ */
+
+:root,
+body {
+  --admin-form-bg-color: var(--card, var(--background, #fff));
+  --admin-form-surface-color: var(--card, var(--admin-form-bg-color));
+  --admin-form-fg-color: var(--card-foreground, var(--foreground, #0f172a));
+  --admin-form-muted-color: color-mix(
+    in oklch,
+    var(--muted, var(--admin-form-fg-color)) 24%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-muted-fg-color: var(
+    --muted-foreground,
+    color-mix(in oklch, var(--admin-form-fg-color) 58%, var(--admin-form-bg-color))
+  );
+  --admin-form-border-color: var(
+    --border,
+    color-mix(in oklch, var(--admin-form-fg-color) 16%, transparent)
+  );
+  --admin-form-primary-color: var(--primary, #2563eb);
+  --admin-form-danger-color: var(--color-destructive, var(--destructive, #e5484d));
+  --admin-form-warning-color: var(--color-warning, var(--warning, #f59e0b));
+  --admin-form-success-color: var(--color-success, var(--success, #10b981));
+  --admin-form-placeholder-color: color-mix(
+    in oklch,
+    var(--admin-form-muted-fg-color) 55%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-layout-background-color: var(--admin-form-bg-color);
+  --vxe-ui-font-color: var(--admin-form-fg-color);
+  --vxe-ui-font-secondary-color: var(--admin-form-muted-fg-color);
+  --vxe-ui-font-placeholder-color: var(--admin-form-placeholder-color);
+  --vxe-primary-color: var(--admin-form-primary-color);
+  --vxe-primary-lighten-color: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 80%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-font-disabled-color: color-mix(
+    in oklch,
+    var(--admin-form-muted-fg-color) 68%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-font-primary-color: var(--admin-form-primary-color);
+  --vxe-ui-input-border-color: var(--admin-form-border-color);
+  --vxe-ui-input-placeholder-color: var(--admin-form-placeholder-color);
+  --vxe-ui-input-disabled-background-color: var(--admin-form-muted-color);
+  --vxe-ui-input-disabled-color: color-mix(
+    in oklch,
+    var(--admin-form-muted-fg-color) 78%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-base-popup-border-color: color-mix(
+    in oklch,
+    var(--admin-form-border-color) 88%,
+    transparent
+  );
+  --vxe-ui-base-popup-box-shadow:
+    0 12px 34px color-mix(in oklch, var(--admin-form-fg-color) 18%, transparent),
+    0 4px 14px color-mix(in oklch, var(--admin-form-fg-color) 12%, transparent);
+  --vxe-ui-switch-close-background-color: color-mix(
+    in oklch,
+    var(--admin-form-fg-color) 34%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-switch-close-background-color: color-mix(
+    in oklch,
+    var(--admin-form-fg-color) 58%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-switch-icon-background-color: color-mix(
+    in oklch,
+    white 86%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-switch-open-background-color: var(--admin-form-primary-color);
+  --vxe-ui-status-success-color: var(--admin-form-success-color);
+  --vxe-ui-status-warning-color: var(--admin-form-warning-color);
+  --vxe-ui-status-danger-color: var(--admin-form-danger-color);
+  --vxe-ui-status-error-color: var(--admin-form-danger-color);
+}
+
+.admin-form {
+  display: block;
+  width: 100%;
+  color: var(--admin-form-fg-color);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.admin-form__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--admin-form-grid-columns, 1), minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.admin-form__grid--1 {
+  --admin-form-grid-columns: 1;
+}
+
+.admin-form__grid--2 {
+  --admin-form-grid-columns: 2;
+}
+
+.admin-form__grid--3 {
+  --admin-form-grid-columns: 3;
+}
+
+.admin-form__grid--4 {
+  --admin-form-grid-columns: 4;
+}
+
+.admin-form__grid--5 {
+  --admin-form-grid-columns: 5;
+}
+
+.admin-form__grid--6 {
+  --admin-form-grid-columns: 6;
+}
+
+.admin-form__item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  width: 100%;
+}
+
+.admin-form__item--vertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.admin-form__item--hidden {
+  display: none;
+}
+
+.admin-form__label {
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1.25;
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form__required {
+  color: var(--admin-form-danger-color);
+  margin-right: 4px;
+}
+
+.admin-form__help {
+  margin-left: 6px;
+  color: var(--admin-form-muted-fg-color);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.admin-form__control {
+  flex: 1;
+  min-width: 0;
+  --vxe-ui-input-placeholder-color: var(--admin-form-placeholder-color);
+}
+
+.admin-form__control .vxe-input,
+.admin-form__control .vxe-date-picker,
+.admin-form__control .vxe-date-range-picker,
+.admin-form__control .vxe-select,
+.admin-form__control .vxe-textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.admin-form__control .ant-select,
+.admin-form__control .ant-picker,
+.admin-form__control .ant-input,
+.admin-form__control .ant-input-affix-wrapper,
+.admin-form__control .ant-input-number,
+.admin-form__control .ant-input-number-group-wrapper,
+.admin-form__control .ant-input-number-affix-wrapper,
+.admin-form__control .ant-mentions,
+.admin-form__control .ant-cascader-picker,
+.admin-form__control .ant-input-textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* AntD token overrides: 比直接覆盖样式更稳定，避免被组件内联 token 覆盖 */
+.admin-form .admin-form__control .ant-select {
+  --ant-color-bg-container: var(--admin-form-bg-color);
+  --ant-color-bg-elevated: var(--admin-form-surface-color);
+  --ant-color-text: var(--admin-form-fg-color);
+  --ant-color-text-description: var(--admin-form-muted-fg-color);
+  --ant-color-text-placeholder: var(--admin-form-placeholder-color);
+  --ant-color-border: var(--admin-form-border-color);
+  --ant-select-background-color: var(--admin-form-bg-color);
+  --ant-select-selector-bg: var(--admin-form-bg-color);
+  --ant-select-color: var(--admin-form-fg-color);
+  --ant-select-border-color: var(--admin-form-border-color);
+  --ant-select-hover-border-color: color-mix(
+    in oklch,
+    var(--admin-form-border-color) 60%,
+    var(--admin-form-primary-color)
+  );
+  --ant-select-active-border-color: var(--admin-form-primary-color);
+  --ant-select-option-active-bg: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 12%,
+    var(--admin-form-bg-color)
+  );
+  --ant-select-option-selected-bg: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 18%,
+    var(--admin-form-bg-color)
+  );
+  --ant-select-option-selected-color: var(--admin-form-fg-color);
+  --ant-select-z-index-popup: var(--admin-form-page-popup-z-index, 2300);
+}
+
+.admin-form__control :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions,
+    .ant-input-number-affix-wrapper
+  ) {
+  background-color: var(--admin-form-bg-color);
+  color: var(--admin-form-fg-color);
+  border-color: var(--admin-form-border-color);
+  border-radius: var(--radius, 8px);
+}
+
+/* Antd 更高优先级覆盖，确保在未注入 antd dark algorithm 时也跟随 Admin 主题变量 */
+.admin-form .admin-form__control .ant-input,
+.admin-form .admin-form__control .ant-input-affix-wrapper,
+.admin-form .admin-form__control .ant-input-number,
+.admin-form .admin-form__control .ant-input-number-affix-wrapper,
+.admin-form .admin-form__control .ant-mentions,
+.admin-form .admin-form__control .ant-picker.ant-picker-outlined,
+.admin-form .admin-form__control .ant-select.ant-select-outlined:not(.ant-select-customize-input)
+  .ant-select-selector {
+  background-color: var(--admin-form-bg-color) !important;
+  color: var(--admin-form-fg-color) !important;
+  border-color: var(--admin-form-border-color) !important;
+  border-radius: var(--radius, 8px);
+}
+
+.admin-form .admin-form__control .ant-select .ant-select-selector {
+  background-color: var(--admin-form-bg-color) !important;
+  color: var(--admin-form-fg-color) !important;
+  border-color: var(--admin-form-border-color) !important;
+}
+
+.admin-form__control .ant-input::placeholder,
+.admin-form__control .ant-input-affix-wrapper input::placeholder,
+.admin-form__control .ant-input-number input::placeholder,
+.admin-form__control .ant-mentions textarea::placeholder,
+.admin-form__control .ant-picker input::placeholder {
+  color: var(--admin-form-placeholder-color);
+}
+
+.admin-form__control .ant-select .ant-select-selection-placeholder {
+  color: var(--admin-form-placeholder-color);
+}
+
+.admin-form .admin-form__control .ant-select.ant-select-outlined:not(.ant-select-customize-input)
+  .ant-select-selector
+  .ant-select-selection-placeholder {
+  color: var(--admin-form-placeholder-color);
+}
+
+.admin-form__control .ant-select .ant-select-selection-item,
+.admin-form__control .ant-select .ant-select-arrow,
+.admin-form__control .ant-picker .ant-picker-input > input,
+.admin-form__control .ant-picker .ant-picker-suffix,
+.admin-form__control .ant-input-affix-wrapper .ant-input-prefix,
+.admin-form__control .ant-input-affix-wrapper .ant-input-suffix,
+.admin-form__control .ant-input-number .ant-input-number-handler-wrap,
+.admin-form__control .ant-input-number input {
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form .admin-form__control .ant-select .ant-select-selection-item,
+.admin-form .admin-form__control .ant-select .ant-select-arrow,
+.admin-form .admin-form__control .ant-picker .ant-picker-input > input,
+.admin-form .admin-form__control .ant-picker .ant-picker-suffix {
+  color: var(--admin-form-fg-color) !important;
+}
+
+.admin-form__control :is(
+    .ant-input:hover,
+    .ant-input-affix-wrapper:hover,
+    .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
+    .ant-picker:hover,
+    .ant-input-number:hover,
+    .ant-mentions:hover
+  ) {
+  border-color: color-mix(in oklch, var(--admin-form-border-color) 60%, var(--admin-form-primary-color));
+}
+
+.admin-form .admin-form__control .ant-select:not(.ant-select-disabled):hover
+  .ant-select-selector,
+.admin-form .admin-form__control .ant-picker.ant-picker-outlined:hover,
+.admin-form .admin-form__control .ant-input:hover,
+.admin-form .admin-form__control .ant-input-affix-wrapper:hover,
+.admin-form .admin-form__control .ant-input-number:hover {
+  border-color: color-mix(
+    in oklch,
+    var(--admin-form-border-color) 60%,
+    var(--admin-form-primary-color)
+  );
+}
+
+.admin-form__control :is(
+    .ant-input:focus,
+    .ant-input-affix-wrapper-focused,
+    .ant-select-focused .ant-select-selector,
+    .ant-picker-focused,
+    .ant-input-number-focused,
+    .ant-mentions-focused
+  ) {
+  border-color: var(--admin-form-primary-color);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 15%, transparent);
+}
+
+.admin-form .admin-form__control .ant-select-focused .ant-select-selector,
+.admin-form .admin-form__control .ant-picker.ant-picker-focused,
+.admin-form .admin-form__control .ant-input:focus,
+.admin-form .admin-form__control .ant-input-affix-wrapper-focused,
+.admin-form .admin-form__control .ant-input-number-focused {
+  border-color: var(--admin-form-primary-color);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 15%, transparent);
+}
+
+.admin-form__control :is(
+    .ant-input[disabled],
+    .ant-input-affix-wrapper.ant-input-affix-wrapper-disabled,
+    .ant-select.ant-select-disabled .ant-select-selector,
+    .ant-picker.ant-picker-disabled,
+    .ant-input-number.ant-input-number-disabled,
+    .ant-mentions-disabled
+  ) {
+  background: var(--admin-form-muted-color);
+  color: var(--admin-form-muted-fg-color);
+  border-color: color-mix(in oklch, var(--admin-form-border-color) 85%, transparent);
+}
+
+.admin-form .admin-form__control .ant-select.ant-select-disabled .ant-select-selector,
+.admin-form .admin-form__control .ant-picker.ant-picker-disabled,
+.admin-form .admin-form__control .ant-input[disabled],
+.admin-form .admin-form__control .ant-input-affix-wrapper.ant-input-affix-wrapper-disabled,
+.admin-form .admin-form__control .ant-input-number.ant-input-number-disabled {
+  background: var(--admin-form-muted-color);
+  color: var(--admin-form-muted-fg-color);
+  border-color: color-mix(in oklch, var(--admin-form-border-color) 85%, transparent);
+}
+
+.admin-form .admin-form__control .ant-switch {
+  min-width: 40px;
+  height: 22px;
+  line-height: 22px;
+  padding: 0;
+  background: color-mix(
+    in oklch,
+    var(--admin-form-fg-color) 34%,
+    var(--admin-form-bg-color)
+  );
+  border: 1px solid color-mix(
+    in oklch,
+    var(--admin-form-border-color) 70%,
+    var(--admin-form-fg-color)
+  );
+}
+
+.admin-form .admin-form__control .ant-switch .ant-switch-handle {
+  top: 50%;
+  inset-inline-start: 2px;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  transform: none;
+}
+
+.admin-form .admin-form__control .ant-switch .ant-switch-handle::before {
+  inset: 0;
+  border-radius: 9999px;
+  background: color-mix(in oklch, white 86%, var(--admin-form-bg-color));
+}
+
+.admin-form .admin-form__control .ant-switch.ant-switch-checked .ant-switch-handle {
+  inset-inline-start: calc(100% - 18px);
+  transform: none;
+}
+
+.admin-form .admin-form__control .ant-switch.ant-switch-checked {
+  background: var(--admin-form-primary-color);
+  border-color: color-mix(in oklch, var(--admin-form-primary-color) 80%, transparent);
+}
+
+.admin-form .admin-form__control .ant-switch:not(.ant-switch-disabled):hover {
+  background: color-mix(
+    in oklch,
+    var(--admin-form-fg-color) 42%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form .admin-form__control .ant-switch.ant-switch-checked:not(.ant-switch-disabled):hover {
+  background: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 84%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form-popup .ant-select-dropdown,
+.admin-form-popup.ant-select-dropdown,
+.admin-form-popup .ant-picker-dropdown,
+.admin-form-popup.ant-picker-dropdown {
+  background: var(--admin-form-surface-color);
+  color: var(--admin-form-fg-color);
+  border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 85%, transparent);
+  box-shadow:
+    0 12px 34px color-mix(in oklch, var(--admin-form-fg-color) 18%, transparent),
+    0 4px 14px color-mix(in oklch, var(--admin-form-fg-color) 12%, transparent);
+  z-index: var(--admin-form-page-popup-z-index, 2300);
+}
+
+.admin-form-popup.ant-select-dropdown {
+  --ant-color-bg-elevated: var(--admin-form-surface-color);
+  --ant-color-text: var(--admin-form-fg-color);
+  --ant-color-text-description: var(--admin-form-muted-fg-color);
+  --ant-select-option-active-bg: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 12%,
+    var(--admin-form-bg-color)
+  );
+  --ant-select-option-selected-bg: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 18%,
+    var(--admin-form-bg-color)
+  );
+  --ant-select-option-selected-color: var(--admin-form-fg-color);
+}
+
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-content,
+.admin-form-popup.ant-select-dropdown .ant-empty-description,
+.admin-form-popup.ant-select-dropdown .ant-select-item-empty,
+.admin-form-popup.ant-select-dropdown .ant-select-item-group {
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form-popup .ant-select-item,
+.admin-form-popup .ant-picker-cell,
+.admin-form-popup .ant-picker-header,
+.admin-form-popup .ant-picker-content th {
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form-popup .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.admin-form-popup .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+.admin-form-popup .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner,
+.admin-form-popup .ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
+.admin-form-popup .ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
+  background: color-mix(in oklch, var(--admin-form-primary-color) 16%, var(--admin-form-bg-color));
+}
+
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form__control .vxe-input .vxe-input--inner::placeholder,
+.admin-form__control .vxe-date-picker .vxe-date-picker--inner::placeholder,
+.admin-form__control .vxe-date-range-picker .vxe-date-range-picker--inner::placeholder,
+.admin-form__control .vxe-textarea .vxe-textarea--inner::placeholder {
+  color: var(--admin-form-placeholder-color);
+}
+
+.admin-form__control[data-admin-status='error'],
+.admin-form__control[data-admin-invalid='true'],
+.admin-form__control--error {
+  --vxe-ui-input-border-color: var(--admin-form-danger-color);
+  --vxe-ui-font-primary-color: var(--admin-form-danger-color);
+  --vxe-ui-switch-open-background-color: color-mix(
+    in oklch,
+    var(--admin-form-danger-color) 70%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form__control[data-admin-status='warning'],
+.admin-form__control--warning {
+  --vxe-ui-input-border-color: var(--admin-form-warning-color);
+  --vxe-ui-font-primary-color: var(--admin-form-warning-color);
+  --vxe-ui-switch-open-background-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 70%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form__control[data-admin-status='success'],
+.admin-form__control--success {
+  --vxe-ui-input-border-color: var(--admin-form-success-color);
+  --vxe-ui-font-primary-color: var(--admin-form-success-color);
+  --vxe-ui-switch-open-background-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 70%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form__control[data-admin-status='error'] :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ),
+.admin-form__control[data-admin-invalid='true'] :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ),
+.admin-form__control--error :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ) {
+  border-color: var(--admin-form-danger-color);
+}
+
+.admin-form__control[data-admin-status='warning'] :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ),
+.admin-form__control--warning :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ) {
+  border-color: var(--admin-form-warning-color);
+}
+
+.admin-form__control[data-admin-status='success'] :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ),
+.admin-form__control--success :is(
+    .ant-input,
+    .ant-input-affix-wrapper,
+    .ant-select-selector,
+    .ant-picker,
+    .ant-input-number,
+    .ant-mentions
+  ) {
+  border-color: var(--admin-form-success-color);
+}
+
+.admin-form__control--error .vxe-input,
+.admin-form__control--error .vxe-select > .vxe-input,
+.admin-form__control--error .vxe-number-input,
+.admin-form__control--error .vxe-password-input,
+.admin-form__control--error .vxe-textarea {
+  border-color: var(--admin-form-danger-color);
+}
+
+.admin-form__control--warning .vxe-input,
+.admin-form__control--warning .vxe-select > .vxe-input,
+.admin-form__control--warning .vxe-number-input,
+.admin-form__control--warning .vxe-password-input,
+.admin-form__control--warning .vxe-textarea {
+  border-color: var(--admin-form-warning-color);
+}
+
+.admin-form__control--success .vxe-input,
+.admin-form__control--success .vxe-select > .vxe-input,
+.admin-form__control--success .vxe-number-input,
+.admin-form__control--success .vxe-password-input,
+.admin-form__control--success .vxe-textarea {
+  border-color: var(--admin-form-success-color);
+}
+
+.admin-form__control--error .vxe-checkbox .vxe-checkbox--icon,
+.admin-form__control--error .vxe-radio .vxe-radio--icon {
+  color: var(--admin-form-danger-color);
+}
+
+.admin-form__control--warning .vxe-checkbox .vxe-checkbox--icon,
+.admin-form__control--warning .vxe-radio .vxe-radio--icon {
+  color: var(--admin-form-warning-color);
+}
+
+.admin-form__control--success .vxe-checkbox .vxe-checkbox--icon,
+.admin-form__control--success .vxe-radio .vxe-radio--icon {
+  color: var(--admin-form-success-color);
+}
+
+.admin-form__input,
+.admin-form__select,
+.admin-form__textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid var(--admin-form-border-color);
+  background: var(--admin-form-bg-color);
+  color: var(--admin-form-fg-color);
+  border-radius: var(--radius, 8px);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.admin-form__input,
+.admin-form__select {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.admin-form__textarea {
+  min-height: 80px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.admin-form__input:focus,
+.admin-form__select:focus,
+.admin-form__textarea:focus {
+  border-color: var(--admin-form-primary-color);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 15%, transparent);
+}
+
+.admin-form__input::placeholder,
+.admin-form__textarea::placeholder {
+  color: var(--admin-form-placeholder-color);
+}
+
+.admin-form__select[data-admin-empty='true'] {
+  color: var(--admin-form-placeholder-color);
+}
+
+.admin-form__select option {
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form__input:disabled,
+.admin-form__select:disabled,
+.admin-form__textarea:disabled {
+  background: var(--admin-form-muted-color);
+  color: var(--admin-form-muted-fg-color);
+  cursor: not-allowed;
+}
+
+.admin-form__input[data-admin-status='error'],
+.admin-form__select[data-admin-status='error'],
+.admin-form__textarea[data-admin-status='error'],
+.admin-form__input[data-admin-invalid='true'],
+.admin-form__select[data-admin-invalid='true'],
+.admin-form__textarea[data-admin-invalid='true'] {
+  border-color: var(--admin-form-danger-color);
+}
+
+.admin-form__input[data-admin-status='warning'],
+.admin-form__select[data-admin-status='warning'],
+.admin-form__textarea[data-admin-status='warning'] {
+  border-color: var(--admin-form-warning-color);
+}
+
+.admin-form__input[data-admin-status='success'],
+.admin-form__select[data-admin-status='success'],
+.admin-form__textarea[data-admin-status='success'] {
+  border-color: var(--admin-form-success-color);
+}
+
+.admin-form__input[data-admin-status='error']:focus,
+.admin-form__select[data-admin-status='error']:focus,
+.admin-form__textarea[data-admin-status='error']:focus,
+.admin-form__input[data-admin-invalid='true']:focus,
+.admin-form__select[data-admin-invalid='true']:focus,
+.admin-form__textarea[data-admin-invalid='true']:focus {
+  border-color: var(--admin-form-danger-color);
+  box-shadow: 0 0 0 3px color-mix(
+    in oklch,
+    var(--admin-form-danger-color) 18%,
+    transparent
+  );
+}
+
+.admin-form__input[data-admin-status='warning']:focus,
+.admin-form__select[data-admin-status='warning']:focus,
+.admin-form__textarea[data-admin-status='warning']:focus {
+  border-color: var(--admin-form-warning-color);
+  box-shadow: 0 0 0 3px color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 16%,
+    transparent
+  );
+}
+
+.admin-form__input[data-admin-status='success']:focus,
+.admin-form__select[data-admin-status='success']:focus,
+.admin-form__textarea[data-admin-status='success']:focus {
+  border-color: var(--admin-form-success-color);
+  box-shadow: 0 0 0 3px color-mix(
+    in oklch,
+    var(--admin-form-success-color) 16%,
+    transparent
+  );
+}
+
+.admin-form__suffix,
+.admin-form__hint {
+  margin-top: 4px;
+}
+
+.admin-form__hint {
+  color: var(--admin-form-muted-fg-color);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-form__section-item {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  align-items: stretch;
+}
+
+.admin-form__section-item .admin-form__control {
+  border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 82%, transparent);
+  border-radius: var(--radius, 10px);
+  background: color-mix(in oklch, var(--admin-form-muted-color) 78%, transparent);
+  padding: 10px 12px;
+}
+
+.admin-form__section {
+  width: 100%;
+}
+
+.admin-form__section-title {
+  margin: 0;
+  color: var(--admin-form-fg-color);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.admin-form__section-description {
+  margin-top: 4px;
+  color: var(--admin-form-muted-fg-color);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-form__error {
+  margin-top: 4px;
+  color: var(--admin-form-danger-color);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.admin-form--compact .admin-form__grid {
+  gap: 8px 12px;
+}
+
+.admin-form--compact .admin-form__hint,
+.admin-form--compact .admin-form__error {
+  margin-top: 2px;
+}
+
+.admin-form__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.admin-form__actions--left {
+  justify-content: flex-start;
+}
+
+.admin-form__actions--center {
+  justify-content: center;
+}
+
+.admin-form__actions--right {
+  justify-content: flex-end;
+}
+
+.admin-form__actions--layout-inline {
+  width: auto;
+}
+
+.admin-form__actions--layout-new-line {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.admin-form__actions--layout-row-end {
+  width: 100%;
+}
+
+.admin-form--query .admin-form__grid {
+  align-items: start;
+}
+
+.admin-form__actions-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 34px;
+  width: 100%;
+}
+
+.admin-form__actions-item--new-row {
+  justify-content: flex-end;
+}
+
+.admin-form__button {
+  min-height: 32px;
+  border: 1px solid var(--admin-form-border-color);
+  border-radius: var(--radius, 8px);
+  background: var(--admin-form-bg-color);
+  color: var(--admin-form-fg-color);
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.admin-form__button--primary {
+  background: var(--admin-form-primary-color);
+  border-color: var(--admin-form-primary-color);
+  color: var(--primary-foreground, #fff);
+}
+
+.admin-form__button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-form__button:focus-visible {
+  outline: none;
+  border-color: var(--admin-form-primary-color);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 16%, transparent);
+}
+
+.admin-form__collapse-trigger {
+  border: 0;
+  background: transparent;
+  color: var(--admin-form-primary-color);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.admin-form__choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.admin-form__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--admin-form-fg-color);
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-form__choice--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-form__choice-input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--admin-form-primary-color);
+  cursor: pointer;
+}
+
+.admin-form__choice-input[data-admin-status='error'],
+.admin-form__choice-input[data-admin-invalid='true'] {
+  accent-color: var(--admin-form-danger-color);
+}
+
+.admin-form__choice-input[data-admin-status='warning'] {
+  accent-color: var(--admin-form-warning-color);
+}
+
+.admin-form__choice-input[data-admin-status='success'] {
+  accent-color: var(--admin-form-success-color);
+}
+
+.admin-form__choice-input:disabled {
+  cursor: not-allowed;
+}
+
+.admin-form__switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-form__switch--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-form__switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-form__switch-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border: 1px solid var(--admin-form-border-color);
+  border-radius: 999px;
+  background: var(--admin-form-muted-color);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.admin-form__switch[data-admin-status='error'] .admin-form__switch-track,
+.admin-form__switch[data-admin-invalid='true'] .admin-form__switch-track {
+  border-color: var(--admin-form-danger-color);
+}
+
+.admin-form__switch[data-admin-status='warning'] .admin-form__switch-track {
+  border-color: var(--admin-form-warning-color);
+}
+
+.admin-form__switch[data-admin-status='success'] .admin-form__switch-track {
+  border-color: var(--admin-form-success-color);
+}
+
+.admin-form__switch-thumb {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--admin-form-bg-color);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.18),
+    0 0 0 1px rgb(15 23 42 / 0.08);
+  transition: transform 0.2s ease;
+  transform: translateY(-50%);
+}
+
+.admin-form__switch-input:checked + .admin-form__switch-track {
+  border-color: var(--admin-form-primary-color);
+  background: var(--admin-form-primary-color);
+}
+
+.admin-form__switch[data-admin-status='error'] .admin-form__switch-input:checked + .admin-form__switch-track,
+.admin-form__switch[data-admin-invalid='true'] .admin-form__switch-input:checked + .admin-form__switch-track {
+  border-color: var(--admin-form-danger-color);
+  background: color-mix(
+    in oklch,
+    var(--admin-form-danger-color) 70%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form__switch[data-admin-status='warning'] .admin-form__switch-input:checked + .admin-form__switch-track {
+  border-color: var(--admin-form-warning-color);
+  background: color-mix(in oklch, var(--admin-form-warning-color) 70%, var(--admin-form-bg-color));
+}
+
+.admin-form__switch[data-admin-status='success'] .admin-form__switch-input:checked + .admin-form__switch-track {
+  border-color: var(--admin-form-success-color);
+  background: color-mix(in oklch, var(--admin-form-success-color) 70%, var(--admin-form-bg-color));
+}
+
+.admin-form__switch-input:checked + .admin-form__switch-track .admin-form__switch-thumb {
+  transform: translate(18px, -50%);
+}
+
+.admin-form__switch-label {
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form .vxe-switch .vxe-switch--button {
+  border: 1px solid color-mix(
+    in oklch,
+    var(--admin-form-border-color) 70%,
+    var(--admin-form-fg-color)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--admin-form-bg-color) 12%, transparent);
+}
+
+.admin-form .vxe-switch.is--on .vxe-switch--button {
+  background-color: var(--admin-form-primary-color);
+  border-color: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 72%,
+    var(--admin-form-border-color)
+  );
+}
+
+.admin-form .vxe-switch .vxe-switch--icon {
+  top: 50%;
+  transform: translateY(-50%);
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--admin-form-fg-color) 30%, transparent);
+}
+
+.admin-form .vxe-switch.is--on .vxe-switch--icon {
+  color: var(--admin-form-primary-color);
+  transform: translate(-1.4em, -50%);
+}
+
+.admin-form__range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-form__range .admin-form__input {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-form__range-separator {
+  color: var(--admin-form-muted-fg-color);
+  font-size: 12px;
+}
+
+.admin-form-page {
+  position: fixed;
+  inset: 0;
+  z-index: var(--admin-form-page-z-index, 2200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-form-page--closed {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-form-page__mask {
+  position: absolute;
+  inset: 0;
+  background: rgb(15 23 42 / 0.42);
+}
+
+.admin-form-page__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 86%, transparent);
+  border-radius: calc(var(--radius, 12px) + 2px);
+  background: var(--admin-form-surface-color);
+  box-shadow:
+    0 18px 45px rgb(15 23 42 / 0.2),
+    0 3px 12px rgb(15 23 42 / 0.1);
+  overflow: visible;
+}
+
+body.admin-form-page-open :is(
+    .ant-select-dropdown,
+    .ant-picker-dropdown,
+    .ant-cascader-dropdown,
+    .ant-auto-complete-dropdown,
+    .ant-mentions-dropdown,
+    .ant-dropdown,
+    .ant-popover,
+    .ant-tooltip
+  ) {
+  z-index: var(--admin-form-page-popup-z-index, 2300) !important;
+}
+
+body.admin-form-page-open :is(
+    .vxe-select--panel,
+    .vxe-tree-select--panel,
+    .vxe-ico-picker--panel,
+    .vxe-pulldown--panel,
+    .vxe-date-picker--panel,
+    .vxe-picker--panel
+  ) {
+  z-index: var(--admin-form-page-popup-z-index, 2300) !important;
+}
+
+.admin-form-page--drawer .admin-form-page__panel {
+  width: min(680px, calc(100vw - 24px));
+  max-height: 100vh;
+  height: 100vh;
+  border-radius: 0;
+}
+
+.admin-form-page--drawer-left {
+  justify-content: flex-start;
+}
+
+.admin-form-page--drawer-right {
+  justify-content: flex-end;
+}
+
+.admin-form-page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--admin-form-border-color);
+  padding: 14px 16px;
+}
+
+.admin-form-page__title-wrap {
+  min-width: 0;
+}
+
+.admin-form-page__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--admin-form-fg-color);
+}
+
+.admin-form-page__description {
+  margin-top: 4px;
+  color: var(--admin-form-muted-fg-color);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.admin-form-page__close {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--admin-form-border-color);
+  border-radius: calc(var(--radius, 8px) - 2px);
+  background: var(--admin-form-bg-color);
+  color: var(--admin-form-fg-color);
+  cursor: pointer;
+}
+
+.admin-form-page__close:hover {
+  border-color: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 55%,
+    var(--admin-form-border-color)
+  );
+}
+
+.admin-form-page__close:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 16%, transparent);
+}
+
+.admin-form-page__steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--admin-form-border-color);
+  padding: 10px 16px;
+  overflow-x: auto;
+}
+
+.admin-form-page__step-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--admin-form-border-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.admin-form-page__step-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--admin-form-muted-fg-color);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 2px 4px;
+}
+
+.admin-form-page__step-item--active {
+  color: var(--admin-form-fg-color);
+  font-weight: 600;
+}
+
+.admin-form-page__step-item--active .admin-form-page__step-dot {
+  border-color: var(--admin-form-primary-color);
+  background: color-mix(in oklch, var(--admin-form-primary-color) 16%, var(--admin-form-bg-color));
+}
+
+.admin-form-page__step-item--done .admin-form-page__step-dot {
+  border-color: var(--admin-form-primary-color);
+  background: color-mix(in oklch, var(--admin-form-primary-color) 70%, var(--admin-form-bg-color));
+  color: var(--primary-foreground, #fff);
+}
+
+.admin-form-page__body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+.admin-form-page__step-panel {
+  animation-duration: var(--admin-form-step-duration, 260ms);
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-form-page__section {
+  margin-bottom: 10px;
+  border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 82%, transparent);
+  border-radius: var(--radius, 10px);
+  background: color-mix(in oklch, var(--admin-form-muted-color) 78%, transparent);
+  padding: 10px 12px;
+}
+
+.admin-form-page__step-panel--forward {
+  animation-name: admin-form-step-forward;
+}
+
+.admin-form-page__step-panel--backward {
+  animation-name: admin-form-step-backward;
+}
+
+.admin-form-page__step-panel--fade {
+  animation-name: admin-form-step-fade;
+}
+
+.admin-form-page__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--admin-form-border-color);
+  padding: 12px 16px;
+}
+
+@keyframes admin-form-step-forward {
+  from {
+    opacity: 0;
+    transform: translate3d(22px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes admin-form-step-backward {
+  from {
+    opacity: 0;
+    transform: translate3d(-22px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes admin-form-step-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-form-page {
+    align-items: flex-end;
+  }
+
+  .admin-form-page--modal .admin-form-page__panel {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .admin-form__grid--2,
+  .admin-form__grid--3,
+  .admin-form__grid--4,
+  .admin-form__grid--5,
+  .admin-form__grid--6 {
+    --admin-form-grid-columns: 1;
+  }
+}

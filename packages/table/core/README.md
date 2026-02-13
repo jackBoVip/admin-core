@@ -1,0 +1,35 @@
+# @admin-core/table-core
+
+简体中文 | [English](./README.en.md)
+
+框架无关的表格核心引擎，提供统一 Table API、代理请求增强、渲染器与格式化器注册协议。
+
+## 对外能力
+
+- `createTableApi`：创建表格实例与完整 Table API
+- `setupAdminTableCore`：设置语言与日志级别
+- `createTableRendererRegistry`：创建渲染器注册中心
+- `createTableFormatterRegistry`：创建格式化器注册中心
+- `registerTableFormatters`：注册全局格式化器
+- `extendProxyOptions`：代理请求参数增强（自动合并搜索表单值）
+- `@admin-core/table-core/styles` 与 `@admin-core/table-core/styles/table.css`
+
+## vben 迁移映射
+
+| vben API | `@admin-core/table-*` API |
+| --- | --- |
+| `setupVbenVxeTable` | `setupAdminTableCore`（核心）+ `setupAdminTableVue` / `setupAdminTableReact`（适配层） |
+| `useVbenVxeGrid(options)` | `useAdminTable(options)` |
+| `VxeGridApi` | `AdminTableApi` |
+| `extendsDefaultFormatter` | `registerTableFormatters` |
+| `extendProxyOptions` | `extendProxyOptions`（同名迁移） |
+
+说明：
+- 渲染器名称兼容保留：`CellTag` / `CellSwitch` / `CellOperation`。
+- 入口 API 已统一为 `admin-core` 命名，不保留 vben 旧别名。
+
+## 安装
+
+```bash
+pnpm add @admin-core/table-core
+```

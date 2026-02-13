@@ -1,0 +1,14 @@
+@import 'antd/dist/reset.css';
+@import '@admin-core/table-core/styles/table.css';
+
+.admin-table .ant-table-wrapper {
+  width: 100%;
+}
+
+.admin-table .ant-table {
+  border-radius: 8px;
+}
+
+.admin-table .admin-table__row--stripe > td {
+  background: color-mix(in srgb, var(--muted, #f1f5f9) 55%, white);
+}

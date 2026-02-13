@@ -1,0 +1,11 @@
+@import 'vxe-table/lib/style.css';
+@import 'vxe-pc-ui/lib/style.css';
+@import '@admin-core/table-core/styles/table.css';
+
+.admin-table-vxe {
+  min-height: 180px;
+}
+
+.admin-table-vxe .vxe-toolbar {
+  padding: 0;
+}

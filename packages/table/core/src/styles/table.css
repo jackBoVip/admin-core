@@ -1,0 +1,47 @@
+.admin-table {
+  display: block;
+  width: 100%;
+}
+
+.admin-table__toolbar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.admin-table__toolbar-title {
+  align-items: center;
+  color: var(--foreground, #0f172a);
+  display: inline-flex;
+  font-size: 16px;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.admin-table__toolbar-actions,
+.admin-table__toolbar-tools {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.admin-table__search {
+  margin-bottom: 8px;
+}
+
+.admin-table__separator {
+  background: var(--muted, #f1f5f9);
+  border-radius: 999px;
+  height: 4px;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.admin-table__empty {
+  color: var(--muted-foreground, #64748b);
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}

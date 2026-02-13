@@ -2,9 +2,13 @@
 
 /* 共享 Tailwind v4 主题令牌 */
 @import "../../../shared/styles/tailwind-theme.css";
+/* Ant Design 跟随偏好设置主题变量 */
+@import "@admin-core/preferences/styles/antd";
 
 /* 引入布局样式 */
 @import "@admin-core/layout-react/style.css";
+/* 引入表单系统内置 UI 样式 */
+@import "@admin-core/form-react/style.css";
 
 /* React/Vue demo shared base styles */
 @import "../../../shared/styles/demo-base.css";

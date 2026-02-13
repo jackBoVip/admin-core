@@ -16,11 +16,19 @@
 
 ```
 packages/
+├── form/                  # 表单系统
+│   ├── core/             # 核心包（框架无关）
+│   ├── react/            # React 集成包
+│   └── vue/              # Vue 集成包
+├── table/                 # 表格系统
+│   ├── core/             # 核心包（框架无关）
+│   ├── react/            # React 集成包
+│   └── vue/              # Vue 集成包
 ├── preferences/           # 偏好设置系统
 │   ├── core/             # 核心包（框架无关）
 │   ├── react/            # React集成包
 │   └── vue/              # Vue集成包
-└── layout/               # 布局系统
+└── layout/                # 布局系统
     ├── core/             # 核心包（框架无关）
     ├── react/            # React集成包
     └── vue/              # Vue集成包
@@ -212,6 +220,7 @@ admin-core/
 │   ├── eslint-config/    # ESLint 配置
 │   └── tsconfig/         # TypeScript 配置
 ├── packages/             # 核心包
+│   ├── form/             # 表单系统
 │   ├── layout/           # 布局系统
 │   └── preferences/      # 偏好设置
 ├── scripts/              # 脚本工具
@@ -252,7 +261,22 @@ admin-core/
 
 - [偏好设置 API 文档](./packages/preferences/core/API.md)
 - [布局系统文档](./packages/layout/core/README.md)
+- [表单系统 Core 文档](./packages/form/core/README.md)
+- [表单系统 Vue 文档](./packages/form/vue/README.md)
+- [表单系统 React 文档](./packages/form/react/README.md)
+- [表格系统 Core 文档](./packages/table/core/README.md)
+- [表格系统 Vue 文档](./packages/table/vue/README.md)
+- [表格系统 React 文档](./packages/table/react/README.md)
 - [TypeScript 配置指南](./internal/tsconfig/README.md)
+
+## 🔁 vben 表格迁移速查
+
+| vben | admin-core |
+| --- | --- |
+| `setupVbenVxeTable` | `setupAdminTableVue` / `setupAdminTableReact` |
+| `useVbenVxeGrid` | `useAdminTable` |
+| `VxeGridApi` | `AdminTableApi` |
+| `CellTag/CellSwitch/CellOperation` | 同名保留 |
 
 ## 🤝 贡献
 

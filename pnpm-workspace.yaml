@@ -1,8 +1,10 @@
 packages:
   - examples/*
   - '!examples/vue-vben-admin-main'
+  - packages/form/*
   - packages/preferences/*
   - packages/layout/*
+  - packages/table/*
   - internal/*
 
 # 包名映射
@@ -32,6 +34,7 @@ catalog:
   '@typescript-eslint/parser': ^8.42.0
   '@vitejs/plugin-react': ^5.1.2
   '@vitejs/plugin-vue': ^6.0.3
+  '@vue/test-utils': ^2.4.6
   '@vitest/coverage-v8': ^4.0.17
   ant-design-vue: ^4.2.6
   antd: ^6.2.1
@@ -45,6 +48,7 @@ catalog:
   vue-eslint-parser: ^10.2.0
   glob: ^13.0.0
   husky: ^9.1.7
+  jsdom: ^26.1.0
   lint-staged: ^16.2.7
   naive-ui: ^2.43.2
   prettier: ^3.6.2
@@ -66,3 +70,6 @@ catalog:
   vue: ^3.5.27
   vue-router: ^4.5.0
   vue-tsc: ^3.2.3
+  vxe-pc-ui: ^4.3.36
+  vxe-table: ^4.12.6
+  zod: ^4.1.5

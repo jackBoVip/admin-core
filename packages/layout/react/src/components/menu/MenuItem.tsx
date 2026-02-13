@@ -20,7 +20,6 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
 
   const rawPath = item.key ?? item.path ?? '';
   const path = rawPath === '' ? '' : String(rawPath);
-  const parentPath = parentSubMenu?.path;
   const activePath = menuContext.activePath === '' ? '' : String(menuContext.activePath);
 
   // 是否激活
@@ -35,12 +34,18 @@ export const MenuItem = memo(function MenuItem({ item, level }: MenuItemProps) {
   // 点击处理
   const handleClick = useCallback(() => {
     if (item.disabled) return;
-    
+    const parentPaths: string[] = [];
+    let parent = parentSubMenu;
+    while (parent) {
+      parentPaths.unshift(String(parent.path));
+      parent = parent.parent ?? null;
+    }
+
     menuContext.handleMenuItemClick({
       path,
-      parentPaths: parentPath ? [parentPath] : [],
+      parentPaths,
     });
-  }, [item.disabled, menuContext, path, parentPath]);
+  }, [item.disabled, menuContext, parentSubMenu, path]);
 
   // 类名
   const itemClassName = useMemo(() => {

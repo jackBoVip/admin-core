@@ -20,7 +20,18 @@ const menus: MenuItem[] = [
     name: 'System',
     path: '/system',
     children: [
-      { key: 'user', name: 'User', path: '/system/user' },
+      {
+        key: 'user',
+        name: 'User',
+        path: '/system/user',
+        children: [
+          {
+            key: 'user-detail',
+            name: 'UserDetail',
+            path: '/system/user/detail',
+          },
+        ],
+      },
       { key: 'role', name: 'Role', path: '/system/role' },
     ],
   },
@@ -65,6 +76,17 @@ describe('resolveMenuOpenKeysOnPath', () => {
       accordion: true,
     });
     expect(nextKeys).toEqual(['system']);
+  });
+
+  it('手风琴模式下三级菜单应保留完整父级链', () => {
+    const openKeys = ['reports'];
+    const nextKeys = resolveMenuOpenKeysOnPath({
+      menuIndex,
+      menuPath: '/system/user/detail',
+      openKeys,
+      accordion: true,
+    });
+    expect(nextKeys).toEqual(['system', 'user']);
   });
 
   it('路径无法匹配时保持原数组引用', () => {

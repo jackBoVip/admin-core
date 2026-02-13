@@ -33,10 +33,8 @@ export function resolveMenuOpenKeysOnPath(options: ResolveMenuOpenKeysOnPathOpti
   const parentKeys = chain.slice(0, -1);
 
   if (accordion) {
-    const lastParentKey = parentKeys[parentKeys.length - 1];
-    if (lastParentKey === undefined) return openKeys;
-    const nextKeys = [lastParentKey];
-    return areArraysEqual(nextKeys, openKeys) ? openKeys : nextKeys;
+    if (parentKeys.length === 0) return openKeys;
+    return areArraysEqual(parentKeys, openKeys) ? openKeys : parentKeys;
   }
 
   const merged = [...new Set([...openKeys, ...parentKeys])];

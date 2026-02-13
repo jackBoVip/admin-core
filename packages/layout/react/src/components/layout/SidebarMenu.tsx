@@ -220,19 +220,18 @@ const PopupMenu = memo(function PopupMenu({
 
   useEffect(() => {
     const nextKeys = buildExpandedKeys();
-    let isSame = nextKeys.size === expandedKeys.size;
-    if (isSame) {
+    setExpandedKeys((prev) => {
+      if (prev.size !== nextKeys.size) {
+        return nextKeys;
+      }
       for (const key of nextKeys) {
-        if (!expandedKeys.has(key)) {
-          isSame = false;
-          break;
+        if (!prev.has(key)) {
+          return nextKeys;
         }
       }
-    }
-    if (!isSame) {
-      setExpandedKeys(nextKeys);
-    }
-  }, [buildExpandedKeys, expandedKeys]);
+      return prev;
+    });
+  }, [buildExpandedKeys, itemId]);
 
   const menuItemMap = useMemo(() => {
     const map = new Map<string, MenuItem>();

@@ -18,7 +18,6 @@
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
-    color-scheme: light dark;
   }
 
   body {
@@ -42,7 +41,8 @@
 
   /* 卡片样式 */
   .card {
-    @apply rounded bg-card text-card-foreground p-4 md:p-6 shadow-[0_1px_3px_rgba(0,0,0,0.1)];
+    @apply rounded bg-card text-card-foreground p-4 md:p-6;
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 12%, transparent);
   }
 
   .card-title {
@@ -55,7 +55,8 @@
   }
 
   .stat-card {
-    @apply rounded bg-card text-card-foreground p-5 shadow-[0_1px_3px_rgba(0,0,0,0.1)];
+    @apply rounded bg-card text-card-foreground p-5;
+    box-shadow: 0 1px 3px color-mix(in oklch, var(--foreground) 12%, transparent);
   }
 
   .stat-card-title {
@@ -114,7 +115,12 @@
 @layer utilities {
   /* 骨架屏加载效果 */
   .skeleton-loading {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--muted) 82%, var(--background)) 25%,
+      color-mix(in oklch, var(--muted) 62%, var(--foreground)) 50%,
+      color-mix(in oklch, var(--muted) 82%, var(--background)) 75%
+    );
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s infinite;
     border-radius: 4px;
