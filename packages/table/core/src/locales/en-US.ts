@@ -8,5 +8,3 @@ export const enUS: TableLocaleMessages = {
     showSearchPanel: 'Show Search Panel',
   },
 };
-
-export default enUS;

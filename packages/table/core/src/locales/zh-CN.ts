@@ -8,5 +8,3 @@ export const zhCN: TableLocaleMessages = {
     showSearchPanel: '显示搜索面板',
   },
 };
-
-export default zhCN;
