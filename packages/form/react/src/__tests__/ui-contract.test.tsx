@@ -1,5 +1,5 @@
 
-import { createFormApi } from '@admin-core/form-core';
+import { createFormApi, setLocale } from '@admin-core/form-core';
 import { act, create } from 'react-test-renderer';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminForm } from '../components/AdminForm';
@@ -23,6 +23,7 @@ async function mountForm(element: ReactElement) {
 describe('react ui contract', () => {
   beforeEach(() => {
     (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+    setLocale('zh-CN');
     setupAdminFormReact({
       library: 'native-test',
       libraries: {
@@ -540,6 +541,24 @@ describe('react ui contract', () => {
       .findAllByType('button')
       .find((node) => `${node.props.className ?? ''}`.includes('admin-form__button--primary'));
     expect(primaryButton?.children?.join('')).toBe('查询');
+  });
+
+  it('AdminSearchForm should update default submit text after locale switched at runtime', async () => {
+    const schema = [{ fieldName: 'name', component: 'input' as const }];
+    const renderer = await mountForm(<AdminSearchForm schema={schema} />);
+    const primaryButton = () =>
+      renderer.root
+        .findAllByType('button')
+        .find((node) =>
+          `${node.props.className ?? ''}`.includes('admin-form__button--primary')
+        );
+    expect(primaryButton()?.children?.join('')).toBe('查询');
+
+    await act(async () => {
+      setLocale('en-US');
+      await Promise.resolve();
+    });
+    expect(primaryButton()?.children?.join('')).toBe('Search');
   });
 
   it('AdminSearchForm should not auto-collapse after expand when values are controlled', async () => {

@@ -91,7 +91,7 @@ Vue 场景还支持：
 - `collapsed: true`
 - `showDefaultActions: true`
 - `showCollapseButton: true`（仅有溢出项时才显示“展开/收起”）
-- `submitButtonOptions.content: '查询'`（可覆盖）
+- `submitButtonOptions.content`：跟随当前 locale（`zh-CN` 为 `查询`，`en-US` 为 `Search`，可覆盖）
 
 ## `AdminFormSubmitPage` Props（核心）
 

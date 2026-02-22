@@ -5,6 +5,9 @@ export interface DemoRow {
   nickname: string;
   role: string;
   address: string;
+  enabled?: boolean;
+  selected?: boolean;
+  level?: 'high' | 'low' | 'medium';
 }
 
 export interface DemoProductRow {
@@ -37,6 +40,9 @@ export const BASIC_ROWS: DemoRow[] = Array.from({ length: 20 }).map((_, index) =
   nickname: `nick-${index + 1}`,
   role: roles[index % roles.length],
   address: `No.${index + 1}, Broadway, New York`,
+  enabled: index % 2 === 0,
+  selected: index % 3 === 0,
+  level: index % 3 === 0 ? 'high' : index % 3 === 1 ? 'medium' : 'low',
 }));
 
 export const TREE_ROWS: DemoTreeRow[] = [

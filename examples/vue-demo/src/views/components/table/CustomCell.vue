@@ -9,13 +9,31 @@ const statusOptions = [
   { color: '#16a34a', label: 'Enabled', value: 'enabled' },
   { color: '#dc2626', label: 'Disabled', value: 'disabled' },
 ];
+const statusSelectOptions = [
+  { label: 'Enabled', value: 'enabled' },
+  { label: 'Disabled', value: 'disabled' },
+];
 
 const gridOptions: VxeTableGridOptions<DemoProductRow> = {
   columns: [
     { title: '序号', type: 'seq', width: 60 },
     { field: 'category', title: 'Category', width: 100 },
     { field: 'imageUrl', slots: { default: 'image' }, title: 'Image', width: 100 },
-    { field: 'open', slots: { default: 'open' }, title: 'Open', width: 100 },
+    { field: 'open', slots: { default: 'openSwitch' }, title: 'Switch(Slot)', width: 140 },
+    {
+      cellRender: {
+        name: 'CellSwitch',
+        props: {
+          checkedValue: 1,
+          uncheckedValue: 0,
+        },
+      },
+      field: 'open',
+      title: 'CellSwitch',
+      width: 120,
+    },
+    { field: 'open', slots: { default: 'openCheckbox' }, title: 'Checkbox(Slot)', width: 150 },
+    { field: 'status', slots: { default: 'statusSelect' }, title: 'Select(Slot)', width: 150 },
     {
       cellRender: {
         name: 'CellTag',
@@ -26,7 +44,7 @@ const gridOptions: VxeTableGridOptions<DemoProductRow> = {
       width: 120,
     },
     { field: 'color', title: 'Color', width: 100 },
-    { field: 'productName', title: 'Product Name', width: 200 },
+    { field: 'productName', slots: { default: 'nameInput' }, title: 'Input(Slot)', width: 220 },
     { field: 'price', title: 'Price', width: 100 },
     { field: 'releaseDate', formatter: 'formatDateTime', title: 'Date', width: 200 },
     {
@@ -70,15 +88,43 @@ const [Grid] = useAdminTable<DemoProductRow>({ gridOptions });
 <template>
   <div class="page-container">
     <h1 class="page-title">表格 - 自定义单元格</h1>
-    <p class="page-description">同时演示 slot 渲染与内置 CellTag/CellOperation 渲染器。</p>
+    <p class="page-description">同时演示 Switch/Checkbox/Select/Input 插槽渲染与内置渲染器。</p>
 
     <div class="card">
       <Grid table-title="自定义单元格列表">
         <template #image="{ row }">
           <img :src="row.imageUrl" width="28" height="28" class="rounded-full" />
         </template>
-        <template #open="{ row }">
-          <input v-model="row.open" type="checkbox" />
+        <template #openSwitch="{ row }">
+          <vxe-switch
+            v-model="row.open"
+            :open-value="1"
+            :close-value="0"
+            size="small"
+          />
+        </template>
+        <template #openCheckbox="{ row }">
+          <vxe-checkbox
+            v-model="row.open"
+            :checked-value="1"
+            :unchecked-value="0"
+            content=""
+          />
+        </template>
+        <template #statusSelect="{ row }">
+          <vxe-select
+            v-model="row.status"
+            :options="statusSelectOptions"
+            size="small"
+            style="width: 132px"
+          />
+        </template>
+        <template #nameInput="{ row }">
+          <vxe-input
+            v-model="row.productName"
+            size="small"
+            style="width: 160px"
+          />
         </template>
       </Grid>
     </div>

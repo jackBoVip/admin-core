@@ -23,6 +23,13 @@ export default defineConfig({
   // 优化依赖处理
   optimizeDeps: {
     include: ['react', 'react-dom'],
+    exclude: [
+      '@admin-core/form-react',
+      '@admin-core/layout-react',
+      '@admin-core/preferences',
+      '@admin-core/preferences-react',
+      '@admin-core/table-react',
+    ],
   },
   server: {
     port: 3001,

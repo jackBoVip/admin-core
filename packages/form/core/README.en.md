@@ -38,9 +38,15 @@ import {
 
 `setupAdminFormCore` options:
 
-- `locale?: 'en-US' | 'zh-CN'`
+- `locale?: string` (built-in `zh-CN` / `en-US`, custom locale keys are supported)
 - `logLevel?: 'error' | 'info' | 'silent' | 'warn'`
 - `rules?: RegisterFormRulesOptions`
+
+I18n APIs:
+
+- `setLocale(locale)`: switch active locale
+- `registerLocaleMessages(locale, messages, options?)`: register/extend locale messages
+- `getLocaleMessages(locale?)`: read locale message bundle
 
 ## 2) Form Instance API (`createFormApi`)
 

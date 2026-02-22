@@ -94,7 +94,11 @@
  * ============================================================ */
 html:not(.dark):not([data-theme='dark']),
 body:not(.dark):not([data-theme='dark']) {
-  color-scheme: light;
+  color-scheme: only light;
+}
+
+:root:not(.dark):not([data-theme='dark']) {
+  color-scheme: only light;
 }
 
 html.dark,
@@ -104,11 +108,16 @@ body[data-theme='dark'] {
   color-scheme: dark;
 }
 
+:root.dark,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
 /* 系统为深色但应用为浅色时，强制使用浅色滚动条 */
 @media (prefers-color-scheme: dark) {
   html:not(.dark):not([data-theme='dark']),
   body:not(.dark):not([data-theme='dark']) {
-    color-scheme: light;
+    color-scheme: only light;
   }
 
   html[data-platform='macOs']:not(.dark):not([data-theme='dark'])::-webkit-scrollbar {
@@ -552,12 +561,33 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 
 /* 顶栏面包屑颜色跟随顶栏主题 */
 .layout-header .breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
   color: inherit;
   font-size: var(--header-widget-font-size);
+  line-height: 1;
+}
+
+.layout-header .breadcrumb > ol {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.layout-header .breadcrumb > ol > li {
+  display: inline-flex;
+  align-items: center;
 }
 
 .layout-header .breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
   color: color-mix(in oklch, currentColor 70%, transparent);
+  line-height: 1;
 }
 
 .layout-header .breadcrumb__item:hover,
@@ -580,6 +610,13 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+.layout-header .breadcrumb__icon > *,
+.layout-header .breadcrumb__separator > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .layout-header .breadcrumb__icon svg,

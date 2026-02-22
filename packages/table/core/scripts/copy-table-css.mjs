@@ -1,12 +1,20 @@
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-const source = 'src/styles/table.css';
-const target = 'dist/styles/table.css';
+const styleFiles = [
+  'table.css',
+  'vxe-iconfont.css',
+  'vxe-table-icon.woff2',
+];
 
-if (!existsSync(source)) {
-  process.exit(0);
-}
+styleFiles.forEach((file) => {
+  const source = `src/styles/${file}`;
+  const target = `dist/styles/${file}`;
 
-mkdirSync(dirname(target), { recursive: true });
-copyFileSync(source, target);
+  if (!existsSync(source)) {
+    return;
+  }
+
+  mkdirSync(dirname(target), { recursive: true });
+  copyFileSync(source, target);
+});

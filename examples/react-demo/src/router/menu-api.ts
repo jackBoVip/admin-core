@@ -232,6 +232,15 @@ export async function fetchMenuList(): Promise<RouteRecordStringComponent[]> {
                 icon: '🚀',
               },
             },
+            {
+              name: 'ComponentsTableSlot',
+              path: '/components/table/slot',
+              component: '/components/table/Slot',
+              meta: {
+                title: '插槽示例',
+                icon: '🧱',
+              },
+            },
           ],
         },
       ],

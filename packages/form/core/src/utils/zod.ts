@@ -1,5 +1,7 @@
 import { z, type ZodTypeAny } from 'zod';
+import { formatLocaleMessage, getLocaleMessages } from '../locales';
 import { isString } from './guards';
+import type { ZodIssue } from 'zod';
 
 export function isZodSchema(rule: unknown): rule is ZodTypeAny {
   if (!rule || isString(rule)) return false;
@@ -38,4 +40,33 @@ export function inferDefaultValueFromZod(rule: ZodTypeAny): any {
   }
 
   return undefined;
+}
+
+const DEFAULT_ZOD_MESSAGE_PREFIX = [
+  'invalid input',
+  'too big',
+  'too small',
+  'unrecognized',
+  'invalid format',
+  'expected',
+];
+
+function isLikelyDefaultZodMessage(message: string) {
+  const normalized = message.trim().toLowerCase();
+  return DEFAULT_ZOD_MESSAGE_PREFIX.some((prefix) =>
+    normalized.startsWith(prefix)
+  );
+}
+
+export function resolveZodIssueMessage(input: {
+  issue?: Pick<ZodIssue, 'message'>;
+  label: string;
+}) {
+  const message = input.issue?.message?.trim();
+  if (message && !isLikelyDefaultZodMessage(message)) {
+    return message;
+  }
+  return formatLocaleMessage(getLocaleMessages().form.invalid, {
+    label: input.label,
+  });
 }

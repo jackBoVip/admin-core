@@ -86,7 +86,7 @@ Default injected props:
 - `collapsed: true`
 - `showDefaultActions: true`
 - `showCollapseButton: true` (collapse toggle only appears when overflow exists)
-- `submitButtonOptions.content: '查询'` (overridable)
+- `submitButtonOptions.content`: follows active locale (`zh-CN`: `查询`, `en-US`: `Search`, overridable)
 
 ## `AdminFormSubmitPage` Props (Key)
 
@@ -128,6 +128,20 @@ On top of form props:
 ```css
 @import "@admin-core/preferences/styles/antd";
 ```
+
+## Combine with Layout/Table (Avoid Duplicate Styles)
+
+If you also use `@admin-core/layout-react` and `@admin-core/table-react`, import styles once at app entry:
+
+```css
+@import "@admin-core/preferences/styles/antd";
+@import "@admin-core/layout-react/style.css";
+@import "@admin-core/form-react/style.css";
+@import "@admin-core/table-react/style.css";
+```
+
+- Do not import `@import "tailwindcss"` twice (`layout-react/style.css` already includes it).
+- Do not import `antd/dist/reset.css` twice (`table-react/style.css` already includes it).
 
 ## Out of the box (Data First)
 

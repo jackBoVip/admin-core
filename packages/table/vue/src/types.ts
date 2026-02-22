@@ -1,8 +1,17 @@
 import type {
   AdminTableApi,
+  AdminTableGridEvents,
   AdminTableProps,
+  TableCellStrategy,
+  TableRowStrategy,
+  TableStrategyConfig,
+  ColumnCustomPersistenceConfig,
+  ColumnCustomState,
   SeparatorOptions,
+  TableOperationColumnConfig,
+  TableSeqColumnConfig,
   ToolbarConfig,
+  ToolbarToolPermissionDirective,
 } from '@admin-core/table-core';
 import type { AdminFormProps } from '@admin-core/form-vue';
 import type {
@@ -16,7 +25,43 @@ export interface VxeToolbarConfig extends ToolbarConfig {
   search?: boolean;
 }
 
-export interface VxeTableGridOptions<T = any> extends VxeTableGridProps<T> {
+export interface VxeRowSelectionRuleContext<
+  TData extends Record<string, any> = Record<string, any>,
+> {
+  row: TData;
+  rowIndex: number;
+}
+
+export interface VxeRowSelectionConfig<
+  TData extends Record<string, any> = Record<string, any>,
+> {
+  [key: string]: any;
+  checkField?: string;
+  checkMethod?: (ctx: VxeRowSelectionRuleContext<TData>) => boolean;
+  defaultSelectedRowKeys?: Array<number | string>;
+  highlight?: boolean;
+  onChange?: (
+    selectedRowKeys: Array<number | string>,
+    selectedRows: TData[],
+    params?: Record<string, any>
+  ) => void;
+  selectedRowKeys?: Array<number | string>;
+  strict?: boolean;
+  trigger?: 'cell' | 'row';
+  type?: 'checkbox' | 'radio';
+}
+
+export interface VxeTableGridOptions<
+  T extends Record<string, any> = Record<string, any>,
+> extends Omit<VxeTableGridProps<T>, 'toolbarConfig'> {
+  cellStrategy?: Record<string, TableCellStrategy>;
+  columnCustomPersistence?: boolean | ColumnCustomPersistenceConfig;
+  columnCustomState?: ColumnCustomState;
+  operationColumn?: boolean | TableOperationColumnConfig;
+  rowStrategy?: TableRowStrategy[];
+  rowSelection?: VxeRowSelectionConfig<T>;
+  seqColumn?: boolean | TableSeqColumnConfig;
+  strategy?: TableStrategyConfig;
   toolbarConfig?: VxeToolbarConfig;
 }
 
@@ -25,7 +70,7 @@ export interface AdminTableVueProps<
   TFormValues extends Record<string, any> = Record<string, any>,
 > extends Omit<AdminTableProps<TData, TFormValues>, 'formOptions' | 'gridEvents' | 'gridOptions'> {
   formOptions?: AdminFormProps;
-  gridEvents?: Partial<VxeGridListeners<TData>>;
+  gridEvents?: AdminTableGridEvents & Partial<VxeGridListeners<TData>>;
   gridOptions?: Partial<VxeTableGridOptions<TData>>;
   separator?: boolean | SeparatorOptions;
 }
@@ -42,7 +87,14 @@ export type ExtendedAdminTableApi<
 };
 
 export interface SetupAdminTableVueOptions {
+  accessCodes?: string[] | (() => null | string[] | undefined);
+  accessRoles?: string[] | (() => null | string[] | undefined);
+  bindPreferences?: boolean;
   configVxeTable?: (ui: VxeUIExport) => void;
   locale?: 'en-US' | 'zh-CN';
+  permissionChecker?: (
+    permission: ToolbarToolPermissionDirective,
+    tool: Record<string, any>
+  ) => boolean;
   setupThemeAndLocale?: (ui: VxeUIExport) => void;
 }

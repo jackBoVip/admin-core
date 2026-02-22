@@ -150,7 +150,33 @@ function App() {
 - `header-mixed-nav` - 顶部混合导航
 - `full-content` - 全屏内容
 
-### 3. 静态 + 动态路由
+### 3. 表格系统 (@admin-core/table-vue / @admin-core/table-react)
+
+统一的跨端表格契约，Vue 与 React 语义保持一致：
+
+```ts
+import { useAdminTable } from '@admin-core/table-react'; // 或 @admin-core/table-vue
+
+const [Table, tableApi] = useAdminTable({
+  tableTitle: '用户列表',
+  gridOptions: {
+    seqColumn: true,
+    toolbarConfig: { refresh: true, zoom: true, custom: true },
+    rowSelection: { type: 'checkbox', trigger: 'row' },
+    operationColumn: true,
+  },
+});
+```
+
+主要能力：
+
+- 工具栏（内置图标 + 自动构建按钮 + 插槽）
+- 列设置（拖拽、固定、排序、筛选、持久化）
+- 搜索表单联动（`formOptions` + `proxyConfig`）
+- 行/列策略（样式、计算、点击、正则条件）
+- 主题和国际化联动（偏好系统）
+
+### 4. 静态 + 动态路由
 
 框架提供“静态路由常量 + 动态菜单 API”统一构建能力，自动生成 **路由、菜单、面包屑**。  
 静态路由与动态菜单都使用 **RouteRecord 风格**，其中 `component` 使用字符串路径（如 `/system/user`），由框架解析为真实组件。
@@ -221,6 +247,7 @@ admin-core/
 │   └── tsconfig/         # TypeScript 配置
 ├── packages/             # 核心包
 │   ├── form/             # 表单系统
+│   ├── table/            # 表格系统
 │   ├── layout/           # 布局系统
 │   └── preferences/      # 偏好设置
 ├── scripts/              # 脚本工具
@@ -269,12 +296,12 @@ admin-core/
 - [表格系统 React 文档](./packages/table/react/README.md)
 - [TypeScript 配置指南](./internal/tsconfig/README.md)
 
-## 🔁 vben 表格迁移速查
+## 🔁 旧版表格迁移速查
 
-| vben | admin-core |
+| 旧版 | admin-core |
 | --- | --- |
-| `setupVbenVxeTable` | `setupAdminTableVue` / `setupAdminTableReact` |
-| `useVbenVxeGrid` | `useAdminTable` |
+| `legacySetupVxeTable` | `setupAdminTableVue` / `setupAdminTableReact` |
+| `legacyUseVxeGrid` | `useAdminTable` |
 | `VxeGridApi` | `AdminTableApi` |
 | `CellTag/CellSwitch/CellOperation` | 同名保留 |
 

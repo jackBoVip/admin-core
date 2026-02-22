@@ -1,7 +1,11 @@
-export const enUS = {
+import type { AdminFormLocaleMessages } from './types';
+
+export const enUS: AdminFormLocaleMessages = {
   form: {
     collapse: 'Collapse',
     expand: 'Expand',
+    invalid: '{label} is invalid',
+    querySubmit: 'Search',
     rangeInvalid: '{label} range is invalid',
     reset: 'Reset',
     required: 'Please input {label}',

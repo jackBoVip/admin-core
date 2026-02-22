@@ -1,47 +1,73 @@
 import type { SetupAdminTableReactOptions } from './types';
 
-import { registerTableFormatters, setupAdminTableCore } from '@admin-core/table-core';
+import {
+  createTableDateFormatter,
+  normalizeTableLocale,
+  registerTableFormatters,
+  setLocale as setTableLocale,
+  setupAdminTableCore,
+} from '@admin-core/table-core';
+import { getDefaultPreferencesStore } from '@admin-core/preferences';
 
 import { registerBuiltinReactRenderers } from './renderers';
 
 const state: {
+  accessCodes?: SetupAdminTableReactOptions['accessCodes'];
+  accessRoles?: SetupAdminTableReactOptions['accessRoles'];
   defaultGridOptions: Record<string, any>;
   initialized: boolean;
   locale: 'en-US' | 'zh-CN';
+  permissionChecker?: SetupAdminTableReactOptions['permissionChecker'];
 } = {
+  accessCodes: undefined,
+  accessRoles: undefined,
   defaultGridOptions: {},
   initialized: false,
   locale: 'zh-CN',
+  permissionChecker: undefined,
 };
+let preferenceUnsubscribe: null | (() => void) = null;
+const preferencesStore = getDefaultPreferencesStore();
 
-function createFormatter(dateLocale: 'en-US' | 'zh-CN') {
-  return {
-    formatDate(value: any) {
-      if (value === undefined || value === null || value === '') return '';
-      const date = new Date(value);
-      return Number.isNaN(date.getTime())
-        ? String(value)
-        : date.toLocaleDateString(dateLocale);
-    },
-    formatDateTime(value: any) {
-      if (value === undefined || value === null || value === '') return '';
-      const date = new Date(value);
-      return Number.isNaN(date.getTime())
-        ? String(value)
-        : date.toLocaleString(dateLocale);
-    },
-  };
+function applyLocale(locale: 'en-US' | 'zh-CN') {
+  state.locale = locale;
+  setTableLocale(locale);
+  registerTableFormatters(createTableDateFormatter(state.locale));
+}
+
+function ensurePreferencesBinding() {
+  if (preferenceUnsubscribe) {
+    return;
+  }
+  preferenceUnsubscribe = preferencesStore.subscribe((preferences) => {
+    applyLocale(normalizeTableLocale(preferences?.app?.locale));
+  });
+}
+
+export function syncAdminTableReactWithPreferences() {
+  const currentPreferences = preferencesStore.getPreferences();
+  if (!currentPreferences) {
+    return;
+  }
+  applyLocale(normalizeTableLocale(currentPreferences.app.locale));
 }
 
 export function setupAdminTableReact(options: SetupAdminTableReactOptions = {}) {
   setupAdminTableCore({ locale: options.locale });
 
-  state.locale = options.locale ?? state.locale;
+  applyLocale(normalizeTableLocale(options.locale ?? state.locale));
   state.defaultGridOptions = {
     ...state.defaultGridOptions,
     ...(options.defaultGridOptions ?? {}),
   };
-  registerTableFormatters(createFormatter(state.locale));
+  state.accessCodes = options.accessCodes ?? state.accessCodes;
+  state.accessRoles = options.accessRoles ?? state.accessRoles;
+  state.permissionChecker = options.permissionChecker ?? state.permissionChecker;
+
+  if (options.bindPreferences !== false) {
+    ensurePreferencesBinding();
+    syncAdminTableReactWithPreferences();
+  }
 
   if (!state.initialized) {
     registerBuiltinReactRenderers();

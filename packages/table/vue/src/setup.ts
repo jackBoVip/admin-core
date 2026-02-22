@@ -1,6 +1,17 @@
 import type { SetupAdminTableVueOptions } from './types';
 
-import { registerTableFormatters, setupAdminTableCore } from '@admin-core/table-core';
+import {
+  createTableDateFormatter,
+  normalizeTableLocale,
+  registerTableFormatters,
+  setLocale as setTableLocale,
+  setupAdminTableCore,
+} from '@admin-core/table-core';
+import {
+  getActualThemeMode,
+  getDefaultPreferencesStore,
+  type Preferences,
+} from '@admin-core/preferences';
 import {
   VxeButton,
   VxeCheckbox,
@@ -12,6 +23,7 @@ import {
   VxePager,
   VxeRadioGroup,
   VxeSelect,
+  VxeSwitch,
   VxeTooltip,
   VxeUI,
   VxeUpload,
@@ -31,29 +43,26 @@ import { registerBuiltinVueRenderers } from './renderers';
 let initialized = false;
 let formatterInitialized = false;
 let currentFormatterLocale: 'en-US' | 'zh-CN' = 'zh-CN';
+let preferenceUnsubscribe: null | (() => void) = null;
+const setupState: {
+  accessCodes?: SetupAdminTableVueOptions['accessCodes'];
+  accessRoles?: SetupAdminTableVueOptions['accessRoles'];
+  permissionChecker?: SetupAdminTableVueOptions['permissionChecker'];
+} = {
+  accessCodes: undefined,
+  accessRoles: undefined,
+  permissionChecker: undefined,
+};
 
-function createFormatter(dateLocale: 'en-US' | 'zh-CN') {
-  return {
-    formatDate(value: any) {
-      if (value === undefined || value === null || value === '') return '';
-      const date = new Date(value);
-      return Number.isNaN(date.getTime())
-        ? String(value)
-        : date.toLocaleDateString(dateLocale);
-    },
-    formatDateTime(value: any) {
-      if (value === undefined || value === null || value === '') return '';
-      const date = new Date(value);
-      return Number.isNaN(date.getTime())
-        ? String(value)
-        : date.toLocaleString(dateLocale);
-    },
-  };
-}
+const localeMap = {
+  'en-US': enUS,
+  'zh-CN': zhCN,
+} as const;
+const preferencesStore = getDefaultPreferencesStore();
 
 function registerDefaultFormatters(locale: 'en-US' | 'zh-CN') {
   currentFormatterLocale = locale;
-  registerTableFormatters(createFormatter(currentFormatterLocale));
+  registerTableFormatters(createTableDateFormatter(currentFormatterLocale));
 
   if (formatterInitialized) {
     return;
@@ -61,17 +70,52 @@ function registerDefaultFormatters(locale: 'en-US' | 'zh-CN') {
 
   VxeUI.formats.add('formatDate', {
     tableCellFormatMethod({ cellValue }) {
-      return createFormatter(currentFormatterLocale).formatDate(cellValue);
+      return createTableDateFormatter(currentFormatterLocale).formatDate(cellValue);
     },
   });
 
   VxeUI.formats.add('formatDateTime', {
     tableCellFormatMethod({ cellValue }) {
-      return createFormatter(currentFormatterLocale).formatDateTime(cellValue);
+      return createTableDateFormatter(currentFormatterLocale).formatDateTime(cellValue);
     },
   });
 
   formatterInitialized = true;
+}
+
+function applyLocale(locale: 'en-US' | 'zh-CN') {
+  setTableLocale(locale);
+  registerDefaultFormatters(locale);
+  VxeUI.setI18n(locale, localeMap[locale]);
+  VxeUI.setLanguage(locale);
+}
+
+function applyTheme(preferences: Preferences | null | undefined) {
+  if (!preferences) {
+    return;
+  }
+  const actualMode = getActualThemeMode(preferences.theme.mode);
+  (VxeUI as any).setTheme?.(actualMode === 'dark' ? 'dark' : 'light');
+}
+
+function ensurePreferencesBinding() {
+  if (preferenceUnsubscribe) {
+    return;
+  }
+  preferenceUnsubscribe = preferencesStore.subscribe((preferences) => {
+    const nextLocale = normalizeTableLocale(preferences?.app?.locale);
+    applyLocale(nextLocale);
+    applyTheme(preferences);
+  });
+}
+
+export function syncAdminTableVueWithPreferences() {
+  const currentPreferences = preferencesStore.getPreferences();
+  if (!currentPreferences) {
+    return;
+  }
+  applyLocale(normalizeTableLocale(currentPreferences.app.locale));
+  applyTheme(currentPreferences);
 }
 
 function initVxeTable() {
@@ -93,6 +137,7 @@ function initVxeTable() {
   VxeUI.component(VxePager);
   VxeUI.component(VxeRadioGroup);
   VxeUI.component(VxeSelect);
+  VxeUI.component(VxeSwitch);
   VxeUI.component(VxeTooltip);
   VxeUI.component(VxeUpload);
 
@@ -103,20 +148,25 @@ function initVxeTable() {
 export function setupAdminTableVue(options: SetupAdminTableVueOptions = {}) {
   setupAdminTableCore({ locale: options.locale });
   initVxeTable();
+  setupState.accessCodes = options.accessCodes ?? setupState.accessCodes;
+  setupState.accessRoles = options.accessRoles ?? setupState.accessRoles;
+  setupState.permissionChecker = options.permissionChecker ?? setupState.permissionChecker;
 
-  const localeMap = {
-    'en-US': enUS,
-    'zh-CN': zhCN,
-  } as const;
+  const locale = normalizeTableLocale(options.locale);
+  applyLocale(locale);
 
-  const locale = options.locale ?? 'zh-CN';
-  registerDefaultFormatters(locale);
-  VxeUI.setI18n(locale, localeMap[locale]);
-  VxeUI.setLanguage(locale);
+  if (options.bindPreferences !== false) {
+    ensurePreferencesBinding();
+    syncAdminTableVueWithPreferences();
+  }
 
   if (options.setupThemeAndLocale) {
     options.setupThemeAndLocale(VxeUI);
   }
 
   options.configVxeTable?.(VxeUI);
+}
+
+export function getAdminTableVueSetupState() {
+  return setupState;
 }

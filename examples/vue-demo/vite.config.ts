@@ -12,6 +12,10 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      '@admin-core/preferences/styles/element': resolve(
+        __dirname,
+        '../../packages/preferences/core/src/styles/css/adapters/element.css'
+      ),
     },
   },
   server: {

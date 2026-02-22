@@ -1,6 +1,6 @@
 packages:
   - examples/*
-  - '!examples/vue-vben-admin-main'
+  - '!examples/vue-*-admin-main'
   - packages/form/*
   - packages/preferences/*
   - packages/layout/*

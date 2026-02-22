@@ -28,7 +28,11 @@ import {
   pathDependenciesIntersect,
   trackValueDependencies,
 } from './utils/value-access';
-import { inferDefaultValueFromZod, isZodSchema } from './utils/zod';
+import {
+  inferDefaultValueFromZod,
+  isZodSchema,
+  resolveZodIssueMessage,
+} from './utils/zod';
 import type {
   AdminFormApi,
   AdminFormProps,
@@ -934,7 +938,10 @@ class AdminFormApiImpl implements AdminFormApi {
         return { hidden: false, valid: false };
       }
       if (!parsed.success) {
-        error = parsed.error.issues[0]?.message || resolveRequiredRuleMessage(label);
+        error = resolveZodIssueMessage({
+          issue: parsed.error.issues[0],
+          label,
+        });
       }
     }
 

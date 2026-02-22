@@ -6,13 +6,13 @@ import { useAdminTable } from '@admin-core/table-vue';
 import { fetchProductRows, type DemoProductRow } from './data';
 
 const gridOptions: VxeTableGridOptions<DemoProductRow> = {
-  checkboxConfig: {
+  radioConfig: {
     highlight: true,
     labelField: 'productName',
+    trigger: 'row',
   },
   columns: [
     { title: '序号', type: 'seq', width: 60 },
-    { align: 'left', title: 'Pick', type: 'checkbox', width: 80 },
     { field: 'category', sortable: true, title: 'Category' },
     { field: 'color', sortable: true, title: 'Color' },
     { field: 'productName', sortable: true, title: 'Product Name' },

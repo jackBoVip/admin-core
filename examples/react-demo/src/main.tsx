@@ -4,11 +4,24 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { setupAdminFormReact } from '@admin-core/form-react';
 import { setupAdminTableReact } from '@admin-core/table-react';
-import { Button, Checkbox, ConfigProvider, DatePicker, Input, Radio, Select, Switch } from 'antd';
+import { initPreferences, useAdminAntdTheme } from '@admin-core/layout-react';
+import {
+  Button,
+  Checkbox,
+  ConfigProvider,
+  DatePicker,
+  Input,
+  Radio,
+  Select,
+  Switch,
+  theme as antdTheme,
+} from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 
 // 样式
 import './styles/index.css';
+
+initPreferences({ namespace: 'admin-core' });
 
 setupAdminFormReact({
   library: 'antd',
@@ -47,12 +60,26 @@ setupAdminTableReact({
   locale: 'zh-CN',
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ConfigProvider locale={zhCN}>
+function AppProviders() {
+  const antdThemeConfig = useAdminAntdTheme({
+    algorithms: {
+      dark: antdTheme.darkAlgorithm,
+      light: antdTheme.defaultAlgorithm,
+    },
+    cssVar: { key: 'admin-core' },
+  });
+
+  return (
+    <ConfigProvider locale={zhCN} theme={antdThemeConfig as any}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
     </ConfigProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <AppProviders />
   </React.StrictMode>
 );

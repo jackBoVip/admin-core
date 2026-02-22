@@ -12,9 +12,13 @@ export {
   getLocaleMessages,
   registerTableFormatters,
   setupAdminTableCore,
+  type AdminTableGridEvents,
   type AdminTableApi,
   type AdminTableOptions,
   type AdminTableProps,
+  type ColumnCustomChangePayload,
+  type ColumnCustomSnapshot,
+  type ColumnCustomState,
   type ProxyConfig,
   type SeparatorOptions,
   type TableFormatter,
@@ -23,7 +27,11 @@ export {
 } from '@admin-core/table-core';
 
 export { default as AdminTable } from './components/AdminTable.vue';
-export { setupAdminTableVue } from './setup';
+export {
+  getAdminTableVueSetupState,
+  setupAdminTableVue,
+  syncAdminTableVueWithPreferences,
+} from './setup';
 export { useAdminTable } from './hooks';
 
 export type {

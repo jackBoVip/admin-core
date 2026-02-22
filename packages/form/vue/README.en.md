@@ -91,7 +91,7 @@ Default injected props:
 - `collapsed: true`
 - `showDefaultActions: true`
 - `showCollapseButton: true` (collapse toggle only appears when overflow exists)
-- `submitButtonOptions.content: '查询'` (overridable)
+- `submitButtonOptions.content`: follows active locale (`zh-CN`: `查询`, `en-US`: `Search`, overridable)
 
 ## `AdminFormSubmitPage` Props (Key)
 

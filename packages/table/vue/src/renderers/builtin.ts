@@ -1,16 +1,12 @@
 import type { VxeUIExport } from 'vxe-table';
 
+import { getColumnValueByPath, setColumnValueByPath } from '@admin-core/table-core';
 import { h } from 'vue';
-
-function getByPath(data: Record<string, any>, field: string) {
-  if (!field) return undefined;
-  return field.split('.').reduce((value: any, key) => value?.[key], data);
-}
 
 export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
   vxeUI.renderer.add('CellTag', {
     renderTableDefault({ options, props }, { column, row }) {
-      const value = getByPath(row, column.field);
+      const value = getColumnValueByPath(row, column.field);
       const tagOptions = options ?? [
         { color: '#16a34a', label: 'Enabled', value: 1 },
         { color: '#dc2626', label: 'Disabled', value: 0 },
@@ -38,9 +34,10 @@ export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
   vxeUI.renderer.add('CellSwitch', {
     renderTableDefault({ attrs, props }, { column, row }) {
       const loadingKey = `__loading_${column.field}`;
+      const field = String(column.field ?? '');
       const checkedValue = props?.checkedValue ?? 1;
       const uncheckedValue = props?.uncheckedValue ?? 0;
-      const checked = row[column.field] === checkedValue;
+      const checked = getColumnValueByPath(row, field) === checkedValue;
 
       const onChange = async (event: Event) => {
         const target = event.target as HTMLInputElement;
@@ -49,7 +46,7 @@ export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
         try {
           const result = await attrs?.beforeChange?.(nextValue, row);
           if (result !== false) {
-            row[column.field] = nextValue;
+            setColumnValueByPath(row, field, nextValue);
           }
         } finally {
           row[loadingKey] = false;

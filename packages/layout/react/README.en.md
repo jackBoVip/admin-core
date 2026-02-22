@@ -75,6 +75,20 @@ function App() {
 - Layout styles depend on `@admin-core/preferences/styles` global variables (e.g. `--admin-duration-*`, `--admin-easing-*`, `--admin-z-index-*`).
 - Page transitions use the `fade-*` animation classes from `@admin-core/preferences`.
 
+## Combine with Form/Table (Avoid Duplicate Styles)
+
+When using `@admin-core/form-react`, `@admin-core/layout-react`, and `@admin-core/table-react` together, import styles once at app entry in this order:
+
+```css
+@import "@admin-core/preferences/styles/antd";
+@import "@admin-core/layout-react/style.css";
+@import "@admin-core/form-react/style.css";
+@import "@admin-core/table-react/style.css";
+```
+
+- `@admin-core/layout-react/style.css` already includes `tailwindcss`; do not import `@import "tailwindcss"` again in app CSS.
+- `@admin-core/table-react/style.css` already includes `antd/dist/reset.css`; do not import Ant Design reset twice.
+
 ## Props
 
 | Prop | Type | Default | Description |

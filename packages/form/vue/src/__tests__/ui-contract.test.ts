@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createFormApi } from '@admin-core/form-core';
+import { createFormApi, setLocale } from '@admin-core/form-core';
 import { mount } from '@vue/test-utils';
 import { defineComponent, h, markRaw } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +15,7 @@ async function flushTasks() {
 
 describe('vue ui contract', () => {
   beforeEach(() => {
+    setLocale('zh-CN');
     setupAdminFormVue({
       library: 'native-test',
       libraries: {
@@ -592,6 +593,26 @@ describe('vue ui contract', () => {
       .findAll('button')
       .find((button) => button.classes().includes('admin-form__button--primary'));
     expect(primaryButton?.text()).toBe('查询');
+  });
+
+  it('AdminSearchForm should update default submit text after locale switched at runtime', async () => {
+    const schema = [{ fieldName: 'name', component: 'input' as const }];
+    const wrapper = mount(AdminSearchForm as any, {
+      props: {
+        schema,
+      },
+    });
+    await flushTasks();
+
+    const findPrimaryButton = () =>
+      wrapper
+        .findAll('button')
+        .find((button) => button.classes().includes('admin-form__button--primary'));
+    expect(findPrimaryButton()?.text()).toBe('查询');
+
+    setLocale('en-US');
+    await flushTasks();
+    expect(findPrimaryButton()?.text()).toBe('Search');
   });
 
   it('AdminSearchForm should not auto-collapse after expand when values are controlled', async () => {

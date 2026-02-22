@@ -1,4 +1,5 @@
 @import 'antd/dist/reset.css';
+@import '@admin-core/preferences/styles/antd';
 @import '@admin-core/table-core/styles/table.css';
 
 .admin-table .ant-table-wrapper {
@@ -6,9 +7,707 @@
 }
 
 .admin-table .ant-table {
-  border-radius: 8px;
+  border-radius: var(--admin-table-radius, var(--radius, 8px));
 }
 
-.admin-table .admin-table__row--stripe > td {
-  background: color-mix(in srgb, var(--muted, #f1f5f9) 55%, white);
+.admin-table.admin-table--maximized {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-table.admin-table--maximized .admin-table__search,
+.admin-table.admin-table--maximized .admin-table__toolbar {
+  flex-shrink: 0;
+}
+
+.admin-table.admin-table--maximized .ant-table-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-table {
+  --admin-table-ant-primary: var(
+    --admin-table-selection-color,
+    var(--primary, #1677ff)
+  );
+  --admin-table-ant-primary-active: var(
+    --admin-table-selection-color-active,
+    var(--primary-600, var(--admin-table-ant-primary))
+  );
+  --admin-table-ant-primary-hover: var(
+    --admin-table-selection-color-hover,
+    var(--primary-400, var(--admin-table-ant-primary))
+  );
+  --admin-table-ant-border: var(
+    --admin-table-selection-control-border,
+    var(--border, #d9d9d9)
+  );
+  --admin-table-ant-text: var(--foreground, #0f172a);
+  --admin-table-ant-text-muted: var(--muted-foreground, #64748b);
+  --admin-table-stripe-bg: rgba(15, 23, 42, 0.06);
+  --admin-table-stripe-bg-hover: var(--admin-table-row-hover-bg);
+  --admin-table-light-bg: #ffffff;
+  --admin-table-light-border: #e2e8f0;
+  --admin-table-light-text: #0f172a;
+  --admin-table-light-muted: #64748b;
+  /* Bridge antd runtime styles to app theme inside table scope */
+  --ant-color-primary: var(--admin-table-ant-primary);
+  --ant-color-primary-hover: var(--admin-table-ant-primary-hover);
+  --ant-color-primary-active: var(--admin-table-ant-primary-active);
+  --ant-primary-color: var(--admin-table-ant-primary);
+  --ant-primary-color-hover: var(--admin-table-ant-primary-hover);
+  --ant-primary-color-active: var(--admin-table-ant-primary-active);
+  /*
+   * Keep table in app-controlled light scheme by default.
+   * This prevents browser-level dark auto-adjust from mutating table colors.
+   */
+  color-scheme: only light;
+  forced-color-adjust: none;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table {
+  color-scheme: dark;
+  forced-color-adjust: auto;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table {
+  background-color: var(--admin-table-light-bg) !important;
+  color: var(--admin-table-light-text) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-container {
+  border-color: var(--admin-table-light-border) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-thead > tr > th {
+  background-color: var(--admin-table-light-bg) !important;
+  border-color: var(--admin-table-light-border) !important;
+  color: var(--admin-table-light-text) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr > td {
+  background-color: var(--admin-table-light-bg) !important;
+  border-color: var(--admin-table-light-border) !important;
+  color: var(--admin-table-light-text) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.ant-table-row:hover > td {
+  background-color: var(--admin-table-row-hover-bg) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-column-sorter,
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-filter-trigger {
+  color: var(--admin-table-light-muted) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-checkbox:not(.ant-checkbox-checked):not(.ant-checkbox-indeterminate) .ant-checkbox-inner {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Fallback for environments where antd checkbox skin is not injected */
+.admin-table .ant-table-selection-column input[type='checkbox'],
+.admin-table .ant-table-selection-column input[type='radio'] {
+  accent-color: var(--admin-table-selection-color, #1677ff);
+}
+
+@supports (background-color: color-mix(in oklch, black 10%, white)) {
+  .admin-table {
+    --admin-table-stripe-bg: color-mix(
+      in oklch,
+      var(--foreground, #0f172a) 8%,
+      var(--background, #ffffff)
+    );
+    --admin-table-stripe-bg-hover: var(--admin-table-row-hover-bg);
+  }
+}
+
+.admin-table .ant-pagination .ant-pagination-item {
+  border-color: var(--admin-table-ant-border);
+}
+
+.admin-table .ant-pagination .ant-pagination-item a {
+  color: var(--admin-table-ant-text);
+}
+
+.admin-table .ant-pagination .ant-pagination-item-active {
+  border-color: var(--admin-table-ant-primary);
+}
+
+.admin-table .ant-pagination .ant-pagination-item-active a {
+  color: var(--admin-table-ant-primary);
+}
+
+.admin-table .ant-pagination .ant-pagination-item-active:hover {
+  border-color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-pagination .ant-pagination-item-active:hover a {
+  color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-pagination .ant-pagination-item:hover {
+  border-color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-pagination .ant-pagination-item:hover a {
+  color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
+  border-color: var(--admin-table-ant-primary-hover);
+  color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-btn-primary {
+  background-color: var(--admin-table-ant-primary);
+  border-color: var(--admin-table-ant-primary);
+  color: #fff;
+}
+
+.admin-table .ant-btn-primary:hover:not(:disabled) {
+  background-color: var(--admin-table-ant-primary-hover);
+  border-color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-btn-primary:active:not(:disabled) {
+  background-color: var(--admin-table-ant-primary-active);
+  border-color: var(--admin-table-ant-primary-active);
+}
+
+/* antd checkbox (v6) */
+.admin-table .ant-checkbox:not(.ant-checkbox-checked):not(.ant-checkbox-indeterminate) {
+  background-color: var(--background, #ffffff) !important;
+  border-color: var(--admin-table-ant-border) !important;
+}
+
+.admin-table .ant-checkbox:not(.ant-checkbox-checked):not(.ant-checkbox-indeterminate):hover,
+.admin-table .ant-checkbox-wrapper:hover .ant-checkbox:not(.ant-checkbox-checked):not(.ant-checkbox-indeterminate),
+.admin-table .ant-checkbox:has(.ant-checkbox-input:focus-visible):not(.ant-checkbox-checked):not(.ant-checkbox-indeterminate) {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-checkbox-checked {
+  background-color: var(--admin-table-ant-primary, #1677ff) !important;
+  border-color: var(--admin-table-ant-primary, #1677ff) !important;
+}
+
+.admin-table .ant-checkbox-checked::after {
+  border-color: #ffffff !important;
+}
+
+.admin-table .ant-checkbox-checked:hover:not(.ant-checkbox-disabled),
+.admin-table .ant-checkbox-wrapper:hover .ant-checkbox-checked:not(.ant-checkbox-disabled) {
+  background-color: var(--admin-table-ant-primary-hover, var(--admin-table-ant-primary, #1677ff)) !important;
+  border-color: transparent !important;
+}
+
+.admin-table .ant-checkbox-indeterminate {
+  background-color: var(--background, #ffffff) !important;
+  border-color: var(--admin-table-ant-border) !important;
+}
+
+.admin-table .ant-checkbox-indeterminate::after {
+  background-color: var(--admin-table-ant-primary, #1677ff) !important;
+}
+
+/* antd checkbox (v5 fallback) */
+.admin-table .ant-checkbox-checked .ant-checkbox-inner,
+.admin-table .ant-checkbox-indeterminate .ant-checkbox-inner {
+  background-color: var(--admin-table-ant-primary, #1677ff) !important;
+  border-color: var(--admin-table-ant-primary, #1677ff) !important;
+}
+
+.admin-table .ant-checkbox-checked:hover .ant-checkbox-inner,
+.admin-table .ant-checkbox-indeterminate:hover .ant-checkbox-inner {
+  background-color: var(--admin-table-ant-primary-hover, var(--admin-table-ant-primary, #1677ff)) !important;
+  border-color: var(--admin-table-ant-primary-hover, var(--admin-table-ant-primary, #1677ff)) !important;
+}
+
+.admin-table .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+  background-color: var(--admin-table-ant-primary, #1677ff) !important;
+}
+
+.admin-table .ant-checkbox-checked .ant-checkbox-inner::after,
+.admin-table .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+  border-color: #ffffff !important;
+}
+
+.admin-table .ant-checkbox-wrapper:hover .ant-checkbox-inner,
+.admin-table .ant-checkbox:hover .ant-checkbox-inner,
+.admin-table .ant-checkbox-input:focus-visible + .ant-checkbox-inner {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+/* antd radio (v6) */
+.admin-table .ant-radio {
+  background-color: var(--background, #ffffff) !important;
+  border-color: var(--admin-table-ant-border) !important;
+}
+
+.admin-table .ant-radio:hover:not(.ant-radio-disabled),
+.admin-table .ant-radio-wrapper:hover .ant-radio:not(.ant-radio-disabled),
+.admin-table .ant-radio:has(.ant-radio-input:focus-visible):not(.ant-radio-disabled) {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-radio-checked {
+  background-color: var(--background, #ffffff) !important;
+  border-color: var(--admin-table-ant-primary) !important;
+}
+
+.admin-table .ant-radio-checked::after {
+  background-color: var(--admin-table-ant-primary) !important;
+  opacity: 1 !important;
+  transform: translate(-50%, -50%) !important;
+}
+
+.admin-table .ant-radio-wrapper:hover .ant-radio-checked:not(.ant-radio-disabled),
+.admin-table .ant-radio-checked:hover:not(.ant-radio-disabled) {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-radio-wrapper:hover .ant-radio-checked:not(.ant-radio-disabled)::after,
+.admin-table .ant-radio-checked:hover:not(.ant-radio-disabled)::after {
+  background-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+/* antd radio (v5 fallback) */
+.admin-table .ant-radio .ant-radio-inner {
+  background-color: var(--background, #ffffff) !important;
+  border-color: var(--admin-table-ant-border) !important;
+}
+
+.admin-table .ant-radio-checked .ant-radio-inner {
+  background-color: var(--background, #ffffff) !important;
+  border-color: var(--admin-table-ant-primary) !important;
+}
+
+.admin-table .ant-radio-checked .ant-radio-inner::after {
+  background-color: var(--admin-table-ant-primary) !important;
+}
+
+.admin-table .ant-radio-wrapper:hover .ant-radio-inner,
+.admin-table .ant-radio:hover .ant-radio-inner,
+.admin-table .ant-radio-input:focus-visible + .ant-radio-inner {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-radio-wrapper:hover .ant-radio-checked .ant-radio-inner,
+.admin-table .ant-radio-checked:hover .ant-radio-inner {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-radio-wrapper:hover .ant-radio-checked .ant-radio-inner::after,
+.admin-table .ant-radio-checked:hover .ant-radio-inner::after {
+  background-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-switch.ant-switch-checked {
+  background-color: var(--admin-table-ant-primary);
+}
+
+.admin-table .ant-switch.ant-switch-checked:hover:not(.ant-switch-disabled) {
+  background-color: var(--admin-table-ant-primary-hover);
+}
+
+.admin-table .ant-input:focus,
+.admin-table .ant-input-focused,
+.admin-table .ant-input-affix-wrapper-focused,
+.admin-table .ant-pagination-options-quick-jumper input:focus {
+  border-color: var(--admin-table-ant-primary);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--admin-table-ant-primary) 20%, transparent);
+}
+
+.admin-table .ant-select-focused .ant-select-selector,
+.admin-table .ant-select:hover .ant-select-selector {
+  border-color: var(--admin-table-ant-primary-hover) !important;
+}
+
+.admin-table .ant-select-dropdown {
+  background-color: var(--card, #ffffff) !important;
+  border: 1px solid var(--border, #dcdfe6) !important;
+  border-radius: var(--admin-table-radius-sm, 8px) !important;
+  color: var(--foreground, #0f172a) !important;
+}
+
+.admin-table .ant-select-dropdown .ant-select-item {
+  color: var(--foreground, #0f172a) !important;
+}
+
+.admin-table .ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: var(--primary-50, rgba(59, 130, 246, 0.12)) !important;
+}
+
+.admin-table .ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+.admin-table .ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled):hover {
+  background-color: var(--primary-100, rgba(59, 130, 246, 0.2)) !important;
+  color: var(--primary-700, var(--primary, #1677ff)) !important;
+}
+
+.admin-table .ant-table-filter-trigger.active,
+.admin-table .ant-table-column-sorter-up.active,
+.admin-table .ant-table-column-sorter-down.active {
+  color: var(--admin-table-ant-primary) !important;
+}
+
+.admin-table .ant-table-filter-dropdown {
+  background-color: var(--card, #ffffff) !important;
+  border: 1px solid var(--border, #dcdfe6) !important;
+  border-radius: var(--admin-table-radius-sm, 8px) !important;
+  color: var(--foreground, #0f172a) !important;
+}
+
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu,
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu-submenu {
+  background-color: transparent !important;
+}
+
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item {
+  color: var(--foreground, #0f172a) !important;
+}
+
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item:hover {
+  background-color: var(--primary-50, rgba(59, 130, 246, 0.12)) !important;
+}
+
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item-selected,
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item-selected:hover {
+  background-color: var(--primary-100, rgba(59, 130, 246, 0.2)) !important;
+  color: var(--primary-700, var(--primary, #1677ff)) !important;
+}
+
+.admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item .anticon-check {
+  color: var(--primary, #1677ff) !important;
+}
+
+.admin-table .ant-table-filter-dropdown .ant-table-filter-dropdown-btns {
+  border-top-color: var(--border, #dcdfe6) !important;
+}
+
+.admin-table .admin-table__selection-radio {
+  -webkit-appearance: none;
+  appearance: none;
+  align-items: center;
+  background-color: var(--admin-table-selection-control-bg, var(--background, #ffffff));
+  border: 1px solid
+    var(--admin-table-selection-control-border, var(--admin-table-ant-border));
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 16px;
+  height: 16px;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 16px;
+}
+
+.admin-table .admin-table__selection-radio::after {
+  background-color: var(--admin-table-selection-color, #1677ff);
+  border-radius: 999px;
+  content: '';
+  height: 8px;
+  opacity: 0;
+  transform: scale(0.55);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  width: 8px;
+}
+
+.admin-table .admin-table__selection-radio:hover:not(.is-disabled) {
+  border-color: var(--admin-table-selection-color-hover, #3b82f6);
+}
+
+.admin-table .admin-table__selection-radio:focus-visible {
+  border-color: var(--admin-table-selection-color-hover, #3b82f6);
+  box-shadow: 0 0 0 2px
+    color-mix(
+      in oklch,
+      var(--admin-table-selection-color, #1677ff) 24%,
+      transparent
+    );
+  outline: none;
+}
+
+.admin-table .admin-table__selection-radio.is-checked {
+  border-color: var(--admin-table-selection-color, #1677ff);
+}
+
+.admin-table .admin-table__selection-radio.is-checked::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.admin-table .admin-table__selection-radio.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.admin-table .ant-table-thead > tr > th.ant-table-column-sort {
+  background-color: var(
+    --admin-table-tool-active-bg,
+    rgba(59, 130, 246, 0.12)
+  ) !important;
+}
+
+.admin-table .ant-table-tbody > tr.admin-table__row--stripe > td {
+  background-color: var(--admin-table-stripe-bg) !important;
+}
+
+.admin-table .ant-table-tbody > tr.admin-table__row--stripe:hover > td {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+.admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
+  background-color: var(--admin-table-stripe-bg) !important;
+}
+
+.admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+.admin-table .ant-table-tbody > tr.admin-table__row--strategy:not(.admin-table__row--selected):not(.ant-table-row-selected) > td {
+  background-color: var(--admin-table-row-strategy-bg, transparent) !important;
+  color: var(--admin-table-row-strategy-color, inherit) !important;
+  font-weight: var(--admin-table-row-strategy-font-weight, inherit);
+}
+
+.admin-table .ant-table-tbody > tr.admin-table__row--strategy:not(.admin-table__row--selected):not(.ant-table-row-selected):hover > td,
+.admin-table .ant-table-tbody > tr.admin-table__row--strategy:not(.admin-table__row--selected):not(.ant-table-row-selected):hover > .ant-table-cell-row-hover {
+  background-color: var(
+    --admin-table-row-strategy-hover-bg,
+    var(--admin-table-row-strategy-bg, transparent)
+  ) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--strategy:not(.admin-table__row--selected):not(.ant-table-row-selected) > td {
+  background-color: var(--admin-table-row-strategy-bg, transparent) !important;
+  color: var(--admin-table-row-strategy-color, inherit) !important;
+  font-weight: var(--admin-table-row-strategy-font-weight, inherit);
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--strategy:not(.admin-table__row--selected):not(.ant-table-row-selected):hover > td,
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--strategy:not(.admin-table__row--selected):not(.ant-table-row-selected):hover > .ant-table-cell-row-hover {
+  background-color: var(
+    --admin-table-row-strategy-hover-bg,
+    var(--admin-table-row-strategy-bg, transparent)
+  ) !important;
+}
+
+.admin-table .ant-table-tbody > tr.admin-table__row--selected > td,
+.admin-table .ant-table-tbody > tr.ant-table-row-selected > td {
+  background-color: var(--admin-table-selection-row-bg, rgba(59, 130, 246, 0.14)) !important;
+}
+
+.admin-table .ant-table-tbody > tr.admin-table__row--selected:hover > td,
+.admin-table .ant-table-tbody > tr.ant-table-row-selected:hover > td {
+  background-color: var(--admin-table-selection-row-hover-bg, rgba(59, 130, 246, 0.2)) !important;
+}
+
+.admin-table .ant-table-tbody > tr:not(.ant-table-row-selected):hover > .ant-table-cell-row-hover {
+  background-color: var(--admin-table-row-hover-bg, #eff6ff) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--selected > td,
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.ant-table-row-selected > td {
+  background-color: var(--admin-table-selection-row-bg, rgba(59, 130, 246, 0.14)) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--selected:hover > td,
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.ant-table-row-selected:hover > td,
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.ant-table-row-selected > .ant-table-cell-row-hover {
+  background-color: var(--admin-table-selection-row-hover-bg, rgba(59, 130, 246, 0.2)) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table {
+  background-color: var(--background, #0f172a);
+  color: var(--foreground, #e2e8f0);
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-container {
+  border-color: var(--border, #334155);
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-thead > tr > th {
+  background-color: var(--muted, #1e293b) !important;
+  border-color: var(--border, #334155) !important;
+  color: var(--foreground, #e2e8f0) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-tbody > tr > td {
+  background-color: var(--background, #0f172a);
+  border-color: var(--border, #334155);
+  color: var(--foreground, #e2e8f0);
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-tbody > tr.ant-table-row:hover > td {
+  background-color: var(--admin-table-row-hover-bg, #172554) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-tbody > tr.ant-table-placeholder > td {
+  background-color: var(--background, #0f172a);
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-column-sorter,
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-trigger {
+  color: var(--muted-foreground, #94a3b8);
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-trigger.active,
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-column-sorter-up.active,
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-column-sorter-down.active {
+  color: var(--primary, #60a5fa) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-select-dropdown {
+  background-color: var(--popover, #0f172a) !important;
+  border-color: var(--border, #334155) !important;
+  color: var(--foreground, #e2e8f0) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-select-dropdown .ant-select-item {
+  color: var(--foreground, #e2e8f0) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background-color: var(--primary-900, rgba(59, 130, 246, 0.22)) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled):hover {
+  background-color: var(--primary-800, rgba(59, 130, 246, 0.34)) !important;
+  color: var(--primary-100, #dbeafe) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-dropdown {
+  background-color: var(--popover, #0f172a) !important;
+  border-color: var(--border, #334155) !important;
+  color: var(--foreground, #e2e8f0) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item {
+  color: var(--foreground, #e2e8f0) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item:hover {
+  background-color: var(--primary-900, rgba(59, 130, 246, 0.22)) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item-selected,
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-filter-dropdown .ant-dropdown-menu-item-selected:hover {
+  background-color: var(--primary-800, rgba(59, 130, 246, 0.34)) !important;
+  color: var(--primary-100, #dbeafe) !important;
 }

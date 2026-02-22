@@ -1,13 +1,292 @@
+@import './vxe-iconfont.css';
+
 .admin-table {
+  --admin-table-radius: var(--radius, 8px);
+  --admin-table-radius-sm: max(0px, calc(var(--admin-table-radius) - 2px));
+  --admin-table-radius-lg: calc(var(--admin-table-radius) + 4px);
+  --admin-table-font-size: calc(var(--font-size-base, 16px) * 0.875);
+  --admin-table-font-size-sm: calc(var(--admin-table-font-size) - 1px);
+  --admin-table-font-size-xs: calc(var(--admin-table-font-size) - 3px);
+  --admin-table-font-size-lg: calc(var(--admin-table-font-size) + 2px);
+  --admin-table-selection-color: var(--primary, #1677ff);
+  --admin-table-selection-color-hover: var(
+    --primary-400,
+    var(--admin-table-selection-color)
+  );
+  --admin-table-selection-color-active: var(
+    --primary-600,
+    var(--admin-table-selection-color)
+  );
+  --admin-table-selection-control-border: var(--border, #dcdfe6);
+  --admin-table-selection-control-bg: var(--background, #ffffff);
+  --admin-table-row-hover-bg: var(--primary-50, #eff6ff);
+  --admin-table-selection-row-bg: var(--primary-100, #dbeafe);
+  --admin-table-selection-row-hover-bg: var(--primary-200, #bfdbfe);
+  --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
+  --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
+  --admin-table-tool-active-bg: rgba(64, 158, 255, 0.08);
+  --admin-table-tool-active-color: var(--primary-700, var(--primary, #1677ff));
+  --admin-table-tool-border: var(--border, #dcdfe6);
+  --admin-table-tool-focus-color: var(--primary, #1677ff);
+  --admin-table-tool-hover-color: var(--primary-600, var(--primary, #1677ff));
+  --admin-table-tool-primary-active-bg: #0a46a1;
+  --admin-table-tool-primary-bg: var(--primary, #1677ff);
+  --admin-table-tool-primary-hover-bg: #0f5fd6;
+  --admin-table-tool-primary-text: #ffffff;
+  --admin-table-tool-success-active-bg: #166534;
+  --admin-table-tool-success-bg: var(--success, #16a34a);
+  --admin-table-tool-success-hover-bg: #15803d;
+  --admin-table-tool-success-text: #ffffff;
+  --admin-table-tool-success-static-active-bg: #166534;
+  --admin-table-tool-success-static-bg: #16a34a;
+  --admin-table-tool-success-static-hover-bg: #15803d;
+  --admin-table-tool-success-static-text: #ffffff;
+  --admin-table-tool-warning-active-bg: #b45309;
+  --admin-table-tool-warning-bg: var(--warning, #f59e0b);
+  --admin-table-tool-warning-hover-bg: #d97706;
+  --admin-table-tool-warning-text: #ffffff;
+  --admin-table-tool-warning-static-active-bg: #b45309;
+  --admin-table-tool-warning-static-bg: #f59e0b;
+  --admin-table-tool-warning-static-hover-bg: #d97706;
+  --admin-table-tool-warning-static-text: #ffffff;
+  --admin-table-tool-danger-active-bg: #b91c1c;
+  --admin-table-tool-danger-bg: var(--destructive, #ef4444);
+  --admin-table-tool-danger-hover-bg: #dc2626;
+  --admin-table-tool-danger-text: #ffffff;
+  --admin-table-tool-danger-static-active-bg: #b91c1c;
+  --admin-table-tool-danger-static-bg: #ef4444;
+  --admin-table-tool-danger-static-hover-bg: #dc2626;
+  --admin-table-tool-danger-static-text: #ffffff;
+  --admin-table-tool-info-active-bg: #0369a1;
+  --admin-table-tool-info-bg: var(--info, #0ea5e9);
+  --admin-table-tool-info-hover-bg: #0284c7;
+  --admin-table-tool-info-text: #ffffff;
+  --admin-table-tool-info-static-active-bg: #0369a1;
+  --admin-table-tool-info-static-bg: #0ea5e9;
+  --admin-table-tool-info-static-hover-bg: #0284c7;
+  --admin-table-tool-info-static-text: #ffffff;
+  --admin-table-tool-text: var(--muted-foreground, #606266);
+  font-size: var(--admin-table-font-size);
   display: block;
   width: 100%;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table {
+  --admin-table-row-hover-bg: var(--primary-900, #1e3a8a);
+  --admin-table-selection-row-bg: var(--primary-800, #1e40af);
+  --admin-table-selection-row-hover-bg: var(--primary-700, #1d4ed8);
+  --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
+  --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
+  --admin-table-selection-control-bg: var(--background, #0f172a);
+}
+
+@supports (background-color: color-mix(in oklch, black 20%, white)) {
+  .admin-table {
+    --admin-table-tool-active-bg: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 8%,
+      var(--background, #ffffff)
+    );
+    --admin-table-tool-active-color: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 76%,
+      #000000
+    );
+    --admin-table-tool-hover-color: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 84%,
+      #000000
+    );
+    --admin-table-tool-primary-active-bg: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 74%,
+      #000000
+    );
+    --admin-table-tool-primary-hover-bg: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 82%,
+      #000000
+    );
+    --admin-table-tool-success-active-bg: color-mix(
+      in oklch,
+      var(--success, #16a34a) 74%,
+      #000000
+    );
+    --admin-table-tool-success-hover-bg: color-mix(
+      in oklch,
+      var(--success, #16a34a) 82%,
+      #000000
+    );
+    --admin-table-tool-warning-active-bg: color-mix(
+      in oklch,
+      var(--warning, #f59e0b) 74%,
+      #000000
+    );
+    --admin-table-tool-warning-hover-bg: color-mix(
+      in oklch,
+      var(--warning, #f59e0b) 82%,
+      #000000
+    );
+    --admin-table-tool-danger-active-bg: color-mix(
+      in oklch,
+      var(--destructive, #ef4444) 74%,
+      #000000
+    );
+    --admin-table-tool-danger-hover-bg: color-mix(
+      in oklch,
+      var(--destructive, #ef4444) 82%,
+      #000000
+    );
+    --admin-table-tool-info-active-bg: color-mix(
+      in oklch,
+      var(--info, #0ea5e9) 74%,
+      #000000
+    );
+    --admin-table-tool-info-hover-bg: color-mix(
+      in oklch,
+      var(--info, #0ea5e9) 82%,
+      #000000
+    );
+  }
+
+  :is(
+      html.dark,
+      html[data-theme='dark'],
+      body.dark,
+      body[data-theme='dark']
+    ) .admin-table {
+    --admin-table-row-hover-bg: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 18%,
+      var(--background, #0f172a)
+    );
+    --admin-table-selection-row-bg: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 28%,
+      var(--background, #0f172a)
+    );
+    --admin-table-selection-row-hover-bg: color-mix(
+      in oklch,
+      var(--primary, #1677ff) 38%,
+      var(--background, #0f172a)
+    );
+    --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
+    --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
+  }
+}
+
+.admin-table .admin-table-vxe {
+  --vxe-ui-font-primary-color: var(--admin-table-selection-color);
+  --vxe-ui-font-primary-lighten-color: var(--admin-table-selection-color-hover);
+  --vxe-ui-font-primary-darken-color: var(--admin-table-selection-color-active);
+  --vxe-ui-input-border-color: var(--admin-table-selection-control-border);
+  --vxe-ui-checkbox-icon-background-color: var(--admin-table-selection-control-bg);
+  --vxe-ui-checkbox-checked-icon-border-color: #fff;
+  --vxe-ui-checkbox-indeterminate-icon-background-color: #fff;
+  --vxe-ui-radio-icon-background-color: var(--admin-table-selection-control-bg);
+  --vxe-ui-radio-checked-icon-background-color: var(
+    --admin-table-selection-control-bg
+  );
+  --vxe-ui-radio-indeterminate-icon-background-color: var(
+    --admin-table-selection-control-bg
+  );
+  --vxe-ui-table-row-hover-background-color: var(--admin-table-row-hover-bg);
+  --vxe-ui-table-row-hover-striped-background-color: var(--admin-table-row-hover-bg);
+  --vxe-ui-table-row-checkbox-checked-background-color: var(
+    --admin-table-selection-row-bg
+  );
+  --vxe-ui-table-row-hover-checkbox-checked-background-color: var(
+    --admin-table-selection-row-hover-bg
+  );
+  --vxe-ui-table-row-radio-checked-background-color: var(
+    --admin-table-selection-row-bg
+  );
+  --vxe-ui-table-row-hover-radio-checked-background-color: var(
+    --admin-table-selection-row-hover-bg
+  );
+}
+
+.admin-table .admin-table-vxe .vxe-body--row.row--checked > .vxe-body--column,
+.admin-table .admin-table-vxe .vxe-body--row.row--radio > .vxe-body--column {
+  background-color: var(--admin-table-selection-row-bg) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-body--row.row--hover:not(.row--checked):not(.row--radio) > .vxe-body--column {
+  background-color: var(--admin-table-row-hover-bg) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-body--row:hover:not(.row--checked):not(.row--radio) > .vxe-body--column {
+  background-color: var(--admin-table-row-hover-bg) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-body--row.row--hover.row--checked > .vxe-body--column,
+.admin-table .admin-table-vxe .vxe-body--row.row--hover.row--radio > .vxe-body--column {
+  background-color: var(--admin-table-selection-row-hover-bg) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-body--row.row--checked:hover > .vxe-body--column,
+.admin-table .admin-table-vxe .vxe-body--row.row--radio:hover > .vxe-body--column {
+  background-color: var(--admin-table-selection-row-hover-bg) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-body--row.admin-table__row--strategy:not(.row--checked):not(.row--radio) > .vxe-body--column {
+  background-color: var(--admin-table-row-strategy-bg, transparent) !important;
+  color: var(--admin-table-row-strategy-color, inherit);
+  font-weight: var(--admin-table-row-strategy-font-weight, inherit);
+}
+
+.admin-table .admin-table-vxe .vxe-body--row.admin-table__row--strategy:not(.row--checked):not(.row--radio).row--hover > .vxe-body--column,
+.admin-table .admin-table-vxe .vxe-body--row.admin-table__row--strategy:not(.row--checked):not(.row--radio):hover > .vxe-body--column {
+  background-color: var(
+    --admin-table-row-strategy-hover-bg,
+    var(--admin-table-row-strategy-bg, transparent)
+  ) !important;
+}
+
+.admin-table__strategy-cell {
+  align-items: center;
+  display: inline-flex;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 20px;
+}
+
+.admin-table__strategy-clickable {
+  cursor: pointer;
+}
+
+.admin-table .admin-table-vxe .vxe-body--column.admin-table__strategy-clickable,
+.admin-table .admin-table-vxe .vxe-body--row.admin-table__strategy-clickable > .vxe-body--column,
+.admin-table .ant-table-tbody > tr > td.admin-table__strategy-clickable,
+.admin-table .ant-table-tbody > tr.admin-table__strategy-clickable > td {
+  cursor: pointer;
+}
+
+.admin-table .admin-table-vxe .vxe-checkbox .vxe-checkbox--icon,
+.admin-table .admin-table-vxe .vxe-radio .vxe-radio--icon {
+  color: var(--admin-table-selection-control-border) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-checkbox.is--checked .vxe-checkbox--icon,
+.admin-table .admin-table-vxe .vxe-checkbox.is--indeterminate .vxe-checkbox--icon,
+.admin-table .admin-table-vxe .vxe-radio.is--checked .vxe-radio--icon {
+  color: var(--admin-table-selection-color) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-checkbox:not(.is--disabled):hover .vxe-checkbox--icon,
+.admin-table .admin-table-vxe .vxe-radio:not(.is--disabled):hover .vxe-radio--icon {
+  color: var(--admin-table-selection-color-hover) !important;
 }
 
 .admin-table__toolbar {
   align-items: center;
   display: flex;
   gap: 8px;
-  justify-content: space-between;
   margin-bottom: 8px;
 }
 
@@ -15,16 +294,1188 @@
   align-items: center;
   color: var(--foreground, #0f172a);
   display: inline-flex;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--admin-table-font-size-lg);
+  font-weight: 700;
   gap: 6px;
+  padding-inline-start: 12px;
+  position: relative;
+}
+
+.admin-table__toolbar-title::before {
+  background-color: var(--primary, #1677ff);
+  border-radius: 999px;
+  content: '';
+  height: 18px;
+  inset-inline-start: 0;
+  position: absolute;
+  width: 3px;
+}
+
+.admin-table__toolbar-help {
+  align-items: center;
+  background-color: var(--background, #ffffff);
+  border: 1px solid var(--admin-table-tool-border);
+  border-radius: 999px;
+  color: var(--muted-foreground, #64748b);
+  cursor: help;
+  display: inline-flex;
+  font-size: var(--admin-table-font-size-xs);
+  font-weight: 700;
+  height: 16px;
+  justify-content: center;
+  line-height: 1;
+  user-select: none;
+  width: 16px;
+}
+
+@supports (border-color: color-mix(in oklch, black 20%, white)) {
+  .admin-table__toolbar-help {
+    border-color: color-mix(
+      in oklch,
+      var(--muted-foreground, #64748b) 55%,
+      var(--background, #ffffff)
+    );
+  }
 }
 
 .admin-table__toolbar-actions,
 .admin-table__toolbar-tools {
   align-items: center;
   display: inline-flex;
+  gap: 10px;
+  line-height: 1;
+}
+
+.admin-table__toolbar-actions {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.admin-table__toolbar-center {
+  align-items: center;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding-inline: 12px;
+}
+
+.admin-table__toolbar-center.is-left {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.admin-table__toolbar-center.is-center {
+  justify-content: center;
+  text-align: center;
+}
+
+.admin-table__toolbar-center.is-right {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.admin-table__toolbar-center-slot,
+.admin-table__toolbar-hint-viewport {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-table__toolbar-hint-text {
+  color: var(--muted-foreground, #64748b);
+  font-size: var(--admin-table-font-size-sm);
+  line-height: 1.35;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-table__toolbar-center.is-wrap .admin-table__toolbar-hint-text {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.admin-table__toolbar-center.is-scroll .admin-table__toolbar-hint-text {
+  display: inline-block;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.admin-table__toolbar-center.is-scroll .admin-table__toolbar-hint-text.is-running {
+  animation: admin-table-toolbar-hint-scroll
+    var(--admin-table-toolbar-hint-duration, 14s) linear infinite;
+}
+
+@keyframes admin-table-toolbar-hint-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(calc(-100% - 28px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-table__toolbar-center.is-scroll .admin-table__toolbar-hint-text.is-running {
+    animation: none;
+  }
+}
+
+.admin-table__toolbar-tools {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.admin-table__toolbar-actions button,
+.admin-table__toolbar-tools button {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+}
+
+.admin-table__toolbar-slot-content {
+  align-items: center;
+  display: inline-flex;
+  gap: 10px;
+}
+
+.admin-table__operation-cell {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.admin-table__operation-cell.is-left {
+  justify-content: flex-start;
+}
+
+.admin-table__operation-cell.is-center {
+  justify-content: center;
+}
+
+.admin-table__operation-cell.is-right {
+  justify-content: flex-end;
+}
+
+.admin-table__toolbar-action-btn,
+.admin-table__toolbar-slot-btn,
+.admin-table__toolbar-slot-content > a:not([class]),
+.admin-table__toolbar-slot-content > button:not([class]) {
+  align-items: center;
+  background: var(--background, #ffffff);
+  border: 1px solid var(--admin-table-tool-border);
+  box-sizing: border-box;
+  border-radius: var(--admin-table-radius);
+  color: var(--admin-table-tool-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-table-font-size-sm);
+  font-weight: 500;
+  height: 30px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0 10px;
+  text-decoration: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-table__toolbar-action-btn.has-icon,
+.admin-table__toolbar-slot-btn.has-icon {
+  gap: 6px;
+}
+
+.admin-table__toolbar-action-icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  font-size: var(--admin-table-font-size);
+  height: 14px;
+  line-height: 14px;
+  width: 14px;
+}
+
+.admin-table__toolbar-action-icon[class*='vxe-table-icon-'] {
+  font-size: var(--admin-table-font-size) !important;
+  line-height: 14px;
+}
+
+.admin-table__toolbar-action-text {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-table__toolbar-action-btn:hover,
+.admin-table__toolbar-slot-btn:hover,
+.admin-table__toolbar-slot-content > a:not([class]):hover,
+.admin-table__toolbar-slot-content > button:not([class]):hover {
+  border-color: var(--admin-table-tool-hover-color);
+  color: var(--admin-table-tool-hover-color);
+}
+
+.admin-table__toolbar-action-btn:focus-visible,
+.admin-table__toolbar-slot-btn:focus-visible,
+.admin-table__toolbar-slot-content > a:not([class]):focus-visible,
+.admin-table__toolbar-slot-content > button:not([class]):focus-visible {
+  border-color: var(--admin-table-tool-focus-color);
+  outline: none;
+}
+
+.admin-table__toolbar-action-btn:active,
+.admin-table__toolbar-slot-btn:active,
+.admin-table__toolbar-slot-content > a:not([class]):active,
+.admin-table__toolbar-slot-content > button:not([class]):active {
+  border-color: var(--admin-table-tool-active-color);
+  color: var(--admin-table-tool-active-color);
+}
+
+.admin-table__toolbar-action-btn.is-clear,
+.admin-table__toolbar-slot-btn.is-clear,
+.admin-table__toolbar-slot-content > a.is-clear,
+.admin-table__toolbar-slot-content > button.is-clear {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--admin-table-tool-text);
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.admin-table__toolbar-action-btn.is-clear:hover,
+.admin-table__toolbar-slot-btn.is-clear:hover,
+.admin-table__toolbar-slot-content > a.is-clear:hover,
+.admin-table__toolbar-slot-content > button.is-clear:hover {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--admin-table-tool-hover-color);
+}
+
+.admin-table__toolbar-action-btn.is-clear:focus-visible,
+.admin-table__toolbar-slot-btn.is-clear:focus-visible,
+.admin-table__toolbar-slot-content > a.is-clear:focus-visible,
+.admin-table__toolbar-slot-content > button.is-clear:focus-visible {
+  border-color: transparent;
+  color: var(--admin-table-tool-focus-color);
+}
+
+.admin-table__toolbar-action-btn.is-clear:active,
+.admin-table__toolbar-slot-btn.is-clear:active,
+.admin-table__toolbar-slot-content > a.is-clear:active,
+.admin-table__toolbar-slot-content > button.is-clear:active {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--admin-table-tool-active-color);
+}
+
+.admin-table__toolbar-action-btn.is-primary-text,
+.admin-table__toolbar-slot-btn.is-primary-text,
+.admin-table__toolbar-slot-content > a.is-primary-text,
+.admin-table__toolbar-slot-content > button.is-primary-text {
+  --admin-table-tool-text-btn-active-bg: rgba(22, 119, 255, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-primary-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(22, 119, 255, 0.12);
+}
+
+.admin-table__toolbar-action-btn.is-success-text,
+.admin-table__toolbar-slot-btn.is-success-text,
+.admin-table__toolbar-slot-content > a.is-success-text,
+.admin-table__toolbar-slot-content > button.is-success-text {
+  --admin-table-tool-text-btn-active-bg: rgba(22, 163, 74, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-success-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(22, 163, 74, 0.12);
+}
+
+.admin-table__toolbar-action-btn.is-warning-text,
+.admin-table__toolbar-slot-btn.is-warning-text,
+.admin-table__toolbar-slot-content > a.is-warning-text,
+.admin-table__toolbar-slot-content > button.is-warning-text {
+  --admin-table-tool-text-btn-active-bg: rgba(245, 158, 11, 0.24);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-warning-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(245, 158, 11, 0.14);
+}
+
+.admin-table__toolbar-action-btn.is-danger-text,
+.admin-table__toolbar-slot-btn.is-danger-text,
+.admin-table__toolbar-slot-content > a.is-danger-text,
+.admin-table__toolbar-slot-content > button.is-danger-text,
+.admin-table__toolbar-action-btn.is-error-text,
+.admin-table__toolbar-slot-btn.is-error-text,
+.admin-table__toolbar-slot-content > a.is-error-text,
+.admin-table__toolbar-slot-content > button.is-error-text {
+  --admin-table-tool-text-btn-active-bg: rgba(239, 68, 68, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-danger-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(239, 68, 68, 0.12);
+}
+
+.admin-table__toolbar-action-btn.is-info-text,
+.admin-table__toolbar-slot-btn.is-info-text,
+.admin-table__toolbar-slot-content > a.is-info-text,
+.admin-table__toolbar-slot-content > button.is-info-text {
+  --admin-table-tool-text-btn-active-bg: rgba(14, 165, 233, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-info-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(14, 165, 233, 0.12);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text),
+.admin-table__toolbar-slot-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text),
+.admin-table__toolbar-slot-content > a:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text),
+.admin-table__toolbar-slot-content > button:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text) {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--admin-table-tool-text-btn-color);
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):hover,
+.admin-table__toolbar-slot-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):hover,
+.admin-table__toolbar-slot-content > a:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):hover,
+.admin-table__toolbar-slot-content > button:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):hover {
+  background-color: var(--admin-table-tool-text-btn-hover-bg);
+  border-color: transparent;
+  color: var(--admin-table-tool-text-btn-color);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):focus-visible,
+.admin-table__toolbar-slot-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):focus-visible,
+.admin-table__toolbar-slot-content > a:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):focus-visible,
+.admin-table__toolbar-slot-content > button:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):focus-visible {
+  border-color: transparent;
+  color: var(--admin-table-tool-text-btn-color);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):active,
+.admin-table__toolbar-slot-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):active,
+.admin-table__toolbar-slot-content > a:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):active,
+.admin-table__toolbar-slot-content > button:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text):active {
+  background-color: var(--admin-table-tool-text-btn-active-bg);
+  border-color: transparent;
+  color: var(--admin-table-tool-text-btn-color);
+}
+
+.admin-table__toolbar-action-btn.is-primary,
+.admin-table__toolbar-slot-btn.is-primary,
+.admin-table__toolbar-slot-content > a.is-primary,
+.admin-table__toolbar-slot-content > button.is-primary {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-primary-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-primary-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-primary-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-primary-text);
+}
+
+.admin-table__toolbar-action-btn.is-success,
+.admin-table__toolbar-slot-btn.is-success,
+.admin-table__toolbar-slot-content > a.is-success,
+.admin-table__toolbar-slot-content > button.is-success {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-success-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-success-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-success-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-success-text);
+}
+
+.admin-table__toolbar-action-btn.is-warning,
+.admin-table__toolbar-slot-btn.is-warning,
+.admin-table__toolbar-slot-content > a.is-warning,
+.admin-table__toolbar-slot-content > button.is-warning {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-warning-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-warning-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-warning-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-warning-text);
+}
+
+.admin-table__toolbar-action-btn.is-danger,
+.admin-table__toolbar-slot-btn.is-danger,
+.admin-table__toolbar-slot-content > a.is-danger,
+.admin-table__toolbar-slot-content > button.is-danger,
+.admin-table__toolbar-action-btn.is-error,
+.admin-table__toolbar-slot-btn.is-error,
+.admin-table__toolbar-slot-content > a.is-error,
+.admin-table__toolbar-slot-content > button.is-error {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-danger-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-danger-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-danger-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-danger-text);
+}
+
+.admin-table__toolbar-action-btn.is-info,
+.admin-table__toolbar-slot-btn.is-info,
+.admin-table__toolbar-slot-content > a.is-info,
+.admin-table__toolbar-slot-content > button.is-info {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-info-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-info-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-info-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-info-text);
+}
+
+.admin-table__toolbar-action-btn.is-primary-outline,
+.admin-table__toolbar-slot-btn.is-primary-outline,
+.admin-table__toolbar-slot-content > a.is-primary-outline,
+.admin-table__toolbar-slot-content > button.is-primary-outline {
+  --admin-table-tool-outline-active-bg: rgba(22, 119, 255, 0.2);
+  --admin-table-tool-outline-border: var(--admin-table-tool-primary-bg);
+  --admin-table-tool-outline-hover-bg: rgba(22, 119, 255, 0.12);
+  --admin-table-tool-outline-text: var(--admin-table-tool-primary-bg);
+}
+
+.admin-table__toolbar-action-btn.is-success-outline,
+.admin-table__toolbar-slot-btn.is-success-outline,
+.admin-table__toolbar-slot-content > a.is-success-outline,
+.admin-table__toolbar-slot-content > button.is-success-outline {
+  --admin-table-tool-outline-active-bg: rgba(22, 163, 74, 0.2);
+  --admin-table-tool-outline-border: var(--admin-table-tool-success-bg);
+  --admin-table-tool-outline-hover-bg: rgba(22, 163, 74, 0.12);
+  --admin-table-tool-outline-text: var(--admin-table-tool-success-bg);
+}
+
+.admin-table__toolbar-action-btn.is-warning-outline,
+.admin-table__toolbar-slot-btn.is-warning-outline,
+.admin-table__toolbar-slot-content > a.is-warning-outline,
+.admin-table__toolbar-slot-content > button.is-warning-outline {
+  --admin-table-tool-outline-active-bg: rgba(245, 158, 11, 0.24);
+  --admin-table-tool-outline-border: var(--admin-table-tool-warning-bg);
+  --admin-table-tool-outline-hover-bg: rgba(245, 158, 11, 0.14);
+  --admin-table-tool-outline-text: var(--admin-table-tool-warning-bg);
+}
+
+.admin-table__toolbar-action-btn.is-danger-outline,
+.admin-table__toolbar-slot-btn.is-danger-outline,
+.admin-table__toolbar-slot-content > a.is-danger-outline,
+.admin-table__toolbar-slot-content > button.is-danger-outline,
+.admin-table__toolbar-action-btn.is-error-outline,
+.admin-table__toolbar-slot-btn.is-error-outline,
+.admin-table__toolbar-slot-content > a.is-error-outline,
+.admin-table__toolbar-slot-content > button.is-error-outline {
+  --admin-table-tool-outline-active-bg: rgba(239, 68, 68, 0.2);
+  --admin-table-tool-outline-border: var(--admin-table-tool-danger-bg);
+  --admin-table-tool-outline-hover-bg: rgba(239, 68, 68, 0.12);
+  --admin-table-tool-outline-text: var(--admin-table-tool-danger-bg);
+}
+
+.admin-table__toolbar-action-btn.is-info-outline,
+.admin-table__toolbar-slot-btn.is-info-outline,
+.admin-table__toolbar-slot-content > a.is-info-outline,
+.admin-table__toolbar-slot-content > button.is-info-outline {
+  --admin-table-tool-outline-active-bg: rgba(14, 165, 233, 0.2);
+  --admin-table-tool-outline-border: var(--admin-table-tool-info-bg);
+  --admin-table-tool-outline-hover-bg: rgba(14, 165, 233, 0.12);
+  --admin-table-tool-outline-text: var(--admin-table-tool-info-bg);
+}
+
+@supports (background-color: color-mix(in oklch, black 20%, white)) {
+  .admin-table__toolbar-action-btn.is-primary-outline,
+  .admin-table__toolbar-slot-btn.is-primary-outline,
+  .admin-table__toolbar-slot-content > a.is-primary-outline,
+  .admin-table__toolbar-slot-content > button.is-primary-outline {
+    --admin-table-tool-outline-active-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-primary-bg) 28%,
+      transparent
+    );
+    --admin-table-tool-outline-hover-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-primary-bg) 16%,
+      transparent
+    );
+  }
+
+  .admin-table__toolbar-action-btn.is-success-outline,
+  .admin-table__toolbar-slot-btn.is-success-outline,
+  .admin-table__toolbar-slot-content > a.is-success-outline,
+  .admin-table__toolbar-slot-content > button.is-success-outline {
+    --admin-table-tool-outline-active-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-success-bg) 28%,
+      transparent
+    );
+    --admin-table-tool-outline-hover-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-success-bg) 16%,
+      transparent
+    );
+  }
+
+  .admin-table__toolbar-action-btn.is-warning-outline,
+  .admin-table__toolbar-slot-btn.is-warning-outline,
+  .admin-table__toolbar-slot-content > a.is-warning-outline,
+  .admin-table__toolbar-slot-content > button.is-warning-outline {
+    --admin-table-tool-outline-active-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-warning-bg) 30%,
+      transparent
+    );
+    --admin-table-tool-outline-hover-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-warning-bg) 18%,
+      transparent
+    );
+  }
+
+  .admin-table__toolbar-action-btn.is-danger-outline,
+  .admin-table__toolbar-slot-btn.is-danger-outline,
+  .admin-table__toolbar-slot-content > a.is-danger-outline,
+  .admin-table__toolbar-slot-content > button.is-danger-outline,
+  .admin-table__toolbar-action-btn.is-error-outline,
+  .admin-table__toolbar-slot-btn.is-error-outline,
+  .admin-table__toolbar-slot-content > a.is-error-outline,
+  .admin-table__toolbar-slot-content > button.is-error-outline {
+    --admin-table-tool-outline-active-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-danger-bg) 28%,
+      transparent
+    );
+    --admin-table-tool-outline-hover-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-danger-bg) 16%,
+      transparent
+    );
+  }
+
+  .admin-table__toolbar-action-btn.is-info-outline,
+  .admin-table__toolbar-slot-btn.is-info-outline,
+  .admin-table__toolbar-slot-content > a.is-info-outline,
+  .admin-table__toolbar-slot-content > button.is-info-outline {
+    --admin-table-tool-outline-active-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-info-bg) 28%,
+      transparent
+    );
+    --admin-table-tool-outline-hover-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-info-bg) 16%,
+      transparent
+    );
+  }
+
+  .admin-table__toolbar-action-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text),
+  .admin-table__toolbar-slot-btn:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text),
+  .admin-table__toolbar-slot-content > a:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text),
+  .admin-table__toolbar-slot-content > button:is(.is-primary-text, .is-success-text, .is-warning-text, .is-danger-text, .is-error-text, .is-info-text) {
+    --admin-table-tool-text-btn-active-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-text-btn-color) 28%,
+      transparent
+    );
+    --admin-table-tool-text-btn-hover-bg: color-mix(
+      in oklch,
+      var(--admin-table-tool-text-btn-color) 16%,
+      transparent
+    );
+  }
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-success,
+.admin-table__toolbar-slot-btn.is-static-color.is-success,
+.admin-table__toolbar-slot-content > a.is-static-color.is-success,
+.admin-table__toolbar-slot-content > button.is-static-color.is-success {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-success-static-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-success-static-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-success-static-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-success-static-text);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-warning,
+.admin-table__toolbar-slot-btn.is-static-color.is-warning,
+.admin-table__toolbar-slot-content > a.is-static-color.is-warning,
+.admin-table__toolbar-slot-content > button.is-static-color.is-warning {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-warning-static-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-warning-static-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-warning-static-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-warning-static-text);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-danger,
+.admin-table__toolbar-slot-btn.is-static-color.is-danger,
+.admin-table__toolbar-slot-content > a.is-static-color.is-danger,
+.admin-table__toolbar-slot-content > button.is-static-color.is-danger,
+.admin-table__toolbar-action-btn.is-static-color.is-error,
+.admin-table__toolbar-slot-btn.is-static-color.is-error,
+.admin-table__toolbar-slot-content > a.is-static-color.is-error,
+.admin-table__toolbar-slot-content > button.is-static-color.is-error {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-danger-static-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-danger-static-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-danger-static-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-danger-static-text);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-info,
+.admin-table__toolbar-slot-btn.is-static-color.is-info,
+.admin-table__toolbar-slot-content > a.is-static-color.is-info,
+.admin-table__toolbar-slot-content > button.is-static-color.is-info {
+  --admin-table-tool-solid-active-bg: var(--admin-table-tool-info-static-active-bg);
+  --admin-table-tool-solid-bg: var(--admin-table-tool-info-static-bg);
+  --admin-table-tool-solid-hover-bg: var(--admin-table-tool-info-static-hover-bg);
+  --admin-table-tool-solid-text: var(--admin-table-tool-info-static-text);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-success-outline,
+.admin-table__toolbar-slot-btn.is-static-color.is-success-outline,
+.admin-table__toolbar-slot-content > a.is-static-color.is-success-outline,
+.admin-table__toolbar-slot-content > button.is-static-color.is-success-outline {
+  --admin-table-tool-outline-active-bg: rgba(22, 163, 74, 0.24);
+  --admin-table-tool-outline-border: var(--admin-table-tool-success-static-bg);
+  --admin-table-tool-outline-hover-bg: rgba(22, 163, 74, 0.14);
+  --admin-table-tool-outline-text: var(--admin-table-tool-success-static-bg);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-warning-outline,
+.admin-table__toolbar-slot-btn.is-static-color.is-warning-outline,
+.admin-table__toolbar-slot-content > a.is-static-color.is-warning-outline,
+.admin-table__toolbar-slot-content > button.is-static-color.is-warning-outline {
+  --admin-table-tool-outline-active-bg: rgba(245, 158, 11, 0.28);
+  --admin-table-tool-outline-border: var(--admin-table-tool-warning-static-bg);
+  --admin-table-tool-outline-hover-bg: rgba(245, 158, 11, 0.16);
+  --admin-table-tool-outline-text: var(--admin-table-tool-warning-static-bg);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-danger-outline,
+.admin-table__toolbar-slot-btn.is-static-color.is-danger-outline,
+.admin-table__toolbar-slot-content > a.is-static-color.is-danger-outline,
+.admin-table__toolbar-slot-content > button.is-static-color.is-danger-outline,
+.admin-table__toolbar-action-btn.is-static-color.is-error-outline,
+.admin-table__toolbar-slot-btn.is-static-color.is-error-outline,
+.admin-table__toolbar-slot-content > a.is-static-color.is-error-outline,
+.admin-table__toolbar-slot-content > button.is-static-color.is-error-outline {
+  --admin-table-tool-outline-active-bg: rgba(239, 68, 68, 0.24);
+  --admin-table-tool-outline-border: var(--admin-table-tool-danger-static-bg);
+  --admin-table-tool-outline-hover-bg: rgba(239, 68, 68, 0.14);
+  --admin-table-tool-outline-text: var(--admin-table-tool-danger-static-bg);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-info-outline,
+.admin-table__toolbar-slot-btn.is-static-color.is-info-outline,
+.admin-table__toolbar-slot-content > a.is-static-color.is-info-outline,
+.admin-table__toolbar-slot-content > button.is-static-color.is-info-outline {
+  --admin-table-tool-outline-active-bg: rgba(14, 165, 233, 0.24);
+  --admin-table-tool-outline-border: var(--admin-table-tool-info-static-bg);
+  --admin-table-tool-outline-hover-bg: rgba(14, 165, 233, 0.14);
+  --admin-table-tool-outline-text: var(--admin-table-tool-info-static-bg);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-success-text,
+.admin-table__toolbar-slot-btn.is-static-color.is-success-text,
+.admin-table__toolbar-slot-content > a.is-static-color.is-success-text,
+.admin-table__toolbar-slot-content > button.is-static-color.is-success-text {
+  --admin-table-tool-text-btn-active-bg: rgba(22, 163, 74, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-success-static-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(22, 163, 74, 0.12);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-warning-text,
+.admin-table__toolbar-slot-btn.is-static-color.is-warning-text,
+.admin-table__toolbar-slot-content > a.is-static-color.is-warning-text,
+.admin-table__toolbar-slot-content > button.is-static-color.is-warning-text {
+  --admin-table-tool-text-btn-active-bg: rgba(245, 158, 11, 0.24);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-warning-static-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(245, 158, 11, 0.14);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-danger-text,
+.admin-table__toolbar-slot-btn.is-static-color.is-danger-text,
+.admin-table__toolbar-slot-content > a.is-static-color.is-danger-text,
+.admin-table__toolbar-slot-content > button.is-static-color.is-danger-text,
+.admin-table__toolbar-action-btn.is-static-color.is-error-text,
+.admin-table__toolbar-slot-btn.is-static-color.is-error-text,
+.admin-table__toolbar-slot-content > a.is-static-color.is-error-text,
+.admin-table__toolbar-slot-content > button.is-static-color.is-error-text {
+  --admin-table-tool-text-btn-active-bg: rgba(239, 68, 68, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-danger-static-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(239, 68, 68, 0.12);
+}
+
+.admin-table__toolbar-action-btn.is-static-color.is-info-text,
+.admin-table__toolbar-slot-btn.is-static-color.is-info-text,
+.admin-table__toolbar-slot-content > a.is-static-color.is-info-text,
+.admin-table__toolbar-slot-content > button.is-static-color.is-info-text {
+  --admin-table-tool-text-btn-active-bg: rgba(14, 165, 233, 0.2);
+  --admin-table-tool-text-btn-color: var(--admin-table-tool-info-static-bg);
+  --admin-table-tool-text-btn-hover-bg: rgba(14, 165, 233, 0.12);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info),
+.admin-table__toolbar-slot-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info),
+.admin-table__toolbar-slot-content > a:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info),
+.admin-table__toolbar-slot-content > button:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info) {
+  background-color: var(--admin-table-tool-solid-bg);
+  border-color: var(--admin-table-tool-solid-bg);
+  color: var(--admin-table-tool-solid-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):hover,
+.admin-table__toolbar-slot-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):hover,
+.admin-table__toolbar-slot-content > a:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):hover,
+.admin-table__toolbar-slot-content > button:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):hover {
+  background-color: var(--admin-table-tool-solid-hover-bg);
+  border-color: var(--admin-table-tool-solid-hover-bg);
+  color: var(--admin-table-tool-solid-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):focus-visible,
+.admin-table__toolbar-slot-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):focus-visible,
+.admin-table__toolbar-slot-content > a:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):focus-visible,
+.admin-table__toolbar-slot-content > button:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):focus-visible {
+  border-color: var(--admin-table-tool-solid-hover-bg);
+  color: var(--admin-table-tool-solid-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):active,
+.admin-table__toolbar-slot-btn:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):active,
+.admin-table__toolbar-slot-content > a:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):active,
+.admin-table__toolbar-slot-content > button:is(.is-primary, .is-success, .is-warning, .is-danger, .is-error, .is-info):active {
+  background-color: var(--admin-table-tool-solid-active-bg);
+  border-color: var(--admin-table-tool-solid-active-bg);
+  color: var(--admin-table-tool-solid-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline),
+.admin-table__toolbar-slot-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline),
+.admin-table__toolbar-slot-content > a:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline),
+.admin-table__toolbar-slot-content > button:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline) {
+  background-color: transparent;
+  border-color: var(--admin-table-tool-outline-border);
+  color: var(--admin-table-tool-outline-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):hover,
+.admin-table__toolbar-slot-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):hover,
+.admin-table__toolbar-slot-content > a:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):hover,
+.admin-table__toolbar-slot-content > button:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):hover {
+  background-color: var(--admin-table-tool-outline-hover-bg);
+  border-color: var(--admin-table-tool-outline-border);
+  color: var(--admin-table-tool-outline-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):focus-visible,
+.admin-table__toolbar-slot-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):focus-visible,
+.admin-table__toolbar-slot-content > a:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):focus-visible,
+.admin-table__toolbar-slot-content > button:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):focus-visible {
+  border-color: var(--admin-table-tool-outline-border);
+  color: var(--admin-table-tool-outline-text);
+}
+
+.admin-table__toolbar-action-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):active,
+.admin-table__toolbar-slot-btn:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):active,
+.admin-table__toolbar-slot-content > a:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):active,
+.admin-table__toolbar-slot-content > button:is(.is-primary-outline, .is-success-outline, .is-warning-outline, .is-danger-outline, .is-error-outline, .is-info-outline):active {
+  background-color: var(--admin-table-tool-outline-active-bg);
+  border-color: var(--admin-table-tool-outline-border);
+  color: var(--admin-table-tool-outline-text);
+}
+
+.admin-table__toolbar-action-btn:disabled,
+.admin-table__toolbar-slot-btn:disabled,
+.admin-table__toolbar-slot-content > a[aria-disabled='true'],
+.admin-table__toolbar-slot-content > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.admin-table__toolbar-tool-btn {
+  align-items: center;
+  background: var(--background, #ffffff);
+  border: 1px solid var(--admin-table-tool-border);
+  box-sizing: border-box;
+  border-radius: 999px;
+  color: var(--admin-table-tool-text);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 34px;
+  height: 34px;
+  justify-content: center;
+  line-height: 0;
+  padding: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  width: 34px;
+}
+
+.admin-table__toolbar-tool-btn:hover {
+  color: var(--admin-table-tool-hover-color);
+}
+
+.admin-table__toolbar-tool-btn:focus-visible {
+  border-color: var(--admin-table-tool-focus-color);
+  outline: none;
+}
+
+.admin-table__toolbar-tool-btn:active {
+  border-color: var(--admin-table-tool-active-color);
+  color: var(--admin-table-tool-active-color);
+}
+
+.admin-table__toolbar-tool-btn.is-active {
+  background-color: var(--admin-table-tool-active-bg);
+  border-color: var(--admin-table-tool-focus-color);
+  color: var(--admin-table-tool-focus-color);
+}
+
+.admin-table__toolbar-tool-icon {
+  display: inline-block;
+  font-size: var(--admin-table-font-size);
+  height: 14px;
+  line-height: 14px;
+  width: 14px;
+}
+
+.admin-table__toolbar-tool-icon[class*='vxe-table-icon-'] {
+  font-size: var(--admin-table-font-size) !important;
+  line-height: 14px;
+}
+
+.admin-table__toolbar-tool-btn svg {
+  height: 14px;
+  width: 14px;
+}
+
+.admin-table__toolbar-custom-panel {
+  color: var(--foreground, #0f172a);
+  font-size: var(--admin-table-font-size);
+  max-width: 26em;
+  min-width: 18em;
+  padding: 0;
+}
+
+.admin-table__toolbar-custom-header {
+  align-items: center;
+  border-bottom: 1px solid var(--admin-table-tool-border);
+  display: flex;
+  height: 2.4em;
+  padding: 0 1em;
+  user-select: none;
+  font-weight: 700;
+}
+
+.admin-table__toolbar-custom-body {
+  display: grid;
+  gap: 0;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.admin-table__toolbar-custom-row {
+  border-bottom: 1px solid transparent;
+  align-items: center;
+  display: flex;
+  min-height: 2.4em;
+  padding: 0.2em 1em;
+  justify-content: space-between;
+  position: relative;
+  transition: background-color 0.12s ease, transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.admin-table__toolbar-custom-body.is-dragging,
+.admin-table__toolbar-custom-body.is-dragging * {
+  cursor: grabbing !important;
+}
+
+.admin-table__toolbar-custom-row:hover {
+  background-color: var(--muted, #f8fafc);
+}
+
+.admin-table__toolbar-custom-row.is-drag-origin {
+  opacity: 0.48;
+}
+
+.admin-table__toolbar-custom-row.is-drag-over {
+  background-color: var(--admin-table-tool-active-bg);
+}
+
+.admin-table__toolbar-custom-row.is-drag-over-top::after,
+.admin-table__toolbar-custom-row.is-drag-over-bottom::after {
+  background-color: var(--primary, #1677ff);
+  content: '';
+  height: 2px;
+  inset-inline-start: 0;
+  position: absolute;
+  width: 100%;
+  z-index: 2;
+}
+
+.admin-table__toolbar-custom-row.is-drag-over-top::after {
+  top: -1px;
+}
+
+.admin-table__toolbar-custom-row.is-drag-over-bottom::after {
+  bottom: -1px;
+}
+
+.admin-table__toolbar-custom-main {
+  align-items: center;
+  display: inline-flex;
+  flex: 1;
+  gap: 0;
+  min-width: 0;
+}
+
+.admin-table__toolbar-custom-checkbox {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--admin-table-tool-border);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: inherit;
+  gap: 0;
+  line-height: 1;
+  min-height: 1.8em;
+  outline: none;
+  padding: 0;
+  user-select: none;
+}
+
+.admin-table__toolbar-custom-checkbox:focus,
+.admin-table__toolbar-custom-checkbox:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-table__toolbar-custom-checkbox .vxe-checkbox--icon {
+  font-size: 1.22em;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.admin-table__toolbar-custom-checkbox .vxe-checkbox--label {
+  color: var(--foreground, #0f172a);
+  font-size: 1em;
+  font-weight: inherit;
+  padding-left: 0.5em;
+  vertical-align: middle;
+}
+
+.admin-table__toolbar-custom-checkbox.is-checked,
+.admin-table__toolbar-custom-checkbox.is-indeterminate {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-checkbox:hover {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-name-option {
+  align-items: center;
+  display: inline-flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-table__toolbar-custom-sort-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--admin-table-tool-text);
+  cursor: grab;
+  display: inline-flex;
+  font-size: 1em;
+  margin-inline-end: 0.4em;
+  outline: none;
+  padding: 0;
+  user-select: none;
+}
+
+.admin-table__toolbar-custom-sort-btn:focus,
+.admin-table__toolbar-custom-sort-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-table__toolbar-custom-sort-btn:active {
+  cursor: grabbing;
+}
+
+.admin-table__toolbar-custom-sort-btn:hover {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-sort-btn.is-disabled {
+  color: var(--admin-table-tool-border);
+  cursor: not-allowed;
+}
+
+.admin-table__toolbar-custom-title {
+  color: var(--foreground, #0f172a);
+  font-size: 1em;
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-table__toolbar-custom-fixed-option {
+  align-items: center;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 0.2em;
+  padding-left: 0.5em;
+  user-select: none;
+}
+
+.admin-table__toolbar-custom-icon-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--admin-table-tool-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1.1em;
+  height: 1.8em;
+  justify-content: center;
+  line-height: 1;
+  min-width: 1.8em;
+  outline: none;
+  padding: 0;
+  user-select: none;
+}
+
+.admin-table__toolbar-custom-icon-btn:focus,
+.admin-table__toolbar-custom-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-table__toolbar-custom-icon-btn:hover {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-icon-btn.is-active {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.admin-table__toolbar-custom-icon-filter,
+.admin-table__toolbar-custom-icon-sort {
+  display: inline-block;
+  font-style: normal;
+  height: 1em;
+  position: relative;
+  width: 1em;
+}
+
+.admin-table__toolbar-custom-icon-sort::before,
+.admin-table__toolbar-custom-icon-sort::after {
+  border-right: 0.14em solid currentColor;
+  border-top: 0.14em solid currentColor;
+  content: '';
+  height: 0.44em;
+  left: 0.22em;
+  position: absolute;
+  width: 0.44em;
+}
+
+.admin-table__toolbar-custom-icon-sort::before {
+  top: 0.04em;
+  transform: rotate(-45deg);
+}
+
+.admin-table__toolbar-custom-icon-sort::after {
+  bottom: 0.04em;
+  transform: rotate(135deg);
+}
+
+.admin-table__toolbar-custom-icon-filter::before {
+  border-left: 0.38em solid transparent;
+  border-right: 0.38em solid transparent;
+  border-top: 0.52em solid currentColor;
+  content: '';
+  left: 0.12em;
+  position: absolute;
+  top: 0.08em;
+}
+
+.admin-table__toolbar-custom-icon-filter::after {
+  background-color: currentColor;
+  border-radius: 1px;
+  content: '';
+  height: 0.34em;
+  left: 0.45em;
+  position: absolute;
+  top: 0.46em;
+  width: 0.1em;
+}
+
+.admin-table__toolbar-custom-footer {
+  border-top: 1px solid var(--admin-table-tool-border);
+  display: flex;
+  margin-top: 0;
+  padding-top: 0;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.admin-table__toolbar-custom-btn {
+  background: transparent;
+  border: 0;
+  color: var(--admin-table-tool-text);
+  cursor: pointer;
+  flex: 1;
+  font-size: 1.1em;
+  height: 2.8em;
+  line-height: 1;
+  outline: none;
+  padding: 0;
+  user-select: none;
+}
+
+.admin-table__toolbar-custom-btn:focus,
+.admin-table__toolbar-custom-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.admin-table__toolbar-custom-btn:hover {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-btn.is-primary {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-btn.is-primary:hover {
+  color: var(--primary, #1677ff);
+}
+
+.admin-table__toolbar-custom-btn:disabled {
+  cursor: not-allowed;
+  color: var(--admin-table-tool-border);
+}
+
+.admin-table__toolbar-custom-wrap {
+  position: relative;
+}
+
+.admin-table__toolbar-custom-popover-panel {
+  background: var(--background, #ffffff);
+  border: 1px solid var(--admin-table-tool-border);
+  border-radius: var(--admin-table-radius-lg);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.12);
+  overflow: hidden;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 30;
+}
+
+.admin-table__toolbar-custom-popover .ant-popover-inner {
+  padding: 0;
+}
+
+.admin-table__toolbar-custom-popover .ant-popover-inner-content {
+  padding: 0;
+}
+
+.admin-table--maximized {
+  background: var(--background, #ffffff);
+  box-sizing: border-box;
+  left: 0;
+  overflow: auto;
+  padding: 8px 16px;
+  position: fixed;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
 }
 
 .admin-table__search {

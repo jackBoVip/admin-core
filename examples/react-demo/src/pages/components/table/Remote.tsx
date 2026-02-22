@@ -9,6 +9,10 @@ export default function TableRemote() {
     useMemo(
       () => ({
         gridOptions: {
+          radioConfig: {
+            highlight: true,
+            trigger: 'row',
+          },
           columns: [
             { title: '序号', field: 'id', width: 120 },
             { field: 'category', sortable: true, title: 'Category' },

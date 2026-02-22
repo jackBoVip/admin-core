@@ -38,9 +38,15 @@ import {
 
 `setupAdminFormCore` 的 `options`：
 
-- `locale?: 'en-US' | 'zh-CN'`
+- `locale?: string`（内置 `zh-CN` / `en-US`，也支持自定义 locale key）
 - `logLevel?: 'error' | 'info' | 'silent' | 'warn'`
 - `rules?: RegisterFormRulesOptions`
+
+国际化相关 API：
+
+- `setLocale(locale)`：切换当前语言
+- `registerLocaleMessages(locale, messages, options?)`：注册/扩展语言包
+- `getLocaleMessages(locale?)`：读取语言文案
 
 ## 2) Form 实例 API（`createFormApi`）
 

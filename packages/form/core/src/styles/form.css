@@ -4,6 +4,14 @@
 
 :root,
 body {
+  --admin-form-radius: var(--radius, 8px);
+  --admin-form-radius-sm: max(0px, calc(var(--admin-form-radius) - 2px));
+  --admin-form-radius-lg: calc(var(--admin-form-radius) + 2px);
+  --admin-form-radius-xl: calc(var(--admin-form-radius) + 4px);
+  --admin-form-font-size: calc(var(--font-size-base, 16px) * 0.875);
+  --admin-form-font-size-sm: calc(var(--admin-form-font-size) - 2px);
+  --admin-form-font-size-xs: calc(var(--admin-form-font-size) - 3px);
+  --admin-form-font-size-lg: calc(var(--admin-form-font-size) + 2px);
   --admin-form-bg-color: var(--card, var(--background, #fff));
   --admin-form-surface-color: var(--card, var(--admin-form-bg-color));
   --admin-form-fg-color: var(--card-foreground, var(--foreground, #0f172a));
@@ -87,8 +95,14 @@ body {
   display: block;
   width: 100%;
   color: var(--admin-form-fg-color);
-  font-size: 14px;
+  font-size: var(--admin-form-font-size);
   line-height: 1.4;
+  --ant-border-radius: var(--admin-form-radius);
+  --ant-border-radius-sm: var(--admin-form-radius-sm);
+  --ant-border-radius-lg: var(--admin-form-radius-lg);
+  --ant-font-size: var(--admin-form-font-size);
+  --ant-font-size-sm: var(--admin-form-font-size-sm);
+  --ant-font-size-lg: var(--admin-form-font-size-lg);
 }
 
 .admin-form__grid {
@@ -140,7 +154,7 @@ body {
 
 .admin-form__label {
   flex-shrink: 0;
-  font-size: 14px;
+  font-size: var(--admin-form-font-size);
   line-height: 1.25;
   color: var(--admin-form-fg-color);
 }
@@ -153,7 +167,7 @@ body {
 .admin-form__help {
   margin-left: 6px;
   color: var(--admin-form-muted-fg-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
   line-height: 1.2;
 }
 
@@ -230,7 +244,7 @@ body {
   background-color: var(--admin-form-bg-color);
   color: var(--admin-form-fg-color);
   border-color: var(--admin-form-border-color);
-  border-radius: var(--radius, 8px);
+  border-radius: var(--admin-form-radius);
 }
 
 /* Antd 更高优先级覆盖，确保在未注入 antd dark algorithm 时也跟随 Admin 主题变量 */
@@ -245,7 +259,7 @@ body {
   background-color: var(--admin-form-bg-color) !important;
   color: var(--admin-form-fg-color) !important;
   border-color: var(--admin-form-border-color) !important;
-  border-radius: var(--radius, 8px);
+  border-radius: var(--admin-form-radius);
 }
 
 .admin-form .admin-form__control .ant-select .ant-select-selector {
@@ -625,7 +639,7 @@ body {
   border: 1px solid var(--admin-form-border-color);
   background: var(--admin-form-bg-color);
   color: var(--admin-form-fg-color);
-  border-radius: var(--radius, 8px);
+  border-radius: var(--admin-form-radius);
   outline: none;
   transition:
     border-color 0.2s ease,
@@ -737,7 +751,7 @@ body {
 
 .admin-form__hint {
   color: var(--admin-form-muted-fg-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
   line-height: 1.35;
 }
 
@@ -749,7 +763,7 @@ body {
 
 .admin-form__section-item .admin-form__control {
   border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 82%, transparent);
-  border-radius: var(--radius, 10px);
+  border-radius: var(--admin-form-radius-lg);
   background: color-mix(in oklch, var(--admin-form-muted-color) 78%, transparent);
   padding: 10px 12px;
 }
@@ -761,7 +775,7 @@ body {
 .admin-form__section-title {
   margin: 0;
   color: var(--admin-form-fg-color);
-  font-size: 14px;
+  font-size: var(--admin-form-font-size);
   font-weight: 600;
   line-height: 1.35;
 }
@@ -769,14 +783,14 @@ body {
 .admin-form__section-description {
   margin-top: 4px;
   color: var(--admin-form-muted-fg-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
   line-height: 1.35;
 }
 
 .admin-form__error {
   margin-top: 4px;
   color: var(--admin-form-danger-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
   line-height: 1.25;
 }
 
@@ -841,7 +855,7 @@ body {
 .admin-form__button {
   min-height: 32px;
   border: 1px solid var(--admin-form-border-color);
-  border-radius: var(--radius, 8px);
+  border-radius: var(--admin-form-radius);
   background: var(--admin-form-bg-color);
   color: var(--admin-form-fg-color);
   padding: 0 12px;
@@ -1056,7 +1070,7 @@ body {
 
 .admin-form__range-separator {
   color: var(--admin-form-muted-fg-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
 }
 
 .admin-form-page {
@@ -1086,7 +1100,7 @@ body {
   width: min(960px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 86%, transparent);
-  border-radius: calc(var(--radius, 12px) + 2px);
+  border-radius: var(--admin-form-radius-xl);
   background: var(--admin-form-surface-color);
   box-shadow:
     0 18px 45px rgb(15 23 42 / 0.2),
@@ -1148,7 +1162,7 @@ body.admin-form-page-open :is(
 
 .admin-form-page__title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--admin-form-font-size-lg);
   font-weight: 600;
   line-height: 1.35;
   color: var(--admin-form-fg-color);
@@ -1157,7 +1171,7 @@ body.admin-form-page-open :is(
 .admin-form-page__description {
   margin-top: 4px;
   color: var(--admin-form-muted-fg-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
   line-height: 1.35;
 }
 
@@ -1165,7 +1179,7 @@ body.admin-form-page-open :is(
   width: 30px;
   height: 30px;
   border: 1px solid var(--admin-form-border-color);
-  border-radius: calc(var(--radius, 8px) - 2px);
+  border-radius: var(--admin-form-radius-sm);
   background: var(--admin-form-bg-color);
   color: var(--admin-form-fg-color);
   cursor: pointer;
@@ -1201,7 +1215,7 @@ body.admin-form-page-open :is(
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--admin-form-font-size-xs);
   flex-shrink: 0;
 }
 
@@ -1212,7 +1226,7 @@ body.admin-form-page-open :is(
   border: 0;
   background: transparent;
   color: var(--admin-form-muted-fg-color);
-  font-size: 12px;
+  font-size: var(--admin-form-font-size-sm);
   cursor: pointer;
   white-space: nowrap;
   padding: 2px 4px;
@@ -1249,7 +1263,7 @@ body.admin-form-page-open :is(
 .admin-form-page__section {
   margin-bottom: 10px;
   border: 1px solid color-mix(in oklch, var(--admin-form-border-color) 82%, transparent);
-  border-radius: var(--radius, 10px);
+  border-radius: var(--admin-form-radius-lg);
   background: color-mix(in oklch, var(--admin-form-muted-color) 78%, transparent);
   padding: 10px 12px;
 }
@@ -1316,7 +1330,7 @@ body.admin-form-page-open :is(
   .admin-form-page--modal .admin-form-page__panel {
     width: 100%;
     max-height: calc(100vh - 20px);
-    border-radius: 12px 12px 0 0;
+    border-radius: var(--admin-form-radius-xl) var(--admin-form-radius-xl) 0 0;
   }
 
   .admin-form__grid--2,

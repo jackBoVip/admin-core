@@ -35,7 +35,7 @@
     "src/styles"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "pnpm run typecheck && tsup",
     "postbuild": "node ./scripts/copy-table-css.mjs",
     "dev": "tsup --watch",
     "test": "vitest",

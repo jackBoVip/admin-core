@@ -42,6 +42,7 @@ import {
 } from 'vue';
 
 import { getVueFormAdapterRegistry } from '../registry';
+import { useLocaleVersion } from '../composables/useLocaleVersion';
 import type { AdminFormComponentProps } from '../types';
 import { normalizeVueAttrs } from '../utils/attrs';
 
@@ -470,6 +471,7 @@ export const AdminForm = defineComponent({
     };
 
     const queryMode = computed(() => !!runtimeProps.value.queryMode);
+    const localeVersion = useLocaleVersion();
     const filteredFields = computed(() =>
       renderState.value.fields.filter((field) => {
         if (visibleFieldSet.value && !visibleFieldSet.value.has(field.fieldName)) {
@@ -494,6 +496,8 @@ export const AdminForm = defineComponent({
       queryMode.value ? queryVisible.value.fields : filteredFields.value
     );
     const actionItems = computed(() => {
+      const localeTick = localeVersion.value;
+      void localeTick;
       const currentProps = runtimeProps.value;
       const messages = getLocaleMessages().form;
       if (queryMode.value) {
@@ -536,11 +540,28 @@ export const AdminForm = defineComponent({
       };
 
       const buttons: any[] = [];
+      const pushSlotNodes = (slotName?: null | string) => {
+        if (!slotName) {
+          return;
+        }
+        const rendered = slots[slotName]?.({});
+        if (rendered === null || rendered === undefined) {
+          return;
+        }
+        if (Array.isArray(rendered)) {
+          for (const node of rendered) {
+            if (node === null || node === undefined) {
+              continue;
+            }
+            buttons.push(node);
+          }
+          return;
+        }
+        buttons.push(rendered);
+      };
 
       for (const item of actionItems.value) {
-        if (item.beforeSlot) {
-          buttons.push(slots[item.beforeSlot]?.());
-        }
+        pushSlotNodes(item.beforeSlot);
 
         buttons.push(
           h(
@@ -571,11 +592,9 @@ export const AdminForm = defineComponent({
             item.label
           )
         );
-        if (item.afterSlot) {
-          buttons.push(slots[item.afterSlot]?.());
-        }
+        pushSlotNodes(item.afterSlot);
       }
-      return buttons;
+      return buttons.filter((node) => node !== null && node !== undefined);
     };
 
     const renderActionsOutsideGrid = () => {
@@ -623,7 +642,9 @@ export const AdminForm = defineComponent({
               style: gridStyle.value,
             },
             [
-              ...fieldsToRender.value.map((field, index) => renderField(field, index)),
+              ...fieldsToRender.value
+                .filter((field): field is RenderFieldItem => !!field)
+                .map((field, index) => renderField(field, index)),
               queryMode.value && hasActionItems.value
                 ? h(
                     'div',

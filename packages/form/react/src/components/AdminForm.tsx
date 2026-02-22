@@ -48,6 +48,7 @@ import {
   useState,
 } from 'react';
 import { getReactFormAdapterRegistry } from '../registry';
+import { useLocaleVersion } from '../hooks/useLocaleVersion';
 import type { AdminFormReactProps } from '../types';
 import type { CSSProperties, KeyboardEvent, ReactElement } from 'react';
 
@@ -318,10 +319,11 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
     () => props.formApi ?? createFormApi(pickFormProps(props as Record<string, any>)),
     [props.formApi]
   );
+  const localeVersion = useLocaleVersion();
   const runtime = useFormSelector(api, useCallback((snapshot) => snapshot.runtime, []));
   const runtimeProps = useFormSelector(api, useCallback((snapshot) => snapshot.props, []));
   const renderState = useMemo(() => api.getRenderState(), [api, runtime, runtimeProps]);
-  const messages = getLocaleMessages().form;
+  const messages = useMemo(() => getLocaleMessages().form, [localeVersion]);
   const resolvedBindingCacheRef = useRef(
     new Map<string, ResolvedComponentBinding<any> | null>()
   );

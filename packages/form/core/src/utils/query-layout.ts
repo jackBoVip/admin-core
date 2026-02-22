@@ -5,6 +5,7 @@ import {
   type FormActionMessages,
   type FormActionRenderItem,
 } from './ui-shared';
+import { getLocaleMessages } from '../locales';
 
 function resolveCollapsedRows(rows: number | undefined) {
   const value = Math.trunc(Number(rows ?? 1));
@@ -113,8 +114,10 @@ export function resolveSearchFormDefaults<
   TProps extends Record<string, any>,
 >(
   props: TProps,
-  submitContent = '查询'
+  submitContent?: string
 ): TProps {
+  const resolvedSubmitContent =
+    submitContent ?? getLocaleMessages().form.querySubmit;
   const submitButtonOptions = props.submitButtonOptions ?? {};
   return {
     ...props,
@@ -124,7 +127,7 @@ export function resolveSearchFormDefaults<
     showCollapseButton: props.showCollapseButton ?? true,
     showDefaultActions: props.showDefaultActions ?? true,
     submitButtonOptions: {
-      content: submitContent,
+      content: resolvedSubmitContent,
       ...submitButtonOptions,
     },
   } as TProps;

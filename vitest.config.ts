@@ -16,7 +16,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/examples/vue-vben-admin-main/**',
+      '**/examples/vue-*-admin-main/**',
     ],
     coverage: {
       provider: 'v8',

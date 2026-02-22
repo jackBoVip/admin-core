@@ -45,6 +45,7 @@ import {
 
 import type { AdminFormSubmitPageVueProps } from '../types';
 import { normalizeVueAttrs } from '../utils/attrs';
+import { useLocaleVersion } from '../composables/useLocaleVersion';
 
 import { AdminForm } from './AdminForm';
 
@@ -70,7 +71,12 @@ export const AdminFormSubmitPage = defineComponent({
     },
   },
   setup(rawProps, { attrs, expose }) {
-    const localeMessages = computed(() => getLocaleMessages().submitPage);
+    const localeVersion = useLocaleVersion();
+    const localeMessages = computed(() => {
+      const localeTick = localeVersion.value;
+      void localeTick;
+      return getLocaleMessages().submitPage;
+    });
     const allProps = computed(
       () =>
         pickSubmitPageProps(

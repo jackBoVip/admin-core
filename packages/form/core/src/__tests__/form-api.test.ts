@@ -331,6 +331,30 @@ describe('form api', () => {
     expect(invalid.errors.email).toBe('邮箱格式不正确');
   });
 
+  it('should localize default zod issue message by current locale', async () => {
+    setupAdminFormCore({ locale: 'en-US' });
+    const api = createFormApi({
+      schema: [
+        {
+          component: 'input',
+          fieldName: 'age',
+          label: 'Age',
+          rules: z.number(),
+        },
+      ],
+    });
+
+    await api.setFieldValue('age', 'not-a-number');
+    const invalidEn = await api.validate();
+    expect(invalidEn.valid).toBe(false);
+    expect(invalidEn.errors.age).toBe('Age is invalid');
+
+    setupAdminFormCore({ locale: 'zh-CN' });
+    const invalidZh = await api.validate();
+    expect(invalidZh.valid).toBe(false);
+    expect(invalidZh.errors.age).toBe('Age输入无效');
+  });
+
   it('should skip dynamic zod rule when field is optional and empty', async () => {
     const api = createFormApi({
       schema: [

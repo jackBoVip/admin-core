@@ -1,0 +1,97 @@
+@font-face {
+  font-display: block;
+  font-family: 'vxetableiconfont';
+  src: url('./vxe-table-icon.woff2') format('woff2');
+}
+
+@keyframes admin-table-roll-circle {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+[class*='vxe-table-icon-'] {
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-family: 'vxetableiconfont' !important;
+  font-size: 1.1em;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1em;
+}
+
+[class*='vxe-table-icon-'].animat,
+[class*='vxe-table-icon-'].roll {
+  display: inline-block;
+}
+
+[class*='vxe-table-icon-'].animat {
+  transition: transform 0.25s ease-in-out;
+}
+
+[class*='vxe-table-icon-'].rotate45 {
+  transform: rotate(45deg);
+}
+
+[class*='vxe-table-icon-'].rotate90 {
+  transform: rotate(90deg);
+}
+
+[class*='vxe-table-icon-'].rotate180 {
+  transform: rotate(180deg);
+}
+
+[class*='vxe-table-icon-'].roll {
+  animation: admin-table-roll-circle 1s infinite linear;
+}
+
+.vxe-table-icon-custom-column:before {
+  content: '\e62d';
+}
+
+.vxe-table-icon-fullscreen:before {
+  content: '\e70e';
+}
+
+.vxe-table-icon-minimize:before {
+  content: '\e749';
+}
+
+.vxe-table-icon-repeat:before {
+  content: '\ea4a';
+}
+
+.vxe-table-icon-drag-handle:before {
+  content: '\e64e';
+}
+
+.vxe-table-icon-checkbox-checked-fill:before {
+  content: '\e67d';
+}
+
+.vxe-table-icon-checkbox-unchecked:before {
+  content: '\e727';
+}
+
+.vxe-table-icon-checkbox-indeterminate-fill:before {
+  content: '\e8c4';
+}
+
+.vxe-table-icon-fixed-left-fill:before {
+  content: '\e9b9';
+}
+
+.vxe-table-icon-fixed-left:before {
+  content: '\e9ba';
+}
+
+.vxe-table-icon-fixed-right-fill:before {
+  content: '\f290';
+}
+
+.vxe-table-icon-fixed-right:before {
+  content: '\f291';
+}

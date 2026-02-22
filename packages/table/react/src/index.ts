@@ -12,9 +12,13 @@ export {
   getLocaleMessages,
   registerTableFormatters,
   setupAdminTableCore,
+  type AdminTableGridEvents,
   type AdminTableApi,
   type AdminTableOptions,
   type AdminTableProps,
+  type ColumnCustomChangePayload,
+  type ColumnCustomSnapshot,
+  type ColumnCustomState,
   type ProxyConfig,
   type SeparatorOptions,
   type TableFormatter,
@@ -31,7 +35,11 @@ export {
   registerReactTableRenderer,
   removeReactTableRenderer,
 } from './renderers';
-export { getAdminTableReactSetupState, setupAdminTableReact } from './setup';
+export {
+  getAdminTableReactSetupState,
+  setupAdminTableReact,
+  syncAdminTableReactWithPreferences,
+} from './setup';
 
 export type {
   AdminTableReactProps,

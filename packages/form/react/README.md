@@ -86,7 +86,7 @@ pnpm add @admin-core/form-react
 - `collapsed: true`
 - `showDefaultActions: true`
 - `showCollapseButton: true`（仅有溢出项时才显示“展开/收起”）
-- `submitButtonOptions.content: '查询'`（可覆盖）
+- `submitButtonOptions.content`：跟随当前 locale（`zh-CN` 为 `查询`，`en-US` 为 `Search`，可覆盖）
 
 ## `AdminFormSubmitPage` Props（核心）
 
@@ -127,6 +127,20 @@ pnpm add @admin-core/form-react
 ```css
 @import "@admin-core/preferences/styles/antd";
 ```
+
+## 与 Layout/Table 组合（避免重复样式）
+
+若项目同时使用 `@admin-core/layout-react` 与 `@admin-core/table-react`，推荐在应用入口统一引入：
+
+```css
+@import "@admin-core/preferences/styles/antd";
+@import "@admin-core/layout-react/style.css";
+@import "@admin-core/form-react/style.css";
+@import "@admin-core/table-react/style.css";
+```
+
+- 不要重复 `@import "tailwindcss"`（`layout-react/style.css` 已包含）。
+- 不要重复引入 `antd/dist/reset.css`（`table-react/style.css` 已包含）。
 
 ## 开箱即用（数据驱动）
 

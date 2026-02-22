@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { setLocale } from '../locales';
 import {
   resolveQueryActionItems,
   resolveQueryActionsGridPlacement,
@@ -122,5 +123,15 @@ describe('query layout utils', () => {
     expect(resolved.showDefaultActions).toBe(true);
     expect(resolved.gridColumns).toBe(4);
     expect(resolved.submitButtonOptions.content).toBe('筛选');
+  });
+
+  it('should resolve localized query submit text when user content is not provided', () => {
+    setLocale('en-US');
+    const resolvedEn = resolveSearchFormDefaults({});
+    expect(resolvedEn.submitButtonOptions.content).toBe('Search');
+
+    setLocale('zh-CN');
+    const resolvedZh = resolveSearchFormDefaults({});
+    expect(resolvedZh.submitButtonOptions.content).toBe('查询');
   });
 });

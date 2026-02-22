@@ -87,7 +87,7 @@ export interface RegisterFormRulesOptions {
 }
 
 export interface SetupAdminFormCoreOptions {
-  locale?: 'en-US' | 'zh-CN';
+  locale?: string;
   logLevel?: 'error' | 'info' | 'silent' | 'warn';
   rules?: RegisterFormRulesOptions;
 }

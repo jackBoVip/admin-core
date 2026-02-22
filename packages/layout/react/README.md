@@ -76,6 +76,20 @@ function App() {
 - 布局样式依赖 `@admin-core/preferences/styles` 提供的全局变量（如 `--admin-duration-*`、`--admin-easing-*`、`--admin-z-index-*`）。
 - 页面过渡统一使用 `fade-*` 系列动画类（由 `@admin-core/preferences` 提供）。
 
+## 与 Form/Table 组合（避免重复样式）
+
+当项目同时使用 `@admin-core/form-react`、`@admin-core/layout-react`、`@admin-core/table-react` 时，推荐只在应用入口按以下顺序引入样式：
+
+```css
+@import "@admin-core/preferences/styles/antd";
+@import "@admin-core/layout-react/style.css";
+@import "@admin-core/form-react/style.css";
+@import "@admin-core/table-react/style.css";
+```
+
+- `@admin-core/layout-react/style.css` 已包含 `tailwindcss`，不要在应用层再额外 `@import "tailwindcss"`。
+- `@admin-core/table-react/style.css` 已包含 `antd/dist/reset.css`，不要重复引入 Ant Design reset。
+
 ## Props
 
 | 属性 | 类型 | 默认值 | 说明 |

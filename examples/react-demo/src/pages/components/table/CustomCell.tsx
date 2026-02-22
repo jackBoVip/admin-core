@@ -1,6 +1,6 @@
 import { useAdminTable, type AntdGridOptions } from '@admin-core/table-react';
 import { useMemo } from 'react';
-import { Avatar, Button, Switch } from 'antd';
+import { Avatar, Button, Checkbox, Input, Select, Switch } from 'antd';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
@@ -13,7 +13,21 @@ export default function TableCustomCell() {
             { title: '序号', field: 'id', width: 120 },
             { field: 'category', title: 'Category', width: 120 },
             { field: 'imageUrl', slots: { default: 'image' }, title: 'Image', width: 120 },
-            { field: 'open', slots: { default: 'open' }, title: 'Open', width: 120 },
+            { field: 'open', slots: { default: 'openSwitch' }, title: 'Switch(Slot)', width: 140 },
+            {
+              cellRender: {
+                name: 'CellSwitch',
+                props: {
+                  checkedValue: 1,
+                  uncheckedValue: 0,
+                },
+              },
+              field: 'open',
+              title: 'CellSwitch',
+              width: 120,
+            },
+            { field: 'open', slots: { default: 'openCheckbox' }, title: 'Checkbox(Slot)', width: 150 },
+            { field: 'status', slots: { default: 'statusSelect' }, title: 'Select(Slot)', width: 160 },
             {
               cellRender: {
                 name: 'CellTag',
@@ -27,7 +41,7 @@ export default function TableCustomCell() {
               width: 120,
             },
             { field: 'color', title: 'Color', width: 100 },
-            { field: 'productName', title: 'Product Name', width: 200 },
+            { field: 'productName', slots: { default: 'nameInput' }, title: 'Input(Slot)', width: 220 },
             { field: 'price', title: 'Price', width: 100 },
             { field: 'releaseDate', title: 'Release Date', width: 200 },
             {
@@ -72,18 +86,51 @@ export default function TableCustomCell() {
   return (
     <div className="page-container">
       <h1 className="page-title">表格 - 自定义单元格</h1>
-      <p className="page-description">同时演示 slot 渲染与内置 CellTag/CellOperation 渲染器。</p>
+      <p className="page-description">同时演示 Switch/Checkbox/Select/Input 插槽渲染与内置渲染器。</p>
 
       <div className="card">
         <TableView
           tableTitle="自定义单元格列表"
           slots={{
             image: ({ row }: any) => <Avatar size={28} src={row.imageUrl} />,
-            open: ({ row }: any) => (
+            openSwitch: ({ row }: any) => (
               <Switch
-                checked={row.open === 1}
+                defaultChecked={row.open === 1}
+                size="small"
                 onChange={(next) => {
-                  row.open = next ? 1 : 0;
+                  console.log('switch change:', row.productName, next);
+                }}
+              />
+            ),
+            openCheckbox: ({ row }: any) => (
+              <Checkbox
+                defaultChecked={row.open === 1}
+                onChange={(event) => {
+                  console.log('checkbox change:', row.productName, event.target.checked);
+                }}
+              />
+            ),
+            statusSelect: ({ row }: any) => (
+              <Select
+                defaultValue={row.status}
+                options={[
+                  { label: 'Enabled', value: 'enabled' },
+                  { label: 'Disabled', value: 'disabled' },
+                ]}
+                size="small"
+                style={{ width: 132 }}
+                onChange={(value) => {
+                  console.log('select change:', row.productName, value);
+                }}
+              />
+            ),
+            nameInput: ({ row }: any) => (
+              <Input
+                defaultValue={row.productName}
+                size="small"
+                style={{ width: 160 }}
+                onChange={(event) => {
+                  console.log('input change:', row.productName, event.target.value);
                 }}
               />
             ),

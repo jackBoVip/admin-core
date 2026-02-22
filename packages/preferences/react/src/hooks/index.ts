@@ -13,6 +13,14 @@ export {
   useTheme,
 } from './use-preferences';
 
+export {
+  useAdminAntdTheme,
+  type AdminAntdCssVarConfig,
+  type AdminAntdThemeAlgorithms,
+  type AdminAntdThemeConfig,
+  type UseAdminAntdThemeOptions,
+} from './use-antd-theme';
+
 // 内部使用（被 PreferencesProvider 使用）
 export {
   useShortcutKeys,

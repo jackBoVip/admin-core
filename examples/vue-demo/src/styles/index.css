@@ -2,6 +2,10 @@
 
 /* 共享 Tailwind v4 主题令牌 */
 @import "../../../shared/styles/tailwind-theme.css";
+/* Element Plus 主题变量映射（跟随偏好设置） */
+@import "@admin-core/preferences/styles/element";
+/* Element Plus 组件样式 */
+@import "element-plus/dist/index.css";
 
 /* 引入布局样式 */
 @import "@admin-core/layout-vue/styles";
@@ -10,6 +14,8 @@
 @import "vxe-pc-ui/lib/style.css";
 /* 引入表单系统内置 UI 样式（放在 vxe 后，确保状态样式可覆盖） */
 @import "@admin-core/form-vue/style.css";
+/* 引入表格系统内置 UI 样式 */
+@import "@admin-core/table-vue/style.css";
 
 /* React/Vue demo shared base styles */
 @import "../../../shared/styles/demo-base.css";

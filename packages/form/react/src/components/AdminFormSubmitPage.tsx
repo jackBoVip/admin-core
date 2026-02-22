@@ -35,6 +35,7 @@ import {
   useState,
 } from 'react';
 import { AdminForm } from './AdminForm';
+import { useLocaleVersion } from '../hooks/useLocaleVersion';
 import type { AdminFormSubmitPageReactProps } from '../types';
 import type { CSSProperties } from 'react';
 
@@ -56,7 +57,11 @@ function useStableFormApi(
 }
 
 export function AdminFormSubmitPage(props: AdminFormSubmitPageInternalProps) {
-  const localeMessages = getLocaleMessages().submitPage;
+  const localeVersion = useLocaleVersion();
+  const localeMessages = useMemo(
+    () => getLocaleMessages().submitPage,
+    [localeVersion]
+  );
   const {
     animation = 'slide',
     cancelText,

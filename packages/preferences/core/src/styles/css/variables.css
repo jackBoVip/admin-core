@@ -241,12 +241,14 @@ html {
     --admin-z-index-tooltip: 1070;
     --admin-z-index-toast: 1080;
 
-    /* ========== 启用 light-dark() 函数所需的 color-scheme ========== */
-    color-scheme: light dark;
+    /* ========== 默认按应用浅色模式解析（避免受系统/浏览器深色偏好干扰） ========== */
+    color-scheme: only light;
   }
 
   /* 显式暗色模式覆盖（当 light-dark() 不生效时的降级方案） */
-  .dark {
+  :root.dark,
+  :root[data-theme='dark'] {
+    color-scheme: dark;
     --background: oklch(0.13 0.02 250);
     --foreground: oklch(0.98 0 0);
     --muted: oklch(0.2 0.02 250);

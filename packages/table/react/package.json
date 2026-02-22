@@ -27,7 +27,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "pnpm run typecheck && vite build",
     "dev": "vite build --watch",
     "test": "vitest --passWithNoTests",
     "test:run": "vitest run --passWithNoTests",
@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@admin-core/form-react": "workspace:*",
+    "@admin-core/preferences": "workspace:*",
     "@admin-core/table-core": "workspace:*"
   },
   "devDependencies": {

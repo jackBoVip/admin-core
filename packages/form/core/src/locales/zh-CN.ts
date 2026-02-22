@@ -1,7 +1,11 @@
-export const zhCN = {
+import type { AdminFormLocaleMessages } from './types';
+
+export const zhCN: AdminFormLocaleMessages = {
   form: {
     collapse: '收起',
     expand: '展开',
+    invalid: '{label}输入无效',
+    querySubmit: '查询',
     rangeInvalid: '{label}范围无效',
     reset: '重置',
     required: '请输入{label}',

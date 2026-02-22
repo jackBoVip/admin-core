@@ -150,7 +150,33 @@ function App() {
 - `header-mixed-nav` - Header mixed navigation
 - `full-content` - Full screen content
 
-### 3. Static + Dynamic Routes
+### 3. Table System (@admin-core/table-vue / @admin-core/table-react)
+
+Unified cross-framework table contract with aligned semantics for Vue and React:
+
+```ts
+import { useAdminTable } from '@admin-core/table-react'; // or @admin-core/table-vue
+
+const [Table, tableApi] = useAdminTable({
+  tableTitle: 'User List',
+  gridOptions: {
+    seqColumn: true,
+    toolbarConfig: { refresh: true, zoom: true, custom: true },
+    rowSelection: { type: 'checkbox', trigger: 'row' },
+    operationColumn: true,
+  },
+});
+```
+
+Main capabilities:
+
+- Toolbar (built-in icons + generated tools + slots)
+- Column custom panel (drag, fixed, sort, filter, persistence)
+- Search form integration (`formOptions` + `proxyConfig`)
+- Row/cell strategy (style, compute, click, regex conditions)
+- Theme and locale integration with preferences
+
+### 4. Static + Dynamic Routes
 
 The framework provides a unified builder for **static route constants + dynamic menu API**, and generates **routes, menus, and breadcrumbs** automatically.  
 Both static and dynamic routes use **RouteRecord style**, and `component` is a string path (e.g. `/system/user`) resolved by the framework.
@@ -221,6 +247,7 @@ admin-core/
 │   └── tsconfig/         # TypeScript configuration
 ├── packages/             # Core packages
 │   ├── form/             # Form system
+│   ├── table/            # Table system
 │   ├── layout/           # Layout system
 │   └── preferences/      # Preference system
 ├── scripts/              # Script tools
@@ -269,12 +296,12 @@ admin-core/
 - [Table System React Docs](./packages/table/react/README.en.md)
 - [TypeScript Configuration Guide](./internal/tsconfig/README.md)
 
-## 🔁 vben Table Migration Quick Map
+## 🔁 Legacy Table Migration Quick Map
 
-| vben | admin-core |
+| Legacy | admin-core |
 | --- | --- |
-| `setupVbenVxeTable` | `setupAdminTableVue` / `setupAdminTableReact` |
-| `useVbenVxeGrid` | `useAdminTable` |
+| `legacySetupVxeTable` | `setupAdminTableVue` / `setupAdminTableReact` |
+| `legacyUseVxeGrid` | `useAdminTable` |
 | `VxeGridApi` | `AdminTableApi` |
 | `CellTag/CellSwitch/CellOperation` | Same renderer names retained |
 

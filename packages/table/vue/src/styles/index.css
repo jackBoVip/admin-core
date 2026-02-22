@@ -1,5 +1,5 @@
-@import 'vxe-table/lib/style.css';
-@import 'vxe-pc-ui/lib/style.css';
+@import 'vxe-table/lib/style.min.css';
+@import 'vxe-pc-ui/lib/style.min.css';
 @import '@admin-core/table-core/styles/table.css';
 
 .admin-table-vxe {

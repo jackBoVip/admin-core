@@ -12,21 +12,24 @@ Framework-agnostic table engine that provides a unified Table API, proxy request
 - `createTableFormatterRegistry`: create formatter registry
 - `registerTableFormatters`: register global formatters
 - `extendProxyOptions`: proxy request enhancement (merge search-form values)
+- Shared column-custom controller: `createColumnCustomSnapshot`, `resolveColumnCustomCancelSnapshot`, `resolveColumnCustomConfirmSnapshot`, `resolveColumnCustomResetSnapshot`, `applyColumnCustomDragMove`, `buildColumnCustomControls`
+- Column custom persistence helpers: `resolveColumnCustomPersistenceConfig`, `readColumnCustomStateFromStorage`, `writeColumnCustomStateToStorage`
+- Shared toolbar/separator helpers: `createTableLocaleText`, `buildBuiltinToolbarTools`, `shouldShowSeparator`, `getSeparatorStyle`, `isProxyEnabled`
 - `@admin-core/table-core/styles` and `@admin-core/table-core/styles/table.css`
 
-## vben Migration Map
+## Legacy Migration Map
 
-| vben API | `@admin-core/table-*` API |
+| Legacy API | `@admin-core/table-*` API |
 | --- | --- |
-| `setupVbenVxeTable` | `setupAdminTableCore` (core) + `setupAdminTableVue` / `setupAdminTableReact` (adapters) |
-| `useVbenVxeGrid(options)` | `useAdminTable(options)` |
+| `legacySetupVxeTable` | `setupAdminTableCore` (core) + `setupAdminTableVue` / `setupAdminTableReact` (adapters) |
+| `legacyUseVxeGrid(options)` | `useAdminTable(options)` |
 | `VxeGridApi` | `AdminTableApi` |
 | `extendsDefaultFormatter` | `registerTableFormatters` |
 | `extendProxyOptions` | `extendProxyOptions` (same name) |
 
 Notes:
 - Renderer names stay compatible: `CellTag` / `CellSwitch` / `CellOperation`.
-- Entry APIs are fully renamed to `admin-core` naming; no vben aliases are exported.
+- Entry APIs are fully renamed to `admin-core` naming; no legacy aliases are exported.
 
 ## Install
 
