@@ -9,6 +9,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "browser": "./dist/index.global.js",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
   "exports": {
     ".": {
       "import": {
@@ -38,6 +41,8 @@
     "build": "pnpm run typecheck && tsup",
     "postbuild": "node ./scripts/copy-table-css.mjs",
     "dev": "tsup --watch",
+    "bench:column-custom": "pnpm run build && node ./scripts/benchmark-column-custom.mjs",
+    "bench:column-custom:check": "pnpm run build && node ./scripts/benchmark-column-custom.mjs --check",
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint src",

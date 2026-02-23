@@ -16,6 +16,19 @@ pnpm add @admin-core/table-vue vxe-table vxe-pc-ui @admin-core/form-vue
 pnpm add @admin-core/preferences @admin-core/preferences-vue
 ```
 
+
+### CDN（生产/开发）
+
+```html
+<!-- jsDelivr（推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/table-vue/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/table-vue/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/table-vue/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/table-vue/dist/index.global.dev.js"></script>
+```
+
 ## 导出 API（完整）
 
 ## 组件与 Hooks

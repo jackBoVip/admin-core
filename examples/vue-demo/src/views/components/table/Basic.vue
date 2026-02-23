@@ -4,6 +4,14 @@ import type { VxeGridListeners } from 'vxe-table';
 import type { VxeTableGridOptions } from '@admin-core/table-vue';
 
 import { useAdminTable } from '@admin-core/table-vue';
+import {
+  ElButton,
+  ElCheckbox,
+  ElInput,
+  ElOption,
+  ElSelect,
+  ElSwitch,
+} from 'element-plus';
 
 import AdapterThemePreview from './AdapterThemePreview.vue';
 import { BASIC_ROWS, type DemoRow } from './data';
@@ -47,6 +55,70 @@ const gridOptions: VxeTableGridOptions<DemoRow> = {
   },
   pagerConfig: {
     enabled: true,
+    toolbar: {
+      hint: {
+        align: 'center',
+        color: '#ef4444',
+        content: '分页提示区：支持左侧按钮/插槽、中间提示（或插槽）、右侧自动构建按钮与插槽。',
+        fontSize: 14,
+        overflow: 'scroll',
+        speed: 10,
+      },
+      leftTools: [
+        {
+          code: 'pager-left-icon',
+          icon: 'vxe-table-icon-repeat',
+          onClick: ({ code }: { code?: string }) => {
+            console.log('pager left tool click:', code);
+          },
+        },
+        {
+          code: 'pager-left-text',
+          onClick: ({ code }: { code?: string }) => {
+            console.log('pager left tool click:', code);
+          },
+          title: '左侧按钮',
+          type: 'default',
+        },
+      ],
+      leftToolsPosition: 'before',
+      leftToolsSlotPosition: 'after',
+      tools: [
+        {
+          code: 'pager-icon-only',
+          icon: 'vxe-table-icon-repeat',
+          onClick: ({ code }: { code?: string }) => {
+            console.log('pager right tool click:', code);
+          },
+        },
+        {
+          code: 'pager-auto-text',
+          onClick: ({ code }: { code?: string }) => {
+            console.log('pager right tool click:', code);
+          },
+          title: '分页自动按钮',
+          type: 'primary',
+        },
+        {
+          code: 'pager-icon-text',
+          icon: 'vxe-table-icon-custom-column',
+          onClick: ({ code }: { code?: string }) => {
+            console.log('pager right tool click:', code);
+          },
+          title: '分页图标按钮',
+        },
+      ],
+      toolsPosition: 'before',
+      toolsSlotPosition: 'after',
+    },
+    exportConfig: {
+      fileName: 'vue-basic-table',
+      options: ['current', 'selected', 'all'],
+      exportAll: async ({ currentPage, pageSize }: { currentPage: number; pageSize: number }) => {
+        await new Promise((resolve) => setTimeout(resolve, 260));
+        console.log('export all via api:', { currentPage, pageSize });
+      },
+    },
   },
   strategy: {
     columns: {
@@ -196,34 +268,40 @@ async function triggerLoading() {
     <div class="card">
       <Grid table-title="基础列表" table-title-help="提示">
         <template #enabled-switch="{ row }">
-          <vxe-switch v-model="row.enabled" size="small" />
+          <ElSwitch v-model="row.enabled" />
         </template>
         <template #selected-checkbox="{ row }">
-          <vxe-checkbox v-model="row.selected" content="" />
+          <ElCheckbox v-model="row.selected" />
         </template>
         <template #level-select="{ row }">
-          <vxe-select
-            v-model="row.level"
-            :options="[
-              { label: '高', value: 'high' },
-              { label: '中', value: 'medium' },
-              { label: '低', value: 'low' },
-            ]"
-            size="small"
-            style="width: 120px"
-          />
+          <ElSelect v-model="row.level" :teleported="false" style="width: 120px">
+            <ElOption label="高" value="high" />
+            <ElOption label="中" value="medium" />
+            <ElOption label="低" value="low" />
+          </ElSelect>
         </template>
         <template #nickname-input="{ row }">
-          <vxe-input
-            v-model="row.nickname"
-            size="small"
-            style="width: 140px"
-          />
+          <ElInput v-model="row.nickname" style="width: 140px" />
         </template>
         <template #toolbar-tools>
-          <button @click="triggerLoading">
+          <ElButton @click="triggerLoading">
             插槽按钮
-          </button>
+          </ElButton>
+        </template>
+        <template #pager-left>
+          <ElButton @click="triggerLoading">
+            分页左插槽
+          </ElButton>
+        </template>
+        <template #pager-center>
+          <span style="color: #ef4444">
+            分页中间插槽
+          </span>
+        </template>
+        <template #pager-tools>
+          <ElButton @click="triggerLoading">
+            分页右插槽
+          </ElButton>
         </template>
       </Grid>
     </div>

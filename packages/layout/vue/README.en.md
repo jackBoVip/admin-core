@@ -43,6 +43,19 @@ Entry groups:
 pnpm add @admin-core/layout-vue
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout-vue/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout-vue/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/layout-vue/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/layout-vue/dist/index.global.dev.js"></script>
+```
+
 ## Quick Start
 
 ```vue

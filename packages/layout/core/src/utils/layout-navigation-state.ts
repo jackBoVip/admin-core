@@ -4,9 +4,12 @@
  */
 
 import {
+  findFirstActivatableChild,
+  getMenuId,
   getCachedMenuPathIndex,
   resolveAutoBreadcrumbOptions,
   resolveBreadcrumbsFromIndex,
+  resolveMenuByPathIndex,
 } from './menu';
 import { normalizeMenuKey } from './menu-key';
 import {
@@ -225,6 +228,111 @@ export function resolveBreadcrumbStateSnapshot(
 export interface CreateLayoutBreadcrumbStateControllerOptions {
   navigateBreadcrumb: (item: BreadcrumbItem) => void;
   onBreadcrumbClick?: (item: BreadcrumbItem, key: string) => void;
+}
+
+const BREADCRUMB_HOME_KEY = '__breadcrumb_home__';
+const BREADCRUMB_KEY_PREFIX = '__breadcrumb_';
+const BREADCRUMB_KEY_SUFFIX = '__';
+
+function normalizeBreadcrumbChildren(
+  children: BreadcrumbItem[],
+  currentPath: string
+): BreadcrumbItem[] {
+  const currentBasePath = getPathWithoutQuery(currentPath);
+
+  return children
+    .filter((child) => !!child)
+    .map((child, index) => {
+      const path = child.path ? getPathWithoutQuery(child.path) : undefined;
+      const clickable = child.clickable ?? !!path;
+      return {
+        ...child,
+        key: child.key || `__breadcrumb_child_${index}__`,
+        path,
+        clickable:
+          clickable && (!path || path !== currentBasePath),
+      };
+    });
+}
+
+function parseMenuIdFromBreadcrumbKey(key: string): string | null {
+  if (!key.startsWith(BREADCRUMB_KEY_PREFIX)) {
+    return null;
+  }
+  if (!key.endsWith(BREADCRUMB_KEY_SUFFIX)) {
+    return null;
+  }
+  const menuId = key.slice(BREADCRUMB_KEY_PREFIX.length, -BREADCRUMB_KEY_SUFFIX.length);
+  return menuId || null;
+}
+
+function resolveMenuChildrenAsBreadcrumbItems(
+  children: MenuItem[] | undefined,
+  currentPath: string
+): BreadcrumbItem[] {
+  const currentBasePath = getPathWithoutQuery(currentPath);
+  if (!children?.length) {
+    return [];
+  }
+
+  return children
+    .filter((child) => !child.hidden && !child.hideInBreadcrumb)
+    .map((child, index) => {
+      const fallbackTarget = child.path ? child : findFirstActivatableChild(child);
+      const path = fallbackTarget?.path
+        ? getPathWithoutQuery(fallbackTarget.path)
+        : undefined;
+      const menuId = getMenuId(child) || String(index);
+
+      return {
+        key: `__breadcrumb_child_${menuId}__`,
+        name: child.name,
+        icon: child.icon,
+        path,
+        clickable:
+          !child.disabled && !!path && path !== currentBasePath,
+      } satisfies BreadcrumbItem;
+    });
+}
+
+export function resolveBreadcrumbChildItems(options: {
+  item: BreadcrumbItem;
+  menus?: MenuItem[];
+  currentPath?: string;
+}): BreadcrumbItem[] {
+  const currentPath = options.currentPath || '';
+  if (options.item.children?.length) {
+    return normalizeBreadcrumbChildren(options.item.children, currentPath);
+  }
+
+  const menus = resolveMenusOrEmpty(options.menus);
+  if (!menus.length) {
+    return [];
+  }
+
+  if (options.item.key === BREADCRUMB_HOME_KEY) {
+    return resolveMenuChildrenAsBreadcrumbItems(menus, currentPath);
+  }
+
+  const menuIndex = getCachedMenuPathIndex(menus);
+  const itemPath = options.item.path ? getPathWithoutQuery(options.item.path) : '';
+
+  let matchedMenu: MenuItem | undefined;
+  if (itemPath) {
+    matchedMenu =
+      menuIndex.byPath.get(itemPath) ??
+      menuIndex.byKey.get(itemPath) ??
+      resolveMenuByPathIndex(menuIndex, itemPath);
+  }
+
+  if (!matchedMenu && options.item.key) {
+    const menuId = parseMenuIdFromBreadcrumbKey(options.item.key);
+    if (menuId) {
+      matchedMenu = menuIndex.byKey.get(menuId) ?? menuIndex.byPath.get(menuId);
+    }
+  }
+
+  return resolveMenuChildrenAsBreadcrumbItems(matchedMenu?.children, currentPath);
 }
 
 export interface LayoutBreadcrumbStateController {

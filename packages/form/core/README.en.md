@@ -10,6 +10,19 @@ Framework-agnostic form engine. Handles schema compilation, state management, va
 pnpm add @admin-core/form-core zod
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/form-core/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/form-core/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/form-core/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/form-core/dist/index.global.dev.js"></script>
+```
+
 ## Exported API Overview
 
 ```ts

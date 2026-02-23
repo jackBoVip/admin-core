@@ -45,6 +45,19 @@ Subpath exports (`package.json`):
 pnpm add @admin-core/layout
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/layout/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/layout/dist/index.global.dev.js"></script>
+```
+
 ## Layout Types
 
 | Type | Description |

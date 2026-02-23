@@ -4,7 +4,11 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import { setupAdminFormReact } from '@admin-core/form-react';
 import { setupAdminTableReact } from '@admin-core/table-react';
-import { initPreferences, useAdminAntdTheme } from '@admin-core/layout-react';
+import {
+  initPreferences,
+  useAdminAntdTheme,
+  usePreferences,
+} from '@admin-core/layout-react';
 import {
   Button,
   Checkbox,
@@ -16,6 +20,7 @@ import {
   Switch,
   theme as antdTheme,
 } from 'antd';
+import enUS from 'antd/locale/en_US';
 import zhCN from 'antd/locale/zh_CN';
 
 // 样式
@@ -68,9 +73,14 @@ function AppProviders() {
     },
     cssVar: { key: 'admin-core' },
   });
+  const { preferences } = usePreferences();
+  const antdLocale =
+    preferences.app.locale === 'en-US'
+      ? enUS
+      : zhCN;
 
   return (
-    <ConfigProvider locale={zhCN} theme={antdThemeConfig as any}>
+    <ConfigProvider locale={antdLocale} theme={antdThemeConfig as any}>
       <BrowserRouter>
         <App />
       </BrowserRouter>

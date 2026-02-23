@@ -42,6 +42,13 @@ packages/
 pnpm install
 ```
 
+### 包安装方式（NPM / CDN）
+
+- NPM：所有包均支持 `npm / pnpm / yarn` 安装（见各包 README 的“安装”章节）。
+- CDN（生产版）：`https://cdn.jsdelivr.net/npm/<package-name>/dist/index.global.js`
+- CDN（开发版）：`https://cdn.jsdelivr.net/npm/<package-name>/dist/index.global.dev.js`
+- 说明：`<package-name>` 例如 `@admin-core/table-react`、`@admin-core/layout-vue`。
+
 ### 开发模式
 
 ```bash

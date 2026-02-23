@@ -10,6 +10,19 @@ React UI adapter for `@admin-core/form-core`. This package only handles renderin
 pnpm add @admin-core/form-react
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/form-react/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/form-react/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/form-react/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/form-react/dist/index.global.dev.js"></script>
+```
+
 ## Full Exported API
 
 ## Components and Hooks

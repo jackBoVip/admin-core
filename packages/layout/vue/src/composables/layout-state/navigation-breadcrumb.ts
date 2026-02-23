@@ -1,5 +1,6 @@
 import {
   createLayoutBreadcrumbStateController,
+  resolveBreadcrumbChildItems,
   resolveBreadcrumbStateSnapshot,
   type BreadcrumbItem,
 } from '@admin-core/layout';
@@ -33,12 +34,20 @@ export function useBreadcrumbState() {
     controller.handleClick(item);
   };
 
+  const resolveChildren = (item: BreadcrumbItem) =>
+    resolveBreadcrumbChildItems({
+      item,
+      menus: context.props.menus,
+      currentPath: currentPath.value,
+    });
+
   return {
     breadcrumbs: computed(() => snapshot.value.breadcrumbs),
     isAutoMode: computed(() => snapshot.value.isAutoMode),
     showIcon: computed(() => snapshot.value.showIcon),
     styleType: computed(() => snapshot.value.styleType),
     handleClick,
+    resolveChildren,
   };
 }
 

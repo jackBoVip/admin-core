@@ -288,6 +288,8 @@ export interface BreadcrumbItem {
   path?: string;
   /** 是否可点击 */
   clickable?: boolean;
+  /** 子菜单（用于点击面包屑展开下拉导航） */
+  children?: BreadcrumbItem[];
 }
 
 /**

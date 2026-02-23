@@ -4,7 +4,7 @@
  * @description 显示在 header 左侧的导航面包屑，自动根据当前路由和菜单生成
  */
 
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { BreadcrumbItem } from '@admin-core/layout';
 import { useBreadcrumbState } from '../../composables/use-layout-state';
 import { useLayoutContext } from '../../composables/use-layout-context';
@@ -25,11 +25,17 @@ const emit = defineEmits<{
   itemClick: [item: BreadcrumbItem];
 }>();
 
-// 使用自动面包屑状态
-const { breadcrumbs: autoBreadcrumbs, showIcon: autoShowIcon, handleClick: autoHandleClick } = useBreadcrumbState();
+const {
+  breadcrumbs: autoBreadcrumbs,
+  showIcon: autoShowIcon,
+  handleClick: autoHandleClick,
+  resolveChildren,
+} = useBreadcrumbState();
 const context = useLayoutContext();
 
-// 如果传入了 items，使用传入的；否则使用自动生成的
+const navRef = ref<HTMLElement | null>(null);
+const openItemKey = ref<string | null>(null);
+
 const rawBreadcrumbItems = computed(() => {
   if (props.items && props.items.length > 0) {
     return props.items;
@@ -37,80 +43,187 @@ const rawBreadcrumbItems = computed(() => {
   return autoBreadcrumbs.value;
 });
 
-// 翻译面包屑名称（处理可能未翻译的 key）
+function translateLabel(label: string) {
+  if (label && label.startsWith('layout.')) {
+    return context.t(label);
+  }
+  return label;
+}
+
 const breadcrumbItems = computed(() => {
-  return rawBreadcrumbItems.value.map(item => {
-    // 如果名称看起来是翻译 key（包含 layout. 前缀），尝试翻译
-    if (item.name && item.name.startsWith('layout.')) {
-      return { ...item, name: context.t(item.name) };
-    }
-    return item;
-  });
+  return rawBreadcrumbItems.value.map((item) => ({
+    ...item,
+    name: translateLabel(item.name),
+  }));
 });
 
-// 显示图标：优先使用 prop，否则使用自动配置
 const showIcon = computed(() => props.showIcon ?? autoShowIcon.value);
 
-// 点击处理
+function getItemKey(item: BreadcrumbItem, index: number): string {
+  return item.key || item.path || `__breadcrumb_${index}`;
+}
+
+const breadcrumbChildItemsMap = computed(() => {
+  const map = new Map<string, BreadcrumbItem[]>();
+  breadcrumbItems.value.forEach((item, index) => {
+    map.set(getItemKey(item, index), resolveChildren(item));
+  });
+  return map;
+});
+
+function getChildItems(item: BreadcrumbItem, index: number): BreadcrumbItem[] {
+  const children = breadcrumbChildItemsMap.value.get(getItemKey(item, index)) ?? [];
+  return children.map((child) => ({
+    ...child,
+    name: translateLabel(child.name),
+  }));
+}
+
+function hasChildMenu(item: BreadcrumbItem, index: number): boolean {
+  return getChildItems(item, index).length > 0;
+}
+
+function isDropdownOpen(item: BreadcrumbItem, index: number): boolean {
+  return openItemKey.value === getItemKey(item, index);
+}
+
+function canTrigger(item: BreadcrumbItem, index: number): boolean {
+  if (hasChildMenu(item, index)) {
+    return true;
+  }
+  const isLast = index === breadcrumbItems.value.length - 1;
+  return !!item.clickable && !isLast && !!item.path;
+}
+
 function handleClick(item: BreadcrumbItem) {
   if (!item.clickable || !item.path) return;
   emit('itemClick', item);
   autoHandleClick(item);
 }
 
-function handleItemClick(e: MouseEvent) {
-  const index = Number((e.currentTarget as HTMLElement | null)?.dataset?.index);
-  if (Number.isNaN(index)) return;
-  const item = breadcrumbItems.value[index];
-  if (item) {
-    handleClick(item);
+function handleTriggerClick(item: BreadcrumbItem, index: number) {
+  if (hasChildMenu(item, index)) {
+    const itemKey = getItemKey(item, index);
+    openItemKey.value = openItemKey.value === itemKey ? null : itemKey;
+    return;
+  }
+  handleClick(item);
+  openItemKey.value = null;
+}
+
+function handleChildClick(child: BreadcrumbItem) {
+  handleClick(child);
+  openItemKey.value = null;
+}
+
+function handleOutsidePointerDown(event: Event) {
+  const target = event.target as Node | null;
+  if (!target || !navRef.value) {
+    return;
+  }
+  if (!navRef.value.contains(target)) {
+    openItemKey.value = null;
   }
 }
 
-// 判断是否可点击
-function isClickable(item: BreadcrumbItem, index: number): boolean {
-  return !!item.clickable && index !== breadcrumbItems.value.length - 1 && !!item.path;
-}
+watch(
+  breadcrumbItems,
+  (items) => {
+    if (!openItemKey.value) return;
+    const exists = items.some((item, index) => getItemKey(item, index) === openItemKey.value);
+    if (!exists) {
+      openItemKey.value = null;
+    }
+  },
+  { deep: false }
+);
+
+onMounted(() => {
+  if (typeof document === 'undefined') return;
+  document.addEventListener('pointerdown', handleOutsidePointerDown, true);
+});
+
+onBeforeUnmount(() => {
+  if (typeof document === 'undefined') return;
+  document.removeEventListener('pointerdown', handleOutsidePointerDown, true);
+});
 </script>
 
 <template>
-  <nav v-if="breadcrumbItems.length > 0" class="breadcrumb flex items-center text-sm" aria-label="Breadcrumb">
+  <nav
+    v-if="breadcrumbItems.length > 0"
+    ref="navRef"
+    class="breadcrumb flex items-center text-sm"
+    aria-label="Breadcrumb"
+  >
     <ol class="flex items-center gap-1">
       <li
         v-for="(item, index) in breadcrumbItems"
-        :key="item.key || item.path || index"
+        :key="getItemKey(item, index)"
         class="flex items-center"
       >
-        <!-- 面包屑项 -->
-        <button
-          v-if="isClickable(item, index)"
-          type="button"
-          class="breadcrumb__item flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-          :data-index="index"
-          @click="handleItemClick"
+        <div
+          class="header-widget-dropdown breadcrumb__dropdown relative"
+          :data-state="isDropdownOpen(item, index) ? 'open' : 'closed'"
         >
-          <span v-if="showIcon && item.icon" class="breadcrumb__icon">
-            <LayoutIcon v-if="item.icon === 'home'" name="home" size="sm" />
-            <span v-else class="text-xs">{{ item.icon }}</span>
+          <button
+            v-if="canTrigger(item, index)"
+            type="button"
+            class="breadcrumb__item breadcrumb__item--trigger flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+            @click="handleTriggerClick(item, index)"
+          >
+            <span v-if="showIcon && item.icon" class="breadcrumb__icon">
+              <LayoutIcon v-if="item.icon === 'home'" name="home" size="sm" />
+              <span v-else class="text-xs">{{ item.icon }}</span>
+            </span>
+            <span>{{ item.name }}</span>
+            <span
+              v-if="hasChildMenu(item, index)"
+              :class="['breadcrumb__dropdown-arrow', isDropdownOpen(item, index) ? 'is-open' : '']"
+            >
+              <LayoutIcon name="menu-arrow-down" size="xs" />
+            </span>
+          </button>
+          <span
+            v-else
+            :class="[
+              'breadcrumb__item flex items-center gap-1',
+              index === breadcrumbItems.length - 1 ? 'text-foreground font-medium' : 'text-muted-foreground',
+            ]"
+          >
+            <span v-if="showIcon && item.icon" class="breadcrumb__icon">
+              <LayoutIcon v-if="item.icon === 'home'" name="home" size="sm" />
+              <span v-else class="text-xs">{{ item.icon }}</span>
+            </span>
+            <span>{{ item.name }}</span>
           </span>
-          <span>{{ item.name }}</span>
-        </button>
+
+          <div
+            v-if="hasChildMenu(item, index) && isDropdownOpen(item, index)"
+            class="header-widget-dropdown__menu breadcrumb__dropdown-menu absolute left-0 top-full mt-2"
+          >
+            <button
+              v-for="child in getChildItems(item, index)"
+              :key="child.key || child.path || child.name"
+              type="button"
+              class="header-widget-dropdown__item breadcrumb__dropdown-item"
+              :disabled="!child.clickable || !child.path"
+              :data-disabled="!child.clickable || !child.path ? 'true' : 'false'"
+              @click="handleChildClick(child)"
+            >
+              <span v-if="showIcon && child.icon" class="breadcrumb__icon">
+                <LayoutIcon v-if="child.icon === 'home'" name="home" size="sm" />
+                <span v-else class="text-xs">{{ child.icon }}</span>
+              </span>
+              <span>{{ child.name }}</span>
+            </button>
+          </div>
+        </div>
+
         <span
-          v-else
-          :class="[
-            'breadcrumb__item flex items-center gap-1',
-            index === breadcrumbItems.length - 1 ? 'text-foreground font-medium' : 'text-muted-foreground'
-          ]"
+          v-if="index < breadcrumbItems.length - 1"
+          class="breadcrumb__separator mx-1.5 text-muted-foreground"
         >
-          <span v-if="showIcon && item.icon" class="breadcrumb__icon">
-            <LayoutIcon v-if="item.icon === 'home'" name="home" size="sm" />
-            <span v-else class="text-xs">{{ item.icon }}</span>
-          </span>
-          <span>{{ item.name }}</span>
-        </span>
-        
-        <!-- 分隔符 -->
-        <span v-if="index < breadcrumbItems.length - 1" class="breadcrumb__separator mx-1.5 text-muted-foreground">
           <LayoutIcon name="breadcrumb-separator" size="sm" />
         </span>
       </li>

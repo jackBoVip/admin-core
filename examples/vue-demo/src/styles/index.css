@@ -2,10 +2,10 @@
 
 /* 共享 Tailwind v4 主题令牌 */
 @import "../../../shared/styles/tailwind-theme.css";
-/* Element Plus 主题变量映射（跟随偏好设置） */
-@import "@admin-core/preferences/styles/element";
 /* Element Plus 组件样式 */
 @import "element-plus/dist/index.css";
+/* Element Plus 主题变量映射（跟随偏好设置） */
+@import "@admin-core/preferences/styles/element";
 
 /* 引入布局样式 */
 @import "@admin-core/layout-vue/styles";

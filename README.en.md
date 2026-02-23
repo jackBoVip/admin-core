@@ -42,6 +42,13 @@ packages/
 pnpm install
 ```
 
+### Package Installation (NPM / CDN)
+
+- NPM: all packages support `npm / pnpm / yarn` installation (see each package README, "Install").
+- CDN (production): `https://cdn.jsdelivr.net/npm/<package-name>/dist/index.global.js`
+- CDN (development): `https://cdn.jsdelivr.net/npm/<package-name>/dist/index.global.dev.js`
+- Note: `<package-name>` examples: `@admin-core/table-react`, `@admin-core/layout-vue`.
+
 ### Development Mode
 
 ```bash

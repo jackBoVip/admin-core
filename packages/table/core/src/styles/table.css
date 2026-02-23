@@ -435,8 +435,19 @@
 
 .admin-table__toolbar-slot-content {
   align-items: center;
+  --admin-table-slot-btn-font-size: var(--admin-table-font-size-sm);
+  --admin-table-slot-btn-height: 30px;
+  --el-component-size: var(--admin-table-slot-btn-height);
+  --el-component-size-small: var(--admin-table-slot-btn-height);
+  --el-font-size-base: var(--admin-table-slot-btn-font-size);
+  --el-font-size-medium: var(--admin-table-slot-btn-font-size);
   display: inline-flex;
   gap: 10px;
+}
+
+.admin-table__toolbar-slot-content
+  :is(button, a, .el-button, .ant-btn, .vxe-button, .vxe-button--button) {
+  font-size: var(--admin-table-slot-btn-font-size) !important;
 }
 
 .admin-table__operation-cell {
@@ -1118,9 +1129,381 @@
   line-height: 14px;
 }
 
+.admin-table__toolbar-tool-icon.admin-table-icon-export {
+  align-items: center;
+  display: inline-flex;
+  font-size: 0;
+  height: 14px;
+  justify-content: center;
+  line-height: 0;
+  width: 14px;
+}
+
+.admin-table__toolbar-tool-icon.admin-table-icon-export::before {
+  -webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmxhY2siPjxwYXRoIGQ9Ik0xMiAzYS43NS43NSAwIDAgMSAuNzUuNzV2OS4xOWwyLjcyLTIuNzJhLjc1Ljc1IDAgMSAxIDEuMDYgMS4wNmwtNCA0YS43NS43NSAwIDAgMS0xLjA2IDBsLTQtNGEuNzUuNzUgMCAxIDEgMS4wNi0xLjA2bDIuNzIgMi43MlYzLjc1QS43NS43NSAwIDAgMSAxMiAzWiIvPjxwYXRoIGQ9Ik0zLjc1IDE1YS43NS43NSAwIDAgMSAuNzUuNzV2M0EyLjI1IDIuMjUgMCAwIDAgNi43NSAyMWgxMC41YTIuMjUgMi4yNSAwIDAgMCAyLjI1LTIuMjV2LTNhLjc1Ljc1IDAgMCAxIDEuNSAwdjNhMy43NSAzLjc1IDAgMCAxLTMuNzUgMy43NUg2Ljc1QTMuNzUgMy43NSAwIDAgMSAzIDE4Ljc1di0zYS43NS43NSAwIDAgMSAuNzUtLjc1WiIvPjwvc3ZnPg==");
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: 14px 14px;
+  background-color: currentColor;
+  content: '';
+  display: inline-block;
+  height: 14px;
+  line-height: 1;
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iYmxhY2siPjxwYXRoIGQ9Ik0xMiAzYS43NS43NSAwIDAgMSAuNzUuNzV2OS4xOWwyLjcyLTIuNzJhLjc1Ljc1IDAgMSAxIDEuMDYgMS4wNmwtNCA0YS43NS43NSAwIDAgMS0xLjA2IDBsLTQtNGEuNzUuNzUgMCAxIDEgMS4wNi0xLjA2bDIuNzIgMi43MlYzLjc1QS43NS43NSAwIDAgMSAxMiAzWiIvPjxwYXRoIGQ9Ik0zLjc1IDE1YS43NS43NSAwIDAgMSAuNzUuNzV2M0EyLjI1IDIuMjUgMCAwIDAgNi43NSAyMWgxMC41YTIuMjUgMi4yNSAwIDAgMCAyLjI1LTIuMjV2LTNhLjc1Ljc1IDAgMCAxIDEuNSAwdjNhMy43NSAzLjc1IDAgMCAxLTMuNzUgMy43NUg2Ljc1QTMuNzUgMy43NSAwIDAgMSAzIDE4Ljc1di0zYS43NS43NSAwIDAgMSAuNzUtLjc1WiIvPjwvc3ZnPg==");
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: 14px 14px;
+  width: 14px;
+}
+
 .admin-table__toolbar-tool-btn svg {
   height: 14px;
   width: 14px;
+}
+
+.admin-table__pager-export {
+  align-items: center;
+  display: inline-flex;
+  margin-inline-start: 8px;
+  position: relative;
+}
+
+.admin-table__pager-export::before {
+  content: '';
+  height: 12px;
+  inset-inline-end: 0;
+  position: absolute;
+  bottom: 100%;
+  width: 144px;
+}
+
+.admin-table__pager-export-host {
+  align-items: center;
+  display: inline-flex !important;
+  list-style: none;
+  margin-inline-start: 8px !important;
+  order: 100;
+}
+
+.admin-table__pager-region {
+  align-items: center;
+  display: inline-flex !important;
+  gap: 10px;
+  line-height: 1;
+  list-style: none;
+  min-width: 0;
+}
+
+.admin-table__pager-region.is-left {
+  order: 0;
+}
+
+.admin-table__pager-region.is-right {
+  order: 95;
+}
+
+.admin-table__pager-region.is-center {
+  left: 50%;
+  max-width: min(52%, 680px);
+  order: 5;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.admin-table__pager-region.is-center .admin-table__toolbar-center-slot,
+.admin-table__pager-region.is-center .admin-table__toolbar-center,
+.admin-table__pager-region.is-center .admin-table__toolbar-hint-viewport,
+.admin-table__pager-region.is-center .admin-table__toolbar-hint-text {
+  pointer-events: auto;
+}
+
+.admin-table__pager-bar-center {
+  flex: 0 1 auto;
+  max-width: 100%;
+  padding-inline: 0;
+}
+
+.admin-table__pager-nav-host {
+  align-items: center;
+  display: inline-flex !important;
+  list-style: none;
+  margin-inline: 4px !important;
+}
+
+.admin-table__pager-nav-host.is-home {
+  margin-inline-start: 8px !important;
+  order: 30;
+}
+
+.admin-table__pager-nav-host.is-end {
+  margin-inline-end: 8px !important;
+  order: 90;
+}
+
+.admin-table__pager-nav-host.is-home::after,
+.admin-table__pager-nav-host.is-end::before {
+  background: var(--admin-table-tool-border);
+  content: '';
+  display: inline-block;
+  height: 14px;
+  width: 1px;
+}
+
+.admin-table__pager-nav-host.is-home::after {
+  margin-inline-start: 8px;
+}
+
+.admin-table__pager-nav-host.is-end::before {
+  margin-inline-end: 8px;
+}
+
+.admin-table__pager-nav-btn {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--admin-table-radius-sm);
+  color: var(--admin-table-tool-text);
+  cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  min-width: 24px;
+  padding: 0;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.admin-table__pager-nav-glyph {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.admin-table__pager-nav-btn:hover {
+  background: color-mix(in srgb, var(--admin-table-tool-hover-color) 12%, transparent);
+  color: var(--admin-table-tool-hover-color);
+}
+
+.admin-table__pager-nav-btn:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-table-tool-focus-color) 24%, transparent);
+  outline: none;
+}
+
+.admin-table__pager-nav-host.is-disabled .admin-table__pager-nav-btn,
+.admin-table__pager-nav-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-total-text {
+  order: 10;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-options {
+  order: 20;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-jump-prev {
+  order: 40;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-prev {
+  order: 50;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-item {
+  order: 60;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-next {
+  order: 70;
+}
+
+.admin-table .ant-table-pagination.ant-pagination > .ant-pagination-jump-next {
+  order: 80;
+}
+
+.admin-table .ant-table-pagination.ant-pagination {
+  position: relative;
+  width: 100%;
+}
+
+.admin-table--pager-align-right .ant-table-pagination.ant-pagination {
+  justify-content: flex-end;
+}
+
+.admin-table--pager-align-right .ant-table-pagination .admin-table__pager-region.is-left {
+  margin-inline-end: auto;
+}
+
+.admin-table--pager-align-right .ant-table-pagination .admin-table__pager-region.is-right {
+  margin-inline-start: 8px;
+}
+
+.admin-table--pager-align-left .ant-table-pagination.ant-pagination {
+  justify-content: flex-start;
+}
+
+.admin-table--pager-align-left .ant-table-pagination .admin-table__pager-region.is-left {
+  margin-inline-end: 8px;
+}
+
+.admin-table--pager-align-left .ant-table-pagination .admin-table__pager-region.is-right {
+  margin-inline-start: auto;
+}
+
+.admin-table .ant-table-pagination .admin-table__pager-export {
+  margin-inline-start: 0;
+}
+
+.admin-table .ant-table-pagination .admin-table__pager-export .admin-table__toolbar-tool-btn {
+  height: 28px;
+  width: 28px;
+}
+
+.admin-table .ant-table-pagination .admin-table__pager-export .admin-table__toolbar-tool-icon {
+  height: 12px;
+  width: 12px;
+}
+
+.admin-table .ant-table-pagination .admin-table__pager-export .admin-table__toolbar-tool-icon.admin-table-icon-export::before {
+  height: 12px;
+  -webkit-mask-size: 12px 12px;
+  mask-size: 12px 12px;
+  width: 12px;
+}
+
+.admin-table .ant-table-pagination.ant-pagination .ant-pagination-item-link {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.admin-table .ant-table-pagination.ant-pagination .ant-pagination-item-link .anticon,
+.admin-table .ant-table-pagination.ant-pagination .ant-pagination-item-link-icon {
+  font-size: 12px;
+}
+
+.admin-table .vxe-pager--right-wrapper .admin-table__pager-export {
+  align-items: center;
+  display: inline-flex;
+  height: 100%;
+  margin-inline-start: 6px;
+  vertical-align: middle;
+}
+
+.admin-table .vxe-pager--right-wrapper {
+  align-items: center;
+  display: inline-flex;
+}
+
+.admin-table .admin-table-vxe .vxe-pager {
+  position: relative;
+}
+
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--left-wrapper,
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--right-wrapper {
+  align-items: center;
+  display: inline-flex;
+  gap: 10px;
+  min-height: 30px;
+  position: static;
+}
+
+.admin-table .admin-table-vxe .vxe-pager--left-wrapper .admin-table__pager-region.is-left {
+  margin-inline-end: 8px;
+}
+
+.admin-table .admin-table-vxe .vxe-pager--right-wrapper .admin-table__pager-region.is-right {
+  margin-inline-start: 8px;
+}
+
+.admin-table .admin-table-vxe .vxe-pager .admin-table__pager-region.is-center {
+  max-width: min(46%, 640px);
+  z-index: 4;
+}
+
+.admin-table .admin-table-vxe .vxe-pager.admin-table__pager--align-right {
+  justify-content: flex-end;
+}
+
+.admin-table .admin-table-vxe .vxe-pager.admin-table__pager--align-left {
+  justify-content: flex-start;
+}
+
+.admin-table .vxe-pager--right-wrapper .admin-table__pager-export .admin-table__toolbar-tool-btn {
+  height: 28px;
+  margin: 0;
+  width: 28px;
+}
+
+.admin-table__pager-export-menu {
+  background: var(--background, #ffffff);
+  border: 1px solid var(--admin-table-tool-border);
+  border-radius: var(--admin-table-radius-sm);
+  box-shadow: 0 12px 24px rgba(2, 6, 23, 0.12);
+  display: grid;
+  gap: 0;
+  inset-inline-end: 0;
+  min-width: 126px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 2px);
+  transform: translateY(3px);
+  transition: opacity 0.16s ease 0.06s, transform 0.16s ease 0.06s;
+  z-index: 42;
+}
+
+.admin-table__pager-export:hover .admin-table__pager-export-menu,
+.admin-table__pager-export:focus-within .admin-table__pager-export-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transition-delay: 0s;
+  transform: translateY(0);
+}
+
+.admin-table__pager-export-item {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--admin-table-tool-border);
+  color: var(--foreground, #0f172a);
+  cursor: pointer;
+  font-size: var(--admin-table-font-size-sm);
+  line-height: 1.2;
+  padding: 8px 12px;
+  text-align: left;
+  transition: background-color 0.16s ease, color 0.16s ease;
+  white-space: nowrap;
+}
+
+.admin-table__pager-export-item:last-child {
+  border-bottom: 0;
+}
+
+.admin-table__pager-export-item:hover {
+  background: var(--admin-table-tool-active-bg);
+  color: var(--admin-table-tool-hover-color);
+}
+
+.admin-table__pager-export-item:focus-visible {
+  background: var(--admin-table-tool-active-bg);
+  color: var(--admin-table-tool-focus-color);
+  outline: none;
+}
+
+.admin-table__pager-export-item:disabled {
+  color: var(--admin-table-tool-border);
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .admin-table__pager-region.is-center {
+    display: none !important;
+  }
 }
 
 .admin-table__toolbar-custom-panel {

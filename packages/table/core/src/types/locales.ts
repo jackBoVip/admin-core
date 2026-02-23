@@ -16,9 +16,17 @@ export interface TableLocaleMessages {
     customRestoreConfirm: string;
     customSort: string;
     emptyValue: string;
+    export: string;
+    exportAll: string;
+    exportAllMissingHandler: string;
+    exportCurrentPage: string;
+    exportSelected: string;
     hideSearchPanel: string;
     noData: string;
     operation: string;
+    pagerFirstPage: string;
+    pagerLastPage: string;
+    pagerTotal: string;
     refresh: string;
     seq: string;
     search: string;

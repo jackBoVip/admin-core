@@ -9,6 +9,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "browser": "./dist/index.global.js",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
   "exports": {
     ".": {
       "import": {
@@ -27,7 +30,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.cdn.config.ts --mode production && vite build --config vite.cdn.config.ts --mode development",
     "dev": "vite build --watch",
     "test": "vitest --passWithNoTests",
     "test:run": "vitest run --passWithNoTests",

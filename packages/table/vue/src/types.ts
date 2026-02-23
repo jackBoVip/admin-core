@@ -9,6 +9,7 @@ import type {
   ColumnCustomState,
   SeparatorOptions,
   TableOperationColumnConfig,
+  TablePagerConfig,
   TableSeqColumnConfig,
   ToolbarConfig,
   ToolbarToolPermissionDirective,
@@ -53,11 +54,17 @@ export interface VxeRowSelectionConfig<
 
 export interface VxeTableGridOptions<
   T extends Record<string, any> = Record<string, any>,
-> extends Omit<VxeTableGridProps<T>, 'toolbarConfig'> {
+> extends Omit<VxeTableGridProps<T>, 'pagerConfig' | 'toolbarConfig'> {
   cellStrategy?: Record<string, TableCellStrategy>;
   columnCustomPersistence?: boolean | ColumnCustomPersistenceConfig;
   columnCustomState?: ColumnCustomState;
   operationColumn?: boolean | TableOperationColumnConfig;
+  pagerConfig?: (Record<string, any> & {
+    /**
+     * 是否在切换 pageSize 时自动回到第一页
+     */
+    resetToFirstOnPageSizeChange?: boolean;
+  } & TablePagerConfig<T>);
   rowStrategy?: TableRowStrategy[];
   rowSelection?: VxeRowSelectionConfig<T>;
   seqColumn?: boolean | TableSeqColumnConfig;

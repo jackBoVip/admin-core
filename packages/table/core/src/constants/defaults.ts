@@ -1,6 +1,9 @@
 import type { AdminTableOptions } from '../types';
 
-export function createDefaultTableOptions(): AdminTableOptions {
+export function createDefaultTableOptions<
+  TData extends Record<string, any> = Record<string, any>,
+  TFormValues extends Record<string, any> = Record<string, any>,
+>(): AdminTableOptions<TData, TFormValues> {
   return {
     class: '',
     formOptions: undefined,

@@ -60,6 +60,19 @@ pnpm add @admin-core/preferences
 yarn add @admin-core/preferences
 ```
 
+
+### CDN（生产/开发）
+
+```html
+<!-- jsDelivr（推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/preferences/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/preferences/dist/index.global.dev.js"></script>
+```
+
 ## 快速开始
 
 ```typescript

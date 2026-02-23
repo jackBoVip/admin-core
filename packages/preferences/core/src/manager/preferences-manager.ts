@@ -247,25 +247,24 @@ export class PreferencesManager {
     this.cachedDiff = null;
 
     const nextActualTheme = getActualThemeMode(this.state.theme.mode);
+    const { keys: changedKeys } = diffWithKeys(prevState, this.state);
 
-    // 应用 CSS 变量（主题切换时执行扩散/收缩动画）
+    // 应用 CSS 变量并通知监听器
+    // 主题切换时，将两者放入同一过渡回调，避免布局局部先更新、扩散动画后触发的时序错位。
     if (prevActualTheme !== nextActualTheme) {
       runThemeTransition(nextActualTheme, () => {
         this.applyPreferences();
+        this.notifyListeners(changedKeys);
       });
     } else {
       this.applyPreferences();
+      this.notifyListeners(changedKeys);
     }
 
     // 持久化（使用防抖，避免频繁写入）
     if (persist) {
       this.debouncedSaveToStorage();
     }
-
-    // 通知监听器（使用 diffWithKeys 一次计算差异和变更键）
-    const { keys: changedKeys } = diffWithKeys(prevState, this.state);
-    
-    this.notifyListeners(changedKeys);
   }
 
   /**

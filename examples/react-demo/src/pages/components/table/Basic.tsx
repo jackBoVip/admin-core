@@ -68,7 +68,73 @@ export default function TableBasic() {
             storage: 'local',
           },
           pagerConfig: {
-            enabled: false,
+            enabled: true,
+            toolbar: {
+              hint: {
+                align: 'center',
+                color: '#ef4444',
+                content: '分页提示区：支持左侧按钮/插槽、中间提示（或插槽）、右侧自动构建按钮与插槽。',
+                fontSize: 14,
+                overflow: 'scroll',
+                speed: 10,
+              },
+              leftTools: [
+                {
+                  code: 'pager-left-icon',
+                  icon: 'vxe-table-icon-repeat',
+                  onClick: ({ code }: { code?: string }) => {
+                    console.log('pager left tool click:', code);
+                  },
+                },
+                {
+                  code: 'pager-left-text',
+                  onClick: ({ code }: { code?: string }) => {
+                    console.log('pager left tool click:', code);
+                  },
+                  title: '左侧按钮',
+                  type: 'default',
+                },
+              ],
+              leftToolsPosition: 'before',
+              leftToolsSlotPosition: 'after',
+              tools: [
+                {
+                  code: 'pager-icon-only',
+                  icon: 'vxe-table-icon-repeat',
+                  onClick: ({ code }: { code?: string }) => {
+                    console.log('pager right tool click:', code);
+                  },
+                },
+                {
+                  code: 'pager-auto-text',
+                  onClick: ({ code }: { code?: string }) => {
+                    console.log('pager right tool click:', code);
+                  },
+                  title: '分页自动按钮',
+                  type: 'primary',
+                },
+                {
+                  code: 'pager-icon-text',
+                  icon: 'vxe-table-icon-custom-column',
+                  onClick: ({ code }: { code?: string }) => {
+                    console.log('pager right tool click:', code);
+                  },
+                  title: '分页图标按钮',
+                },
+              ],
+              toolsPosition: 'before',
+              toolsSlotPosition: 'after',
+            },
+            exportConfig: {
+              fileName: 'react-basic-table',
+              options: ['current', 'selected', 'all'],
+              exportAll: async ({ currentPage, pageSize }) => {
+                await new Promise((resolve) => {
+                  setTimeout(resolve, 260);
+                });
+                console.log('export all via api:', { currentPage, pageSize });
+              },
+            },
           },
           strategy: {
             columns: {
@@ -262,6 +328,19 @@ export default function TableBasic() {
             'toolbar-tools': () => (
               <button onClick={() => void triggerLoading()}>
                 插槽按钮
+              </button>
+            ),
+            'pager-left': () => (
+              <button onClick={() => void triggerLoading()}>
+                分页左插槽
+              </button>
+            ),
+            'pager-center': () => (
+              <span style={{ color: '#ef4444' }}>分页中间插槽</span>
+            ),
+            'pager-tools': () => (
+              <button onClick={() => void triggerLoading()}>
+                分页右插槽
               </button>
             ),
           }}

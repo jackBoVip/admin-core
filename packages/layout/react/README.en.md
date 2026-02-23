@@ -42,6 +42,19 @@ Entry groups:
 pnpm add @admin-core/layout-react
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout-react/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout-react/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/layout-react/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/layout-react/dist/index.global.dev.js"></script>
+```
+
 ## Quick Start
 
 ```tsx

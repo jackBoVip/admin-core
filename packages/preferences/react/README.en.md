@@ -50,6 +50,19 @@ yarn add @admin-core/preferences-react
 - `react >= 18.0.0`
 - `react-dom >= 18.0.0`
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences-react/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences-react/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/preferences-react/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/preferences-react/dist/index.global.dev.js"></script>
+```
+
 ## Quick Start
 
 ### 1. Initialize Preferences

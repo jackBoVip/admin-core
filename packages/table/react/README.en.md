@@ -16,6 +16,19 @@ Optional (recommended):
 pnpm add @admin-core/preferences @admin-core/preferences-react
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/table-react/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/table-react/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/table-react/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/table-react/dist/index.global.dev.js"></script>
+```
+
 ## Public API
 
 | API | Signature / Description |

@@ -50,6 +50,19 @@ yarn add @admin-core/preferences-vue
 **对等依赖:**
 - `vue >= 3.3.0`
 
+
+### CDN（生产/开发）
+
+```html
+<!-- jsDelivr（推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences-vue/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences-vue/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/preferences-vue/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/preferences-vue/dist/index.global.dev.js"></script>
+```
+
 ## 快速开始
 
 ### 1. 初始化偏好设置

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createLayoutBreadcrumbStateController,
   createLayoutMenuStateController,
+  resolveBreadcrumbChildItems,
   resolveBreadcrumbDisplayOptions,
   resolveBreadcrumbItems,
   resolveBreadcrumbStateSnapshot,
@@ -77,6 +78,56 @@ describe('layout-navigation-state helpers', () => {
     expect(controller.handleClick({ key: 'noop', name: 'noop', path: '/noop', clickable: false })).toBe(false);
     expect(controller.handleClick({ key: 'no-path', name: 'no-path' })).toBe(false);
     expect(logs).toEqual(['navigate:home', 'event:home:home']);
+  });
+
+  it('should resolve breadcrumb child items from menu tree', () => {
+    const menus = [
+      {
+        key: 'system',
+        name: '系统管理',
+        path: '/system',
+        children: [
+          { key: 'user', name: '用户管理', path: '/system/user' },
+          { key: 'role', name: '角色管理', path: '/system/role' },
+        ],
+      },
+    ];
+
+    const items = resolveBreadcrumbChildItems({
+      item: {
+        key: '__breadcrumb_system__',
+        name: '系统管理',
+        path: '/system',
+        clickable: true,
+      },
+      menus,
+      currentPath: '/system/user',
+    });
+
+    expect(items).toHaveLength(2);
+    expect(items[0]?.name).toBe('用户管理');
+    expect(items[0]?.clickable).toBe(false);
+    expect(items[1]?.path).toBe('/system/role');
+  });
+
+  it('should resolve breadcrumb child items from custom item children', () => {
+    const items = resolveBreadcrumbChildItems({
+      item: {
+        key: 'custom',
+        name: '自定义',
+        children: [{ key: 'detail', name: '详情', path: '/detail' }],
+      },
+      currentPath: '/list',
+    });
+
+    expect(items).toEqual([
+      {
+        key: 'detail',
+        name: '详情',
+        path: '/detail',
+        clickable: true,
+      },
+    ]);
   });
 
   it('should sync menu open keys by current path', () => {

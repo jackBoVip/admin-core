@@ -144,6 +144,7 @@ export default defineConfig([
     outDir: 'dist',
     format: ['iife'],
     globalName: 'AdminCorePreferences',
+    clean: false,
     outExtension: () => ({ js: '.global.js' }),
     sourcemap: process.env.NODE_ENV !== 'production',
     treeshake: true,
@@ -156,6 +157,33 @@ export default defineConfig([
         js: '/* @admin-core/preferences - CDN Build */',
       };
       // 处理图片文件，转换为 base64 data URL
+      options.loader = {
+        ...options.loader,
+        '.jpg': 'dataurl',
+        '.jpeg': 'dataurl',
+        '.png': 'dataurl',
+        '.gif': 'dataurl',
+        '.webp': 'dataurl',
+      };
+    },
+  },
+  {
+    entry: ['src/index.ts'],
+    outDir: 'dist',
+    format: ['iife'],
+    globalName: 'AdminCorePreferences',
+    clean: false,
+    outExtension: () => ({ js: '.global.dev.js' }),
+    sourcemap: true,
+    treeshake: true,
+    minify: false,
+    target: 'es2020',
+    // CDN 开发版本也内联 culori
+    noExternal: ['culori'],
+    esbuildOptions(options) {
+      options.banner = {
+        js: '/* @admin-core/preferences - CDN Development Build */',
+      };
       options.loader = {
         ...options.loader,
         '.jpg': 'dataurl',

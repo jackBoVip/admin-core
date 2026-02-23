@@ -1,4 +1,3 @@
-import { deepClone, mergeWithArrayOverride } from '../utils';
 import type { ProxyConfig } from '../types';
 
 
@@ -58,13 +57,11 @@ export function extendProxyOptions<T extends Record<string, any> = Record<string
     };
   }
 
-  const patch = {
+  return {
+    ...(options as Record<string, any>),
     proxyConfig: {
+      ...(proxyConfig as Record<string, any>),
       ajax: nextAjax,
     },
-  } as unknown as Partial<T>;
-
-  const next = mergeWithArrayOverride(patch, deepClone(options));
-
-  return next;
+  } as unknown as T;
 }

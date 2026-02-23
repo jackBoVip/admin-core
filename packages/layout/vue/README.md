@@ -43,6 +43,19 @@ Vue 3 基础布局组件，开箱即用，高度集成偏好设置。
 pnpm add @admin-core/layout-vue
 ```
 
+
+### CDN（生产/开发）
+
+```html
+<!-- jsDelivr（推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout-vue/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout-vue/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/layout-vue/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/layout-vue/dist/index.global.dev.js"></script>
+```
+
 ## 快速开始
 
 ```vue

@@ -50,6 +50,19 @@ yarn add @admin-core/preferences-vue
 **Peer Dependencies:**
 - `vue >= 3.3.0`
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences-vue/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences-vue/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/preferences-vue/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/preferences-vue/dist/index.global.dev.js"></script>
+```
+
 ## Quick Start
 
 ### 1. Initialize Preferences

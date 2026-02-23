@@ -7,11 +7,13 @@ import type {
 
 import type {
   AdminTableApi,
+  AdminTablePaginationChangePayload,
   ColumnCustomDragHoverState,
   ColumnCustomDragPosition,
   ColumnCustomDragState,
   ColumnCustomFlipRect,
   ColumnCustomSnapshot,
+  ResolvedTablePagerExportAction,
   ResolvedToolbarActionTool,
   TableColumnFixedValue,
   TableColumnRecord,
@@ -46,13 +48,16 @@ import {
   collectSelectionKeysByRows,
   collectColumnCustomFlipOffsets,
   collectColumnCustomFlipRects,
+  createColumnCustomControlsOrderDigest,
   createTableComparableSelectionKeySet,
   createColumnCustomDragResetState,
   createColumnCustomChangePayload,
+  createPagerExportEventPayload,
   createTableLocaleText,
   deepEqual,
   ensureSeqColumn,
   ensureSelectionColumn,
+  exportTableRowsToExcel,
   extendProxyOptions,
   getColumnFilterValueKey,
   getSearchPanelToggleTitle,
@@ -67,6 +72,7 @@ import {
   isProxyEnabled,
   mergeWithArrayOverride,
   normalizeTableSelectionKeys,
+  normalizeTableExportFileName,
   readColumnCustomStateFromStorage,
   resetColumnCustomFlipTransforms,
   resolveColumnCustomAutoScrollTop,
@@ -86,6 +92,10 @@ import {
   resolveToolbarHintConfig,
   resolveSelectionMode,
   resolveSelectionRowsByKeys,
+  resolveTableExportColumns,
+  resolveTablePagerLayouts,
+  resolveTablePagerPageSizes,
+  resolveTablePagerExportConfig,
   resolveTableCellStrategyResult,
   resolveTableRowStrategyInlineStyle,
   resolveTableRowStrategyResult,
@@ -131,6 +141,9 @@ const gridRef = ref<VxeGridInstance>();
 const toolbarHintViewportRef = ref<HTMLDivElement | null>(null);
 const toolbarHintTextRef = ref<HTMLSpanElement | null>(null);
 const toolbarHintShouldScroll = ref(false);
+const pagerHintViewportRef = ref<HTMLDivElement | null>(null);
+const pagerHintTextRef = ref<HTMLSpanElement | null>(null);
+const pagerHintShouldScroll = ref(false);
 const localeVersion = useLocaleVersion();
 const localeText = computed(() => {
   const tick = localeVersion.value;
@@ -209,7 +222,7 @@ watch(
   (next) => {
     formApi.setState((prev) => mergeWithArrayOverride(next ?? {}, prev));
   },
-  { deep: true, immediate: true }
+  { immediate: true }
 );
 
 watch(
@@ -229,6 +242,7 @@ watch(
 const isMobile = ref(false);
 const maximized = ref(false);
 const refreshing = ref(false);
+const resetPageSizeToFirstPending = ref(false);
 
 const customPanelOpen = ref(false);
 const customDraftVisibleColumns = ref<Record<string, boolean>>({});
@@ -275,6 +289,7 @@ const updateMobile = () => {
   if (typeof window === 'undefined') return;
   isMobile.value = window.matchMedia('(max-width: 768px)').matches;
   void nextTick(syncToolbarHintOverflow);
+  void nextTick(syncPagerHintOverflow);
 };
 
 const toolbarConfig = computed(() => {
@@ -378,6 +393,221 @@ const showSearchButton = computed(() => {
   return !!toolbarConfig.value.search && !!state.value.formOptions;
 });
 
+const pagerConfigRecord = computed(() => {
+  return ((state.value.gridOptions as Record<string, any> | undefined)?.pagerConfig ??
+    {}) as Record<string, any>;
+});
+
+const pagerPosition = computed(() => {
+  return pagerConfigRecord.value.position === 'left' ? 'left' : 'right';
+});
+
+const pagerToolbarConfig = computed(() => {
+  const source = (pagerConfigRecord.value.toolbar ??
+    pagerConfigRecord.value.toolbarConfig) as Record<string, any> | undefined;
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    return {} as Record<string, any>;
+  }
+  return source;
+});
+
+const hasPagerLeftSlot = computed(() => {
+  return !!slots['pager-left'];
+});
+
+const hasPagerCenterSlot = computed(() => {
+  return !!slots['pager-center'];
+});
+
+const hasPagerToolsSlot = computed(() => {
+  return !!slots['pager-tools'];
+});
+
+const pagerHintConfig = computed(() => {
+  return resolveToolbarHintConfig(pagerToolbarConfig.value.hint);
+});
+
+const showPagerCenter = computed(() => {
+  return hasPagerCenterSlot.value || !!pagerHintConfig.value;
+});
+
+const pagerHintAlignClass = computed(() => {
+  const align = pagerHintConfig.value?.align ?? 'center';
+  return `is-${align}`;
+});
+
+const pagerHintOverflowClass = computed(() => {
+  return pagerHintConfig.value?.overflow === 'scroll' ? 'is-scroll' : 'is-wrap';
+});
+
+const pagerHintTextStyle = computed(() => {
+  const config = pagerHintConfig.value;
+  if (!config) {
+    return undefined;
+  }
+  const style: Record<string, string> = {};
+  if (config.color) {
+    style.color = config.color;
+  }
+  if (config.fontSize) {
+    style.fontSize = config.fontSize;
+  }
+  if (config.overflow === 'scroll') {
+    style['--admin-table-toolbar-hint-duration'] = `${config.speed}s`;
+  }
+  return style;
+});
+
+const pagerLeftToolsPosition = computed(() => {
+  return resolveToolbarInlinePosition(pagerToolbarConfig.value.leftToolsPosition, 'before');
+});
+
+const pagerLeftToolsSlotPosition = computed(() => {
+  return resolveToolbarToolsSlotPosition(pagerToolbarConfig.value.leftToolsSlotPosition);
+});
+
+const hasPagerLeftSlotReplaceTools = computed(() => {
+  return hasPagerLeftSlot.value && pagerLeftToolsSlotPosition.value === 'replace';
+});
+
+const hasPagerLeftSlotBeforeTools = computed(() => {
+  return hasPagerLeftSlot.value && pagerLeftToolsSlotPosition.value === 'before';
+});
+
+const hasPagerLeftSlotAfterTools = computed(() => {
+  return hasPagerLeftSlot.value && pagerLeftToolsSlotPosition.value !== 'before';
+});
+
+const pagerLeftTools = computed<ResolvedToolbarActionTool[]>(() => {
+  return resolveVisibleToolbarActionTools({
+    accessCodes: setupState.accessCodes,
+    accessRoles: setupState.accessRoles,
+    directiveRenderer: (candidate) =>
+      !!toButtonDirectiveTuple(candidate as ResolvedToolbarActionTool),
+    maximized: maximized.value,
+    permissionChecker: setupState.permissionChecker,
+    showSearchForm: state.value.showSearchForm,
+    tools: pagerToolbarConfig.value.leftTools,
+    useDirectiveWhenNoAccess: true,
+  });
+});
+
+const pagerLeftToolsBeforeSlot = computed(() => {
+  return pagerLeftToolsPosition.value === 'before' ? pagerLeftTools.value : [];
+});
+
+const pagerLeftToolsAfterSlot = computed(() => {
+  return pagerLeftToolsPosition.value === 'before' ? [] : pagerLeftTools.value;
+});
+
+const pagerRightToolsSource = computed(() => {
+  if (Array.isArray(pagerToolbarConfig.value.rightTools)) {
+    return pagerToolbarConfig.value.rightTools;
+  }
+  return pagerToolbarConfig.value.tools;
+});
+
+const pagerRightToolsPosition = computed(() => {
+  return resolveToolbarInlinePosition(
+    pagerToolbarConfig.value.rightToolsPosition ??
+      pagerToolbarConfig.value.toolsPosition,
+    'before'
+  );
+});
+
+const pagerRightToolsSlotPosition = computed(() => {
+  return resolveToolbarToolsSlotPosition(
+    pagerToolbarConfig.value.rightToolsSlotPosition ??
+      pagerToolbarConfig.value.toolsSlotPosition
+  );
+});
+
+const hasPagerToolsSlotReplaceTools = computed(() => {
+  return hasPagerToolsSlot.value && pagerRightToolsSlotPosition.value === 'replace';
+});
+
+const hasPagerToolsSlotBeforeTools = computed(() => {
+  return hasPagerToolsSlot.value && pagerRightToolsSlotPosition.value === 'before';
+});
+
+const hasPagerToolsSlotAfterTools = computed(() => {
+  return hasPagerToolsSlot.value && pagerRightToolsSlotPosition.value !== 'before';
+});
+
+const pagerRightTools = computed<ResolvedToolbarActionTool[]>(() => {
+  return resolveVisibleToolbarActionTools({
+    accessCodes: setupState.accessCodes,
+    accessRoles: setupState.accessRoles,
+    directiveRenderer: (candidate) =>
+      !!toButtonDirectiveTuple(candidate as ResolvedToolbarActionTool),
+    maximized: maximized.value,
+    permissionChecker: setupState.permissionChecker,
+    showSearchForm: state.value.showSearchForm,
+    tools: pagerRightToolsSource.value,
+    useDirectiveWhenNoAccess: true,
+  });
+});
+
+const pagerRightToolsBeforeBuiltin = computed(() => {
+  return pagerRightToolsPosition.value === 'before' ? pagerRightTools.value : [];
+});
+
+const pagerRightToolsAfterBuiltin = computed(() => {
+  return pagerRightToolsPosition.value === 'before' ? [] : pagerRightTools.value;
+});
+
+const pagerExportConfig = computed(() => {
+  return resolveTablePagerExportConfig(
+    pagerConfigRecord.value.exportConfig,
+    localeText.value
+  );
+});
+
+const pagerExportActions = computed<Array<ResolvedTablePagerExportAction>>(() => {
+  const actions = pagerExportConfig.value?.options ?? [];
+  return actions
+    .filter((action) =>
+      resolveToolbarToolVisibility(action, {
+        accessCodes: setupState.accessCodes,
+        accessRoles: setupState.accessRoles,
+        permissionChecker: setupState.permissionChecker,
+      })
+    )
+    .map((action) => ({ ...action }));
+});
+
+const pagerExportSingleAction = computed<
+  ResolvedTablePagerExportAction | undefined
+>(() => {
+  return pagerExportActions.value.length === 1
+    ? pagerExportActions.value[0]
+    : undefined;
+});
+
+const showPagerExport = computed(() => {
+  const pagerEnabled = pagerConfigRecord.value.enabled !== false;
+  return pagerEnabled && pagerExportActions.value.length > 0;
+});
+
+const showPagerExportInRight = computed(() => {
+  return showPagerExport.value && !hasPagerToolsSlotReplaceTools.value;
+});
+
+const showPagerLeftArea = computed(() => {
+  return (
+    (!!hasPagerLeftSlot.value && !!slots['pager-left']) ||
+    (!hasPagerLeftSlotReplaceTools.value && pagerLeftTools.value.length > 0)
+  );
+});
+
+const showPagerRightArea = computed(() => {
+  return (
+    (!!hasPagerToolsSlot.value && !!slots['pager-tools']) ||
+    (!hasPagerToolsSlotReplaceTools.value && pagerRightTools.value.length > 0) ||
+    showPagerExportInRight.value
+  );
+});
+
 const showTableTitle = computed<boolean>(() => {
   return !!slots['table-title'] || !!state.value.tableTitle;
 });
@@ -426,21 +656,77 @@ const sourceGridOptions = computed(() => {
   }
 
   if (merged.pagerConfig) {
-    const mobileLayouts = ['PrevJump', 'PrevPage', 'Number', 'NextPage', 'NextJump'];
-    const layouts = ['Total', 'Sizes', 'Home', ...mobileLayouts, 'End'];
+    const {
+      exportConfig: _exportConfig,
+      position: _position,
+      resetToFirstOnPageSizeChange: _resetToFirstOnPageSizeChange,
+      toolbar: _toolbar,
+      toolbarConfig: _toolbarConfig,
+      ...pagerConfig
+    } = (merged.pagerConfig as Record<string, any>) ?? {};
+    const sourceSlots =
+      pagerConfig.slots &&
+      typeof pagerConfig.slots === 'object' &&
+      !Array.isArray(pagerConfig.slots)
+        ? { ...(pagerConfig.slots as Record<string, any>) }
+        : {};
+    const sourceClassName =
+      typeof pagerConfig.className === 'string' ? pagerConfig.className.trim() : '';
+    const resolvedPageSizes = resolveTablePagerPageSizes(pagerConfig.pageSizes);
+    const resolvedLayouts = resolveTablePagerLayouts(
+      pagerConfig.layouts,
+      isMobile.value
+    );
+    const rawPageSize = Number(pagerConfig.pageSize);
+    const resolvedPageSize =
+      Number.isFinite(rawPageSize) && rawPageSize > 0
+        ? rawPageSize
+        : resolvedPageSizes.includes(20)
+          ? 20
+          : (resolvedPageSizes[0] ?? 20);
+    const pagerClassName = [
+      sourceClassName,
+      'mt-2',
+      'w-full',
+      `admin-table__pager--align-${pagerPosition.value}`,
+    ]
+      .filter((item) => item.length > 0)
+      .join(' ');
 
     merged.pagerConfig = {
-      ...merged.pagerConfig,
+      ...pagerConfig,
+      align: pagerPosition.value,
       background: true,
-      className: 'mt-2 w-full',
-      layouts: isMobile.value ? mobileLayouts : layouts,
-      pageSize: merged.pagerConfig.pageSize ?? 20,
-      pageSizes: merged.pagerConfig.pageSizes ?? [10, 20, 30, 50, 100, 200],
+      className: pagerClassName,
+      layouts: resolvedLayouts,
+      pageSize: resolvedPageSize,
+      pageSizes: resolvedPageSizes,
       size: 'mini',
     } as any;
+
+    const nextSlots = {
+      ...sourceSlots,
+    } as Record<string, any>;
+    if (showPagerLeftArea.value || showPagerCenter.value) {
+      nextSlots.left = '__admin_table_pager_left';
+    }
+    if (showPagerRightArea.value) {
+      nextSlots.right = '__admin_table_pager_right';
+    }
+    if (Object.keys(nextSlots).length > 0) {
+      merged.pagerConfig = {
+        ...(merged.pagerConfig as Record<string, any>),
+        slots: nextSlots,
+      } as any;
+    }
   }
 
   return merged;
+});
+
+const resetToFirstOnPageSizeChange = computed(() => {
+  return (state.value.gridOptions as Record<string, any> | undefined)?.pagerConfig
+    ?.resetToFirstOnPageSizeChange === true;
 });
 
 const sourceColumns = computed<TableColumnRecord[]>(() => {
@@ -473,6 +759,16 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
     string,
     ReturnType<typeof buildDefaultColumnFilterOptions>
   >();
+  const cellStrategyCache = new WeakMap<
+    Record<string, any>,
+    Map<
+      string,
+      {
+        rawValue: unknown;
+        result: ReturnType<typeof resolveTableCellStrategyResult>;
+      }
+    >
+  >();
   const resolveDefaultFilterOptions = (field: string) => {
     const cached = defaultFilterOptionsCache.get(field);
     if (cached) {
@@ -483,6 +779,53 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
     });
     defaultFilterOptionsCache.set(field, next);
     return next;
+  };
+  const resolveCellStrategy = (
+    column: TableColumnRecord,
+    field: string,
+    row: Record<string, any>,
+    rowIndex: number,
+    rawValue: unknown
+  ) => {
+    if (!row || typeof row !== 'object') {
+      return resolveTableCellStrategyResult({
+        column,
+        field,
+        gridOptions: sourceGridOptionsRecord,
+        row,
+        rowIndex,
+        value: rawValue,
+      });
+    }
+    let rowCache = cellStrategyCache.get(row);
+    if (!rowCache) {
+      rowCache = new Map<
+        string,
+        {
+          rawValue: unknown;
+          result: ReturnType<typeof resolveTableCellStrategyResult>;
+        }
+      >();
+      cellStrategyCache.set(row, rowCache);
+    }
+    const cacheKey = `${field}:${rowIndex}`;
+    const cached = rowCache.get(cacheKey);
+    if (cached && Object.is(cached.rawValue, rawValue)) {
+      return cached.result;
+    }
+    const resolved = resolveTableCellStrategyResult({
+      column,
+      field,
+      gridOptions: sourceGridOptionsRecord,
+      row,
+      rowIndex,
+      value: rawValue,
+    });
+    rowCache.set(cacheKey, {
+      rawValue,
+      result: resolved,
+    });
+    return resolved;
   };
 
   return buildColumnRuntimeItems(
@@ -541,14 +884,13 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
         const rawValue = Object.prototype.hasOwnProperty.call(params ?? {}, 'cellValue')
           ? params.cellValue
           : getColumnValueByPath(row, field);
-        const strategyResult = resolveTableCellStrategyResult({
+        const strategyResult = resolveCellStrategy(
           column,
           field,
-          gridOptions: sourceGridOptionsRecord,
           row,
           rowIndex,
-          value: rawValue,
-        });
+          rawValue
+        );
         const strategyValue = strategyResult ? strategyResult.value : rawValue;
 
         if (typeof sourceFormatter === 'function') {
@@ -590,14 +932,13 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
         const rawValue = Object.prototype.hasOwnProperty.call(params ?? {}, 'cellValue')
           ? params.cellValue
           : getColumnValueByPath(row, field);
-        const strategyResult = resolveTableCellStrategyResult({
+        const strategyResult = resolveCellStrategy(
           column,
           field,
-          gridOptions: sourceGridOptionsRecord,
           row,
           rowIndex,
-          value: rawValue,
-        });
+          rawValue
+        );
         return [
           sourceClassName,
           strategyResult?.className,
@@ -621,14 +962,13 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
         const rawValue = Object.prototype.hasOwnProperty.call(params ?? {}, 'cellValue')
           ? params.cellValue
           : getColumnValueByPath(row, field);
-        const strategyResult = resolveTableCellStrategyResult({
+        const strategyResult = resolveCellStrategy(
           column,
           field,
-          gridOptions: sourceGridOptionsRecord,
           row,
           rowIndex,
-          value: rawValue,
-        });
+          rawValue
+        );
         return {
           ...((sourceStyle as Record<string, any> | undefined) ?? {}),
           ...((strategyResult?.style ?? {}) as Record<string, any>),
@@ -829,6 +1169,65 @@ const gridOptions = computed(() => {
   } as VxeTableGridProps;
   const sourceRowClassName = (merged as Record<string, any>).rowClassName;
   const sourceRowStyle = (merged as Record<string, any>).rowStyle;
+  const rowStrategyCache = new WeakMap<
+    Record<string, any>,
+    Map<number, ReturnType<typeof resolveTableRowStrategyResult>>
+  >();
+  const rowInlineStyleCache = new WeakMap<
+    Record<string, any>,
+    Map<number, ReturnType<typeof resolveTableRowStrategyInlineStyle> | undefined>
+  >();
+  const resolveRowStrategy = (
+    row: Record<string, any>,
+    rowIndex: number
+  ) => {
+    if (!row || typeof row !== 'object') {
+      return resolveTableRowStrategyResult({
+        gridOptions: sourceGridOptionsRecord,
+        row,
+        rowIndex,
+      });
+    }
+    let rowCache = rowStrategyCache.get(row);
+    if (!rowCache) {
+      rowCache = new Map<number, ReturnType<typeof resolveTableRowStrategyResult>>();
+      rowStrategyCache.set(row, rowCache);
+    }
+    if (rowCache.has(rowIndex)) {
+      return rowCache.get(rowIndex);
+    }
+    const resolved = resolveTableRowStrategyResult({
+      gridOptions: sourceGridOptionsRecord,
+      row,
+      rowIndex,
+    });
+    rowCache.set(rowIndex, resolved);
+    return resolved;
+  };
+  const resolveRowStrategyInlineStyleCached = (
+    row: Record<string, any>,
+    rowIndex: number
+  ) => {
+    if (!row || typeof row !== 'object') {
+      const rowStrategyResult = resolveRowStrategy(row, rowIndex);
+      return resolveTableRowStrategyInlineStyle(rowStrategyResult?.style);
+    }
+    let rowCache = rowInlineStyleCache.get(row);
+    if (!rowCache) {
+      rowCache = new Map<
+        number,
+        ReturnType<typeof resolveTableRowStrategyInlineStyle> | undefined
+      >();
+      rowInlineStyleCache.set(row, rowCache);
+    }
+    if (rowCache.has(rowIndex)) {
+      return rowCache.get(rowIndex);
+    }
+    const rowStrategyResult = resolveRowStrategy(row, rowIndex);
+    const resolved = resolveTableRowStrategyInlineStyle(rowStrategyResult?.style);
+    rowCache.set(rowIndex, resolved);
+    return resolved;
+  };
 
   (merged as Record<string, any>).rowClassName = (params: Record<string, any>) => {
     const sourceClassName = typeof sourceRowClassName === 'function'
@@ -841,11 +1240,7 @@ const gridOptions = computed(() => {
         : typeof params?._rowIndex === 'number'
           ? params._rowIndex
           : -1;
-    const rowStrategyResult = resolveTableRowStrategyResult({
-      gridOptions: sourceGridOptionsRecord,
-      row,
-      rowIndex,
-    });
+    const rowStrategyResult = resolveRowStrategy(row, rowIndex);
     return [
       sourceClassName,
       hasTableRowStrategyStyle(rowStrategyResult?.style)
@@ -868,13 +1263,9 @@ const gridOptions = computed(() => {
         : typeof params?._rowIndex === 'number'
           ? params._rowIndex
           : -1;
-    const rowStrategyResult = resolveTableRowStrategyResult({
-      gridOptions: sourceGridOptionsRecord,
+    const strategyInlineStyle = resolveRowStrategyInlineStyleCached(
       row,
-      rowIndex,
-    });
-    const strategyInlineStyle = resolveTableRowStrategyInlineStyle(
-      rowStrategyResult?.style
+      rowIndex
     );
     return {
       ...((sourceStyle as Record<string, any> | undefined) ?? {}),
@@ -980,11 +1371,15 @@ const runtimeGridEvents = computed(() => {
   return (state.value.gridEvents ?? {}) as Record<string, any>;
 });
 
-function getSelectionRows() {
+const flattenedSelectionRows = computed(() => {
   const sourceRows = Array.isArray(sourceGridOptions.value.data)
     ? (sourceGridOptions.value.data as Array<Record<string, any>>)
     : [];
   return flattenTableRows(sourceRows);
+});
+
+function getSelectionRows() {
+  return flattenedSelectionRows.value;
 }
 
 function getSelectionKeysByRows(rows: Array<Record<string, any>>) {
@@ -1159,10 +1554,14 @@ const gridEvents = computed(() => {
   const next = {
     ...source,
   } as Record<string, any>;
+  delete next.onPageChange;
+  delete next.onPageSizeChange;
+  delete next.onPaginationChange;
   const sourceRadioChange = source.radioChange;
   const sourceCheckboxChange = source.checkboxChange;
   const sourceCheckboxAll = source.checkboxAll;
   const sourceCellClick = source.cellClick;
+  const sourcePageChange = source.pageChange;
   const sourceRowClick = source.rowClick;
 
   next.radioChange = (params: Record<string, any>) => {
@@ -1251,6 +1650,79 @@ const gridEvents = computed(() => {
     }
     if (typeof sourceRowClick === 'function') {
       sourceRowClick(params);
+    }
+  };
+  next.pageChange = (params: Record<string, any>) => {
+    const eventCurrentPageRaw = params?.currentPage ?? params?.page?.currentPage;
+    const eventCurrentPage = Number(eventCurrentPageRaw);
+    if (
+      resetPageSizeToFirstPending.value &&
+      params?.type === 'current' &&
+      Number.isFinite(eventCurrentPage) &&
+      eventCurrentPage === 1
+    ) {
+      resetPageSizeToFirstPending.value = false;
+      if (typeof sourcePageChange === 'function') {
+        sourcePageChange(params);
+      }
+      return;
+    }
+
+    const currentPageRaw =
+      params?.currentPage ??
+      params?.page?.currentPage ??
+      sourceGridOptionsRecord?.pagerConfig?.currentPage ??
+      1;
+    const pageSizeRaw =
+      params?.pageSize ??
+      params?.page?.pageSize ??
+      sourceGridOptionsRecord?.pagerConfig?.pageSize ??
+      20;
+    const totalRaw = params?.total ?? sourceGridOptionsRecord?.pagerConfig?.total;
+    const currentPage = Number(currentPageRaw);
+    const pageSize = Number(pageSizeRaw);
+    const total = Number(totalRaw);
+    const normalizedCurrentPage = Number.isFinite(currentPage) ? currentPage : 1;
+    const normalizedPageSize = Number.isFinite(pageSize) ? pageSize : 20;
+    const shouldResetToFirstOnPageSizeChange =
+      params?.type === 'size' &&
+      resetToFirstOnPageSizeChange.value === true &&
+      normalizedCurrentPage !== 1;
+    const nextCurrentPage = shouldResetToFirstOnPageSizeChange
+      ? 1
+      : normalizedCurrentPage;
+    const payload: AdminTablePaginationChangePayload = {
+      currentPage: nextCurrentPage,
+      pageSize: normalizedPageSize,
+      raw: params,
+      source: 'vue',
+      total: Number.isFinite(total) ? total : undefined,
+      type: params?.type === 'size' ? 'size' : 'current',
+    };
+
+    runtimeGridEvents.value?.onPageChange?.(payload);
+    runtimeGridEvents.value?.onPaginationChange?.(payload);
+
+    if (payload.type === 'size') {
+      runtimeGridEvents.value?.onPageSizeChange?.(payload);
+    }
+
+    if (shouldResetToFirstOnPageSizeChange) {
+      const grid = gridRef.value as Record<string, any> | undefined;
+      if (typeof grid?.setCurrentPage === 'function') {
+        resetPageSizeToFirstPending.value = true;
+        void Promise.resolve(grid.setCurrentPage(1))
+          .catch(() => undefined)
+          .finally(() => {
+            if (resetPageSizeToFirstPending.value) {
+              resetPageSizeToFirstPending.value = false;
+            }
+          });
+      }
+    }
+
+    if (typeof sourcePageChange === 'function') {
+      sourcePageChange(params);
     }
   };
 
@@ -1445,6 +1917,9 @@ const customColumnControls = computed(() => {
     visible: customDraftVisibleColumns.value,
   });
 });
+const customColumnControlOrderDigest = computed(() => {
+  return createColumnCustomControlsOrderDigest(customColumnControls.value);
+});
 
 const customAllChecked = computed(() => {
   return (
@@ -1474,8 +1949,8 @@ const customPanelDirty = computed(() => {
 });
 
 watch(
-  [customColumnControls, customPanelOpen],
-  async ([controls, open]) => {
+  [customColumnControlOrderDigest, customPanelOpen],
+  async ([, open]) => {
     if (typeof window === 'undefined') {
       return;
     }
@@ -1489,6 +1964,7 @@ watch(
     }
 
     await nextTick();
+    const controls = customColumnControls.value;
 
     const nextRects = collectColumnCustomFlipRects({
       controls,
@@ -1531,6 +2007,9 @@ const delegatedSlots = computed<string[]>(() => {
         'toolbar-center',
         'toolbar-actions',
         'toolbar-tools',
+        'pager-left',
+        'pager-center',
+        'pager-tools',
         'form',
         'empty',
         'loading',
@@ -1582,6 +2061,36 @@ watch(
   ],
   () => {
     void nextTick(syncToolbarHintOverflow);
+  },
+  { immediate: true }
+);
+
+function syncPagerHintOverflow() {
+  const config = pagerHintConfig.value;
+  if (!config || config.overflow !== 'scroll' || hasPagerCenterSlot.value) {
+    pagerHintShouldScroll.value = false;
+    return;
+  }
+  const viewport = pagerHintViewportRef.value;
+  const textNode = pagerHintTextRef.value;
+  if (!viewport || !textNode) {
+    pagerHintShouldScroll.value = false;
+    return;
+  }
+  pagerHintShouldScroll.value = textNode.scrollWidth > viewport.clientWidth + 1;
+}
+
+watch(
+  () => [
+    hasPagerCenterSlot.value,
+    pagerHintConfig.value?.align,
+    pagerHintConfig.value?.overflow,
+    pagerHintConfig.value?.speed,
+    pagerHintConfig.value?.text,
+    showPagerCenter.value,
+  ],
+  () => {
+    void nextTick(syncPagerHintOverflow);
   },
   { immediate: true }
 );
@@ -1931,6 +2440,180 @@ function handleSearchToggle() {
   runtimeGridEvents.value?.toolbarToolClick?.({
     code: 'search',
   } as any);
+}
+
+function resolvePagerExportMeta() {
+  const grid = gridRef.value as Record<string, any> | undefined;
+  const pagerConfig = (gridOptions.value?.pagerConfig ??
+    sourceGridOptions.value?.pagerConfig ??
+    {}) as Record<string, any>;
+  const proxyPager = grid?.getProxyInfo?.()?.pager as Record<string, any> | undefined;
+  const currentPageRaw =
+    grid?.getCurrentPage?.() ??
+    proxyPager?.currentPage ??
+    pagerConfig.currentPage ??
+    1;
+  const pageSizeRaw =
+    grid?.getPageSize?.() ??
+    proxyPager?.pageSize ??
+    pagerConfig.pageSize ??
+    20;
+  const totalRaw = proxyPager?.total ?? pagerConfig.total;
+  const currentPage = Number(currentPageRaw);
+  const pageSize = Number(pageSizeRaw);
+  const total = Number(totalRaw);
+  return {
+    currentPage: Number.isFinite(currentPage) ? currentPage : 1,
+    pageSize: Number.isFinite(pageSize) ? pageSize : 20,
+    total: Number.isFinite(total) ? total : undefined,
+  };
+}
+
+function resolveCurrentPageRowsForExport() {
+  const grid = gridRef.value as Record<string, any> | undefined;
+  const tableData = grid?.getTableData?.();
+  if (Array.isArray(tableData?.tableData)) {
+    return flattenTableRows(
+      tableData.tableData as Array<Record<string, any>>
+    );
+  }
+  return flattenTableRows(
+    ((sourceGridOptions.value as Record<string, any>)?.data ??
+      []) as Array<Record<string, any>>
+  );
+}
+
+function resolveSelectedRowsForExport(
+  currentRows?: Array<Record<string, any>>
+) {
+  const grid = gridRef.value as Record<string, any> | undefined;
+  if (selectionMode.value === 'radio' && typeof grid?.getRadioRecord === 'function') {
+    const row = grid.getRadioRecord();
+    return row ? [row as Record<string, any>] : [];
+  }
+  if (selectionMode.value === 'checkbox' && typeof grid?.getCheckboxRecords === 'function') {
+    const rows = grid.getCheckboxRecords();
+    if (Array.isArray(rows)) {
+      return flattenTableRows(rows as Array<Record<string, any>>);
+    }
+  }
+  return resolveSelectionRowsByKeys(
+    currentRows ?? resolveCurrentPageRowsForExport(),
+    {
+      keyField: selectionRowKeyField.value,
+      selectedKeys: effectiveSelectedRowKeys.value,
+    }
+  );
+}
+
+async function handlePagerExportAction(
+  action: ResolvedTablePagerExportAction
+) {
+  if (action.disabled) {
+    return;
+  }
+  const { currentPage, pageSize, total } = resolvePagerExportMeta();
+  const currentPageRows = resolveCurrentPageRowsForExport();
+  const selectedRows = action.type === 'selected'
+    ? resolveSelectedRowsForExport(currentPageRows)
+    : [];
+  const allRows = action.type === 'all'
+    ? flattenTableRows(
+        ((sourceGridOptions.value as Record<string, any>)?.data ??
+          []) as Array<Record<string, any>>
+      )
+    : [];
+  const selectedRowKeys = (effectiveSelectedRowKeys.value ?? [])
+    .map((key) => {
+      if (typeof key === 'number' || typeof key === 'string') {
+        return key;
+      }
+      return null;
+    })
+    .filter((key): key is number | string => key !== null);
+  const rows =
+    action.type === 'selected'
+      ? selectedRows
+      : action.type === 'all'
+        ? allRows
+        : currentPageRows;
+  const fileName = normalizeTableExportFileName(
+    action.fileName ??
+      pagerExportConfig.value?.fileName ??
+      state.value.tableTitle ??
+      'table-export'
+  );
+  const exportColumnsSource =
+    ((gridOptions.value as Record<string, any>)?.columns ??
+      []) as Array<Record<string, any>>;
+  const payload = {
+    columns: exportColumnsSource,
+    currentPage,
+    fileName,
+    pageSize,
+    rows,
+    selectedRowKeys,
+    selectedRows,
+    total,
+    type: action.type,
+  };
+
+  if (action.type === 'all') {
+    const allHandler =
+      typeof action.request === 'function'
+        ? action.request
+        : typeof action.onClick === 'function'
+          ? action.onClick
+          : pagerExportConfig.value?.exportAll;
+    if (typeof allHandler !== 'function') {
+      console.warn(localeText.value.exportAllMissingHandler);
+      return;
+    }
+    await Promise.resolve(allHandler(payload as any));
+  } else {
+    const customHandler =
+      typeof action.request === 'function'
+        ? action.request
+        : typeof action.onClick === 'function'
+          ? action.onClick
+          : undefined;
+    if (typeof customHandler === 'function') {
+      await Promise.resolve(customHandler(payload as any));
+    } else {
+      const seqStart = action.type === 'current'
+        ? (currentPage - 1) * pageSize
+        : 0;
+      exportTableRowsToExcel({
+        columns: resolveTableExportColumns(exportColumnsSource, {
+          seqStart,
+        }),
+        fileName,
+        rows: rows as Array<Record<string, any>>,
+      });
+    }
+  }
+
+  runtimeGridEvents.value?.pagerExportClick?.(
+    createPagerExportEventPayload({
+      code: action.type,
+      currentPage,
+      fileName,
+      pageSize,
+      source: 'vue',
+      total,
+    })
+  );
+  runtimeGridEvents.value?.toolbarToolClick?.({
+    code: `pager-export-${action.type}`,
+    tool: action,
+  } as any);
+}
+
+function handlePagerExportTriggerClick() {
+  if (!pagerExportSingleAction.value) {
+    return;
+  }
+  void handlePagerExportAction(pagerExportSingleAction.value);
 }
 
 async function runCommitProxy(mode: 'query' | 'reload', params: Record<string, any>) {
@@ -2600,6 +3283,108 @@ onUnmounted(() => {
     >
       <template v-for="slotName in delegatedSlots" :key="slotName" #[slotName]="slotProps">
         <slot :name="slotName" v-bind="slotProps" />
+      </template>
+
+      <template #__admin_table_pager_left>
+        <div v-if="showPagerLeftArea" class="admin-table__pager-region is-left">
+          <ToolbarActionButton
+            v-for="tool in pagerLeftToolsBeforeSlot"
+            :key="`${tool?.code ?? tool?.title ?? 'pager-left-tool'}-${tool.index}`"
+            :tool="tool"
+          />
+          <div v-if="hasPagerLeftSlotBeforeTools" class="admin-table__toolbar-slot-content">
+            <slot name="pager-left" />
+          </div>
+          <ToolbarActionButton
+            v-for="tool in pagerLeftToolsAfterSlot"
+            :key="`${tool?.code ?? tool?.title ?? 'pager-left-tool'}-${tool.index}`"
+            :tool="tool"
+          />
+          <div
+            v-if="hasPagerLeftSlotAfterTools || hasPagerLeftSlotReplaceTools"
+            class="admin-table__toolbar-slot-content"
+          >
+            <slot name="pager-left" />
+          </div>
+        </div>
+        <div v-if="showPagerCenter" class="admin-table__pager-region is-center">
+          <div v-if="hasPagerCenterSlot" class="admin-table__toolbar-center-slot">
+            <slot name="pager-center" />
+          </div>
+          <div
+            v-else-if="pagerHintConfig"
+            :class="[
+              'admin-table__toolbar-center',
+              'admin-table__pager-bar-center',
+              pagerHintAlignClass,
+              pagerHintOverflowClass,
+            ]"
+          >
+            <div ref="pagerHintViewportRef" class="admin-table__toolbar-hint-viewport">
+              <span
+                ref="pagerHintTextRef"
+                :class="['admin-table__toolbar-hint-text', pagerHintShouldScroll ? 'is-running' : '']"
+                :style="pagerHintTextStyle"
+              >
+                {{ pagerHintConfig.text }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <template #__admin_table_pager_right>
+        <div v-if="showPagerRightArea" class="admin-table__pager-region is-right">
+          <ToolbarActionButton
+            v-for="tool in pagerRightToolsBeforeBuiltin"
+            :key="`${tool?.code ?? tool?.title ?? 'pager-right-tool'}-${tool.index}`"
+            :tool="tool"
+          />
+          <div v-if="hasPagerToolsSlotBeforeTools" class="admin-table__toolbar-slot-content">
+            <slot name="pager-tools" />
+          </div>
+          <div v-if="showPagerExportInRight" class="admin-table__pager-export">
+            <button
+              class="admin-table__toolbar-tool-btn"
+              :title="pagerExportConfig?.title || localeText.export"
+              type="button"
+              @click="handlePagerExportTriggerClick"
+            >
+              <i
+                :class="[
+                  'admin-table__toolbar-tool-icon',
+                  pagerExportConfig?.icon || 'admin-table-icon-export',
+                ]"
+              />
+            </button>
+            <div
+              v-if="pagerExportActions.length > 1"
+              class="admin-table__pager-export-menu"
+            >
+              <button
+                v-for="action in pagerExportActions"
+                :key="`pager-export-${action.type}-${action.index}`"
+                class="admin-table__pager-export-item"
+                :disabled="action.disabled"
+                type="button"
+                @click.stop="() => handlePagerExportAction(action)"
+              >
+                {{ action.title }}
+              </button>
+            </div>
+          </div>
+          <ToolbarActionButton
+            v-for="tool in pagerRightToolsAfterBuiltin"
+            :key="`${tool?.code ?? tool?.title ?? 'pager-right-tool'}-${tool.index}`"
+            :tool="tool"
+          />
+          <div
+            v-if="hasPagerToolsSlotAfterTools || hasPagerToolsSlotReplaceTools"
+            class="admin-table__toolbar-slot-content"
+          >
+            <slot name="pager-tools" />
+          </div>
+        </div>
       </template>
 
       <template #__admin_table_operation="slotProps">

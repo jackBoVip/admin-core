@@ -9,6 +9,7 @@ import type {
   ProxyConfig,
   SeparatorOptions,
   TableOperationColumnConfig,
+  TablePagerConfig,
   TableSeqColumnConfig,
   ToolbarToolPermissionDirective,
   ToolbarConfig,
@@ -90,13 +91,12 @@ export interface AntdGridOptions<
   };
   onChange?: TableProps<TData>['onChange'];
   operationColumn?: boolean | TableOperationColumnConfig;
-  pagerConfig?: {
-    currentPage?: number;
-    enabled?: boolean;
-    pageSize?: number;
-    pageSizes?: number[];
-    total?: number;
-  };
+  pagerConfig?: (Record<string, any> & {
+    /**
+     * 是否在切换 pageSize 时自动回到第一页
+     */
+    resetToFirstOnPageSizeChange?: boolean;
+  } & TablePagerConfig<TData>);
   proxyConfig?: ProxyConfig;
   radioConfig?: AntdRadioConfig<TData>;
   rowStrategy?: TableRowStrategy[];
@@ -136,6 +136,9 @@ export interface AdminTableSlots {
   'toolbar-actions'?: ReactNode | ((params?: any) => ReactNode);
   'toolbar-center'?: ReactNode | ((params?: any) => ReactNode);
   'toolbar-tools'?: ReactNode | ((params?: any) => ReactNode);
+  'pager-left'?: ReactNode | ((params?: any) => ReactNode);
+  'pager-center'?: ReactNode | ((params?: any) => ReactNode);
+  'pager-tools'?: ReactNode | ((params?: any) => ReactNode);
   [key: `form-${string}`]: ReactNode | ((params?: any) => ReactNode);
 }
 

@@ -26,6 +26,7 @@ export default defineConfig([
     outDir: 'dist',
     format: ['iife'],
     globalName: 'AdminCorePreferencesReact',
+    clean: false,
     outExtension: () => ({ js: '.global.js' }),
     sourcemap: process.env.NODE_ENV !== 'production',
     treeshake: true,
@@ -37,6 +38,25 @@ export default defineConfig([
     esbuildOptions(options) {
       options.banner = {
         js: '/* @admin-core/preferences-react - CDN Build */',
+      };
+    },
+  },
+  {
+    entry: ['src/index.ts'],
+    outDir: 'dist',
+    format: ['iife'],
+    globalName: 'AdminCorePreferencesReact',
+    clean: false,
+    outExtension: () => ({ js: '.global.dev.js' }),
+    sourcemap: true,
+    treeshake: true,
+    minify: false,
+    target: 'es2020',
+    external: ['react', 'react-dom'],
+    noExternal: ['@admin-core/preferences'],
+    esbuildOptions(options) {
+      options.banner = {
+        js: '/* @admin-core/preferences-react - CDN Development Build */',
       };
     },
   },

@@ -20,6 +20,7 @@ export default defineConfig(async () => {
     outDir: 'dist',
     staticImport: true,
     insertTypesEntry: true,
+    logLevel: 'silent',
     // build 脚本已先执行 vue-tsc --noEmit，声明阶段跳过重复诊断，避免噪音
     skipDiagnostics: true,
   });

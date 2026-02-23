@@ -36,3 +36,16 @@
 ```bash
 pnpm add @admin-core/table-core
 ```
+
+
+### CDN（生产/开发）
+
+```html
+<!-- jsDelivr（推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/table-core/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/table-core/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/table-core/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/table-core/dist/index.global.dev.js"></script>
+```

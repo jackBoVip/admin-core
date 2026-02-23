@@ -45,6 +45,19 @@
 pnpm add @admin-core/layout
 ```
 
+
+### CDN（生产/开发）
+
+```html
+<!-- jsDelivr（推荐） -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/layout/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/layout/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/layout/dist/index.global.dev.js"></script>
+```
+
 ## 布局类型
 
 | 类型 | 说明 |

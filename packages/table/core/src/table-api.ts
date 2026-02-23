@@ -31,15 +31,15 @@ class AdminTableApiImpl<
   public store = createStore<AdminTableSnapshot<TData, TFormValues>>({
     latestQueryParams: null,
     mounted: false,
-    props: createDefaultTableOptions() as AdminTableOptions<TData, TFormValues>,
+    props: createDefaultTableOptions<TData, TFormValues>(),
   });
 
   constructor(options: AdminTableOptions<TData, TFormValues> = {}) {
     ensureTableCoreSetup();
     this.state = mergeWithArrayOverride(
       options,
-      createDefaultTableOptions()
-    ) as AdminTableOptions<TData, TFormValues>;
+      createDefaultTableOptions<TData, TFormValues>()
+    );
     this.updateSnapshot(true);
   }
 

@@ -60,6 +60,19 @@ pnpm add @admin-core/preferences
 yarn add @admin-core/preferences
 ```
 
+
+### CDN (Production / Development)
+
+```html
+<!-- jsDelivr (recommended) -->
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences/dist/index.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@admin-core/preferences/dist/index.global.dev.js"></script>
+
+<!-- unpkg -->
+<script src="https://unpkg.com/@admin-core/preferences/dist/index.global.js"></script>
+<script src="https://unpkg.com/@admin-core/preferences/dist/index.global.dev.js"></script>
+```
+
 ## Quick Start
 
 ```typescript

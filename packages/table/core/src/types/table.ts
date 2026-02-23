@@ -289,6 +289,93 @@ export interface ToolbarConfig {
   zoom?: boolean;
 }
 
+export type TablePagerAlign = 'left' | 'right';
+
+export interface TablePagerToolbarConfig {
+  [key: string]: any;
+  hint?: string | ToolbarHintConfig;
+  leftTools?: ToolbarToolConfig[];
+  leftToolsPosition?: ToolbarInlinePosition;
+  leftToolsSlotPosition?: ToolbarToolsSlotPosition;
+  rightTools?: ToolbarToolConfig[];
+  rightToolsPosition?: ToolbarInlinePosition;
+  rightToolsSlotPosition?: ToolbarToolsSlotPosition;
+  tools?: ToolbarToolConfig[];
+  toolsPosition?: ToolbarInlinePosition;
+  toolsSlotPosition?: ToolbarToolsSlotPosition;
+}
+
+export type TablePagerExportType = 'all' | 'current' | 'selected';
+
+export interface TablePagerExportRuleContext {
+  action: TablePagerExportOption;
+  index: number;
+}
+
+export type TablePagerExportRule =
+  | boolean
+  | ((ctx: TablePagerExportRuleContext) => boolean);
+
+export interface TablePagerExportContext<
+  TData extends Record<string, any> = Record<string, any>,
+> {
+  columns: Array<Record<string, any>>;
+  currentPage: number;
+  fileName: string;
+  pageSize: number;
+  rows: TData[];
+  selectedRowKeys: Array<number | string>;
+  selectedRows: TData[];
+  total?: number;
+  type: TablePagerExportType;
+}
+
+export interface TablePagerExportOption<
+  TData extends Record<string, any> = Record<string, any>,
+> {
+  [key: string]: any;
+  code?: string;
+  disabled?: TablePagerExportRule;
+  fileName?: string;
+  onClick?: (ctx: TablePagerExportContext<TData>) => any;
+  permission?:
+    | boolean
+    | string
+    | string[]
+    | ToolbarToolPermissionDirective;
+  request?: (ctx: TablePagerExportContext<TData>) => any;
+  show?: TablePagerExportRule;
+  title?: string;
+  type?: TablePagerExportType;
+}
+
+export interface TablePagerExportConfig<
+  TData extends Record<string, any> = Record<string, any>,
+> {
+  [key: string]: any;
+  enabled?: boolean;
+  exportAll?: (ctx: TablePagerExportContext<TData>) => any;
+  fileName?: string;
+  icon?: string;
+  options?: Array<TablePagerExportOption<TData> | TablePagerExportType>;
+  title?: string;
+}
+
+export interface TablePagerConfig<
+  TData extends Record<string, any> = Record<string, any>,
+> {
+  [key: string]: any;
+  currentPage?: number;
+  enabled?: boolean;
+  exportConfig?: boolean | TablePagerExportConfig<TData>;
+  pageSize?: number;
+  pageSizes?: number[];
+  position?: TablePagerAlign;
+  resetToFirstOnPageSizeChange?: boolean;
+  toolbar?: TablePagerToolbarConfig;
+  total?: number;
+}
+
 export interface SeparatorOptions {
   backgroundColor?: string;
   show?: boolean;
@@ -323,9 +410,33 @@ export interface ProxyConfig {
   sort?: boolean;
 }
 
+export type AdminTablePaginationChangeType = 'current' | 'size';
+
+export interface AdminTablePaginationChangePayload {
+  currentPage: number;
+  pageSize: number;
+  raw?: Record<string, any>;
+  source: 'react' | 'vue';
+  total?: number;
+  type: AdminTablePaginationChangeType;
+}
+
+export interface AdminTablePagerExportPayload {
+  code: TablePagerExportType;
+  currentPage: number;
+  fileName: string;
+  pageSize: number;
+  source: 'react' | 'vue';
+  total?: number;
+}
+
 export interface AdminTableGridEvents {
   [key: string]: ((...args: any[]) => any) | undefined;
   columnCustomChange?: (payload: ColumnCustomChangePayload) => any;
+  onPageChange?: (payload: AdminTablePaginationChangePayload) => any;
+  onPageSizeChange?: (payload: AdminTablePaginationChangePayload) => any;
+  onPaginationChange?: (payload: AdminTablePaginationChangePayload) => any;
+  pagerExportClick?: (payload: AdminTablePagerExportPayload) => any;
   operationToolClick?: (...args: any[]) => any;
   toolbarToolClick?: (...args: any[]) => any;
 }
@@ -345,6 +456,7 @@ export interface AdminTableOptions<
     cellStrategy?: Record<string, TableCellStrategy>;
     data?: TData[];
     operationColumn?: boolean | TableOperationColumnConfig;
+    pagerConfig?: TablePagerConfig<TData>;
     proxyConfig?: ProxyConfig;
     rowStrategy?: TableRowStrategy[];
     seqColumn?: boolean | TableSeqColumnConfig;
