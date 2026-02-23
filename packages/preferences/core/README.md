@@ -1,27 +1,53 @@
 # @admin-core/preferences
 
-English | [简体中文](./README.zh-CN.md)
+简体中文 | [English](./README.en.md)
 
-> Framework-agnostic preferences management system with OKLCH color system, multi-UI library support, and i18n.
+> 框架无关的偏好设置管理系统，支持 OKLCH 颜色系统、多 UI 库适配和国际化。
 
-## Features
+## 特性
 
-- **Framework Agnostic**: Core logic independent of Vue/React
-- **OKLCH Color System**: Configure only the primary color, semantic colors are derived automatically
-- **Multi-UI Library Support**: Adapters for Ant Design, Element Plus, Naive UI, shadcn/ui
-- **Internationalization**: Built-in English and Chinese language packs
-- **Configurable**: All settings managed through configuration, no hardcoding
-- **TypeScript**: Full type safety with comprehensive type definitions
-- **Tailwind CSS**: Built-in preset for seamless Tailwind integration
+- **框架无关**: 核心逻辑不依赖 Vue/React
+- **OKLCH 颜色系统**: 只需配置主色，语义色自动派生
+- **多 UI 库适配**: 支持 Ant Design、Element Plus、Naive UI、shadcn/ui
+- **国际化**: 内置中英文语言包
+- **可配置**: 所有设置通过配置文件管理，禁止硬编码
+- **TypeScript**: 完整的类型定义，类型安全
+- **Tailwind CSS**: 内置预设，无缝集成 Tailwind
 
-## Public API
+## 对外导出
 
-- **Manager**: `createPreferencesManager`, `PreferencesManager`, lifecycle helpers
-- **Actions & Store**: `createPreferencesActions`, `createThemeActions`, `createLayoutActions`, `getDefaultPreferencesStore`
-- **Utilities**: storage helpers, config import/export, shortcuts, i18n helpers
-- **Styles & Tokens**: CSS variable helpers, Tailwind preset, theme tokens
+- **管理器**：`createPreferencesManager`、`PreferencesManager`、生命周期工具
+- **Actions / Store**：`createPreferencesActions`、`createThemeActions`、`createLayoutActions`、`getDefaultPreferencesStore`
+- **工具**：存储、配置导入/导出、快捷键、i18n 辅助工具
+- **样式与 Tokens**：CSS 变量生成、Tailwind 预设、主题 tokens
 
-## Installation
+## 导出索引（入口对齐）
+
+说明：
+- 入口文件：`src/index.ts`
+- 发布类型：`dist/index.d.ts`
+- README 展示高频 API；完整符号请以 `API.md` 和 `dist/index.d.ts` 为准
+
+按入口导出分组：
+1. 管理器：`createPreferencesManager`、`PreferencesManager`、`ManagerLifecycle`
+2. Actions：`createPreferencesActions`、`createThemeActions`、`createLayoutActions`
+3. Store：`getDefaultPreferencesStore`
+4. Controllers：`createSliderController`、`createCopyButtonController`
+5. Helpers：`mapPreferencesToLayoutProps`、`generateThemeCSSVariables`、`generateThemeClasses`、`createTranslatedOptions` 等
+6. Config/Tokens：`DEFAULT_PREFERENCES`、`configureDesignTokens`、`generateCSSVariables`、`SHORTCUT_KEY_BINDINGS` 等
+7. Locales：`zhCN`、`enUS`、`supportedLocales`、`getLocaleMessages`
+8. Constants：`COLOR_PRESETS`、`LAYOUT_OPTIONS`、`PAGE_TRANSITION_OPTIONS`、`TABS_STYLE_OPTIONS`
+
+子路径导出（`package.json`）：
+- `@admin-core/preferences/styles`
+- `@admin-core/preferences/styles/antd`
+- `@admin-core/preferences/styles/element`
+- `@admin-core/preferences/styles/naive`
+- `@admin-core/preferences/styles/shadcn`
+- `@admin-core/preferences/styles/adapters`
+- `@admin-core/preferences/tailwind`
+
+## 安装
 
 ```bash
 # npm
@@ -34,65 +60,65 @@ pnpm add @admin-core/preferences
 yarn add @admin-core/preferences
 ```
 
-## Quick Start
+## 快速开始
 
 ```typescript
 import { createPreferencesManager } from '@admin-core/preferences';
 import '@admin-core/preferences/styles';
 
-// Create manager with optional overrides
+// 创建管理器，可选覆盖默认配置
 const manager = createPreferencesManager({
   namespace: 'my-app',
   overrides: {
     theme: {
-      colorPrimary: 'oklch(0.6 0.2 250)', // Blue
+      colorPrimary: 'oklch(0.6 0.2 250)', // 蓝色
       mode: 'auto',
     },
     app: {
       layout: 'sidebar-nav',
-      locale: 'en-US',
+      locale: 'zh-CN',
     },
   },
 });
 
-// Initialize
+// 初始化
 manager.init();
 
-// Subscribe to changes
+// 订阅变更
 manager.subscribe((preferences) => {
-  console.log('Preferences updated:', preferences);
+  console.log('偏好设置更新:', preferences);
 });
 
-// Update preferences
+// 更新偏好设置
 manager.set('theme', { colorPrimary: 'oklch(0.6 0.2 150)' });
 
-// Get current preferences
+// 获取当前偏好设置
 const current = manager.get();
 ```
 
-## OKLCH Color System
+## OKLCH 颜色系统
 
-The preferences system uses OKLCH color space for better color manipulation. You only need to configure the primary color, and semantic colors are automatically derived:
+偏好设置系统使用 OKLCH 色彩空间进行颜色处理。您只需配置主色，语义色会自动派生：
 
 ```typescript
 import { deriveSemanticColors } from '@admin-core/preferences';
 
-// Primary color
+// 主色
 const primary = 'oklch(0.55 0.2 250)';
 
-// Semantic colors are derived automatically
+// 语义色自动派生
 const semanticColors = deriveSemanticColors(primary);
 // {
-//   success: 'oklch(0.55 0.2 35)',   // +145° hue rotation
-//   warning: 'oklch(0.55 0.2 335)',  // +85° hue rotation
-//   destructive: 'oklch(0.55 0.2 280)', // +30° hue rotation
-//   info: 'oklch(0.55 0.2 220)',     // -30° hue rotation
+//   success: 'oklch(0.55 0.2 35)',   // 色相 +145°
+//   warning: 'oklch(0.55 0.2 335)',  // 色相 +85°
+//   destructive: 'oklch(0.55 0.2 280)', // 色相 +30°
+//   info: 'oklch(0.55 0.2 220)',     // 色相 -30°
 // }
 ```
 
-## UI Library Adapters
+## UI 库适配
 
-Import the appropriate CSS adapter for your UI library:
+根据您使用的 UI 库导入相应的 CSS 适配器：
 
 ```typescript
 // Ant Design
@@ -107,11 +133,11 @@ import '@admin-core/preferences/styles/naive';
 // shadcn/ui
 import '@admin-core/preferences/styles/shadcn';
 
-// All adapters
+// 所有适配器
 import '@admin-core/preferences/styles/adapters';
 ```
 
-## Tailwind CSS Integration
+## Tailwind CSS 集成
 
 ```javascript
 // tailwind.config.js
@@ -123,45 +149,45 @@ export default {
 };
 ```
 
-## Configuration Options
+## 配置选项
 
-### Initialization Options
+### 初始化选项
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `namespace` | `string` | Storage namespace for persistence |
-| `overrides` | `DeepPartial<Preferences>` | Override default preferences |
-| `storage` | `StorageAdapter` | Custom storage adapter |
-| `i18n` | `I18nAdapter` | Custom i18n adapter |
+| 选项 | 类型 | 描述 |
+|------|------|------|
+| `namespace` | `string` | 存储命名空间，用于持久化 |
+| `overrides` | `DeepPartial<Preferences>` | 覆盖默认偏好设置 |
+| `storage` | `StorageAdapter` | 自定义存储适配器 |
+| `i18n` | `I18nAdapter` | 自定义国际化适配器 |
 
-### Preferences Structure
+### 偏好设置结构
 
-See [API Documentation](./API.md) for complete preferences interface.
+完整的偏好设置接口请参见 [API 文档](./API.md)。
 
-## Internationalization
+## 国际化
 
 ```typescript
 import { getTranslation, zhCN, enUS } from '@admin-core/preferences';
 
-// Get translation
-const label = getTranslation('theme.primaryColor', 'en-US');
+// 获取翻译
+const label = getTranslation('theme.primaryColor', 'zh-CN');
 
-// Access locale messages directly
+// 直接访问语言包
 console.log(enUS.theme.primaryColor); // "Primary Color"
 console.log(zhCN.theme.primaryColor); // "主题色"
 ```
 
-## Framework Integration
+## 框架集成
 
-For framework-specific integration, use the dedicated packages:
+如需框架特定的集成，请使用专用包：
 
 - **React**: [@admin-core/preferences-react](../react/README.md)
 - **Vue**: [@admin-core/preferences-vue](../vue/README.md)
 
-## API Reference
+## API 参考
 
-See [API Documentation](./API.md) for complete API reference.
+完整的 API 参考请参见 [API 文档](./API.md)。
 
-## License
+## 许可证
 
 MIT

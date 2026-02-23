@@ -18,7 +18,23 @@ React basic layout components with built-in preferences integration.
 - **Hooks**: `useLayoutContext`, `useLayoutState`, `useLayoutComputed`, `useRouter`, etc.
 - **Built-in preferences**: `initPreferences`, `PreferencesProvider`, `PreferencesDrawer` (from `@admin-core/preferences-react`)
 - **Types & constants**: re-exported layout types, configs, and utils from `@admin-core/layout`
+- **Route builder**: `createReactRouteAccess` (static routes + dynamic menus -> React Router `routeObjects`)
 - **Styles**: `@admin-core/layout-react/style.css`
+
+## Export Index (Entry-Aligned)
+
+Notes:
+- Entry file: `src/index.ts`
+- Published types: `dist/index.d.ts`
+- For complete symbols, use `dist/index.d.ts` as source of truth.
+
+Entry groups:
+1. Built-in preferences (`@admin-core/preferences-react`): `initPreferences`, `destroyPreferences`, `usePreferences`, `usePreferencesContext`, `PreferencesProvider`, `PreferencesDrawer`, `PreferencesTrigger`, `useAdminAntdTheme`, etc.
+2. Layout components: full export from `./components` (layout/menu/widgets/ErrorBoundary)
+3. Layout hooks: full export from `./hooks` (`useLayoutContext`, `useLayoutState`, etc.)
+4. Utilities: full export from `./utils`
+5. Route builder: `createReactRouteAccess`, `ReactRouteAccessOptions`, `ReactRouteAccessResult`
+6. Core re-exports: types/constants/utils/i18n/style tokens from `@admin-core/layout`
 
 ## Install
 

@@ -19,6 +19,26 @@
 - **国际化**：`createI18n` 与内置中英文语言包
 - **样式与图标**：布局样式入口与内置图标
 
+## 导出索引（入口对齐）
+
+说明：
+- 入口文件：`src/index.ts`
+- 发布类型：`dist/index.d.ts`
+- 完整符号清单以 `dist/index.d.ts` 为准（README 展示高频 API）
+
+入口模块导出：
+1. `./types`：布局主类型、运行时类型、Route/Menu/Tab 类型
+2. `./constants`：默认配置、断点、动画常量、CSS 变量常量
+3. `./utils`：布局计算、菜单/标签/路由构建、主题/水印、运行时控制器
+4. `./locales`：`createI18n`、`zhCN`、`enUS`、`builtinLocales`
+5. `./styles`：`layoutThemeTokens`、`tailwindThemeCSS`、`layoutFullCSS` 等
+6. `./icons`：布局图标定义与图标解析工具
+
+子路径导出（`package.json`）：
+- `@admin-core/layout/styles`
+- `@admin-core/layout/styles/layout.css`
+- `@admin-core/layout/locales/*`
+
 ## 安装
 
 ```bash

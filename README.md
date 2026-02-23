@@ -286,14 +286,28 @@ admin-core/
 
 ## 📖 文档
 
-- [偏好设置 API 文档](./packages/preferences/core/API.md)
-- [布局系统文档](./packages/layout/core/README.md)
-- [表单系统 Core 文档](./packages/form/core/README.md)
-- [表单系统 Vue 文档](./packages/form/vue/README.md)
-- [表单系统 React 文档](./packages/form/react/README.md)
-- [表格系统 Core 文档](./packages/table/core/README.md)
-- [表格系统 Vue 文档](./packages/table/vue/README.md)
-- [表格系统 React 文档](./packages/table/react/README.md)
+### 包文档矩阵
+
+| 包名 | 中文文档 | English Docs |
+| --- | --- | --- |
+| `@admin-core/preferences` | [README](./packages/preferences/core/README.md) | [README.en](./packages/preferences/core/README.en.md) |
+| `@admin-core/preferences-vue` | [README](./packages/preferences/vue/README.md) | [README.en](./packages/preferences/vue/README.en.md) |
+| `@admin-core/preferences-react` | [README](./packages/preferences/react/README.md) | [README.en](./packages/preferences/react/README.en.md) |
+| `@admin-core/layout` | [README](./packages/layout/core/README.md) | [README.en](./packages/layout/core/README.en.md) |
+| `@admin-core/layout-vue` | [README](./packages/layout/vue/README.md) | [README.en](./packages/layout/vue/README.en.md) |
+| `@admin-core/layout-react` | [README](./packages/layout/react/README.md) | [README.en](./packages/layout/react/README.en.md) |
+| `@admin-core/form-core` | [README](./packages/form/core/README.md) | [README.en](./packages/form/core/README.en.md) |
+| `@admin-core/form-vue` | [README](./packages/form/vue/README.md) | [README.en](./packages/form/vue/README.en.md) |
+| `@admin-core/form-react` | [README](./packages/form/react/README.md) | [README.en](./packages/form/react/README.en.md) |
+| `@admin-core/table-core` | [README](./packages/table/core/README.md) | [README.en](./packages/table/core/README.en.md) |
+| `@admin-core/table-vue` | [README](./packages/table/vue/README.md) | [README.en](./packages/table/vue/README.en.md) |
+| `@admin-core/table-react` | [README](./packages/table/react/README.md) | [README.en](./packages/table/react/README.en.md) |
+
+### API 文档
+
+- [偏好设置 Core API 文档](./packages/preferences/core/API.md)
+- [偏好设置 Vue API 文档](./packages/preferences/vue/API.md)
+- [偏好设置 React API 文档](./packages/preferences/react/API.md)
 - [TypeScript 配置指南](./internal/tsconfig/README.md)
 
 ## 🔁 旧版表格迁移速查

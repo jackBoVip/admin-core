@@ -1,25 +1,40 @@
 # @admin-core/preferences-vue
 
-English | [简体中文](./README.zh-CN.md)
+简体中文 | [English](./README.en.md)
 
-> Vue 3 integration for @admin-core/preferences with composables and components.
+> Vue 3 偏好设置集成，提供 Composables 和组件。
 
-## Features
+## 特性
 
-- **Vue 3 Support**: Built with Vue 3 Composition API
-- **Composables API**: Reactive state management with Vue composables
-- **Ready-to-use Components**: Pre-built drawer, tabs, and form components
-- **TypeScript**: Full type safety with comprehensive type definitions
-- **Optimized Reactivity**: Efficient subscription management with shallow refs
+- **Vue 3 支持**: 基于 Vue 3 Composition API 构建
+- **Composables API**: 使用 Vue Composables 实现响应式状态管理
+- **开箱即用组件**: 预构建的抽屉、标签页和表单组件
+- **TypeScript**: 完整的类型定义，类型安全
+- **响应式优化**: 使用 shallowRef 实现高效的订阅管理
 
-## Public API
+## 对外导出
 
-- **Initialization**: `initPreferences`, `destroyPreferences`, `getPreferencesManager`
-- **Providers & Components**: `PreferencesProvider`, `PreferencesDrawer`, `PreferencesTrigger`, tabs and form items
-- **Composables**: `usePreferences`, `usePreferencesContext`, `usePreferencesCategory`, `useLayout`, `useTheme`
-- **Re-exports**: core types, constants, locales, and icons from `@admin-core/preferences`
+- **初始化**：`initPreferences`、`destroyPreferences`、`getPreferencesManager`
+- **Provider / 组件**：`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger`、各类 Tab 与表单项
+- **组合式 API**：`usePreferences`、`usePreferencesContext`、`usePreferencesCategory`、`useLayout`、`useTheme`、`useDebouncedValue`
+- **再导出**：`@admin-core/preferences` 的类型、常量、语言包与图标
 
-## Installation
+## 导出索引（入口对齐）
+
+说明：
+- 入口文件：`src/index.ts`
+- 发布类型：`dist/index.d.ts`
+- 完整符号列表以 `src/index.ts`/`dist/index.d.ts` 为准
+
+入口分组：
+1. 初始化：`initPreferences`、`destroyPreferences`、`getPreferencesManager`
+2. Composables：`usePreferences`、`usePreferencesContext`、`usePreferencesCategory`、`useLayout`、`useTheme`、`useDebouncedValue`
+3. 组件：`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger`、`AppearanceTab`、`LayoutTab`、`ShortcutKeysTab`、`GeneralTab`、`PreferencesBlock`、`PreferencesSwitchItem`、`PreferencesSelectItem`、`PreferencesSliderItem`
+4. 图标组件：`Icon`、`AdminIcon`、`LayoutIcon`、`AdminLayoutIcon`
+5. 资源导出：`defaultLockScreenBg`
+6. Core 再导出：偏好设置类型、常量、语言包（来自 `@admin-core/preferences`）
+
+## 安装
 
 ```bash
 # npm
@@ -32,12 +47,12 @@ pnpm add @admin-core/preferences-vue
 yarn add @admin-core/preferences-vue
 ```
 
-**Peer Dependencies:**
+**对等依赖:**
 - `vue >= 3.3.0`
 
-## Quick Start
+## 快速开始
 
-### 1. Initialize Preferences
+### 1. 初始化偏好设置
 
 ```typescript
 // main.ts
@@ -46,7 +61,7 @@ import { initPreferences } from '@admin-core/preferences-vue';
 import '@admin-core/preferences/styles';
 import App from './App.vue';
 
-// Initialize once at app startup
+// 应用启动时初始化一次
 initPreferences({
   namespace: 'my-app',
   overrides: {
@@ -58,9 +73,9 @@ initPreferences({
 createApp(App).mount('#app');
 ```
 
-### 2. Use PreferencesProvider (Recommended)
+### 2. 使用 PreferencesProvider（推荐）
 
-The `PreferencesProvider` component integrates lock screen, shortcut keys, and preferences drawer automatically.
+`PreferencesProvider` 组件自动集成锁屏、快捷键和偏好设置抽屉功能。
 
 ```vue
 <!-- App.vue -->
@@ -68,11 +83,11 @@ The `PreferencesProvider` component integrates lock screen, shortcut keys, and p
 import { PreferencesProvider } from '@admin-core/preferences-vue';
 
 const handleLogout = () => {
-  // Handle logout
+  // 处理登出
 };
 
 const handleSearch = () => {
-  // Handle global search
+  // 处理全局搜索
 };
 </script>
 
@@ -83,32 +98,32 @@ const handleSearch = () => {
 </template>
 ```
 
-### 3. Use Composables in Components
+### 3. 在组件中使用 Composables
 
 ```vue
 <script setup lang="ts">
 import { usePreferences, usePreferencesContext } from '@admin-core/preferences-vue';
 
-// Access preferences state
+// 访问偏好设置状态
 const { preferences, setPreferences, isDark, toggleTheme } = usePreferences();
 
-// Access provider context (lock, drawer controls)
+// 访问 Provider 上下文（锁屏、抽屉控制）
 const { lock, togglePreferences, isPreferencesOpen } = usePreferencesContext();
 </script>
 
 <template>
   <div>
-    <p>Current theme: {{ isDark ? 'Dark' : 'Light' }}</p>
-    <button @click="toggleTheme">Toggle Theme</button>
-    <button @click="togglePreferences">Open Settings</button>
-    <button @click="lock">Lock Screen</button>
+    <p>当前主题: {{ isDark ? '深色' : '浅色' }}</p>
+    <button @click="toggleTheme">切换主题</button>
+    <button @click="togglePreferences">打开设置</button>
+    <button @click="lock">锁定屏幕</button>
   </div>
 </template>
 ```
 
-## Advanced Usage
+## 进阶用法
 
-### Using Individual Composables
+### 使用独立 Composables
 
 ```vue
 <script setup lang="ts">
@@ -124,19 +139,19 @@ const { isSidebarCollapsed, toggleSidebar, setLayout } = useLayout();
       {{ isDark ? '🌙' : '☀️' }}
     </button>
     <button @click="() => setPrimaryColor('oklch(0.6 0.2 150)')">
-      Green Theme
+      绿色主题
     </button>
     <button @click="toggleSidebar">
-      {{ isSidebarCollapsed ? 'Expand' : 'Collapse' }}
+      {{ isSidebarCollapsed ? '展开' : '折叠' }}
     </button>
     <button @click="() => setLayout('header-nav')">
-      Use Header Nav
+      使用顶部导航
     </button>
   </div>
 </template>
 ```
 
-### Using Category Composable
+### 使用分类 Composable
 
 ```vue
 <script setup lang="ts">
@@ -153,14 +168,14 @@ const { value, setValue, reset } = usePreferencesCategory('tabbar');
         :checked="value?.enable"
         @change="(e) => setValue({ enable: (e.target as HTMLInputElement).checked })"
       />
-      Enable Tabbar
+      启用标签栏
     </label>
-    <button @click="reset">Reset to Default</button>
+    <button @click="reset">重置为默认</button>
   </div>
 </template>
 ```
 
-### Using Components Standalone
+### 单独使用组件
 
 ```vue
 <script setup lang="ts">
@@ -183,11 +198,11 @@ const open = ref(false);
 </template>
 ```
 
-## Components
+## 组件
 
 ### PreferencesProvider
 
-Main wrapper component that provides context and integrates features.
+主要包装组件，提供上下文并集成各项功能。
 
 ```vue
 <PreferencesProvider
@@ -203,7 +218,7 @@ Main wrapper component that provides context and integrates features.
 
 ### PreferencesDrawer
 
-Settings drawer with tab-based navigation.
+带有标签页导航的设置抽屉。
 
 ```vue
 <PreferencesDrawer
@@ -213,33 +228,33 @@ Settings drawer with tab-based navigation.
 />
 ```
 
-### Tab Components
+### 标签页组件
 
-Individual tab components that can be used standalone:
+可独立使用的各个标签页组件：
 
-- `AppearanceTab` - Theme, colors, mode settings
-- `LayoutTab` - Layout type, sidebar, header settings
-- `GeneralTab` - Language, shortcuts, watermark settings
-- `ShortcutKeysTab` - Keyboard shortcuts configuration
+- `AppearanceTab` - 主题、颜色、模式设置
+- `LayoutTab` - 布局类型、侧边栏、顶栏设置
+- `GeneralTab` - 语言、快捷键、水印设置
+- `ShortcutKeysTab` - 键盘快捷键配置
 
-### Form Components
+### 表单组件
 
-Building blocks for custom settings UI:
+用于自定义设置 UI 的构建块：
 
-- `PreferencesBlock` - Section container with title
-- `PreferencesSwitchItem` - Toggle switch
-- `PreferencesSelectItem` - Dropdown select
-- `PreferencesSliderItem` - Range slider
+- `PreferencesBlock` - 带标题的区块容器
+- `PreferencesSwitchItem` - 开关切换
+- `PreferencesSelectItem` - 下拉选择
+- `PreferencesSliderItem` - 范围滑块
 
-## API Reference
+## API 参考
 
-See [API Documentation](./API.md) for complete API reference.
+完整的 API 参考请参见 [API 文档](./API.md)。
 
-## Related
+## 相关链接
 
-- [@admin-core/preferences](../core/README.md) - Core package
-- [@admin-core/preferences-react](../react/README.md) - React integration
+- [@admin-core/preferences](../core/README.md) - 核心包
+- [@admin-core/preferences-react](../react/README.md) - React 集成
 
-## License
+## 许可证
 
 MIT

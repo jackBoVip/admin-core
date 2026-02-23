@@ -1,25 +1,39 @@
 # @admin-core/preferences-react
 
-English | [简体中文](./README.zh-CN.md)
+简体中文 | [English](./README.en.md)
 
-> React 18 integration for @admin-core/preferences with hooks and components.
+> React 18 偏好设置集成，提供 Hooks 和组件。
 
-## Features
+## 特性
 
-- **React 18+ Support**: Built with React 18 features including `useSyncExternalStore`
-- **Hooks API**: Clean and intuitive hooks for state management
-- **Ready-to-use Components**: Pre-built drawer, tabs, and form components
-- **TypeScript**: Full type safety with comprehensive type definitions
-- **Optimized Rendering**: Smart subscriptions to minimize re-renders
+- **React 18+ 支持**: 使用 React 18 特性，包括 `useSyncExternalStore`
+- **Hooks API**: 简洁直观的状态管理 Hooks
+- **开箱即用组件**: 预构建的抽屉、标签页和表单组件
+- **TypeScript**: 完整的类型定义，类型安全
+- **渲染优化**: 智能订阅，最小化重新渲染
 
-## Public API
+## 对外导出
 
-- **Initialization**: `initPreferences`, `destroyPreferences`, `getPreferencesManager`
-- **Providers & Components**: `PreferencesProvider`, `PreferencesDrawer`, `PreferencesTrigger`, tabs and form items
-- **Hooks**: `usePreferences`, `usePreferencesContext`, `usePreferencesCategory`, `useLayout`, `useTheme`
-- **Re-exports**: core types, constants, locales, and icons from `@admin-core/preferences`
+- **初始化**：`initPreferences`、`destroyPreferences`、`getPreferencesManager`
+- **Provider / 组件**：`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger`、各类 Tab 与表单项
+- **Hooks**：`usePreferences`、`usePreferencesContext`、`usePreferencesCategory`、`useLayout`、`useTheme`、`useDebouncedValue`、`useAdminAntdTheme`
+- **再导出**：`@admin-core/preferences` 的类型、常量、语言包与图标
 
-## Installation
+## 导出索引（入口对齐）
+
+说明：
+- 入口文件：`src/index.ts`
+- 发布类型：`dist/index.d.ts`
+- 完整符号列表以 `src/index.ts`/`dist/index.d.ts` 为准
+
+入口分组：
+1. 初始化：`initPreferences`、`destroyPreferences`、`getPreferencesManager`
+2. Hooks：`usePreferences`、`usePreferencesContext`、`usePreferencesCategory`、`useLayout`、`useTheme`、`useDebouncedValue`、`useAdminAntdTheme`
+3. 组件：`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger`、`AppearanceTab`、`LayoutTab`、`ShortcutKeysTab`、`GeneralTab`、`PreferencesBlock`、`PreferencesSwitchItem`、`PreferencesSelectItem`、`PreferencesSliderItem`
+4. 图标组件：`Icon`、`AdminIcon`、`LayoutIcon`、`AdminLayoutIcon`
+5. Core 再导出：偏好设置类型、常量、语言包（来自 `@admin-core/preferences`）
+
+## 安装
 
 ```bash
 # npm
@@ -32,32 +46,32 @@ pnpm add @admin-core/preferences-react
 yarn add @admin-core/preferences-react
 ```
 
-**Peer Dependencies:**
+**对等依赖:**
 - `react >= 18.0.0`
 - `react-dom >= 18.0.0`
 
-## Quick Start
+## 快速开始
 
-### 1. Initialize Preferences
+### 1. 初始化偏好设置
 
 ```tsx
-// main.tsx or App.tsx
+// main.tsx 或 App.tsx
 import { initPreferences } from '@admin-core/preferences-react';
 import '@admin-core/preferences/styles';
 
-// Initialize once at app startup
+// 应用启动时初始化一次
 initPreferences({
   namespace: 'my-app',
   overrides: {
     theme: { colorPrimary: 'oklch(0.6 0.2 250)' },
-    app: { locale: 'en-US' },
+    app: { locale: 'zh-CN' },
   },
 });
 ```
 
-### 2. Use PreferencesProvider (Recommended)
+### 2. 使用 PreferencesProvider（推荐）
 
-The `PreferencesProvider` component integrates lock screen, shortcut keys, and preferences drawer automatically.
+`PreferencesProvider` 组件自动集成锁屏、快捷键和偏好设置抽屉功能。
 
 ```tsx
 // App.tsx
@@ -65,11 +79,11 @@ import { PreferencesProvider } from '@admin-core/preferences-react';
 
 function App() {
   const handleLogout = () => {
-    // Handle logout
+    // 处理登出
   };
 
   const handleSearch = () => {
-    // Handle global search
+    // 处理全局搜索
   };
 
   return (
@@ -83,32 +97,32 @@ function App() {
 }
 ```
 
-### 3. Use Hooks in Components
+### 3. 在组件中使用 Hooks
 
 ```tsx
 import { usePreferences, usePreferencesContext } from '@admin-core/preferences-react';
 
 function MyComponent() {
-  // Access preferences state
+  // 访问偏好设置状态
   const { preferences, setPreferences, isDark, toggleTheme } = usePreferences();
   
-  // Access provider context (lock, drawer controls)
+  // 访问 Provider 上下文（锁屏、抽屉控制）
   const { lock, togglePreferences, isPreferencesOpen } = usePreferencesContext();
 
   return (
     <div>
-      <p>Current theme: {isDark ? 'Dark' : 'Light'}</p>
-      <button onClick={toggleTheme}>Toggle Theme</button>
-      <button onClick={togglePreferences}>Open Settings</button>
-      <button onClick={lock}>Lock Screen</button>
+      <p>当前主题: {isDark ? '深色' : '浅色'}</p>
+      <button onClick={toggleTheme}>切换主题</button>
+      <button onClick={togglePreferences}>打开设置</button>
+      <button onClick={lock}>锁定屏幕</button>
     </div>
   );
 }
 ```
 
-## Advanced Usage
+## 进阶用法
 
-### Using Individual Hooks
+### 使用独立 Hooks
 
 ```tsx
 import { useTheme, useLayout } from '@admin-core/preferences-react';
@@ -122,7 +136,7 @@ function ThemeToggle() {
         {isDark ? '🌙' : '☀️'}
       </button>
       <button onClick={() => setPrimaryColor('oklch(0.6 0.2 150)')}>
-        Green Theme
+        绿色主题
       </button>
     </div>
   );
@@ -134,17 +148,17 @@ function SidebarToggle() {
   return (
     <div>
       <button onClick={toggleSidebar}>
-        {isSidebarCollapsed ? 'Expand' : 'Collapse'}
+        {isSidebarCollapsed ? '展开' : '折叠'}
       </button>
       <button onClick={() => setLayout('header-nav')}>
-        Use Header Nav
+        使用顶部导航
       </button>
     </div>
   );
 }
 ```
 
-### Using Category Hook
+### 使用分类 Hook
 
 ```tsx
 import { usePreferencesCategory } from '@admin-core/preferences-react';
@@ -160,15 +174,15 @@ function TabbarSettings() {
           checked={value.enable}
           onChange={(e) => setValue({ enable: e.target.checked })}
         />
-        Enable Tabbar
+        启用标签栏
       </label>
-      <button onClick={reset}>Reset to Default</button>
+      <button onClick={reset}>重置为默认</button>
     </div>
   );
 }
 ```
 
-### Using Components Standalone
+### 单独使用组件
 
 ```tsx
 import {
@@ -195,19 +209,19 @@ function Settings() {
 }
 ```
 
-## Components
+## 组件
 
 ### PreferencesProvider
 
-Main wrapper component that provides context and integrates features.
+主要包装组件，提供上下文并集成各项功能。
 
 ```tsx
 <PreferencesProvider
-  onLogout={() => {}}           // Logout callback
-  onSearch={() => {}}           // Search callback
-  lockScreenBackground="url"    // Custom lock screen background
-  enableShortcuts={true}        // Enable keyboard shortcuts
-  enableLockScreen={true}       // Enable lock screen feature
+  onLogout={() => {}}           // 登出回调
+  onSearch={() => {}}           // 搜索回调
+  lockScreenBackground="url"    // 自定义锁屏背景
+  enableShortcuts={true}        // 启用键盘快捷键
+  enableLockScreen={true}       // 启用锁屏功能
 >
   {children}
 </PreferencesProvider>
@@ -215,44 +229,44 @@ Main wrapper component that provides context and integrates features.
 
 ### PreferencesDrawer
 
-Settings drawer with tab-based navigation.
+带有标签页导航的设置抽屉。
 
 ```tsx
 <PreferencesDrawer
-  open={open}                    // Controlled open state
-  onOpenChange={setOpen}         // Open state change handler
-  defaultTab="appearance"        // Default active tab
-  tabs={['appearance', 'layout', 'general', 'shortcuts']} // Visible tabs
+  open={open}                    // 受控打开状态
+  onOpenChange={setOpen}         // 打开状态变更处理器
+  defaultTab="appearance"        // 默认活动标签页
+  tabs={['appearance', 'layout', 'general', 'shortcuts']} // 可见标签页
 />
 ```
 
-### Tab Components
+### 标签页组件
 
-Individual tab components that can be used standalone:
+可独立使用的各个标签页组件：
 
-- `AppearanceTab` - Theme, colors, mode settings
-- `LayoutTab` - Layout type, sidebar, header settings
-- `GeneralTab` - Language, shortcuts, watermark settings
-- `ShortcutKeysTab` - Keyboard shortcuts configuration
+- `AppearanceTab` - 主题、颜色、模式设置
+- `LayoutTab` - 布局类型、侧边栏、顶栏设置
+- `GeneralTab` - 语言、快捷键、水印设置
+- `ShortcutKeysTab` - 键盘快捷键配置
 
-### Form Components
+### 表单组件
 
-Building blocks for custom settings UI:
+用于自定义设置 UI 的构建块：
 
-- `PreferencesBlock` - Section container with title
-- `PreferencesSwitchItem` - Toggle switch
-- `PreferencesSelectItem` - Dropdown select
-- `PreferencesSliderItem` - Range slider
+- `PreferencesBlock` - 带标题的区块容器
+- `PreferencesSwitchItem` - 开关切换
+- `PreferencesSelectItem` - 下拉选择
+- `PreferencesSliderItem` - 范围滑块
 
-## API Reference
+## API 参考
 
-See [API Documentation](./API.md) for complete API reference.
+完整的 API 参考请参见 [API 文档](./API.md)。
 
-## Related
+## 相关链接
 
-- [@admin-core/preferences](../core/README.md) - Core package
-- [@admin-core/preferences-vue](../vue/README.md) - Vue integration
+- [@admin-core/preferences](../core/README.md) - 核心包
+- [@admin-core/preferences-vue](../vue/README.md) - Vue 集成
 
-## License
+## 许可证
 
 MIT

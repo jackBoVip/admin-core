@@ -18,7 +18,24 @@ Vue 3 基础布局组件，开箱即用，高度集成偏好设置。
 - **组合式 API**：`useLayoutContext`、`useLayoutState`、`useLayoutComputed`、`useRouter` 等
 - **偏好设置内置**：`initPreferences`、`PreferencesProvider`、`PreferencesDrawer` 等（来自 `@admin-core/preferences-vue`）
 - **类型与常量**：从 `@admin-core/layout` 重新导出布局类型、配置与工具
+- **路由构建器**：`createVueRouteAccess`（静态路由 + 动态菜单 -> 注入 Vue Router）
+- **Vue 插件导出**：`install`、`LayoutPlugin`
 - **样式入口**：`@admin-core/layout-vue/style.css`
+
+## 导出索引（入口对齐）
+
+说明：
+- 入口文件：`src/index.ts`
+- 发布类型：`dist/index.d.ts`
+- 完整符号清单以 `dist/index.d.ts` 为准
+
+入口分组：
+1. 内置偏好（来自 `@admin-core/preferences-vue`）：`initPreferences`、`destroyPreferences`、`usePreferences`、`usePreferencesContext`、`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger` 等
+2. 布局组件：`./components` 全量导出（layout/menu/widgets）
+3. 组合式 API：`./composables` 全量导出（`useLayoutContext`、`useLayoutState`、`useTimer`、`useEventListener`）
+4. 路由构建：`createVueRouteAccess`、`VueRouteAccessOptions`、`VueRouteAccessResult`
+5. Vue 插件：`install`、`LayoutPlugin`
+6. Core 再导出：`@admin-core/layout` 的类型、常量、工具、i18n、样式 token
 
 ## 安装
 

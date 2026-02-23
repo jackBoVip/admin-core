@@ -18,7 +18,24 @@ Vue 3 basic layout components with built-in preferences integration.
 - **Composables**: `useLayoutContext`, `useLayoutState`, `useLayoutComputed`, `useRouter`, etc.
 - **Built-in preferences**: `initPreferences`, `PreferencesProvider`, `PreferencesDrawer` (from `@admin-core/preferences-vue`)
 - **Types & constants**: re-exported layout types, configs, and utils from `@admin-core/layout`
+- **Route builder**: `createVueRouteAccess` (static routes + dynamic menus -> inject into Vue Router)
+- **Vue plugin exports**: `install`, `LayoutPlugin`
 - **Styles**: `@admin-core/layout-vue/style.css`
+
+## Export Index (Entry-Aligned)
+
+Notes:
+- Entry file: `src/index.ts`
+- Published types: `dist/index.d.ts`
+- For complete symbols, use `dist/index.d.ts` as source of truth.
+
+Entry groups:
+1. Built-in preferences (`@admin-core/preferences-vue`): `initPreferences`, `destroyPreferences`, `usePreferences`, `usePreferencesContext`, `PreferencesProvider`, `PreferencesDrawer`, `PreferencesTrigger`, etc.
+2. Layout components: full export from `./components` (layout/menu/widgets)
+3. Composables: full export from `./composables` (`useLayoutContext`, `useLayoutState`, `useTimer`, `useEventListener`)
+4. Route builder: `createVueRouteAccess`, `VueRouteAccessOptions`, `VueRouteAccessResult`
+5. Vue plugin: `install`, `LayoutPlugin`
+6. Core re-exports: types/constants/utils/i18n/style tokens from `@admin-core/layout`
 
 ## Install
 

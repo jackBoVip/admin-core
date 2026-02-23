@@ -189,6 +189,90 @@ gridEvents: {
 
 `columnCustomChange.action`：`open` / `cancel` / `confirm` / `reset`。
 
+## 统一分页事件（Vue/React 一致）
+
+```ts
+gridEvents: {
+  onPageChange: ({ currentPage, pageSize, type, source }) => {
+    console.log('page change', currentPage, pageSize, type, source);
+  },
+  onPageSizeChange: ({ pageSize }) => {
+    console.log('size change', pageSize);
+  },
+  onPaginationChange: (payload) => {
+    console.log('pagination change', payload);
+  },
+},
+```
+
+说明：
+
+- `onPageChange`：分页变化时触发（页码变化或每页条数变化）。
+- `onPageSizeChange`：仅每页条数变化时触发。
+- `onPaginationChange`：统一分页变化事件（跨端推荐使用）。
+- `gridOptions.pagerConfig.resetToFirstOnPageSizeChange`：设为 `true` 时，切换每页条数会自动回到第一页。
+- `gridOptions.pagerConfig.exportConfig`：在分页右侧显示导出图标。`current/selected` 内置导出 Excel，`all` 需要配置 `exportAll` 接口函数。
+- Vue 仍可继续使用 `gridEvents.pageChange`（vxe 原生事件）；两者可同时使用。
+
+```ts
+gridOptions: {
+  pagerConfig: {
+    enabled: true,
+    exportConfig: {
+      options: ['current', 'selected', 'all'],
+      exportAll: async (ctx) => {
+        // 调用后端导出接口（all 必须自定义）
+        await requestExportAll(ctx);
+      },
+    },
+  },
+},
+```
+
+## 分页工具栏（左/中/右）
+
+- 默认在右侧：`gridOptions.pagerConfig.position` 默认值为 `right`。
+- 可切换到左侧：`gridOptions.pagerConfig.position = 'left'`。
+- 分页工具栏与顶部工具栏同语义（自动构建按钮/图标按钮/插槽按钮）：
+  - 左侧：`pagerConfig.toolbar.leftTools` + `pager-left` 插槽
+  - 中间：`pagerConfig.toolbar.hint` 或 `pager-center` 插槽
+  - 右侧：`pagerConfig.toolbar.rightTools`（或 `tools`）+ `pager-tools` 插槽
+
+```vue
+<script setup lang="ts">
+const gridOptions = {
+  pagerConfig: {
+    // 可选: 'left' | 'right'，默认 right
+    position: 'right',
+    toolbar: {
+      leftTools: [{ title: '左侧按钮', type: 'default', onClick: () => {} }],
+      leftToolsPosition: 'before',
+      leftToolsSlotPosition: 'after',
+      hint: {
+        content: '分页中间提示',
+        align: 'center',
+        overflow: 'scroll',
+      },
+      tools: [{ icon: 'vxe-table-icon-repeat', onClick: () => {} }],
+      toolsPosition: 'before',
+      toolsSlotPosition: 'after',
+    },
+  },
+};
+</script>
+
+<AdminTable :grid-options="gridOptions">
+  <template #pager-left>分页左插槽</template>
+  <template #pager-center>分页中间插槽</template>
+  <template #pager-tools>分页右插槽</template>
+</AdminTable>
+```
+
+说明：
+
+- `tools`/`toolsPosition`/`toolsSlotPosition` 是右侧区域的简写（等价于 `rightTools*`）。
+- 当 `pager-tools` 设置为 `replace` 时，右侧内置导出图标会隐藏（由插槽完全接管）。
+
 ## 数据策略（单元格/行）
 
 支持对单元格、行做统一策略处理：值计算、单位拼接、样式、点击行为、条件匹配。

@@ -19,6 +19,26 @@ Core layout package that provides framework-agnostic types, configuration, i18n,
 - **I18n**: `createI18n` with built-in EN/ZH locales
 - **Styles & icons**: layout styles entry and built-in icons
 
+## Export Index (Entry-Aligned)
+
+Notes:
+- Entry file: `src/index.ts`
+- Published types: `dist/index.d.ts`
+- The complete symbol list is defined by `dist/index.d.ts` (README focuses on high-frequency APIs).
+
+Entry module exports:
+1. `./types`: layout core types, runtime types, Route/Menu/Tab contracts
+2. `./constants`: defaults, breakpoints, animation constants, CSS var constants
+3. `./utils`: layout computation, menu/tab/route builders, theme/watermark, runtime controllers
+4. `./locales`: `createI18n`, `zhCN`, `enUS`, `builtinLocales`
+5. `./styles`: `layoutThemeTokens`, `tailwindThemeCSS`, `layoutFullCSS`, etc.
+6. `./icons`: layout icon definitions and icon resolvers
+
+Subpath exports (`package.json`):
+- `@admin-core/layout/styles`
+- `@admin-core/layout/styles/layout.css`
+- `@admin-core/layout/locales/*`
+
 ## Install
 
 ```bash

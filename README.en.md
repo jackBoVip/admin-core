@@ -286,14 +286,28 @@ admin-core/
 
 ## 📖 Documentation
 
-- [Preference System API Docs](./packages/preferences/core/API.md)
-- [Layout System Docs](./packages/layout/core/README.md)
-- [Form System Core Docs](./packages/form/core/README.en.md)
-- [Form System Vue Docs](./packages/form/vue/README.en.md)
-- [Form System React Docs](./packages/form/react/README.en.md)
-- [Table System Core Docs](./packages/table/core/README.en.md)
-- [Table System Vue Docs](./packages/table/vue/README.en.md)
-- [Table System React Docs](./packages/table/react/README.en.md)
+### Package Docs Matrix
+
+| Package | Chinese Docs | English Docs |
+| --- | --- | --- |
+| `@admin-core/preferences` | [README](./packages/preferences/core/README.md) | [README.en](./packages/preferences/core/README.en.md) |
+| `@admin-core/preferences-vue` | [README](./packages/preferences/vue/README.md) | [README.en](./packages/preferences/vue/README.en.md) |
+| `@admin-core/preferences-react` | [README](./packages/preferences/react/README.md) | [README.en](./packages/preferences/react/README.en.md) |
+| `@admin-core/layout` | [README](./packages/layout/core/README.md) | [README.en](./packages/layout/core/README.en.md) |
+| `@admin-core/layout-vue` | [README](./packages/layout/vue/README.md) | [README.en](./packages/layout/vue/README.en.md) |
+| `@admin-core/layout-react` | [README](./packages/layout/react/README.md) | [README.en](./packages/layout/react/README.en.md) |
+| `@admin-core/form-core` | [README](./packages/form/core/README.md) | [README.en](./packages/form/core/README.en.md) |
+| `@admin-core/form-vue` | [README](./packages/form/vue/README.md) | [README.en](./packages/form/vue/README.en.md) |
+| `@admin-core/form-react` | [README](./packages/form/react/README.md) | [README.en](./packages/form/react/README.en.md) |
+| `@admin-core/table-core` | [README](./packages/table/core/README.md) | [README.en](./packages/table/core/README.en.md) |
+| `@admin-core/table-vue` | [README](./packages/table/vue/README.md) | [README.en](./packages/table/vue/README.en.md) |
+| `@admin-core/table-react` | [README](./packages/table/react/README.md) | [README.en](./packages/table/react/README.en.md) |
+
+### API Docs
+
+- [Preferences Core API](./packages/preferences/core/API.md)
+- [Preferences Vue API](./packages/preferences/vue/API.md)
+- [Preferences React API](./packages/preferences/react/API.md)
 - [TypeScript Configuration Guide](./internal/tsconfig/README.md)
 
 ## 🔁 Legacy Table Migration Quick Map

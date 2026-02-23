@@ -18,7 +18,23 @@ React 基础布局组件，开箱即用，高度集成偏好设置。
 - **Hooks**：`useLayoutContext`、`useLayoutState`、`useLayoutComputed`、`useRouter` 等
 - **偏好设置内置**：`initPreferences`、`PreferencesProvider`、`PreferencesDrawer` 等（来自 `@admin-core/preferences-react`）
 - **类型与常量**：从 `@admin-core/layout` 重新导出布局类型、配置与工具
+- **路由构建器**：`createReactRouteAccess`（静态路由 + 动态菜单 -> React Router `routeObjects`）
 - **样式入口**：`@admin-core/layout-react/style.css`
+
+## 导出索引（入口对齐）
+
+说明：
+- 入口文件：`src/index.ts`
+- 发布类型：`dist/index.d.ts`
+- 完整符号清单以 `dist/index.d.ts` 为准
+
+入口分组：
+1. 内置偏好（来自 `@admin-core/preferences-react`）：`initPreferences`、`destroyPreferences`、`usePreferences`、`usePreferencesContext`、`PreferencesProvider`、`PreferencesDrawer`、`PreferencesTrigger`、`useAdminAntdTheme` 等
+2. 布局组件：`./components` 全量导出（layout/menu/widgets/ErrorBoundary）
+3. 布局 Hooks：`./hooks` 全量导出（`useLayoutContext`、`useLayoutState` 等）
+4. 工具函数：`./utils` 全量导出
+5. 路由构建：`createReactRouteAccess`、`ReactRouteAccessOptions`、`ReactRouteAccessResult`
+6. Core 再导出：`@admin-core/layout` 的类型、常量、工具、i18n、样式 token
 
 ## 安装
 

@@ -202,6 +202,90 @@ gridEvents: {
 
 `columnCustomChange.action`: `open` / `cancel` / `confirm` / `reset`.
 
+## Unified Pagination Events (Vue/React Consistent)
+
+```ts
+gridEvents: {
+  onPageChange: ({ currentPage, pageSize, type, source }) => {
+    console.log('page change', currentPage, pageSize, type, source);
+  },
+  onPageSizeChange: ({ pageSize }) => {
+    console.log('size change', pageSize);
+  },
+  onPaginationChange: (payload) => {
+    console.log('pagination change', payload);
+  },
+},
+```
+
+Notes:
+
+- `onPageChange`: fires when pagination changes (current page or page size).
+- `onPageSizeChange`: fires only when page size changes.
+- `onPaginationChange`: unified pagination event (recommended for cross-framework code).
+- `gridOptions.pagerConfig.resetToFirstOnPageSizeChange`: set to `true` to reset to page 1 when page size changes.
+- `gridOptions.pagerConfig.exportConfig`: adds an export icon on the right side of pagination. `current/selected` use built-in Excel export, `all` requires a custom `exportAll` handler.
+- React native `gridOptions.onChange` is still supported and can be used together.
+
+```ts
+gridOptions: {
+  pagerConfig: {
+    enabled: true,
+    exportConfig: {
+      options: ['current', 'selected', 'all'],
+      exportAll: async (ctx) => {
+        // call backend export API (required for "all")
+        await requestExportAll(ctx);
+      },
+    },
+  },
+},
+```
+
+## Pagination Toolbar (Left/Center/Right)
+
+- Default position is right: `gridOptions.pagerConfig.position` defaults to `right`.
+- You can switch it to left: `gridOptions.pagerConfig.position = 'left'`.
+- Pagination toolbar follows the same semantics as top toolbar (auto-built buttons/icon buttons/slot buttons):
+  - Left: `pagerConfig.toolbar.leftTools` + `pager-left` slot
+  - Center: `pagerConfig.toolbar.hint` or `pager-center` slot
+  - Right: `pagerConfig.toolbar.rightTools` (or `tools`) + `pager-tools` slot
+
+```tsx
+gridOptions: {
+  pagerConfig: {
+    // optional: 'left' | 'right', default is right
+    position: 'right',
+    toolbar: {
+      leftTools: [{ title: 'Left Tool', type: 'default', onClick: () => {} }],
+      leftToolsPosition: 'before',
+      leftToolsSlotPosition: 'after',
+      hint: {
+        content: 'Pager center hint',
+        align: 'center',
+        overflow: 'scroll',
+      },
+      tools: [{ icon: 'vxe-table-icon-repeat', onClick: () => {} }],
+      toolsPosition: 'before',
+      toolsSlotPosition: 'after',
+    },
+  },
+}
+
+<TableView
+  slots={{
+    'pager-left': () => <button>Pager Left Slot</button>,
+    'pager-center': () => <span>Pager Center Slot</span>,
+    'pager-tools': () => <button>Pager Right Slot</button>,
+  }}
+/>
+```
+
+Notes:
+
+- `tools`/`toolsPosition`/`toolsSlotPosition` are shorthand for the right area (`rightTools*`).
+- If `pager-tools` uses `replace`, the built-in export icon on the right is hidden.
+
 ## Strategy (Cell/Row)
 
 ```ts
