@@ -107,6 +107,7 @@ export const layoutBaseCSS = `
 /* 布局容器 */
 .layout-container {
   position: relative;
+  display: flow-root;
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
@@ -183,8 +184,30 @@ export const layoutBaseCSS = `
 /* 内容区 */
 .layout-content {
   position: relative;
-  min-height: calc(100vh - var(--admin-header-height) - var(--admin-tabbar-height));
-  min-height: calc(100dvh - var(--admin-header-height) - var(--admin-tabbar-height));
+  min-height: max(
+    0px,
+    calc(
+      100vh - var(
+        --admin-content-viewport-offset,
+        var(
+          --admin-content-viewport-top-offset,
+          calc(var(--admin-header-height) + var(--admin-tabbar-height))
+        )
+      )
+    )
+  );
+  min-height: max(
+    0px,
+    calc(
+      100dvh - var(
+        --admin-content-viewport-offset,
+        var(
+          --admin-content-viewport-top-offset,
+          calc(var(--admin-header-height) + var(--admin-tabbar-height))
+        )
+      )
+    )
+  );
   margin-left: var(--admin-sidebar-width);
   margin-top: calc(var(--admin-header-height) + var(--admin-tabbar-height));
   padding: var(--admin-content-padding);

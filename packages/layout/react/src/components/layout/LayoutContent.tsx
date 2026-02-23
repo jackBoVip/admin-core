@@ -16,6 +16,17 @@ export interface LayoutContentProps {
   overlay?: ReactNode;
 }
 
+function parsePxValue(value: number | string | undefined): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 export const LayoutContent = memo(function LayoutContent({
   children,
   header,
@@ -41,10 +52,11 @@ export const LayoutContent = memo(function LayoutContent({
   }, [context.props.tabbar?.maxCount, context.props.autoTab?.maxCount]);
   const routerLocation = context.props.router?.location;
   const keepAliveAvailable = keepAliveEnabled && !!routerLocation;
-  const footerOffset =
+  const footerPaddingOffset =
     computed.showFooter && context.props.footer?.fixed
       ? computed.footerHeight
       : 0;
+  const viewportFooterOffset = computed.showFooter ? computed.footerHeight : 0;
 
   const cacheRef = useRef(new Map<string, { element: ReactNode; refreshKey: number }>());
   const [, forceUpdate] = useState(0);
@@ -307,8 +319,10 @@ export const LayoutContent = memo(function LayoutContent({
   // 样式
   const contentStyle = useMemo(() => {
     const paddingBase = context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding;
+    const viewportTopOffset = parsePxValue(computed.mainStyle.marginTop);
+    const viewportOffset = viewportTopOffset + viewportFooterOffset;
     const paddingBottom =
-      (context.props.contentPaddingBottom ?? paddingBase) + footerOffset;
+      (context.props.contentPaddingBottom ?? paddingBase) + footerPaddingOffset;
 
     return {
       marginLeft: computed.mainStyle.marginLeft,
@@ -318,6 +332,9 @@ export const LayoutContent = memo(function LayoutContent({
       paddingBottom: `${paddingBottom}px`,
       paddingLeft: `${context.props.contentPaddingLeft ?? paddingBase}px`,
       paddingRight: `${context.props.contentPaddingRight ?? paddingBase}px`,
+      '--admin-content-viewport-top-offset': `${viewportTopOffset}px`,
+      '--admin-content-viewport-footer-offset': `${viewportFooterOffset}px`,
+      '--admin-content-viewport-offset': `${viewportOffset}px`,
     };
   }, [
     computed.mainStyle,
@@ -326,7 +343,8 @@ export const LayoutContent = memo(function LayoutContent({
     context.props.contentPaddingLeft,
     context.props.contentPaddingRight,
     context.props.contentPadding,
-    footerOffset,
+    footerPaddingOffset,
+    viewportFooterOffset,
   ]);
 
   // 内容容器样式

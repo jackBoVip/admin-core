@@ -149,11 +149,25 @@ const keepAliveMax = computed(() => {
 });
 const keepAliveInclude = computed(() => context.state.keepAliveIncludes || []);
 const keepAliveExclude = computed(() => context.state.keepAliveExcludes || []);
-const footerOffset = computed(() => {
+const footerPaddingOffset = computed(() => {
   return layoutComputed.value.showFooter && context.props.footer?.fixed
     ? layoutComputed.value.footerHeight
     : 0;
 });
+const viewportFooterOffset = computed(() => {
+  return layoutComputed.value.showFooter ? layoutComputed.value.footerHeight : 0;
+});
+
+const parsePxValue = (value: number | string | undefined) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
 
 // 类名
 const contentClass = computed(() => [
@@ -172,7 +186,9 @@ const contentClass = computed(() => [
 const contentStyle = computed(() => {
   const { mainStyle } = layoutComputed.value;
   const paddingBase = context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding;
-  const paddingBottom = (context.props.contentPaddingBottom ?? paddingBase) + footerOffset.value;
+  const paddingBottom = (context.props.contentPaddingBottom ?? paddingBase) + footerPaddingOffset.value;
+  const viewportTopOffset = parsePxValue(mainStyle.marginTop);
+  const viewportOffset = viewportTopOffset + viewportFooterOffset.value;
   return {
     marginLeft: mainStyle.marginLeft,
     marginRight: mainStyle.marginRight,
@@ -181,6 +197,9 @@ const contentStyle = computed(() => {
     paddingBottom: `${paddingBottom}px`,
     paddingLeft: `${context.props.contentPaddingLeft ?? paddingBase}px`,
     paddingRight: `${context.props.contentPaddingRight ?? paddingBase}px`,
+    '--admin-content-viewport-top-offset': `${viewportTopOffset}px`,
+    '--admin-content-viewport-footer-offset': `${viewportFooterOffset.value}px`,
+    '--admin-content-viewport-offset': `${viewportOffset}px`,
   };
 });
 

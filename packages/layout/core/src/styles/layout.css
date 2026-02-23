@@ -392,6 +392,7 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 /* 布局容器 */
 .layout-container {
   @apply relative w-full;
+  display: flow-root;
   min-height: 100vh;
   min-height: 100dvh;
   background-color: var(--muted);
@@ -1429,6 +1430,10 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
   margin-left: var(--layout-panel-offset-left, 0px) !important;
   margin-right: var(--layout-panel-offset-right, 0px) !important;
   margin-top: var(--admin-tabbar-height, 38px) !important;
+  --admin-content-viewport-top-offset: var(--admin-tabbar-height, 38px) !important;
+  --admin-content-viewport-offset: calc(
+    var(--admin-tabbar-height, 38px) + var(--admin-content-viewport-footer-offset, 0px)
+  ) !important;
 }
 
 :is(body.layout-content-maximized, body[data-content-maximized="true"]) .layout-footer {
@@ -1464,8 +1469,30 @@ body:not([data-platform='macOs'])::-webkit-scrollbar-button {
 /* 内容区 */
 .layout-content {
   @apply relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: max(
+    0px,
+    calc(
+      100vh - var(
+        --admin-content-viewport-offset,
+        var(
+          --admin-content-viewport-top-offset,
+          calc(var(--admin-header-height) + var(--admin-tabbar-height))
+        )
+      )
+    )
+  );
+  min-height: max(
+    0px,
+    calc(
+      100dvh - var(
+        --admin-content-viewport-offset,
+        var(
+          --admin-content-viewport-top-offset,
+          calc(var(--admin-header-height) + var(--admin-tabbar-height))
+        )
+      )
+    )
+  );
   background-color: var(--background, var(--sidebar-dark-foreground));
   transition:
     margin-left var(--layout-collapse-duration, 130ms)
