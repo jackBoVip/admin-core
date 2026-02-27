@@ -59,6 +59,23 @@ export {
   resolveTableExportColumns,
   resolveTablePagerExportConfig,
 } from './table-export';
+export type {
+  ExecuteTablePagerExportActionOptions,
+  ExecuteTablePagerExportActionResult,
+  ResolveTablePagerExportPaginationOptions,
+  ResolveTablePagerExportTriggerStateOptions,
+  ResolveVisibleTablePagerExportActionsOptions,
+  ResolvedTablePagerExportPagination,
+  ResolvedTablePagerExportTriggerState,
+} from './table-pager-export-controller';
+export {
+  executeTablePagerExportAction,
+  normalizeTablePagerExportSelectedRowKeys,
+  resolveTablePagerExportPagination,
+  resolveTablePagerExportTriggerState,
+  resolveTablePagerExportVisible,
+  resolveVisibleTablePagerExportActions,
+} from './table-pager-export-controller';
 
 export type {
   ApplySelectionCheckFieldToRowsOptions,
@@ -91,6 +108,11 @@ export {
   resolveSeqColumnConfig,
   toTableComparableSelectionKey,
 } from './table-selection';
+export type {
+  ResolveTableSelectionChangeOptions,
+  ResolvedTableSelectionChangeResult,
+} from './table-selection-controller';
+export { resolveTableSelectionChange } from './table-selection-controller';
 export {
   cleanupTableRuntimeApis,
   createTableSearchFormActionHandlers,
@@ -194,6 +216,19 @@ export {
   toggleColumnCustomSortable,
   toggleColumnCustomVisible,
 } from './table-column-custom';
+export type {
+  ColumnCustomCancelTransitionResult,
+  ColumnCustomConfirmTransitionResult,
+  ColumnCustomOpenTransitionResult,
+  ColumnCustomResetTransitionResult,
+} from './table-column-custom-controller';
+export {
+  hasColumnCustomDraftChanges,
+  resolveColumnCustomCancelTransition,
+  resolveColumnCustomConfirmTransition,
+  resolveColumnCustomOpenTransition,
+  resolveColumnCustomResetTransition,
+} from './table-column-custom-controller';
 
 export {
   resolveToolbarActionButtonClassState,

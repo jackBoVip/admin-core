@@ -10,6 +10,7 @@ import {
   defaultTableDesktopPagerLayouts,
   defaultTableMobilePagerLayouts,
   defaultTablePagerPageSizes,
+  executeTablePagerExportAction,
   ensureSelectionColumn,
   ensureSeqColumn,
   flattenTableRows,
@@ -19,6 +20,8 @@ import {
   isSelectionColumnTypeColumn,
   isSeqColumnTypeColumn,
   normalizeTableLocale,
+  normalizeTablePagerExportSelectedRowKeys,
+  resolveTablePagerExportPagination,
   normalizeTablePagerLayoutKey,
   normalizeTableSelectionKeys,
   resolveColumnKey,
@@ -33,6 +36,7 @@ import {
   resolveSelectionRowsByKeys,
   resolveSeqColumn,
   resolveSeqColumnConfig,
+  resolveTableSelectionChange,
   resolveTablePagerLayouts,
   resolveTablePagerLayoutSet,
   resolveTablePagerPageSizes,
@@ -79,6 +83,117 @@ describe('table shared utils', () => {
       50,
       30,
     ]);
+  });
+
+  it('should execute pager export action with shared controller', async () => {
+    expect(
+      resolveTablePagerExportPagination({
+        currentPage: '2',
+        pageSize: 0,
+        total: '99',
+      })
+    ).toEqual({
+      currentPage: 2,
+      pageSize: 20,
+      total: 99,
+    });
+    expect(
+      resolveTablePagerExportPagination({
+        currentPage: undefined,
+        pageSize: undefined,
+        total: 'invalid',
+      })
+    ).toEqual({
+      currentPage: 1,
+      pageSize: 20,
+      total: undefined,
+    });
+
+    const exportAllHandler = vi.fn();
+    const allResult = await executeTablePagerExportAction({
+      action: {
+        disabled: false,
+        index: 0,
+        title: 'Export all',
+        type: 'all',
+      } as any,
+      allRows: [{ id: 1 }],
+      columns: [{ field: 'id' }],
+      currentPage: 2,
+      exportAll: exportAllHandler,
+      fileNameFallback: 'orders',
+      pageSize: 10,
+      selectedRowKeys: [1, '2', null, {}, undefined],
+      selectedRows: [],
+      total: 99,
+    });
+    expect(allResult.executed).toBe(true);
+    expect(allResult.fileName).toBe('orders.xls');
+    expect(allResult.payload?.rows).toEqual([{ id: 1 }]);
+    expect(allResult.payload?.selectedRowKeys).toEqual([1, '2']);
+    expect(exportAllHandler).toHaveBeenCalledTimes(1);
+
+    const onMissingAllHandler = vi.fn();
+    const missingHandlerResult = await executeTablePagerExportAction({
+      action: {
+        disabled: false,
+        index: 1,
+        title: 'Export all',
+        type: 'all',
+      } as any,
+      allRows: [{ id: 2 }],
+      columns: [{ field: 'id' }],
+      missingAllHandlerMessage: 'missing handler',
+      onMissingAllHandler,
+    });
+    expect(missingHandlerResult.executed).toBe(false);
+    expect(missingHandlerResult.reason).toBe('missing-all-handler');
+    expect(onMissingAllHandler).toHaveBeenCalledWith('missing handler');
+
+    const exportRows = vi.fn(() => true);
+    const resolveExportColumns = vi.fn(() => [
+      {
+        key: 'id',
+        title: 'ID',
+        valueGetter: (row: { id: number }) => row.id,
+      },
+    ]);
+    const currentResult = await executeTablePagerExportAction({
+      action: {
+        disabled: false,
+        index: 2,
+        title: 'Export current',
+        type: 'current',
+      } as any,
+      columns: [{ field: 'id' }],
+      currentPage: 3,
+      currentRows: [{ id: 10 }],
+      exportRows,
+      fileNameFallback: 'current-page',
+      pageSize: 20,
+      pagerEnabled: true,
+      resolveExportColumns,
+    });
+    expect(currentResult.executed).toBe(true);
+    expect(resolveExportColumns).toHaveBeenCalledWith(
+      [{ field: 'id' }],
+      40
+    );
+    expect(exportRows).toHaveBeenCalledWith({
+      columns: [
+        {
+          key: 'id',
+          title: 'ID',
+          valueGetter: expect.any(Function),
+        },
+      ],
+      fileName: 'current-page.xls',
+      rows: [{ id: 10 }],
+    });
+
+    expect(
+      normalizeTablePagerExportSelectedRowKeys([1, '2', null, {}, undefined])
+    ).toEqual([1, '2']);
   });
 
   it('should resolve and auto inject selection column', () => {
@@ -212,6 +327,47 @@ describe('table shared utils', () => {
         checked: true,
       },
     ]);
+  });
+
+  it('should resolve table selection change by mode and row key field', () => {
+    const rows = [
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+      { id: 3, name: 'C' },
+    ];
+
+    const checkbox = resolveTableSelectionChange({
+      keys: [1, 2, 2, '9'],
+      mode: 'checkbox',
+      rowKeyField: 'id',
+      rows,
+    });
+    expect(checkbox?.normalizedKeys).toEqual([1, 2, '9']);
+    expect(checkbox?.alignedKeys).toEqual([1, 2, '9']);
+    expect(checkbox?.selectedRows).toEqual([
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+    ]);
+
+    const radio = resolveTableSelectionChange({
+      keys: [1, 2],
+      mode: 'radio',
+      rowKeyField: 'id',
+      rows,
+    });
+    expect(radio?.normalizedKeys).toEqual([1]);
+    expect(radio?.alignedKeys).toEqual([1]);
+    expect(radio?.selectedRows).toEqual([
+      { id: 1, name: 'A' },
+    ]);
+
+    expect(
+      resolveTableSelectionChange({
+        keys: [1, 2],
+        mode: undefined,
+        rows,
+      })
+    ).toBeUndefined();
   });
 
   it('should resolve next row-click selection keys', () => {

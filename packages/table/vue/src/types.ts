@@ -69,6 +69,7 @@ export interface VxeTableGridOptions<
   rowStrategy?: TableRowStrategy[];
   rowSelection?: VxeRowSelectionConfig<T>;
   seqColumn?: boolean | TableSeqColumnConfig;
+  tableId?: string;
   stripe?: boolean | TableStripeConfig;
   strategy?: TableStrategyConfig;
   toolbarConfig?: VxeToolbarConfig;

@@ -167,8 +167,10 @@ The operation column is rendered only when at least one operation tool is visibl
 
 ```ts
 gridOptions: {
+  tableId: 'users-main-table', // Recommended when multiple tables share the same route
   columnCustomPersistence: {
     key: 'demo:table:basic',
+    scope: 'users', // Optional: participates in default key generation when key is omitted
     storage: 'local', // local | session
   },
   toolbarConfig: { custom: true },

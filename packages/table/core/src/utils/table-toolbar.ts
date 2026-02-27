@@ -23,6 +23,92 @@ export interface ResolvedToolbarHintConfig {
   text: string;
 }
 
+export interface ResolvedToolbarHintPresentation {
+  alignClass: string;
+  overflowClass: string;
+  textStyle?: Record<string, string>;
+}
+
+export interface ResolveToolbarHintOverflowEnabledOptions {
+  hasCenterSlot?: boolean;
+  hint?: null | Pick<ResolvedToolbarHintConfig, 'overflow'>;
+}
+
+export interface ResolveToolbarHintShouldScrollOptions
+  extends ResolveToolbarHintOverflowEnabledOptions {
+  tolerance?: number;
+  textScrollWidth?: number;
+  viewportClientWidth?: number;
+}
+
+export interface ResolvedToolbarToolsSlotState {
+  after: boolean;
+  before: boolean;
+  hasSlot: boolean;
+  replace: boolean;
+}
+
+export interface ResolvedToolbarToolsPlacement<TItem> {
+  after: TItem[];
+  before: TItem[];
+}
+
+export interface ResolveToolbarRegionVisibleOptions {
+  extraVisible?: boolean;
+  hasSlot?: boolean;
+  hasSlotContent?: boolean;
+  slotReplace?: boolean;
+  toolsLength?: number;
+}
+
+export interface ResolveToolbarCenterVisibleOptions {
+  hasCenterSlot?: boolean;
+  hasHint?: boolean;
+}
+
+export interface ResolveToolbarVisibleOptions {
+  builtinToolsLength?: number;
+  hasActionsSlot?: boolean;
+  hasToolsSlot?: boolean;
+  showCenter?: boolean;
+  showSearchButton?: boolean;
+  showTableTitle?: boolean;
+  toolsLength?: number;
+}
+
+export interface ResolvePagerVisibilityStateOptions {
+  hasLeftSlot?: boolean;
+  hasLeftSlotContent?: boolean;
+  hasRightSlot?: boolean;
+  hasRightSlotContent?: boolean;
+  leftSlotReplace?: boolean;
+  leftToolsLength?: number;
+  paginationEnabled?: boolean;
+  rightSlotReplace?: boolean;
+  rightToolsLength?: number;
+  showCenter?: boolean;
+  showExport?: boolean;
+  showPageEnd?: boolean;
+  showPageHome?: boolean;
+}
+
+export interface ResolvedPagerVisibilityState {
+  hasExtension: boolean;
+  showCenter: boolean;
+  showExportInRight: boolean;
+  showLeft: boolean;
+  showRight: boolean;
+}
+
+export interface ResolvePagerSlotBindingsOptions {
+  leftBinding?: string;
+  rightBinding?: string;
+  showCenter?: boolean;
+  showLeft?: boolean;
+  showRight?: boolean;
+  sourceSlots?: unknown;
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
@@ -51,6 +137,150 @@ export function resolveToolbarToolsSlotPosition(
     return 'replace';
   }
   return resolveToolbarInlinePosition(position, 'after');
+}
+
+export function resolveToolbarToolsSlotState(
+  hasSlot: boolean,
+  position: ResolvedToolbarToolsSlotPosition | unknown
+): ResolvedToolbarToolsSlotState {
+  const resolvedPosition = resolveToolbarToolsSlotPosition(position);
+  const enabled = !!hasSlot;
+  return {
+    after: enabled && resolvedPosition !== 'before',
+    before: enabled && resolvedPosition === 'before',
+    hasSlot: enabled,
+    replace: enabled && resolvedPosition === 'replace',
+  };
+}
+
+export function resolveToolbarToolsPlacement<TItem>(
+  tools: null | readonly TItem[] | undefined,
+  position: ResolvedToolbarInlinePosition | unknown,
+  fallback: ResolvedToolbarInlinePosition = 'after'
+): ResolvedToolbarToolsPlacement<TItem> {
+  const source = Array.isArray(tools) ? (tools as TItem[]) : [];
+  const resolvedPosition = resolveToolbarInlinePosition(position, fallback);
+  if (resolvedPosition === 'before') {
+    return {
+      after: [],
+      before: source,
+    };
+  }
+  return {
+    after: source,
+    before: [],
+  };
+}
+
+export function resolveToolbarRegionVisible(
+  options: ResolveToolbarRegionVisibleOptions
+) {
+  const hasSlot = !!options.hasSlot;
+  const hasSlotContent = !!options.hasSlotContent;
+  const slotReplace = !!options.slotReplace;
+  const toolsLength = Number(options.toolsLength ?? 0);
+  const hasTools = Number.isFinite(toolsLength) && toolsLength > 0;
+  return (
+    (hasSlot && hasSlotContent) ||
+    (!slotReplace && hasTools) ||
+    !!options.extraVisible
+  );
+}
+
+export function resolveToolbarCenterVisible(
+  options: ResolveToolbarCenterVisibleOptions
+) {
+  return !!options.hasCenterSlot || !!options.hasHint;
+}
+
+export function resolveToolbarVisible(
+  options: ResolveToolbarVisibleOptions
+) {
+  const builtinToolsLength = Number(options.builtinToolsLength ?? 0);
+  const toolsLength = Number(options.toolsLength ?? 0);
+  const hasBuiltinTools =
+    Number.isFinite(builtinToolsLength) && builtinToolsLength > 0;
+  const hasTools = Number.isFinite(toolsLength) && toolsLength > 0;
+  return (
+    !!options.showTableTitle ||
+    !!options.showCenter ||
+    hasTools ||
+    hasBuiltinTools ||
+    !!options.showSearchButton ||
+    !!options.hasActionsSlot ||
+    !!options.hasToolsSlot
+  );
+}
+
+export function resolvePagerVisibilityState(
+  options: ResolvePagerVisibilityStateOptions
+): ResolvedPagerVisibilityState {
+  const showExportInRight =
+    !!options.showExport && !options.rightSlotReplace;
+  const showCenter = !!options.showCenter;
+  const showLeft = resolveToolbarRegionVisible({
+    hasSlot: options.hasLeftSlot,
+    hasSlotContent: options.hasLeftSlotContent,
+    slotReplace: options.leftSlotReplace,
+    toolsLength: options.leftToolsLength,
+  });
+  const showRight = resolveToolbarRegionVisible({
+    extraVisible: showExportInRight,
+    hasSlot: options.hasRightSlot,
+    hasSlotContent: options.hasRightSlotContent,
+    slotReplace: options.rightSlotReplace,
+    toolsLength: options.rightToolsLength,
+  });
+  const leftToolsLength = Number(options.leftToolsLength ?? 0);
+  const rightToolsLength = Number(options.rightToolsLength ?? 0);
+  const hasLeftTools = Number.isFinite(leftToolsLength) && leftToolsLength > 0;
+  const hasRightTools =
+    Number.isFinite(rightToolsLength) && rightToolsLength > 0;
+  const hasExtension =
+    showExportInRight ||
+    (!!options.paginationEnabled &&
+      (!!options.showPageHome || !!options.showPageEnd)) ||
+    showCenter ||
+    !!options.hasLeftSlot ||
+    !!options.hasRightSlot ||
+    hasLeftTools ||
+    hasRightTools;
+  return {
+    hasExtension,
+    showCenter,
+    showExportInRight,
+    showLeft,
+    showRight,
+  };
+}
+
+export function resolvePagerSlotBindings(
+  options: ResolvePagerSlotBindingsOptions
+): Record<string, any> | undefined {
+  const sourceSlots = resolveToolbarConfigRecord(options.sourceSlots);
+  const nextSlots = {
+    ...sourceSlots,
+  } as Record<string, any>;
+  const leftBinding = isNonEmptyString(options.leftBinding)
+    ? options.leftBinding.trim()
+    : '__admin_table_pager_left';
+  const rightBinding = isNonEmptyString(options.rightBinding)
+    ? options.rightBinding.trim()
+    : '__admin_table_pager_right';
+  if (options.showLeft || options.showCenter) {
+    nextSlots.left = leftBinding;
+  }
+  if (options.showRight) {
+    nextSlots.right = rightBinding;
+  }
+  return Object.keys(nextSlots).length > 0 ? nextSlots : undefined;
+}
+
+export function resolveToolbarConfigRecord(source: unknown): Record<string, any> {
+  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+    return {};
+  }
+  return source as Record<string, any>;
 }
 
 function resolveToolbarHintAlign(
@@ -132,6 +362,64 @@ export function resolveToolbarHintConfig(
     speed: normalizeToolbarHintSpeed(config.speed),
     text,
   };
+}
+
+export function resolveToolbarHintPresentation(
+  hint: null | ResolvedToolbarHintConfig | undefined
+): ResolvedToolbarHintPresentation {
+  const alignClass = `is-${hint?.align ?? 'center'}`;
+  const overflowClass = hint?.overflow === 'scroll' ? 'is-scroll' : 'is-wrap';
+  if (!hint) {
+    return {
+      alignClass,
+      overflowClass,
+      textStyle: undefined,
+    };
+  }
+  const textStyle: Record<string, string> = {};
+  if (hint.color) {
+    textStyle.color = hint.color;
+  }
+  if (hint.fontSize) {
+    textStyle.fontSize = hint.fontSize;
+  }
+  if (hint.overflow === 'scroll') {
+    textStyle['--admin-table-toolbar-hint-duration'] = `${hint.speed}s`;
+  }
+  return {
+    alignClass,
+    overflowClass,
+    textStyle,
+  };
+}
+
+export function resolveToolbarHintOverflowEnabled(
+  options: ResolveToolbarHintOverflowEnabledOptions
+) {
+  if (options.hasCenterSlot) {
+    return false;
+  }
+  return options.hint?.overflow === 'scroll';
+}
+
+export function resolveToolbarHintShouldScroll(
+  options: ResolveToolbarHintShouldScrollOptions
+) {
+  if (!resolveToolbarHintOverflowEnabled(options)) {
+    return false;
+  }
+  const viewportWidth = Number(options.viewportClientWidth);
+  const textWidth = Number(options.textScrollWidth);
+  if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
+    return false;
+  }
+  if (!Number.isFinite(textWidth) || textWidth <= 0) {
+    return false;
+  }
+  const tolerance = Number(options.tolerance);
+  const safeTolerance =
+    Number.isFinite(tolerance) && tolerance >= 0 ? tolerance : 1;
+  return textWidth > viewportWidth + safeTolerance;
 }
 
 export function resolveToolbarActionTypeClass(type: unknown) {

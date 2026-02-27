@@ -15,6 +15,8 @@ import {
   resolvePageQueryTableFixed,
   resolvePageQueryTableFixedHeight,
   resolvePageQueryTableOptionsWithStripeDefaults,
+  isPageScrollableContainerOverflow,
+  resolvePreferredPageScrollLockTarget,
 } from '../index';
 
 describe('page query-table helpers', () => {
@@ -205,6 +207,57 @@ describe('page query-table helpers', () => {
     expect(resolvePageQueryTableFixed(null)).toBe(true);
     expect(resolvePageQueryTableFixed(true)).toBe(true);
     expect(resolvePageQueryTableFixed(false)).toBe(false);
+  });
+
+  it('recognizes page scrollable overflow values for fixed lock target', () => {
+    expect(isPageScrollableContainerOverflow('auto')).toBe(true);
+    expect(isPageScrollableContainerOverflow('overlay')).toBe(true);
+    expect(isPageScrollableContainerOverflow('scroll')).toBe(true);
+    expect(isPageScrollableContainerOverflow(' Auto ')).toBe(true);
+
+    expect(isPageScrollableContainerOverflow('hidden')).toBe(false);
+    expect(isPageScrollableContainerOverflow('clip')).toBe(false);
+    expect(isPageScrollableContainerOverflow('visible')).toBe(false);
+    expect(isPageScrollableContainerOverflow(undefined)).toBe(false);
+  });
+
+  it('resolves preferred scroll lock target by priority', () => {
+    const primary = { id: 'primary' } as unknown as HTMLElement;
+    const ancestorA = { id: 'ancestor-a' } as unknown as HTMLElement;
+    const ancestorB = { id: 'ancestor-b' } as unknown as HTMLElement;
+    const documentScroll = { id: 'document' } as unknown as HTMLElement;
+
+    expect(
+      resolvePreferredPageScrollLockTarget({
+        ancestorScrollContainers: [ancestorA, ancestorB],
+        documentScrollElement: documentScroll,
+        primaryScrollContainer: primary,
+      })
+    ).toBe(primary);
+
+    expect(
+      resolvePreferredPageScrollLockTarget({
+        ancestorScrollContainers: [ancestorA, ancestorB],
+        documentScrollElement: documentScroll,
+        primaryScrollContainer: null,
+      })
+    ).toBe(ancestorA);
+
+    expect(
+      resolvePreferredPageScrollLockTarget({
+        ancestorScrollContainers: [],
+        documentScrollElement: documentScroll,
+        primaryScrollContainer: null,
+      })
+    ).toBe(documentScroll);
+
+    expect(
+      resolvePreferredPageScrollLockTarget({
+        ancestorScrollContainers: [],
+        documentScrollElement: null,
+        primaryScrollContainer: null,
+      })
+    ).toBeNull();
   });
 
   it('resolves query-table fixed height from viewport and top offset', () => {

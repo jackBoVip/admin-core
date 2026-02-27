@@ -214,8 +214,10 @@ gridOptions: {
 
 ```ts
 gridOptions: {
+  tableId: 'users-main-table', // 建议：同一路由多个表格时用于隔离默认持久化 key
   columnCustomPersistence: {
     key: 'demo:table:basic',
+    scope: 'users', // 可选：不传 key 时参与默认 key 生成
     storage: 'local', // local | session
   },
   toolbarConfig: { custom: true },

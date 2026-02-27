@@ -51,6 +51,7 @@
   --admin-page-query-table-card-radius: var(--radius, 8px);
   --admin-page-query-table-card-padding: 16px;
   --admin-page-query-table-fixed-bottom-safe: 2px;
+  --admin-page-query-table-flow-empty-min-height: 220px;
   --admin-page-query-table-card-shadow: 0 1px 3px
     color-mix(in oklch, var(--foreground, #0f172a) 12%, transparent);
   --admin-page-query-table-toolbar-min-height: 40px;
@@ -150,6 +151,13 @@
   height: auto;
   min-height: initial;
   overflow: visible;
+}
+
+.admin-page-query-table--flow
+  .admin-page-query-table__table
+  > .admin-table
+  .admin-table__empty--no-data {
+  min-height: var(--admin-page-query-table-flow-empty-min-height);
 }
 
 .admin-page-query-table--fixed .admin-page-query-table__table > .admin-page,

@@ -15,8 +15,10 @@ import {
   cleanupPageQueryTableApis,
   createPageQueryTableApi,
   createPageQueryTableLazyApiOwner,
+  isPageScrollableContainerOverflow,
   normalizePageFormTableBridgeOptions,
   resolvePageQueryTableFixed,
+  resolvePreferredPageScrollLockTarget,
   resolvePageQueryFormOptionsWithBridge,
   resolvePageQueryTableOptionsWithStripeDefaults,
 } from '@admin-core/page-core';
@@ -46,13 +48,6 @@ type FormValuesRecord = Record<string, any>;
 const PAGE_QUERY_FIXED_TABLE_CLASS = 'admin-table--lock-body-scroll';
 const PAGE_SCROLL_LOCK_ATTR = 'data-admin-page-query-table-scroll-lock';
 const FIXED_HEIGHT_SAFE_GAP = 2;
-const SCROLLABLE_OVERFLOW_VALUES = new Set([
-  'auto',
-  'overlay',
-  'scroll',
-  'hidden',
-  'clip',
-]);
 
 function appendClassToken(source: unknown, token: string) {
   const normalized = typeof source === 'string' ? source.trim() : '';
@@ -85,8 +80,8 @@ function parseCssPixel(value: string) {
 function isPotentialScrollContainer(element: HTMLElement) {
   const styles = window.getComputedStyle(element);
   return (
-    SCROLLABLE_OVERFLOW_VALUES.has(styles.overflowY)
-    || SCROLLABLE_OVERFLOW_VALUES.has(styles.overflow)
+    isPageScrollableContainerOverflow(styles.overflowY)
+    || isPageScrollableContainerOverflow(styles.overflow)
   );
 }
 
@@ -105,8 +100,8 @@ function resolvePrimaryPageScrollContainer(element: null | HTMLElement) {
     return null as HTMLElement | null;
   }
   return (
-    (element.closest('.layout-content') as HTMLElement | null)
-    ?? (element.closest('.admin-page__content') as HTMLElement | null)
+    (element.closest('.admin-page__content') as HTMLElement | null)
+    ?? (element.closest('.layout-content') as HTMLElement | null)
     ?? (element.closest('.layout-content__transition') as HTMLElement | null)
     ?? (element.closest('.layout-content__inner') as HTMLElement | null)
     ?? (element.closest('.admin-page__pane') as HTMLElement | null)
@@ -119,10 +114,13 @@ function resolvePageScrollLockTargets(element: null | HTMLElement) {
   }
   const targets = new Set<HTMLElement>();
   const primaryContainer = resolvePrimaryPageScrollContainer(element);
-  if (primaryContainer) {
-    targets.add(primaryContainer);
+  const resolvedPrimaryContainer =
+    primaryContainer && isPotentialScrollContainer(primaryContainer)
+      ? primaryContainer
+      : null;
+  if (resolvedPrimaryContainer) {
+    targets.add(resolvedPrimaryContainer);
   }
-
   let current: null | HTMLElement = element.parentElement;
   while (current) {
     if (isPotentialScrollContainer(current)) {
@@ -130,14 +128,26 @@ function resolvePageScrollLockTargets(element: null | HTMLElement) {
     }
     current = current.parentElement;
   }
-
+  const documentScrollElement = document.scrollingElement instanceof HTMLElement
+    ? document.scrollingElement
+    : document.documentElement;
+  const preferredTarget = resolvePreferredPageScrollLockTarget({
+    ancestorScrollContainers: Array.from(targets),
+    documentScrollElement,
+    primaryScrollContainer: resolvedPrimaryContainer,
+  });
+  if (preferredTarget) {
+    targets.add(preferredTarget);
+  }
+  if (documentScrollElement) {
+    targets.add(documentScrollElement);
+  }
   if (document.documentElement) {
     targets.add(document.documentElement);
   }
   if (document.body) {
     targets.add(document.body);
   }
-
   return Array.from(targets);
 }
 
@@ -179,62 +189,33 @@ function resolveViewportBottomBoundary() {
   return boundary;
 }
 
-function resolveFixedHeightByLayoutContent(
+function resolveFixedHeightByContainerBoundary(
   element: HTMLElement,
-  contentElement: HTMLElement
+  container: HTMLElement
 ) {
-  const contentRect = contentElement.getBoundingClientRect();
-  const elementRect = element.getBoundingClientRect();
-  const viewportBottomBoundary = resolveViewportBottomBoundary();
-  const elementTop = Math.max(0, elementRect.top);
-  const contentBottom = Math.max(0, contentRect.bottom);
-  const contentStyles = window.getComputedStyle(contentElement);
-  const contentPaddingBottom = Math.max(
-    0,
-    parseCssPixel(contentStyles.paddingBottom)
-  );
-  const visibleBottom = Math.max(
-    0,
-    Math.min(
-      viewportBottomBoundary,
-      contentBottom - contentPaddingBottom
-    )
-  );
-  const nextHeightByRect = visibleBottom - elementTop - FIXED_HEIGHT_SAFE_GAP;
-  const normalizedByRect = normalizeFixedHeightToDevicePixel(nextHeightByRect);
-  if (normalizedByRect !== null) {
-    return normalizedByRect;
-  }
-  const offsetTop = Math.max(0, elementTop - contentRect.top);
-  const nextHeightByClient =
-    contentElement.clientHeight
-    - offsetTop
-    - contentPaddingBottom
-    - FIXED_HEIGHT_SAFE_GAP;
-  return normalizeFixedHeightToDevicePixel(nextHeightByClient);
-}
-
-function resolveFixedHeightByContainer(element: HTMLElement, container: HTMLElement) {
-  const styles = window.getComputedStyle(container);
-  const clipsByOverflow =
-    SCROLLABLE_OVERFLOW_VALUES.has(styles.overflowY)
-    || SCROLLABLE_OVERFLOW_VALUES.has(styles.overflow)
-    || styles.position === 'fixed';
-  const trustedContainer = clipsByOverflow;
-  if (!trustedContainer) {
-    return null;
-  }
   const containerRect = container.getBoundingClientRect();
   const viewportBottomBoundary = resolveViewportBottomBoundary();
   const elementRect = element.getBoundingClientRect();
+  const containerStyles = window.getComputedStyle(container);
+  const containerPaddingBottom = Math.max(
+    0,
+    parseCssPixel(containerStyles.paddingBottom)
+  );
+  const containerBottomBoundary = Math.max(
+    0,
+    containerRect.bottom - containerPaddingBottom
+  );
   const visibleBottom = Math.max(
     0,
     Math.min(
       viewportBottomBoundary,
-      containerRect.bottom
+      containerBottomBoundary
     )
   );
-  const elementTop = Math.max(0, elementRect.top);
+  const elementTop = Math.max(
+    Math.max(0, elementRect.top),
+    containerRect.top
+  );
   const nextHeight = visibleBottom
     - elementTop
     - FIXED_HEIGHT_SAFE_GAP;
@@ -245,16 +226,19 @@ function resolveBestFixedHeight(element: HTMLElement) {
   if (typeof window === 'undefined') {
     return null;
   }
-  const layoutContent = element.closest('.layout-content') as HTMLElement | null;
-  if (layoutContent) {
-    const nextHeight = resolveFixedHeightByLayoutContent(element, layoutContent);
+  const primaryContainer = resolvePrimaryPageScrollContainer(element);
+  if (primaryContainer) {
+    const nextHeight = resolveFixedHeightByContainerBoundary(
+      element,
+      primaryContainer
+    );
     if (nextHeight !== null) {
       return nextHeight;
     }
   }
-  const primaryContainer = resolvePrimaryPageScrollContainer(element);
-  if (primaryContainer) {
-    const nextHeight = resolveFixedHeightByContainer(element, primaryContainer);
+  const lockTargets = resolvePageScrollLockTargets(element);
+  for (const target of lockTargets) {
+    const nextHeight = resolveFixedHeightByContainerBoundary(element, target);
     if (nextHeight !== null) {
       return nextHeight;
     }
@@ -265,6 +249,24 @@ function resolveBestFixedHeight(element: HTMLElement) {
     - Math.max(0, element.getBoundingClientRect().top)
     - FIXED_HEIGHT_SAFE_GAP
   );
+}
+
+function clampFixedHeightToViewport(
+  element: HTMLElement,
+  height: number
+) {
+  if (!Number.isFinite(height) || height <= 0) {
+    return null;
+  }
+  const viewportBottomBoundary = resolveViewportBottomBoundary();
+  const elementTop = Math.max(0, element.getBoundingClientRect().top);
+  const maxHeight = normalizeFixedHeightToDevicePixel(
+    viewportBottomBoundary - elementTop - FIXED_HEIGHT_SAFE_GAP
+  );
+  if (maxHeight === null) {
+    return null;
+  }
+  return Math.min(height, maxHeight);
 }
 
 function resolvePageQueryTableGap(rootElement: HTMLElement) {
@@ -425,10 +427,13 @@ export const AdminPageQueryTable = defineComponent({
       const resolvedFixedHeight =
         resolveBestFixedHeight(measureElement);
       if (resolvedFixedHeight !== null) {
-        fixedRootHeight.value = resolvedFixedHeight;
+        const nextFixedHeight =
+          clampFixedHeightToViewport(measureElement, resolvedFixedHeight)
+          ?? resolvedFixedHeight;
+        fixedRootHeight.value = nextFixedHeight;
         fixedTableHeight.value = resolveFixedTableHeight(
           measureElement,
-          resolvedFixedHeight
+          nextFixedHeight
         );
         return;
       }
@@ -509,21 +514,19 @@ export const AdminPageQueryTable = defineComponent({
         resolvedOptions.gridOptions && typeof resolvedOptions.gridOptions === 'object'
           ? (resolvedOptions.gridOptions as Record<string, any>)
           : {};
-      const hasGridHeight = Object.prototype.hasOwnProperty.call(
-        sourceGridOptions,
-        'height'
-      );
-      const hasGridMaxHeight = Object.prototype.hasOwnProperty.call(
-        sourceGridOptions,
-        'maxHeight'
-      );
       if (!fixedMode.value) {
+        const nextFlowGridOptions = {
+          ...sourceGridOptions,
+          height: null,
+          maxHeight: null,
+        };
         return {
           ...resolvedOptions,
           class: removeClassToken(
             resolvedOptions.class,
             PAGE_QUERY_FIXED_TABLE_CLASS
           ),
+          gridOptions: nextFlowGridOptions,
         };
       }
       return {
@@ -532,12 +535,16 @@ export const AdminPageQueryTable = defineComponent({
           resolvedOptions.class,
           PAGE_QUERY_FIXED_TABLE_CLASS
         ),
-        gridOptions: hasGridHeight || hasGridMaxHeight
-          ? sourceGridOptions
-          : {
-              ...sourceGridOptions,
-              height: '100%',
-            },
+        gridOptions: {
+          ...sourceGridOptions,
+          height:
+            typeof fixedTableHeight.value === 'number'
+            && Number.isFinite(fixedTableHeight.value)
+            && fixedTableHeight.value > 0
+              ? Math.max(1, Math.floor(fixedTableHeight.value))
+              : '100%',
+          maxHeight: null,
+        },
       };
     });
 

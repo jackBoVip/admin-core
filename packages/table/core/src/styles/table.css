@@ -1667,6 +1667,30 @@
   margin-inline-start: auto;
 }
 
+.admin-table--pager-has-center .ant-table-pagination .admin-table__pager-region.is-center {
+  left: auto;
+  margin-inline: 8px;
+  max-width: none;
+  pointer-events: auto;
+  position: static;
+  top: auto;
+  transform: none;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.admin-table--pager-has-center.admin-table--pager-align-right .ant-table-pagination .admin-table__pager-region.is-left {
+  margin-inline-end: 8px;
+}
+
+.admin-table--pager-has-center.admin-table--pager-align-left .ant-table-pagination .admin-table__pager-region.is-center {
+  order: 85;
+}
+
+.admin-table--pager-has-center.admin-table--pager-align-left .ant-table-pagination .admin-table__pager-region.is-right {
+  margin-inline-start: 8px;
+}
+
 .admin-table .ant-table-pagination .admin-table__pager-export {
   margin-inline-start: 0;
 }
@@ -1715,6 +1739,13 @@
 .admin-table .admin-table-vxe .vxe-pager {
   color: var(--admin-table-pager-text);
   position: relative;
+}
+
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--wrapper {
+  align-items: center;
+  display: flex;
+  min-width: 0;
+  width: 100%;
 }
 
 .admin-table .admin-table-vxe .vxe-pager .vxe-pager--left-wrapper,
@@ -1809,15 +1840,29 @@
 }
 
 .admin-table .admin-table-vxe .vxe-pager .admin-table__pager-region.is-center {
-  max-width: min(46%, 640px);
+  left: auto;
+  margin-inline: 8px;
+  max-width: none;
+  min-width: 0;
+  order: 0;
+  pointer-events: auto;
+  position: static;
+  top: auto;
+  transform: none;
+  flex: 1 1 auto;
+  justify-content: center;
   z-index: 4;
 }
 
-.admin-table .admin-table-vxe .vxe-pager.admin-table__pager--align-right {
+.admin-table--pager-has-center .admin-table-vxe .vxe-pager .vxe-pager--left-wrapper {
+  display: contents;
+}
+
+.admin-table .admin-table-vxe .vxe-pager.admin-table__pager--align-right .vxe-pager--wrapper {
   justify-content: flex-end;
 }
 
-.admin-table .admin-table-vxe .vxe-pager.admin-table__pager--align-left {
+.admin-table .admin-table-vxe .vxe-pager.admin-table__pager--align-left .vxe-pager--wrapper {
   justify-content: flex-start;
 }
 

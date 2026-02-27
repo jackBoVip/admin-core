@@ -279,6 +279,7 @@ export type ColumnCustomPersistenceStorage = 'local' | 'session';
 export interface ColumnCustomPersistenceConfig {
   enabled?: boolean;
   key?: string;
+  scope?: string;
   storage?: ColumnCustomPersistenceStorage;
 }
 
@@ -464,6 +465,7 @@ export interface AdminTableOptions<
     pagerConfig?: TablePagerConfig<TData>;
     proxyConfig?: ProxyConfig;
     rowStrategy?: TableRowStrategy[];
+    tableId?: string;
     stripe?: boolean | TableStripeConfig;
     seqColumn?: boolean | TableSeqColumnConfig;
     strategy?: TableStrategyConfig;

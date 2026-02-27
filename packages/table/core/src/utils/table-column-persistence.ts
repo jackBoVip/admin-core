@@ -39,8 +39,16 @@ function hashString(value: string) {
   return Math.abs(hash).toString(36);
 }
 
-function buildColumnCustomPersistenceKey(columns?: TableColumnRecord[]) {
-  const source = `${getPathnameForPersistence()}::${getColumnPersistenceSignature(columns)}`;
+function buildColumnCustomPersistenceKey(
+  columns?: TableColumnRecord[],
+  scope?: string
+) {
+  const normalizedScope = isTableNonEmptyString(scope)
+    ? scope.trim()
+    : '';
+  const source = normalizedScope
+    ? `${getPathnameForPersistence()}::${normalizedScope}::${getColumnPersistenceSignature(columns)}`
+    : `${getPathnameForPersistence()}::${getColumnPersistenceSignature(columns)}`;
   return `admin-table:column-custom:${hashString(source)}`;
 }
 
@@ -87,9 +95,14 @@ export function resolveColumnCustomPersistenceConfig(
     return undefined;
   }
 
+  const scope = isTableNonEmptyString(rawConfig?.scope)
+    ? rawConfig.scope.trim()
+    : isTableNonEmptyString(gridOptions.tableId)
+      ? gridOptions.tableId.trim()
+      : '';
   const key = isTableNonEmptyString(rawConfig?.key)
     ? rawConfig?.key
-    : buildColumnCustomPersistenceKey(columns);
+    : buildColumnCustomPersistenceKey(columns, scope);
   const storage = resolveColumnCustomPersistenceStorage(rawConfig?.storage);
 
   return {

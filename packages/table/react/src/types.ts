@@ -86,6 +86,7 @@ export interface AntdGridOptions<
   columnCustomState?: ColumnCustomState;
   columns?: AntdTableColumn[];
   data?: TData[];
+  tableId?: string;
   editConfig?: {
     mode?: 'cell' | 'row';
     trigger?: 'click' | 'dblclick';

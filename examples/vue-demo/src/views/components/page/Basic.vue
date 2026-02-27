@@ -240,6 +240,8 @@ const formOptions: AdminFormProps = {
   showCollapseButton: true,
 };
 
+const fixedMode = ref(true);
+
 const tableOptions = computed<AdminTableVueProps<DemoRow, SearchFormValues>>(() => ({
   gridOptions: {
     columns: [
@@ -292,7 +294,6 @@ const tableOptions = computed<AdminTableVueProps<DemoRow, SearchFormValues>>(() 
 }));
 
 const [PageQueryTable, pageApi] = useAdminPageQueryTable<DemoRow, SearchFormValues>();
-const fixedMode = ref(true);
 
 console.log('[page-vue] exposed api', pageApi.formApi, pageApi.tableApi);
 </script>

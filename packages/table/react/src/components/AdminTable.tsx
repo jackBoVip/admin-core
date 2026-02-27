@@ -25,7 +25,6 @@ import {
   applySelectionCheckFieldToRows,
   applyColumnCustomFlipOffsets,
   applyColumnCustomDragMove,
-  alignSelectionKeysToRows,
   buildColumnCustomControls,
   buildBuiltinToolbarTools,
   buildDefaultColumnFilterOptions,
@@ -43,7 +42,7 @@ import {
   createTableApi,
   deepEqual,
   ensureSeqColumn,
-  exportTableRowsToExcel,
+  executeTablePagerExportAction,
   extendProxyOptions,
   flattenTableRows,
   getColumnFilterValueKey,
@@ -53,12 +52,12 @@ import {
   getGlobalTableFormatterRegistry,
   getLocaleMessages,
   forceColumnCustomFlipReflow,
+  hasColumnCustomDraftChanges,
   hasTableRowStrategyStyle,
   hasColumnCustomSnapshot,
   isProxyEnabled,
   setColumnValueByPath,
   mergeWithArrayOverride,
-  normalizeTableExportFileName,
   normalizeTableSelectionKeys,
   readColumnCustomStateFromStorage,
   resetColumnCustomFlipTransforms,
@@ -67,20 +66,20 @@ import {
   resolveColumnCustomDragStartState,
   resolveColumnCustomDraggingKey,
   resolveColumnCustomOpenSnapshot,
+  resolveColumnCustomOpenTransition,
   resolveColumnCustomState,
   resolveColumnCustomPersistenceConfig,
-  resolveColumnCustomCancelState,
-  resolveColumnCustomConfirmState,
-  resolveColumnCustomOpenState,
-  resolveColumnCustomResetState,
+  resolveColumnCustomCancelTransition,
+  resolveColumnCustomConfirmTransition,
+  resolveColumnCustomResetTransition,
   resolveColumnCustomWorkingSnapshot,
   resolveSelectionColumn,
   resolveSelectionMode,
   resolveRowClickSelectionKeys,
   resolveSelectionRowsByKeys,
+  resolveTableSelectionChange,
   resolveOperationColumnConfig,
   resolveOperationCellAlignClass,
-  resolveTableExportColumns,
   resolveTablePagerLayoutSet,
   resolveTablePagerPageSizes,
   resolveTablePagerExportConfig,
@@ -92,14 +91,26 @@ import {
   resolveTableRowStrategyResult,
   isSeqColumnTypeColumn,
   resolveToolbarActionButtonRenderState,
+  resolveToolbarConfigRecord,
   resolveToolbarInlinePosition,
   resolveToolbarHintConfig,
+  resolveToolbarHintOverflowEnabled,
+  resolveToolbarHintPresentation,
+  resolveToolbarHintShouldScroll,
+  resolveToolbarCenterVisible,
+  resolveToolbarVisible,
+  resolvePagerVisibilityState,
+  resolveToolbarToolsPlacement,
+  resolveToolbarToolsSlotState,
+  resolveTablePagerExportPagination,
+  resolveTablePagerExportTriggerState,
+  resolveTablePagerExportVisible,
+  resolveVisibleTablePagerExportActions,
   resolveVisibleToolbarActionTools,
   resolveVisibleOperationActionTools,
   cleanupTableRuntimeApis,
   pickTableRuntimeStateOptions,
   resolveTableMobileMatched,
-  resolveToolbarToolVisibility,
   resolveToolbarToolsSlotPosition,
   isSelectionColumnTypeColumn,
   shallowEqualObjectRecord,
@@ -197,6 +208,24 @@ function compareTableSortValues(left: unknown, right: unknown) {
   });
 }
 
+function shallowEqualStringList(
+  previous: Array<string> | undefined,
+  next: Array<string>
+) {
+  if (previous === next) {
+    return true;
+  }
+  if (!Array.isArray(previous) || previous.length !== next.length) {
+    return false;
+  }
+  for (let index = 0; index < previous.length; index += 1) {
+    if (previous[index] !== next[index]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function transformTreeData<TData extends Record<string, any>>(
   data: TData[],
   rowField = 'id',
@@ -245,7 +274,43 @@ function resolveTableScrollHeight(height: unknown, fallback = 500) {
   return fallback;
 }
 
+function parseCssPixel(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function resolveElementOuterHeight(element: null | HTMLElement) {
+  if (!element || typeof window === 'undefined') {
+    return 0;
+  }
+  const rect = element.getBoundingClientRect();
+  const styles = window.getComputedStyle(element);
+  return Math.max(
+    0,
+    rect.height + parseCssPixel(styles.marginTop) + parseCssPixel(styles.marginBottom)
+  );
+}
+
+function resolveExplicitPixelHeight(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : null;
+  }
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const text = value.trim();
+  if (!text) {
+    return null;
+  }
+  if (!/^[+]?\d+(\.\d+)?(px)?$/i.test(text)) {
+    return null;
+  }
+  const parsed = Number.parseFloat(text);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 const BODY_SCROLL_LOCK_CLASS = 'admin-table--lock-body-scroll';
+const BODY_SCROLL_SAFE_GAP = 2;
 
 function resolveAntdTableLocale(locale: unknown): AntdLocale {
   if (locale === 'en-US') {
@@ -362,6 +427,7 @@ export const AdminTable = memo(function AdminTable<
   const rowKeyField = tableState.gridOptions?.rowConfig?.keyField ?? 'id';
 
   const latestPropsRef = useRef<AdminTableReactProps<TData, TFormValues> | null>(null);
+  const latestGridOptionsDataRef = useRef<unknown>(tableState.gridOptions?.data);
   const latestFormValuesRef = useRef<Record<string, any>>({});
   const tableStateRef = useRef(tableState);
   const paginationRef = useRef(pagination);
@@ -406,6 +472,7 @@ export const AdminTable = memo(function AdminTable<
   const [toolbarHintShouldScroll, setToolbarHintShouldScroll] = useState(false);
   const [pagerHintShouldScroll, setPagerHintShouldScroll] = useState(false);
   const [paginationMountNode, setPaginationMountNode] = useState<HTMLElement | null>(null);
+  const [autoBodyScrollY, setAutoBodyScrollY] = useState<null | number>(null);
   const hasAppliedDefaultSelectionRef = useRef(false);
   const previousSelectionModeRef = useRef<undefined | RowSelectionMode>(undefined);
   const antdThemeConfig = useMemo(() => {
@@ -555,17 +622,38 @@ export const AdminTable = memo(function AdminTable<
   ]);
 
   useEffect(() => {
-    setDataSource((tableState.gridOptions?.data as TData[]) ?? []);
+    const nextGridData = tableState.gridOptions?.data;
+    if (!Object.is(latestGridOptionsDataRef.current, nextGridData)) {
+      latestGridOptionsDataRef.current = nextGridData;
+      setDataSource(Array.isArray(nextGridData) ? (nextGridData as TData[]) : []);
+    }
     setLoading(!!tableState.gridOptions?.loading);
-    setPagination((prev) => ({
-      ...prev,
-      current: tableState.gridOptions?.pagerConfig?.currentPage ?? prev.current,
-      pageSize: tableState.gridOptions?.pagerConfig?.pageSize ?? prev.pageSize,
-      total: tableState.gridOptions?.pagerConfig?.total ?? prev.total,
-      pageSizeOptions: resolveTablePagerPageSizes(
+    setPagination((prev) => {
+      const nextCurrent = tableState.gridOptions?.pagerConfig?.currentPage ?? prev.current;
+      const nextPageSize = tableState.gridOptions?.pagerConfig?.pageSize ?? prev.pageSize;
+      const nextTotal = tableState.gridOptions?.pagerConfig?.total ?? prev.total;
+      const nextPageSizeOptions = resolveTablePagerPageSizes(
         tableState.gridOptions?.pagerConfig?.pageSizes
-      ).map((item) => String(item)),
-    }));
+      ).map((item) => String(item));
+      const previousPageSizeOptions = Array.isArray(prev.pageSizeOptions)
+        ? prev.pageSizeOptions.map((item) => String(item))
+        : [];
+      if (
+        prev.current === nextCurrent &&
+        prev.pageSize === nextPageSize &&
+        prev.total === nextTotal &&
+        shallowEqualStringList(previousPageSizeOptions, nextPageSizeOptions)
+      ) {
+        return prev;
+      }
+      return {
+        ...prev,
+        current: nextCurrent,
+        pageSize: nextPageSize,
+        total: nextTotal,
+        pageSizeOptions: nextPageSizeOptions,
+      };
+    });
   }, [tableState.gridOptions]);
 
   useEffect(() => {
@@ -643,84 +731,92 @@ export const AdminTable = memo(function AdminTable<
         };
       }
     ) => {
-    const currentTableState = tableStateRef.current;
-    const currentPagination = paginationRef.current;
-    const currentSortState = sortStateRef.current;
-    const baseOptions = mergeWithArrayOverride(
-      currentTableState.gridOptions ?? {},
-      setupState.defaultGridOptions as AntdGridOptions<TData>
-    ) as AntdGridOptions<TData>;
+      const currentTableState = tableStateRef.current;
+      const currentPagination = paginationRef.current;
+      const currentSortState = sortStateRef.current;
+      const sourceGridOptions =
+        (currentTableState.gridOptions ?? {}) as AntdGridOptions<TData>;
+      const baseOptions = mergeWithArrayOverride(
+        sourceGridOptions,
+        setupState.defaultGridOptions as AntdGridOptions<TData>
+      ) as AntdGridOptions<TData>;
+      if (Array.isArray(sourceGridOptions.data)) {
+        baseOptions.data = sourceGridOptions.data;
+      }
+      if (Array.isArray(sourceGridOptions.columns)) {
+        baseOptions.columns = sourceGridOptions.columns;
+      }
 
-    const mergedOptions = extendProxyOptions(
-      baseOptions as Record<string, any>,
-      () => latestFormValuesRef.current
-    ) as AntdGridOptions<TData>;
+      const mergedOptions = extendProxyOptions(
+        baseOptions as Record<string, any>,
+        () => latestFormValuesRef.current
+      ) as AntdGridOptions<TData>;
 
-    const proxyConfig = mergedOptions.proxyConfig;
-    const ajax = proxyConfig?.ajax;
-    if (!ajax) return undefined;
+      const proxyConfig = mergedOptions.proxyConfig;
+      const ajax = proxyConfig?.ajax;
+      if (!ajax) return undefined;
 
-    const handler =
-      mode === 'reload'
-        ? ajax.reload || ajax.query
-        : ajax.query;
+      const handler =
+        mode === 'reload'
+          ? ajax.reload || ajax.query
+          : ajax.query;
 
-    if (typeof handler !== 'function') {
-      return undefined;
-    }
+      if (typeof handler !== 'function') {
+        return undefined;
+      }
 
-    const nextCurrent = mode === 'reload'
-      ? 1
-      : context?.page?.current ?? currentPagination.current ?? 1;
-    const nextPageSize = context?.page?.pageSize ?? currentPagination.pageSize ?? 20;
-    const nextSortField = context?.sort?.field ?? currentSortState.field;
-    const nextSortOrder = context?.sort?.order ?? currentSortState.order;
+      const nextCurrent = mode === 'reload'
+        ? 1
+        : context?.page?.current ?? currentPagination.current ?? 1;
+      const nextPageSize = context?.page?.pageSize ?? currentPagination.pageSize ?? 20;
+      const nextSortField = context?.sort?.field ?? currentSortState.field;
+      const nextSortOrder = context?.sort?.order ?? currentSortState.order;
 
-    setLoading(true);
-    try {
-      const result = await handler(
-        {
-          page: {
-            currentPage: nextCurrent,
-            pageSize: nextPageSize,
+      setLoading(true);
+      try {
+        const result = await handler(
+          {
+            page: {
+              currentPage: nextCurrent,
+              pageSize: nextPageSize,
+            },
+            sort: {
+              field: nextSortField,
+              order:
+                nextSortOrder === 'ascend'
+                  ? 'asc'
+                  : nextSortOrder === 'descend'
+                    ? 'desc'
+                    : undefined,
+            },
           },
-          sort: {
-            field: nextSortField,
-            order:
-              nextSortOrder === 'ascend'
-                ? 'asc'
-                : nextSortOrder === 'descend'
-                  ? 'desc'
-                  : undefined,
-          },
-        },
-        params
-      );
+          params
+        );
 
-      const response = proxyConfig?.response ?? {};
-      const resultKey = response.result ?? 'items';
-      const listKey = response.list || resultKey;
-      const totalKey = response.total ?? 'total';
+        const response = proxyConfig?.response ?? {};
+        const resultKey = response.result ?? 'items';
+        const listKey = response.list || resultKey;
+        const totalKey = response.total ?? 'total';
 
-      const list = Array.isArray(result)
-        ? result
-        : (result?.[listKey] ?? result?.[resultKey] ?? []);
-      const total = Array.isArray(result)
-        ? result.length
-        : Number(result?.[totalKey] ?? list.length);
+        const list = Array.isArray(result)
+          ? result
+          : (result?.[listKey] ?? result?.[resultKey] ?? []);
+        const total = Array.isArray(result)
+          ? result.length
+          : Number(result?.[totalKey] ?? list.length);
 
-      setDataSource(list as TData[]);
-      setPagination((prev) => ({
-        ...prev,
-        current: nextCurrent,
-        pageSize: nextPageSize,
-        total,
-      }));
+        setDataSource(list as TData[]);
+        setPagination((prev) => ({
+          ...prev,
+          current: nextCurrent,
+          pageSize: nextPageSize,
+          total,
+        }));
 
-      return result;
-    } finally {
-      setLoading(false);
-    }
+        return result;
+      } finally {
+        setLoading(false);
+      }
     },
     [setupState.defaultGridOptions]
   );
@@ -779,10 +875,19 @@ export const AdminTable = memo(function AdminTable<
   ]);
 
   const mergedGridOptions = useMemo(() => {
+    const sourceGridOptions = tableState.gridOptions as
+      | AntdGridOptions<TData>
+      | undefined;
     const merged = mergeWithArrayOverride(
-      tableState.gridOptions ?? {},
+      sourceGridOptions ?? {},
       setupState.defaultGridOptions as AntdGridOptions<TData>
     ) as AntdGridOptions<TData>;
+    if (Array.isArray(sourceGridOptions?.data)) {
+      merged.data = sourceGridOptions.data;
+    }
+    if (Array.isArray(sourceGridOptions?.columns)) {
+      merged.columns = sourceGridOptions.columns;
+    }
     const runtimeColumns = ensureSeqColumn(
       merged.columns ?? [],
       merged.seqColumn,
@@ -1207,7 +1312,13 @@ export const AdminTable = memo(function AdminTable<
     const mergedGridOptionsRecord = mergedGridOptions as Record<string, any>;
     const cellStrategyCache = new WeakMap<
       Record<string, any>,
-      Map<string, ReturnType<typeof resolveTableCellStrategyResult>>
+      Map<
+        string,
+        {
+          rawValue: unknown;
+          result: ReturnType<typeof resolveTableCellStrategyResult>;
+        }
+      >
     >();
     const rowCellStyleCache = new WeakMap<
       Record<string, any>,
@@ -1339,12 +1450,19 @@ export const AdminTable = memo(function AdminTable<
         }
         let rowCache = cellStrategyCache.get(rowRecord);
         if (!rowCache) {
-          rowCache = new Map<string, ReturnType<typeof resolveTableCellStrategyResult>>();
+          rowCache = new Map<
+            string,
+            {
+              rawValue: unknown;
+              result: ReturnType<typeof resolveTableCellStrategyResult>;
+            }
+          >();
           cellStrategyCache.set(rowRecord, rowCache);
         }
         const cacheKey = `${dataIndex}:${rowIndex}`;
-        if (rowCache.has(cacheKey)) {
-          return rowCache.get(cacheKey);
+        const cached = rowCache.get(cacheKey);
+        if (cached && Object.is(cached.rawValue, value)) {
+          return cached.result;
         }
         const resolved = resolveTableCellStrategyResult({
           column: column as Record<string, any>,
@@ -1354,7 +1472,10 @@ export const AdminTable = memo(function AdminTable<
           rowIndex,
           value,
         });
-        rowCache.set(cacheKey, resolved);
+        rowCache.set(cacheKey, {
+          rawValue: value,
+          result: resolved,
+        });
         return resolved;
       };
 
@@ -1588,34 +1709,20 @@ export const AdminTable = memo(function AdminTable<
     () => resolveToolbarHintConfig(toolbarConfig.hint),
     [toolbarConfig.hint]
   );
+  const toolbarHintPresentation = resolveToolbarHintPresentation(resolvedToolbarHint);
   const hasToolbarCenterSlot = !!toolbarCenterSlot;
-  const showToolbarCenter = hasToolbarCenterSlot || !!resolvedToolbarHint;
+  const showToolbarCenter = resolveToolbarCenterVisible({
+    hasCenterSlot: hasToolbarCenterSlot,
+    hasHint: !!resolvedToolbarHint,
+  });
   const toolbarHintClassName = [
     'admin-table__toolbar-center',
-    `is-${resolvedToolbarHint?.align ?? 'center'}`,
-    resolvedToolbarHint?.overflow === 'scroll' ? 'is-scroll' : 'is-wrap',
+    toolbarHintPresentation.alignClass,
+    toolbarHintPresentation.overflowClass,
   ].join(' ');
-  const toolbarHintTextStyle = useMemo(() => {
-    if (!resolvedToolbarHint) {
-      return undefined;
-    }
-    const style: CSSProperties & Record<string, string> = {};
-    if (resolvedToolbarHint.color) {
-      style.color = resolvedToolbarHint.color;
-    }
-    if (resolvedToolbarHint.fontSize) {
-      style.fontSize = resolvedToolbarHint.fontSize;
-    }
-    if (resolvedToolbarHint.overflow === 'scroll') {
-      style['--admin-table-toolbar-hint-duration'] = `${resolvedToolbarHint.speed}s`;
-    }
-    return style;
-  }, [
-    resolvedToolbarHint?.color,
-    resolvedToolbarHint?.fontSize,
-    resolvedToolbarHint?.overflow,
-    resolvedToolbarHint?.speed,
-  ]);
+  const toolbarHintTextStyle = toolbarHintPresentation.textStyle as
+    | (CSSProperties & Record<string, string>)
+    | undefined;
   const toolbarToolsPosition = resolveToolbarInlinePosition(
     toolbarConfig.toolsPosition,
     'after'
@@ -1623,13 +1730,14 @@ export const AdminTable = memo(function AdminTable<
   const toolbarToolsSlotPosition = resolveToolbarToolsSlotPosition(
     toolbarConfig.toolsSlotPosition
   );
-  const hasToolbarToolsSlot = !!toolbarToolsSlot;
-  const hasToolbarToolsSlotReplaceBuiltin =
-    hasToolbarToolsSlot && toolbarToolsSlotPosition === 'replace';
-  const hasToolbarToolsSlotBeforeBuiltin =
-    hasToolbarToolsSlot && toolbarToolsSlotPosition === 'before';
-  const hasToolbarToolsSlotAfterBuiltin =
-    hasToolbarToolsSlot && toolbarToolsSlotPosition !== 'before';
+  const toolbarToolsSlotState = resolveToolbarToolsSlotState(
+    !!toolbarToolsSlot,
+    toolbarToolsSlotPosition
+  );
+  const hasToolbarToolsSlot = toolbarToolsSlotState.hasSlot;
+  const hasToolbarToolsSlotReplaceBuiltin = toolbarToolsSlotState.replace;
+  const hasToolbarToolsSlotBeforeBuiltin = toolbarToolsSlotState.before;
+  const hasToolbarToolsSlotAfterBuiltin = toolbarToolsSlotState.after;
   const builtinToolbarTools = useMemo(() => {
     return buildBuiltinToolbarTools(toolbarConfig, localeText, {
       hasToolbarToolsSlot: hasToolbarToolsSlotReplaceBuiltin,
@@ -1664,15 +1772,12 @@ export const AdminTable = memo(function AdminTable<
     Array<ResolvedTablePagerExportAction<TData>>
   >(
     () =>
-      (pagerExportConfig?.options ?? [])
-        .filter((action) =>
-          resolveToolbarToolVisibility(action as Record<string, any>, {
-            accessCodes: setupState.accessCodes,
-            accessRoles: setupState.accessRoles,
-            permissionChecker: setupState.permissionChecker,
-          })
-        )
-        .map((action) => ({ ...action })),
+      resolveVisibleTablePagerExportActions<TData>({
+        accessCodes: setupState.accessCodes,
+        accessRoles: setupState.accessRoles,
+        actions: pagerExportConfig?.options,
+        permissionChecker: setupState.permissionChecker,
+      }),
     [
       pagerExportConfig?.options,
       setupState.accessCodes,
@@ -1680,19 +1785,20 @@ export const AdminTable = memo(function AdminTable<
       setupState.permissionChecker,
     ]
   );
-  const pagerExportSingleAction =
-    pagerExportActions.length === 1
-      ? pagerExportActions[0]
-      : undefined;
+  const pagerExportTriggerState = useMemo(
+    () =>
+      resolveTablePagerExportTriggerState<TData>({
+        actions: pagerExportActions,
+      }),
+    [pagerExportActions]
+  );
+  const pagerExportSingleAction = pagerExportTriggerState.singleAction;
   const pagerConfigRecord = (mergedGridOptions.pagerConfig ?? {}) as Record<string, any>;
   const pagerPosition = pagerConfigRecord.position === 'left' ? 'left' : 'right';
   const pagerToolbarConfig = useMemo(() => {
-    const source = (pagerConfigRecord.toolbar ??
-      pagerConfigRecord.toolbarConfig) as Record<string, any> | undefined;
-    if (!source || typeof source !== 'object' || Array.isArray(source)) {
-      return {} as Record<string, any>;
-    }
-    return source;
+    return resolveToolbarConfigRecord(
+      pagerConfigRecord.toolbar ?? pagerConfigRecord.toolbarConfig
+    );
   }, [pagerConfigRecord.toolbar, pagerConfigRecord.toolbarConfig]);
   const pagerLeftSlot = resolveSlot(runtimeSlots, 'pager-left');
   const pagerCenterSlot = resolveSlot(runtimeSlots, 'pager-center');
@@ -1701,35 +1807,21 @@ export const AdminTable = memo(function AdminTable<
     () => resolveToolbarHintConfig(pagerToolbarConfig.hint),
     [pagerToolbarConfig.hint]
   );
+  const pagerHintPresentation = resolveToolbarHintPresentation(resolvedPagerHint);
   const hasPagerCenterSlot = !!pagerCenterSlot;
-  const showPagerCenter = hasPagerCenterSlot || !!resolvedPagerHint;
+  const showPagerCenter = resolveToolbarCenterVisible({
+    hasCenterSlot: hasPagerCenterSlot,
+    hasHint: !!resolvedPagerHint,
+  });
   const pagerHintClassName = [
     'admin-table__toolbar-center',
     'admin-table__pager-bar-center',
-    `is-${resolvedPagerHint?.align ?? 'center'}`,
-    resolvedPagerHint?.overflow === 'scroll' ? 'is-scroll' : 'is-wrap',
+    pagerHintPresentation.alignClass,
+    pagerHintPresentation.overflowClass,
   ].join(' ');
-  const pagerHintTextStyle = useMemo(() => {
-    if (!resolvedPagerHint) {
-      return undefined;
-    }
-    const style: CSSProperties & Record<string, string> = {};
-    if (resolvedPagerHint.color) {
-      style.color = resolvedPagerHint.color;
-    }
-    if (resolvedPagerHint.fontSize) {
-      style.fontSize = resolvedPagerHint.fontSize;
-    }
-    if (resolvedPagerHint.overflow === 'scroll') {
-      style['--admin-table-toolbar-hint-duration'] = `${resolvedPagerHint.speed}s`;
-    }
-    return style;
-  }, [
-    resolvedPagerHint?.color,
-    resolvedPagerHint?.fontSize,
-    resolvedPagerHint?.overflow,
-    resolvedPagerHint?.speed,
-  ]);
+  const pagerHintTextStyle = pagerHintPresentation.textStyle as
+    | (CSSProperties & Record<string, string>)
+    | undefined;
   const pagerLeftToolsPosition = resolveToolbarInlinePosition(
     pagerToolbarConfig.leftToolsPosition,
     'before'
@@ -1737,13 +1829,14 @@ export const AdminTable = memo(function AdminTable<
   const pagerLeftToolsSlotPosition = resolveToolbarToolsSlotPosition(
     pagerToolbarConfig.leftToolsSlotPosition
   );
-  const hasPagerLeftSlot = !!pagerLeftSlot;
-  const hasPagerLeftSlotReplaceTools =
-    hasPagerLeftSlot && pagerLeftToolsSlotPosition === 'replace';
-  const hasPagerLeftSlotBeforeTools =
-    hasPagerLeftSlot && pagerLeftToolsSlotPosition === 'before';
-  const hasPagerLeftSlotAfterTools =
-    hasPagerLeftSlot && pagerLeftToolsSlotPosition !== 'before';
+  const pagerLeftSlotState = resolveToolbarToolsSlotState(
+    !!pagerLeftSlot,
+    pagerLeftToolsSlotPosition
+  );
+  const hasPagerLeftSlot = pagerLeftSlotState.hasSlot;
+  const hasPagerLeftSlotReplaceTools = pagerLeftSlotState.replace;
+  const hasPagerLeftSlotBeforeTools = pagerLeftSlotState.before;
+  const hasPagerLeftSlotAfterTools = pagerLeftSlotState.after;
   const pagerLeftTools = useMemo(
     () =>
       resolveVisibleToolbarActionTools({
@@ -1763,14 +1856,17 @@ export const AdminTable = memo(function AdminTable<
       setupState.permissionChecker,
     ]
   );
-  const pagerLeftToolsBeforeSlot = useMemo(
-    () => (pagerLeftToolsPosition === 'before' ? pagerLeftTools : []),
+  const pagerLeftToolsPlacement = useMemo(
+    () =>
+      resolveToolbarToolsPlacement(
+        pagerLeftTools,
+        pagerLeftToolsPosition,
+        'before'
+      ),
     [pagerLeftTools, pagerLeftToolsPosition]
   );
-  const pagerLeftToolsAfterSlot = useMemo(
-    () => (pagerLeftToolsPosition === 'before' ? [] : pagerLeftTools),
-    [pagerLeftTools, pagerLeftToolsPosition]
-  );
+  const pagerLeftToolsBeforeSlot = pagerLeftToolsPlacement.before;
+  const pagerLeftToolsAfterSlot = pagerLeftToolsPlacement.after;
   const pagerRightToolsSource = useMemo(() => {
     if (Array.isArray(pagerToolbarConfig.rightTools)) {
       return pagerToolbarConfig.rightTools;
@@ -1785,13 +1881,14 @@ export const AdminTable = memo(function AdminTable<
     pagerToolbarConfig.rightToolsSlotPosition ??
       pagerToolbarConfig.toolsSlotPosition
   );
-  const hasPagerToolsSlot = !!pagerToolsSlot;
-  const hasPagerToolsSlotReplaceTools =
-    hasPagerToolsSlot && pagerRightToolsSlotPosition === 'replace';
-  const hasPagerToolsSlotBeforeTools =
-    hasPagerToolsSlot && pagerRightToolsSlotPosition === 'before';
-  const hasPagerToolsSlotAfterTools =
-    hasPagerToolsSlot && pagerRightToolsSlotPosition !== 'before';
+  const pagerToolsSlotState = resolveToolbarToolsSlotState(
+    !!pagerToolsSlot,
+    pagerRightToolsSlotPosition
+  );
+  const hasPagerToolsSlot = pagerToolsSlotState.hasSlot;
+  const hasPagerToolsSlotReplaceTools = pagerToolsSlotState.replace;
+  const hasPagerToolsSlotBeforeTools = pagerToolsSlotState.before;
+  const hasPagerToolsSlotAfterTools = pagerToolsSlotState.after;
   const pagerRightTools = useMemo(
     () =>
       resolveVisibleToolbarActionTools({
@@ -1811,14 +1908,17 @@ export const AdminTable = memo(function AdminTable<
       setupState.permissionChecker,
     ]
   );
-  const pagerRightToolsBeforeBuiltin = useMemo(
-    () => (pagerRightToolsPosition === 'before' ? pagerRightTools : []),
+  const pagerRightToolsPlacement = useMemo(
+    () =>
+      resolveToolbarToolsPlacement(
+        pagerRightTools,
+        pagerRightToolsPosition,
+        'before'
+      ),
     [pagerRightTools, pagerRightToolsPosition]
   );
-  const pagerRightToolsAfterBuiltin = useMemo(
-    () => (pagerRightToolsPosition === 'before' ? [] : pagerRightTools),
-    [pagerRightTools, pagerRightToolsPosition]
-  );
+  const pagerRightToolsBeforeBuiltin = pagerRightToolsPlacement.before;
+  const pagerRightToolsAfterBuiltin = pagerRightToolsPlacement.after;
 
   const customColumnControls = useMemo(() => {
     return buildColumnCustomControls(mergedGridOptions.columns ?? [], {
@@ -1905,15 +2005,13 @@ export const AdminTable = memo(function AdminTable<
   const customAllIndeterminate =
     customColumnControls.some((column) => column.checked) &&
     !customAllChecked;
-  const customPanelDirty = !deepEqual(
-    {
-      filterable: customDraftFilterableColumns,
-      fixed: customDraftFixedColumns,
-      order: customDraftOrder,
-      sortable: customDraftSortableColumns,
-      visible: customDraftVisibleColumns,
-    },
-    customOriginStateRef.current
+  const customPanelDirty = useMemo(
+    () =>
+      hasColumnCustomDraftChanges(
+        getDraftColumnCustomState(),
+        customOriginStateRef.current
+      ),
+    [getDraftColumnCustomState]
   );
 
   const emitColumnCustomChange = useCallback(
@@ -1930,18 +2028,18 @@ export const AdminTable = memo(function AdminTable<
   );
 
   const openCustomPanel = useCallback(() => {
-    const { draft, origin, snapshot } = resolveColumnCustomOpenState(
+    const transition = resolveColumnCustomOpenTransition(
       mergedGridOptions.columns ?? [],
       getCurrentColumnCustomState()
     );
-    customOriginStateRef.current = origin;
-    applyDraftColumnCustomSnapshot(draft);
+    customOriginStateRef.current = transition.origin;
+    applyDraftColumnCustomSnapshot(transition.draft);
     resetCustomDragState();
-    setCustomPanelOpen(true);
+    setCustomPanelOpen(transition.panelOpen);
     runtimeGridEvents?.toolbarToolClick?.({
       code: 'custom',
     });
-    emitColumnCustomChange('open', snapshot);
+    emitColumnCustomChange(transition.action, transition.snapshot);
   }, [
     applyDraftColumnCustomSnapshot,
     emitColumnCustomChange,
@@ -2104,17 +2202,17 @@ export const AdminTable = memo(function AdminTable<
   }, [mergedGridOptions.columns]);
 
   const handleCustomCancel = useCallback(() => {
-    const { draft, snapshot } = resolveColumnCustomCancelState(
+    const transition = resolveColumnCustomCancelTransition(
       mergedGridOptions.columns ?? [],
       {
         current: getCurrentColumnCustomState(),
         origin: customOriginStateRef.current,
       }
     );
-    applyDraftColumnCustomSnapshot(draft);
+    applyDraftColumnCustomSnapshot(transition.draft);
     resetCustomDragState();
-    setCustomPanelOpen(false);
-    emitColumnCustomChange('cancel', snapshot);
+    setCustomPanelOpen(transition.panelOpen);
+    emitColumnCustomChange(transition.action, transition.snapshot);
   }, [
     applyDraftColumnCustomSnapshot,
     emitColumnCustomChange,
@@ -2124,19 +2222,22 @@ export const AdminTable = memo(function AdminTable<
   ]);
 
   const handleCustomConfirm = useCallback(() => {
-    const { current, origin, snapshot } = resolveColumnCustomConfirmState(
+    const transition = resolveColumnCustomConfirmTransition(
       mergedGridOptions.columns ?? [],
       getDraftColumnCustomState()
     );
-    customOriginStateRef.current = origin;
-    applyCurrentColumnCustomSnapshot(current);
+    customOriginStateRef.current = transition.origin;
+    applyCurrentColumnCustomSnapshot(transition.current);
     resetCustomDragState();
-    writeColumnCustomStateToStorage(columnCustomPersistenceConfig, snapshot);
+    writeColumnCustomStateToStorage(
+      columnCustomPersistenceConfig,
+      transition.snapshot
+    );
     api.setGridOptions({
-      columnCustomState: snapshot as any,
+      columnCustomState: transition.snapshot as any,
     });
-    setCustomPanelOpen(false);
-    emitColumnCustomChange('confirm', snapshot);
+    setCustomPanelOpen(transition.panelOpen);
+    emitColumnCustomChange(transition.action, transition.snapshot);
   }, [
     api,
     applyCurrentColumnCustomSnapshot,
@@ -2157,19 +2258,22 @@ export const AdminTable = memo(function AdminTable<
     ) {
       return;
     }
-    const { current, draft, origin, snapshot } = resolveColumnCustomResetState(
+    const transition = resolveColumnCustomResetTransition(
       mergedGridOptions.columns ?? []
     );
-    customOriginStateRef.current = origin;
-    applyDraftColumnCustomSnapshot(draft);
-    applyCurrentColumnCustomSnapshot(current);
+    customOriginStateRef.current = transition.origin;
+    applyDraftColumnCustomSnapshot(transition.draft);
+    applyCurrentColumnCustomSnapshot(transition.current);
     resetCustomDragState();
-    writeColumnCustomStateToStorage(columnCustomPersistenceConfig, snapshot);
+    writeColumnCustomStateToStorage(
+      columnCustomPersistenceConfig,
+      transition.snapshot
+    );
     api.setGridOptions({
-      columnCustomState: snapshot as any,
+      columnCustomState: transition.snapshot as any,
     });
-    setCustomPanelOpen(false);
-    emitColumnCustomChange('reset', snapshot);
+    setCustomPanelOpen(transition.panelOpen);
+    emitColumnCustomChange(transition.action, transition.snapshot);
   }, [
     api,
     applyCurrentColumnCustomSnapshot,
@@ -2509,35 +2613,17 @@ export const AdminTable = memo(function AdminTable<
       if (!action || action.disabled) {
         return;
       }
-      const currentPage = Math.max(
-        1,
-        Number(
+      const { currentPage, pageSize, total } = resolveTablePagerExportPagination({
+        currentPage:
           paginationRef.current.current ??
-            pagination.current ??
-            1
-        ) || 1
-      );
-      const pageSize = Math.max(
-        1,
-        Number(
+          pagination.current,
+        pageSize:
           paginationRef.current.pageSize ??
-            pagination.pageSize ??
-            20
-        ) || 20
-      );
-      const totalRaw =
-        paginationRef.current.total ??
-        pagination.total;
-      const total = Number.isFinite(totalRaw as number)
-        ? Number(totalRaw)
-        : undefined;
-      const selectedRowKeys = (effectiveSelectedRowKeys ?? [])
-        .map((key) =>
-          typeof key === 'number' || typeof key === 'string'
-            ? key
-            : null
-        )
-        .filter((key): key is number | string => key !== null);
+          pagination.pageSize,
+        total:
+          paginationRef.current.total ??
+          pagination.total,
+      });
       const currentRows = action.type === 'current'
         ? resolveCurrentRowsForExport()
         : [];
@@ -2551,82 +2637,41 @@ export const AdminTable = memo(function AdminTable<
               : []
           )
         : [];
-      const rows =
-        action.type === 'selected'
-          ? selectedRows
-          : action.type === 'all'
-            ? allRows
-            : currentRows;
-      const fileName = normalizeTableExportFileName(
-        action.fileName ??
-          pagerExportConfig?.fileName ??
-          runtimeTableTitle ??
-          'table-export'
-      );
-      const payload = {
+      const result = await executeTablePagerExportAction<TData>({
+        action,
+        allRows: allRows as TData[],
         columns: columns as Array<Record<string, any>>,
         currentPage,
-        fileName,
+        currentRows: currentRows as TData[],
+        exportAll: pagerExportConfig?.exportAll,
+        fileNameFallback: runtimeTableTitle ?? 'table-export',
+        missingAllHandlerMessage: localeText.exportAllMissingHandler,
+        onMissingAllHandler: (message: string) => {
+          console.warn(message);
+        },
         pageSize,
-        rows,
-        selectedRowKeys,
-        selectedRows,
+        pagerEnabled: mergedGridOptions.pagerConfig?.enabled !== false,
+        pagerFileName: pagerExportConfig?.fileName,
+        selectedRowKeys: effectiveSelectedRowKeys,
+        selectedRows: selectedRows as TData[],
         total,
-        type: action.type,
-      };
-
-      if (action.type === 'all') {
-        const allHandler =
-          typeof action.request === 'function'
-            ? action.request
-            : typeof action.onClick === 'function'
-              ? action.onClick
-              : pagerExportConfig?.exportAll;
-        if (typeof allHandler !== 'function') {
-          console.warn(localeText.exportAllMissingHandler);
-          return;
-        }
-        await Promise.resolve(allHandler(payload as any));
-      } else {
-        const customHandler =
-          typeof action.request === 'function'
-            ? action.request
-            : typeof action.onClick === 'function'
-              ? action.onClick
-              : undefined;
-        if (typeof customHandler === 'function') {
-          await Promise.resolve(customHandler(payload as any));
-        } else {
-          const seqStart =
-            action.type === 'current' &&
-            mergedGridOptions.pagerConfig?.enabled !== false
-              ? (currentPage - 1) * pageSize
-              : 0;
-          exportTableRowsToExcel({
-            columns: resolveTableExportColumns<TData>(
-              columns as Array<Record<string, any>>,
-              {
-                seqStart,
-              }
-            ),
-            fileName,
-            rows: rows as TData[],
-          });
-        }
+      });
+      if (!result.executed || !result.payload) {
+        return;
       }
 
       runtimeGridEvents?.pagerExportClick?.(
         createPagerExportEventPayload({
-          code: action.type,
-          currentPage,
-          fileName,
-          pageSize,
+          code: result.payload.type,
+          currentPage: result.payload.currentPage,
+          fileName: result.payload.fileName,
+          pageSize: result.payload.pageSize,
           source: 'react',
-          total,
+          total: result.payload.total,
         })
       );
       runtimeGridEvents?.toolbarToolClick?.({
-        code: `pager-export-${action.type}`,
+        code: `pager-export-${result.payload.type}`,
         tool: action,
       });
     },
@@ -2676,13 +2721,6 @@ export const AdminTable = memo(function AdminTable<
     [runtimeGridEvents]
   );
 
-  const resolveSelectedRows = useCallback((keys: Key[]) => {
-    return resolveSelectionRowsByKeys(flattenedDataSource, {
-      keyField: rowKeyField,
-      selectedKeys: keys,
-    });
-  }, [flattenedDataSource, rowKeyField]);
-
   const applySelectionCheckField = useCallback((keys: Key[]) => {
     if (!selectionCheckField) {
       return;
@@ -2698,22 +2736,23 @@ export const AdminTable = memo(function AdminTable<
   }, [rowKeyField, selectionCheckField]);
 
   const updateSelectionState = useCallback((keys: Key[], info?: Record<string, any>) => {
-    if (!selectionMode) {
+    const resolved = resolveTableSelectionChange<TData, Key>({
+      keys,
+      mode: selectionMode,
+      rowKeyField,
+      rows: computedDataSource,
+    });
+    if (!resolved) {
       return;
     }
-    const normalizedKeys = normalizeTableSelectionKeys<Key>(keys, selectionMode);
-    const alignedKeys = alignSelectionKeysToRows(
-      normalizedKeys,
-      computedDataSource,
-      rowKeyField
-    );
+    const alignedKeys = resolved.alignedKeys;
     if (!isSelectionControlled) {
       setInnerSelectedRowKeys(alignedKeys);
     }
     applySelectionCheckField(alignedKeys);
     mergedGridOptions.rowSelection?.onChange?.(
       alignedKeys,
-      resolveSelectedRows(alignedKeys),
+      resolved.selectedRows,
       info as any
     );
   }, [
@@ -2722,7 +2761,6 @@ export const AdminTable = memo(function AdminTable<
     isSelectionControlled,
     mergedGridOptions.rowSelection,
     rowKeyField,
-    resolveSelectedRows,
     selectionMode,
   ]);
 
@@ -3054,14 +3092,17 @@ export const AdminTable = memo(function AdminTable<
       setupState.permissionChecker,
     ]
   );
-  const toolbarToolsBeforeBuiltin = useMemo(
-    () => (toolbarToolsPosition === 'before' ? toolbarTools : []),
+  const toolbarToolsPlacement = useMemo(
+    () =>
+      resolveToolbarToolsPlacement(
+        toolbarTools,
+        toolbarToolsPosition,
+        'after'
+      ),
     [toolbarTools, toolbarToolsPosition]
   );
-  const toolbarToolsAfterBuiltin = useMemo(
-    () => (toolbarToolsPosition === 'before' ? [] : toolbarTools),
-    [toolbarTools, toolbarToolsPosition]
-  );
+  const toolbarToolsBeforeBuiltin = toolbarToolsPlacement.before;
+  const toolbarToolsAfterBuiltin = toolbarToolsPlacement.after;
 
   const operationColumnConfig = useMemo(
     () =>
@@ -3129,17 +3170,23 @@ export const AdminTable = memo(function AdminTable<
   const showSearchButton =
     !!mergedGridOptions.toolbarConfig?.search && !!runtimeFormOptions;
 
-  const showToolbar =
-    showTableTitle ||
-    showToolbarCenter ||
-    toolbarTools.length > 0 ||
-    builtinToolbarTools.length > 0 ||
-    showSearchButton ||
-    !!toolbarActionsSlot ||
-    hasToolbarToolsSlot;
+  const showToolbar = resolveToolbarVisible({
+    builtinToolsLength: builtinToolbarTools.length,
+    hasActionsSlot: !!toolbarActionsSlot,
+    hasToolsSlot: hasToolbarToolsSlot,
+    showCenter: showToolbarCenter,
+    showSearchButton,
+    showTableTitle,
+    toolsLength: toolbarTools.length,
+  });
 
   useLayoutEffect(() => {
-    if (hasToolbarCenterSlot || !resolvedToolbarHint || resolvedToolbarHint.overflow !== 'scroll') {
+    if (
+      !resolveToolbarHintOverflowEnabled({
+        hasCenterSlot: hasToolbarCenterSlot,
+        hint: resolvedToolbarHint,
+      })
+    ) {
       setToolbarHintShouldScroll(false);
       return;
     }
@@ -3147,8 +3194,12 @@ export const AdminTable = memo(function AdminTable<
     const syncOverflow = () => {
       const viewport = toolbarHintViewportRef.current;
       const textNode = toolbarHintTextRef.current;
-      const next =
-        !!viewport && !!textNode && textNode.scrollWidth > viewport.clientWidth + 1;
+      const next = resolveToolbarHintShouldScroll({
+        hasCenterSlot: hasToolbarCenterSlot,
+        hint: resolvedToolbarHint,
+        textScrollWidth: textNode?.scrollWidth,
+        viewportClientWidth: viewport?.clientWidth,
+      });
       setToolbarHintShouldScroll((prev) => (prev === next ? prev : next));
     };
 
@@ -3184,7 +3235,12 @@ export const AdminTable = memo(function AdminTable<
   ]);
 
   useLayoutEffect(() => {
-    if (hasPagerCenterSlot || !resolvedPagerHint || resolvedPagerHint.overflow !== 'scroll') {
+    if (
+      !resolveToolbarHintOverflowEnabled({
+        hasCenterSlot: hasPagerCenterSlot,
+        hint: resolvedPagerHint,
+      })
+    ) {
       setPagerHintShouldScroll(false);
       return undefined;
     }
@@ -3192,8 +3248,12 @@ export const AdminTable = memo(function AdminTable<
     const syncOverflow = () => {
       const viewport = pagerHintViewportRef.current;
       const textNode = pagerHintTextRef.current;
-      const next =
-        !!viewport && !!textNode && textNode.scrollWidth > viewport.clientWidth + 1;
+      const next = resolveToolbarHintShouldScroll({
+        hasCenterSlot: hasPagerCenterSlot,
+        hint: resolvedPagerHint,
+        textScrollWidth: textNode?.scrollWidth,
+        viewportClientWidth: viewport?.clientWidth,
+      });
       setPagerHintShouldScroll((prev) => (prev === next ? prev : next));
     };
 
@@ -3249,6 +3309,24 @@ export const AdminTable = memo(function AdminTable<
   );
   const resolvedTableScroll = (() => {
     if (bodyScrollLockEnabled) {
+      if (
+        typeof autoBodyScrollY === 'number'
+        && Number.isFinite(autoBodyScrollY)
+        && autoBodyScrollY > 0
+      ) {
+        const normalizedMeasuredHeight = Math.max(1, Math.floor(autoBodyScrollY));
+        const explicitHeight = resolveExplicitPixelHeight(sourceTableScroll.y);
+        return {
+          ...sourceTableScroll,
+          y:
+            typeof explicitHeight === 'number'
+              ? Math.max(
+                1,
+                Math.floor(Math.min(explicitHeight, normalizedMeasuredHeight))
+              )
+              : normalizedMeasuredHeight,
+        };
+      }
       if (
         typeof sourceTableScroll.y === 'number' ||
         typeof sourceTableScroll.y === 'string'
@@ -3339,7 +3417,43 @@ export const AdminTable = memo(function AdminTable<
     ) || 0
   );
   const pagerPageCount = Math.max(1, Math.ceil(pagerTotal / pagerPageSize));
-  const showPagerExport = paginationEnabled && pagerExportActions.length > 0;
+  const showPagerExport = resolveTablePagerExportVisible({
+    actionsLength: pagerExportActions.length,
+    pagerEnabled: paginationEnabled,
+  });
+  const pagerVisibilityState = useMemo(
+    () =>
+      resolvePagerVisibilityState({
+        hasLeftSlot: hasPagerLeftSlot,
+        hasLeftSlotContent: !!pagerLeftSlot,
+        hasRightSlot: hasPagerToolsSlot,
+        hasRightSlotContent: !!pagerToolsSlot,
+        leftSlotReplace: hasPagerLeftSlotReplaceTools,
+        leftToolsLength: pagerLeftTools.length,
+        paginationEnabled,
+        rightSlotReplace: hasPagerToolsSlotReplaceTools,
+        rightToolsLength: pagerRightTools.length,
+        showCenter: showPagerCenter,
+        showExport: showPagerExport,
+        showPageEnd: showPagerEnd,
+        showPageHome: showPagerHome,
+      }),
+    [
+      hasPagerLeftSlot,
+      hasPagerLeftSlotReplaceTools,
+      hasPagerToolsSlot,
+      hasPagerToolsSlotReplaceTools,
+      pagerLeftTools.length,
+      pagerLeftSlot,
+      pagerRightTools.length,
+      pagerToolsSlot,
+      paginationEnabled,
+      showPagerCenter,
+      showPagerEnd,
+      showPagerExport,
+      showPagerHome,
+    ]
+  );
   const stripePresentation = useMemo(
     () =>
       resolveTableStripePresentation(
@@ -3406,14 +3520,7 @@ export const AdminTable = memo(function AdminTable<
   ]);
 
   useLayoutEffect(() => {
-    const hasPagerExtension =
-      (showPagerExport && !hasPagerToolsSlotReplaceTools) ||
-      (paginationEnabled && (showPagerHome || showPagerEnd)) ||
-      showPagerCenter ||
-      hasPagerLeftSlot ||
-      hasPagerToolsSlot ||
-      pagerLeftTools.length > 0 ||
-      pagerRightTools.length > 0;
+    const hasPagerExtension = pagerVisibilityState.hasExtension;
     if (!hasPagerExtension || !tableRootRef.current) {
       setPaginationMountNode(null);
       return;
@@ -3433,16 +3540,150 @@ export const AdminTable = memo(function AdminTable<
     pagination.current,
     pagination.pageSize,
     pagination.total,
-    paginationEnabled,
-    hasPagerLeftSlot,
-    hasPagerToolsSlot,
-    hasPagerToolsSlotReplaceTools,
-    pagerLeftTools.length,
-    pagerRightTools.length,
-    showPagerCenter,
-    showPagerEnd,
-    showPagerExport,
-    showPagerHome,
+    pagerVisibilityState.hasExtension,
+  ]);
+
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+    if (!bodyScrollLockEnabled) {
+      setAutoBodyScrollY((previous) => (previous === null ? previous : null));
+      return undefined;
+    }
+
+    let rafId = 0;
+    let resizeObserver: null | ResizeObserver = null;
+
+    const syncBodyScrollY = () => {
+      const rootElement = tableRootRef.current;
+      if (!rootElement) {
+        setAutoBodyScrollY((previous) => (previous === null ? previous : null));
+        return;
+      }
+      const wrapperElement = rootElement.querySelector(
+        '.ant-table-wrapper'
+      ) as HTMLElement | null;
+      const bodyElement = rootElement.querySelector(
+        '.ant-table-body'
+      ) as HTMLElement | null;
+      if (!wrapperElement || !bodyElement) {
+        setAutoBodyScrollY((previous) => (previous === null ? previous : null));
+        return;
+      }
+
+      const wrapperRect = wrapperElement.getBoundingClientRect();
+      const tableElement = wrapperElement.querySelector(
+        '.ant-table'
+      ) as HTMLElement | null;
+      const tableRect = tableElement?.getBoundingClientRect() ?? wrapperRect;
+      const bodyRect = bodyElement.getBoundingClientRect();
+      const paginationElement = wrapperElement.querySelector(
+        '.ant-table-pagination'
+      ) as HTMLElement | null;
+      const wrapperAvailableHeight = Math.max(
+        0,
+        wrapperRect.height - resolveElementOuterHeight(paginationElement)
+      );
+      const bodyTopOffset = Math.max(0, bodyRect.top - tableRect.top);
+      const bodyBottomOffset = Math.max(0, tableRect.bottom - bodyRect.bottom);
+      let nextBodyScrollY = Math.floor(
+        wrapperAvailableHeight
+        - bodyTopOffset
+        - bodyBottomOffset
+        - BODY_SCROLL_SAFE_GAP
+      );
+
+      if (!(nextBodyScrollY > 0)) {
+        const rootRect = rootElement.getBoundingClientRect();
+        const bodyTopByRoot = Math.max(0, bodyRect.top - rootRect.top);
+        const bodyBottomByRoot = Math.max(0, rootRect.bottom - bodyRect.bottom);
+        nextBodyScrollY = Math.floor(
+          rootElement.clientHeight
+          - bodyTopByRoot
+          - bodyBottomByRoot
+          - BODY_SCROLL_SAFE_GAP
+        );
+      }
+
+      setAutoBodyScrollY((previous) => {
+        if (!(nextBodyScrollY > 0)) {
+          return previous === null ? previous : null;
+        }
+        const normalized = Math.max(1, nextBodyScrollY);
+        return previous === normalized ? previous : normalized;
+      });
+    };
+
+    const scheduleSync = () => {
+      if (rafId !== 0) {
+        return;
+      }
+      rafId = window.requestAnimationFrame(() => {
+        rafId = 0;
+        syncBodyScrollY();
+      });
+    };
+
+    scheduleSync();
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        scheduleSync();
+      });
+      const rootElement = tableRootRef.current;
+      if (rootElement) {
+        const observedElements = new Set<HTMLElement>();
+        observedElements.add(rootElement);
+        const wrapperElement = rootElement.querySelector(
+          '.ant-table-wrapper'
+        ) as HTMLElement | null;
+        if (wrapperElement) {
+          observedElements.add(wrapperElement);
+        }
+        const tableElement = rootElement.querySelector(
+          '.ant-table'
+        ) as HTMLElement | null;
+        if (tableElement) {
+          observedElements.add(tableElement);
+        }
+        const bodyElement = rootElement.querySelector(
+          '.ant-table-body'
+        ) as HTMLElement | null;
+        if (bodyElement) {
+          observedElements.add(bodyElement);
+        }
+        const paginationElement = rootElement.querySelector(
+          '.ant-table-pagination'
+        ) as HTMLElement | null;
+        if (paginationElement) {
+          observedElements.add(paginationElement);
+        }
+        for (const element of observedElements) {
+          resizeObserver.observe(element);
+        }
+      }
+    } else {
+      window.addEventListener('resize', scheduleSync, { passive: true });
+    }
+
+    return () => {
+      if (rafId !== 0) {
+        window.cancelAnimationFrame(rafId);
+      }
+      rafId = 0;
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      } else {
+        window.removeEventListener('resize', scheduleSync);
+      }
+    };
+  }, [
+    bodyScrollLockEnabled,
+    computedDataSource.length,
+    loading,
+    pagination.current,
+    pagination.pageSize,
+    pagination.total,
   ]);
 
   const handleTableChange = useCallback((
@@ -3668,7 +3909,7 @@ export const AdminTable = memo(function AdminTable<
       )
     : null;
 
-  const showPagerExportInRight = showPagerExport && !hasPagerToolsSlotReplaceTools;
+  const showPagerExportInRight = pagerVisibilityState.showExportInRight;
   const pagerExportToolNode = showPagerExportInRight
     ? (
         <div className="admin-table__pager-export">
@@ -3686,7 +3927,7 @@ export const AdminTable = memo(function AdminTable<
               ].filter(Boolean).join(' ')}
             />
           </button>
-          {pagerExportActions.length > 1 ? (
+          {pagerExportTriggerState.showMenu ? (
             <div className="admin-table__pager-export-menu">
               {pagerExportActions.map((action) => (
                 <button
@@ -3707,14 +3948,9 @@ export const AdminTable = memo(function AdminTable<
         </div>
       )
     : null;
-  const showPagerLeftRegion =
-    (hasPagerLeftSlot && !!pagerLeftSlot) ||
-    (!hasPagerLeftSlotReplaceTools && pagerLeftTools.length > 0);
-  const showPagerCenterRegion = showPagerCenter;
-  const showPagerRightRegion =
-    (hasPagerToolsSlot && !!pagerToolsSlot) ||
-    (!hasPagerToolsSlotReplaceTools && pagerRightTools.length > 0) ||
-    !!pagerExportToolNode;
+  const showPagerLeftRegion = pagerVisibilityState.showLeft;
+  const showPagerCenterRegion = pagerVisibilityState.showCenter;
+  const showPagerRightRegion = pagerVisibilityState.showRight;
   const pagerLeftNode = showPagerLeftRegion
     ? (
         <li className="admin-table__pager-region is-left">
@@ -3792,6 +4028,7 @@ export const AdminTable = memo(function AdminTable<
           striped ? 'admin-table--striped' : '',
           stripeClassName,
           paginationEnabled ? `admin-table--pager-align-${pagerPosition}` : '',
+          paginationEnabled && showPagerCenterRegion ? 'admin-table--pager-has-center' : '',
           maximized ? 'admin-table--maximized' : '',
         ].join(' ')}
         style={runtimeRootStyle}

@@ -8,10 +8,24 @@ import {
   resolveToolbarActionButtonClassState,
   resolveToolbarInlinePosition,
   resolveToolbarHintConfig,
+  resolveToolbarHintOverflowEnabled,
+  resolveToolbarHintPresentation,
+  resolveToolbarHintShouldScroll,
+  resolveToolbarVisible,
+  resolvePagerVisibilityState,
+  resolveToolbarCenterVisible,
+  resolvePagerSlotBindings,
+  resolveToolbarRegionVisible,
   resolveToolbarActionPresentation,
   resolveToolbarActionButtonRenderState,
   resolveToolbarActionThemeClass,
   resolveToolbarActionTypeClass,
+  resolveToolbarConfigRecord,
+  resolveTablePagerExportTriggerState,
+  resolveTablePagerExportVisible,
+  resolveVisibleTablePagerExportActions,
+  resolveToolbarToolsPlacement,
+  resolveToolbarToolsSlotState,
   resolveVisibleToolbarActionTools,
   resolveToolbarCustomConfig,
   resolveToolbarToolVisibility,
@@ -72,6 +86,176 @@ describe('table shared toolbar utils', () => {
     expect(resolveToolbarToolsSlotPosition('right')).toBe('after');
     expect(resolveToolbarToolsSlotPosition('replace')).toBe('replace');
     expect(resolveToolbarToolsSlotPosition(undefined)).toBe('after');
+
+    expect(resolveToolbarToolsSlotState(true, 'replace')).toEqual({
+      after: true,
+      before: false,
+      hasSlot: true,
+      replace: true,
+    });
+    expect(resolveToolbarToolsSlotState(true, 'before')).toEqual({
+      after: false,
+      before: true,
+      hasSlot: true,
+      replace: false,
+    });
+    expect(resolveToolbarToolsSlotState(false, 'after')).toEqual({
+      after: false,
+      before: false,
+      hasSlot: false,
+      replace: false,
+    });
+
+    expect(resolveToolbarToolsPlacement(['a', 'b'], 'before')).toEqual({
+      after: [],
+      before: ['a', 'b'],
+    });
+    expect(resolveToolbarToolsPlacement(['a', 'b'], 'after')).toEqual({
+      after: ['a', 'b'],
+      before: [],
+    });
+    expect(resolveToolbarToolsPlacement(['a', 'b'], undefined, 'before')).toEqual({
+      after: [],
+      before: ['a', 'b'],
+    });
+
+    expect(
+      resolveToolbarRegionVisible({
+        hasSlot: true,
+        hasSlotContent: true,
+        slotReplace: true,
+        toolsLength: 0,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarRegionVisible({
+        hasSlot: true,
+        hasSlotContent: false,
+        slotReplace: false,
+        toolsLength: 2,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarRegionVisible({
+        hasSlot: true,
+        hasSlotContent: false,
+        slotReplace: true,
+        toolsLength: 2,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarRegionVisible({
+        extraVisible: true,
+      })
+    ).toBe(true);
+
+    expect(
+      resolveToolbarCenterVisible({
+        hasCenterSlot: true,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarCenterVisible({
+        hasHint: true,
+      })
+    ).toBe(true);
+    expect(resolveToolbarCenterVisible({})).toBe(false);
+
+    expect(
+      resolveToolbarVisible({
+        builtinToolsLength: 0,
+        hasActionsSlot: false,
+        hasToolsSlot: false,
+        showCenter: false,
+        showSearchButton: false,
+        showTableTitle: false,
+        toolsLength: 0,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarVisible({
+        showTableTitle: true,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarVisible({
+        toolsLength: 2,
+      })
+    ).toBe(true);
+
+    expect(
+      resolvePagerVisibilityState({
+        hasLeftSlot: true,
+        hasLeftSlotContent: true,
+        hasRightSlot: true,
+        hasRightSlotContent: false,
+        leftSlotReplace: false,
+        leftToolsLength: 0,
+        paginationEnabled: true,
+        rightSlotReplace: true,
+        rightToolsLength: 2,
+        showCenter: false,
+        showExport: true,
+        showPageEnd: true,
+        showPageHome: false,
+      })
+    ).toEqual({
+      hasExtension: true,
+      showCenter: false,
+      showExportInRight: false,
+      showLeft: true,
+      showRight: false,
+    });
+    expect(
+      resolvePagerVisibilityState({
+        hasLeftSlot: false,
+        hasLeftSlotContent: false,
+        hasRightSlot: false,
+        hasRightSlotContent: false,
+        leftSlotReplace: false,
+        leftToolsLength: 0,
+        paginationEnabled: false,
+        rightSlotReplace: false,
+        rightToolsLength: 0,
+        showCenter: false,
+        showExport: false,
+      })
+    ).toEqual({
+      hasExtension: false,
+      showCenter: false,
+      showExportInRight: false,
+      showLeft: false,
+      showRight: false,
+    });
+    expect(
+      resolvePagerSlotBindings({
+        sourceSlots: {
+          total: 'custom-total',
+        },
+        showCenter: true,
+        showRight: true,
+      })
+    ).toEqual({
+      left: '__admin_table_pager_left',
+      right: '__admin_table_pager_right',
+      total: 'custom-total',
+    });
+    expect(
+      resolvePagerSlotBindings({
+        leftBinding: 'left-slot',
+        rightBinding: 'right-slot',
+        showLeft: true,
+        showRight: true,
+      })
+    ).toEqual({
+      left: 'left-slot',
+      right: 'right-slot',
+    });
+    expect(
+      resolvePagerSlotBindings({
+        sourceSlots: undefined,
+      })
+    ).toBeUndefined();
   });
 
   it('should resolve toolbar hint config', () => {
@@ -110,6 +294,143 @@ describe('table shared toolbar utils', () => {
     });
     expect(resolveToolbarHintConfig({ text: '' })).toBeUndefined();
     expect(resolveToolbarHintConfig(undefined)).toBeUndefined();
+  });
+
+  it('should resolve toolbar hint presentation and config record', () => {
+    expect(resolveToolbarConfigRecord(undefined)).toEqual({});
+    expect(resolveToolbarConfigRecord([])).toEqual({});
+    expect(resolveToolbarConfigRecord({ leftTools: true })).toEqual({
+      leftTools: true,
+    });
+
+    expect(resolveToolbarHintPresentation(undefined)).toEqual({
+      alignClass: 'is-center',
+      overflowClass: 'is-wrap',
+      textStyle: undefined,
+    });
+
+    expect(
+      resolveToolbarHintPresentation({
+        align: 'right',
+        overflow: 'wrap',
+        speed: 14,
+        text: '提示',
+      })
+    ).toEqual({
+      alignClass: 'is-right',
+      overflowClass: 'is-wrap',
+      textStyle: {},
+    });
+
+    expect(
+      resolveToolbarHintPresentation({
+        align: 'left',
+        color: '#f43f5e',
+        fontSize: '12px',
+        overflow: 'scroll',
+        speed: 9,
+        text: '滚动提示',
+      })
+    ).toEqual({
+      alignClass: 'is-left',
+      overflowClass: 'is-scroll',
+      textStyle: {
+        '--admin-table-toolbar-hint-duration': '9s',
+        color: '#f43f5e',
+        fontSize: '12px',
+      },
+    });
+  });
+
+  it('should resolve toolbar hint overflow and scroll state', () => {
+    const scrollHint = {
+      align: 'left',
+      overflow: 'scroll',
+      speed: 12,
+      text: '滚动提示',
+    } as const;
+    const wrapHint = {
+      align: 'left',
+      overflow: 'wrap',
+      speed: 12,
+      text: '普通提示',
+    } as const;
+
+    expect(
+      resolveToolbarHintOverflowEnabled({
+        hasCenterSlot: false,
+        hint: scrollHint,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarHintOverflowEnabled({
+        hasCenterSlot: true,
+        hint: scrollHint,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarHintOverflowEnabled({
+        hasCenterSlot: false,
+        hint: wrapHint,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarHintOverflowEnabled({
+        hasCenterSlot: false,
+        hint: undefined,
+      })
+    ).toBe(false);
+
+    expect(
+      resolveToolbarHintShouldScroll({
+        hasCenterSlot: false,
+        hint: scrollHint,
+        textScrollWidth: 120,
+        viewportClientWidth: 100,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarHintShouldScroll({
+        hasCenterSlot: false,
+        hint: scrollHint,
+        textScrollWidth: 101,
+        viewportClientWidth: 100,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarHintShouldScroll({
+        hasCenterSlot: false,
+        hint: scrollHint,
+        textScrollWidth: 104,
+        tolerance: 2,
+        viewportClientWidth: 100,
+      })
+    ).toBe(true);
+    expect(
+      resolveToolbarHintShouldScroll({
+        hasCenterSlot: false,
+        hint: scrollHint,
+        textScrollWidth: 102,
+        tolerance: 2,
+        viewportClientWidth: 100,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarHintShouldScroll({
+        hasCenterSlot: false,
+        hint: wrapHint,
+        textScrollWidth: 140,
+        viewportClientWidth: 100,
+      })
+    ).toBe(false);
+    expect(
+      resolveToolbarHintShouldScroll({
+        hasCenterSlot: false,
+        hint: scrollHint,
+        textScrollWidth: 140,
+        viewportClientWidth: undefined,
+      })
+    ).toBe(false);
   });
 
   it('should resolve toolbar custom config and external custom state', () => {
@@ -208,6 +529,84 @@ describe('table shared toolbar utils', () => {
       title: '同步',
     });
     expect(resolved.find((item) => item.code === 'hidden')).toBeUndefined();
+  });
+
+  it('should resolve visible pager export actions and visibility', () => {
+    const sourceActions = [
+      {
+        code: 'export-current',
+        disabled: false,
+        index: 0,
+        permission: {
+          arg: 'code',
+          value: ['TABLE_EXPORT'],
+        },
+        title: '导出当前页',
+        type: 'current',
+      },
+      {
+        code: 'export-all',
+        disabled: false,
+        index: 1,
+        permission: {
+          arg: 'code',
+          value: ['TABLE_EXPORT_ALL'],
+        },
+        title: '导出全部',
+        type: 'all',
+      },
+    ] as any;
+
+    const visibleActions = resolveVisibleTablePagerExportActions({
+      accessCodes: ['TABLE_EXPORT'],
+      actions: sourceActions,
+    });
+    expect(visibleActions).toHaveLength(1);
+    expect(visibleActions[0]?.code).toBe('export-current');
+    expect(visibleActions[0]).not.toBe(sourceActions[0]);
+    expect(
+      resolveTablePagerExportTriggerState({
+        actions: visibleActions,
+      })
+    ).toEqual({
+      showMenu: false,
+      singleAction: visibleActions[0],
+    });
+    expect(
+      resolveTablePagerExportTriggerState({
+        actions: [...visibleActions, sourceActions[1]],
+      })
+    ).toEqual({
+      showMenu: true,
+      singleAction: undefined,
+    });
+    expect(
+      resolveTablePagerExportTriggerState({
+        actions: undefined,
+      })
+    ).toEqual({
+      showMenu: false,
+      singleAction: undefined,
+    });
+
+    expect(
+      resolveTablePagerExportVisible({
+        actionsLength: visibleActions.length,
+        pagerEnabled: true,
+      })
+    ).toBe(true);
+    expect(
+      resolveTablePagerExportVisible({
+        actionsLength: visibleActions.length,
+        pagerEnabled: false,
+      })
+    ).toBe(false);
+    expect(
+      resolveTablePagerExportVisible({
+        actionsLength: 0,
+        pagerEnabled: true,
+      })
+    ).toBe(false);
   });
 
   it('should normalize toolbar permission shorthand with and/or modes', () => {

@@ -17,15 +17,20 @@ import {
   createColumnCustomSnapshot,
   createColumnCustomDragResetState,
   forceColumnCustomFlipReflow,
+  hasColumnCustomDraftChanges,
   hasColumnCustomSnapshot,
   moveArrayItem,
   resolveColumnCustomOpenSnapshot,
+  resolveColumnCustomOpenTransition,
   resolveColumnCustomOpenState,
   resolveColumnCustomWorkingSnapshot,
+  resolveColumnCustomCancelTransition,
   resolveColumnCustomCancelSnapshot,
   resolveColumnCustomCancelState,
+  resolveColumnCustomConfirmTransition,
   resolveColumnCustomConfirmSnapshot,
   resolveColumnCustomConfirmState,
+  resolveColumnCustomResetTransition,
   resolveColumnCustomResetSnapshot,
   resolveColumnCustomResetState,
   resolveColumnCustomAutoScrollTop,
@@ -238,6 +243,67 @@ describe('table shared column custom utils', () => {
     expect(resetState.current.order).toEqual(['id', 'name']);
     expect(resetState.draft.order).toEqual(['id', 'name']);
     expect(resetState.origin.order).toEqual(['id', 'name']);
+  });
+
+  it('should resolve panel transitions and draft dirty state', () => {
+    const columns = [{ field: 'id' }, { field: 'name' }];
+    const current = {
+      filterable: { id: true, name: false },
+      fixed: { id: 'left', name: '' },
+      order: ['id', 'name'],
+      sortable: { id: true, name: false },
+      visible: { id: true, name: true },
+    };
+
+    const openTransition = resolveColumnCustomOpenTransition(columns, current);
+    expect(openTransition.action).toBe('open');
+    expect(openTransition.panelOpen).toBe(true);
+    expect(openTransition.origin).toEqual(current);
+    expect(openTransition.draft).toEqual(current);
+    expect(
+      hasColumnCustomDraftChanges(openTransition.draft, openTransition.origin)
+    ).toBe(false);
+
+    const dirtyDraft = {
+      ...openTransition.draft,
+      visible: {
+        ...openTransition.draft.visible,
+        name: false,
+      },
+    };
+    expect(
+      hasColumnCustomDraftChanges(dirtyDraft, openTransition.origin)
+    ).toBe(true);
+
+    const cancelTransition = resolveColumnCustomCancelTransition(columns, {
+      current: dirtyDraft,
+      origin: openTransition.origin,
+    });
+    expect(cancelTransition.action).toBe('cancel');
+    expect(cancelTransition.panelOpen).toBe(false);
+    expect(cancelTransition.draft).toEqual(openTransition.origin);
+
+    const confirmTransition = resolveColumnCustomConfirmTransition(
+      columns,
+      dirtyDraft
+    );
+    expect(confirmTransition.action).toBe('confirm');
+    expect(confirmTransition.panelOpen).toBe(false);
+    expect(confirmTransition.current.visible).toEqual({
+      id: true,
+      name: false,
+    });
+    expect(confirmTransition.origin.visible).toEqual({
+      id: true,
+      name: false,
+    });
+
+    const resetTransition = resolveColumnCustomResetTransition(columns);
+    expect(resetTransition.action).toBe('reset');
+    expect(resetTransition.panelOpen).toBe(false);
+    expect(resetTransition.current.order).toEqual(['id', 'name']);
+    expect(resetTransition.draft.order).toEqual(['id', 'name']);
+    expect(resetTransition.origin.order).toEqual(['id', 'name']);
   });
 
   it('should resolve working snapshot by external priority', () => {
@@ -587,6 +653,43 @@ describe('table shared column custom utils', () => {
     expect(defaultConfig?.storage).toBe('local');
     expect(typeof defaultConfig?.key).toBe('string');
     expect((defaultConfig?.key ?? '').startsWith('admin-table:column-custom:')).toBe(true);
+
+    const tableUsersConfig = resolveColumnCustomPersistenceConfig(
+      {
+        columnCustomPersistence: true,
+        tableId: 'users-table',
+      },
+      columns
+    );
+    const tableRolesConfig = resolveColumnCustomPersistenceConfig(
+      {
+        columnCustomPersistence: true,
+        tableId: 'roles-table',
+      },
+      columns
+    );
+    expect(tableUsersConfig?.key).not.toBe(tableRolesConfig?.key);
+
+    const scopedUsersConfig = resolveColumnCustomPersistenceConfig(
+      {
+        columnCustomPersistence: {
+          scope: 'shared-admin-list',
+        },
+        tableId: 'users-table',
+      },
+      columns
+    );
+    const scopedRolesConfig = resolveColumnCustomPersistenceConfig(
+      {
+        columnCustomPersistence: {
+          scope: 'shared-admin-list',
+        },
+        tableId: 'roles-table',
+      },
+      columns
+    );
+    expect(scopedUsersConfig?.key).toBe(scopedRolesConfig?.key);
+    expect(scopedUsersConfig?.key).not.toBe(tableUsersConfig?.key);
 
     const explicitConfig = resolveColumnCustomPersistenceConfig(
       {
