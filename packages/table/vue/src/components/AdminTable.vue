@@ -156,6 +156,11 @@ interface Props extends AdminTableVueProps {
 
 type TableSelectionKey = number | string;
 type TableSelectionMode = 'checkbox' | 'radio';
+interface TablePagerSignal {
+  currentPage: null | number;
+  pageSize: null | number;
+  total: null | number;
+}
 
 const props = defineProps<Props>();
 const slots = useSlots() as Record<string, (...args: any[]) => any>;
@@ -185,6 +190,42 @@ const unsub = props.api.store.subscribeSelector(
   }
 );
 let latestIncomingProps: null | AdminTableVueProps = null;
+let latestIncomingPagerSignal: null | TablePagerSignal = null;
+
+function toPagerSignalNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolvePagerSignal(pagerConfig: unknown): TablePagerSignal {
+  const record =
+    pagerConfig && typeof pagerConfig === 'object'
+      ? (pagerConfig as Record<string, unknown>)
+      : {};
+  return {
+    currentPage: toPagerSignalNumber(record.currentPage),
+    pageSize: toPagerSignalNumber(record.pageSize),
+    total: toPagerSignalNumber(record.total),
+  };
+}
+
+function hasPagerSignal(signal: null | TablePagerSignal) {
+  return !!signal && (
+    signal.currentPage !== null ||
+    signal.pageSize !== null ||
+    signal.total !== null
+  );
+}
+
+function isSamePagerSignal(
+  previous: null | TablePagerSignal,
+  next: TablePagerSignal
+) {
+  return !!previous &&
+    previous.currentPage === next.currentPage &&
+    previous.pageSize === next.pageSize &&
+    previous.total === next.total;
+}
 
 watch(
   () => [
@@ -199,9 +240,52 @@ watch(
   ],
   () => {
     const { api: _api, ...rest } = props;
-    const nextProps = pickTableRuntimeStateOptions(
+    let nextProps = pickTableRuntimeStateOptions(
       rest as Record<string, any>
     ) as AdminTableVueProps;
+    const nextGridOptions =
+      nextProps.gridOptions && typeof nextProps.gridOptions === 'object'
+        ? (nextProps.gridOptions as Record<string, any>)
+        : null;
+    const nextPagerConfig =
+      nextGridOptions?.pagerConfig && typeof nextGridOptions.pagerConfig === 'object'
+        ? (nextGridOptions.pagerConfig as Record<string, any>)
+        : null;
+    const nextPagerSignal = resolvePagerSignal(nextPagerConfig);
+    const incomingPagerUnchanged = isSamePagerSignal(
+      latestIncomingPagerSignal,
+      nextPagerSignal
+    );
+    const shouldPreservePager =
+      incomingPagerUnchanged &&
+      hasPagerSignal(nextPagerSignal) &&
+      !!nextGridOptions;
+    if (shouldPreservePager) {
+      const runtimeSnapshot = props.api.getSnapshot().props as AdminTableVueProps;
+      const runtimeGridOptions =
+        runtimeSnapshot.gridOptions && typeof runtimeSnapshot.gridOptions === 'object'
+          ? (runtimeSnapshot.gridOptions as Record<string, any>)
+          : null;
+      const runtimePagerConfig =
+        runtimeGridOptions?.pagerConfig && typeof runtimeGridOptions.pagerConfig === 'object'
+          ? (runtimeGridOptions.pagerConfig as Record<string, any>)
+          : null;
+      if (runtimePagerConfig) {
+        nextProps = {
+          ...nextProps,
+          gridOptions: {
+            ...nextGridOptions,
+            pagerConfig: {
+              ...(nextPagerConfig ?? {}),
+              currentPage: runtimePagerConfig.currentPage ?? nextPagerConfig?.currentPage,
+              pageSize: runtimePagerConfig.pageSize ?? nextPagerConfig?.pageSize,
+              total: runtimePagerConfig.total ?? nextPagerConfig?.total,
+            },
+          } as any,
+        };
+      }
+    }
+    latestIncomingPagerSignal = nextPagerSignal;
     if (
       latestIncomingProps &&
       shallowEqualObjectRecord(

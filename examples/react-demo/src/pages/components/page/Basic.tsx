@@ -268,7 +268,7 @@ export default function PageBasic() {
               return response.data;
             },
           },
-          autoLoad: true,
+          autoLoad: false,
           enabled: true,
           response: {
             list: 'items',

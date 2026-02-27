@@ -33,7 +33,6 @@ import {
   defineComponent,
   h,
   onActivated,
-  onUpdated,
   nextTick,
   onBeforeUnmount,
   onDeactivated,
@@ -289,7 +288,12 @@ function resolveFixedTableHeight(rootElement: HTMLElement, rootHeight: number) {
     ? Math.max(0, formElement.getBoundingClientRect().height)
     : 0;
   const gap = formElement ? resolvePageQueryTableGap(rootElement) : 0;
-  return normalizeFixedHeightToDevicePixel(rootHeight - formHeight - gap);
+  const nextHeight = rootHeight - formHeight - gap;
+  const normalized = normalizeFixedHeightToDevicePixel(nextHeight);
+  if (normalized !== null) {
+    return normalized;
+  }
+  return 1;
 }
 
 export const AdminPageQueryTable = defineComponent({
@@ -451,7 +455,7 @@ export const AdminPageQueryTable = defineComponent({
       fixedHeightRafId = window.requestAnimationFrame(runStabilizedFixedHeightUpdate);
     };
 
-    const scheduleStabilizedFixedHeightUpdate = (frames = 8) => {
+    const scheduleStabilizedFixedHeightUpdate = (frames = 2) => {
       if (typeof window === 'undefined') {
         return;
       }
@@ -493,14 +497,33 @@ export const AdminPageQueryTable = defineComponent({
     });
 
     const resolvedFormOptions = computed(() => {
-      return resolvePageQueryFormOptionsWithBridge({
+      const resolvedOptions = resolvePageQueryFormOptionsWithBridge({
         bridge: bridgeOptions.value as any,
         formApi: formApi.value,
         formOptions: (props.formOptions ?? {}) as Record<string, any>,
         normalizeFormOptions: (formOptions) =>
           normalizePageQueryFormOptions(formOptions as Record<string, any>),
         tableApi: tableApi.value as any,
-      });
+      }) as Record<string, any>;
+      if (!fixedMode.value) {
+        return resolvedOptions;
+      }
+      const sourceHandleCollapsedChange =
+        typeof resolvedOptions.handleCollapsedChange === 'function'
+          ? (resolvedOptions.handleCollapsedChange as (collapsed: boolean) => void)
+          : null;
+      return {
+        ...resolvedOptions,
+        handleCollapsedChange: (collapsed: boolean) => {
+          sourceHandleCollapsedChange?.(collapsed);
+          scheduleStabilizedFixedHeightUpdate(3);
+          if (typeof window !== 'undefined') {
+            window.requestAnimationFrame(() => {
+              scheduleStabilizedFixedHeightUpdate(2);
+            });
+          }
+        },
+      };
     });
 
     const resolvedTableOptions = computed(() => {
@@ -581,12 +604,12 @@ export const AdminPageQueryTable = defineComponent({
         return;
       }
       const scheduleUpdate = () => {
-        scheduleStabilizedFixedHeightUpdate(6);
+        scheduleStabilizedFixedHeightUpdate(2);
       };
       window.addEventListener('resize', scheduleUpdate, { passive: true });
       if (typeof ResizeObserver !== 'undefined' && rootRef.value) {
         resizeObserver = new ResizeObserver(() => {
-          scheduleStabilizedFixedHeightUpdate(6);
+          scheduleStabilizedFixedHeightUpdate(2);
         });
         const targets = new Set<HTMLElement>();
         targets.add(rootRef.value);
@@ -612,7 +635,7 @@ export const AdminPageQueryTable = defineComponent({
       };
       lockPageScroll();
       updateFixedHeight();
-      scheduleStabilizedFixedHeightUpdate(12);
+      scheduleStabilizedFixedHeightUpdate(4);
     });
 
     onActivated(() => {
@@ -623,10 +646,10 @@ export const AdminPageQueryTable = defineComponent({
       void nextTick(() => {
         lockPageScroll();
         updateFixedHeight();
-        scheduleStabilizedFixedHeightUpdate(12);
+        scheduleStabilizedFixedHeightUpdate(4);
         if (typeof window !== 'undefined') {
           window.requestAnimationFrame(() => {
-            scheduleStabilizedFixedHeightUpdate(8);
+            scheduleStabilizedFixedHeightUpdate(2);
           });
         }
       });
@@ -648,24 +671,16 @@ export const AdminPageQueryTable = defineComponent({
         void nextTick(() => {
           lockPageScroll();
           updateFixedHeight();
-          scheduleStabilizedFixedHeightUpdate(12);
+          scheduleStabilizedFixedHeightUpdate(4);
           if (typeof window !== 'undefined') {
             window.requestAnimationFrame(() => {
-              scheduleStabilizedFixedHeightUpdate(8);
+              scheduleStabilizedFixedHeightUpdate(2);
             });
           }
         });
       },
       { immediate: true }
     );
-
-    onUpdated(() => {
-      if (!fixedMode.value) {
-        return;
-      }
-      updateFixedHeight();
-      scheduleStabilizedFixedHeightUpdate(2);
-    });
 
     onBeforeUnmount(() => {
       cleanupResizeListener?.();

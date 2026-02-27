@@ -507,30 +507,6 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
   background-color: var(--admin-table-stripe-bg-hover) !important;
 }
 
-.admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
-  background-color: var(--admin-table-stripe-bg) !important;
-}
-
-.admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
-  background-color: var(--admin-table-stripe-bg-hover) !important;
-}
-
-.admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td.ant-table-cell-row-hover {
-  background-color: var(--admin-table-stripe-bg-hover) !important;
-}
-
-.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
-  background-color: var(--admin-table-stripe-neutral-bg, rgba(0, 0, 0, 0.03)) !important;
-}
-
-.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
-  background-color: var(--admin-table-stripe-neutral-bg-hover, rgba(0, 0, 0, 0.05)) !important;
-}
-
-.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td.ant-table-cell-row-hover {
-  background-color: var(--admin-table-stripe-neutral-bg-hover, rgba(0, 0, 0, 0.05)) !important;
-}
-
 .admin-table.admin-table--stripe-neutral .ant-table-tbody > tr.ant-table-row:hover > td,
 .admin-table.admin-table--stripe-neutral .ant-table-tbody > tr.ant-table-row:hover > .ant-table-cell-row-hover {
   background-color: var(--admin-table-stripe-bg-hover) !important;
@@ -553,18 +529,6 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
 }
 
 html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--stripe:hover > td.ant-table-cell-row-hover {
-  background-color: var(--admin-table-stripe-bg-hover) !important;
-}
-
-html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
-  background-color: var(--admin-table-stripe-bg) !important;
-}
-
-html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
-  background-color: var(--admin-table-stripe-bg-hover) !important;
-}
-
-html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td.ant-table-cell-row-hover {
   background-color: var(--admin-table-stripe-bg-hover) !important;
 }
 

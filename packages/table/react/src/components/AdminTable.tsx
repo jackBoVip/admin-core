@@ -226,6 +226,47 @@ function shallowEqualStringList(
   return true;
 }
 
+interface TablePagerSignal {
+  currentPage: null | number;
+  pageSize: null | number;
+  total: null | number;
+}
+
+function toPagerSignalNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resolvePagerSignal(pagerConfig: unknown): TablePagerSignal {
+  const record =
+    pagerConfig && typeof pagerConfig === 'object'
+      ? (pagerConfig as Record<string, unknown>)
+      : {};
+  return {
+    currentPage: toPagerSignalNumber(record.currentPage),
+    pageSize: toPagerSignalNumber(record.pageSize),
+    total: toPagerSignalNumber(record.total),
+  };
+}
+
+function hasPagerSignal(signal: null | TablePagerSignal) {
+  return !!signal && (
+    signal.currentPage !== null ||
+    signal.pageSize !== null ||
+    signal.total !== null
+  );
+}
+
+function isSamePagerSignal(
+  previous: null | TablePagerSignal,
+  next: TablePagerSignal
+) {
+  return !!previous &&
+    previous.currentPage === next.currentPage &&
+    previous.pageSize === next.pageSize &&
+    previous.total === next.total;
+}
+
 function transformTreeData<TData extends Record<string, any>>(
   data: TData[],
   rowField = 'id',
@@ -311,6 +352,7 @@ function resolveExplicitPixelHeight(value: unknown) {
 
 const BODY_SCROLL_LOCK_CLASS = 'admin-table--lock-body-scroll';
 const BODY_SCROLL_SAFE_GAP = 2;
+const BODY_SCROLL_HEIGHT_EPSILON = 4;
 
 function resolveAntdTableLocale(locale: unknown): AntdLocale {
   if (locale === 'en-US') {
@@ -427,6 +469,7 @@ export const AdminTable = memo(function AdminTable<
   const rowKeyField = tableState.gridOptions?.rowConfig?.keyField ?? 'id';
 
   const latestPropsRef = useRef<AdminTableReactProps<TData, TFormValues> | null>(null);
+  const latestIncomingPagerSignalRef = useRef<null | TablePagerSignal>(null);
   const latestGridOptionsDataRef = useRef<unknown>(tableState.gridOptions?.data);
   const latestFormValuesRef = useRef<Record<string, any>>({});
   const tableStateRef = useRef(tableState);
@@ -594,9 +637,55 @@ export const AdminTable = memo(function AdminTable<
   }, [api]);
 
   useEffect(() => {
-    const nextProps = pickTableRuntimeStateOptions<TData, TFormValues>(
+    let nextProps = pickTableRuntimeStateOptions<TData, TFormValues>(
       props as Record<string, any>
     );
+    const nextGridOptions =
+      nextProps.gridOptions && typeof nextProps.gridOptions === 'object'
+        ? (nextProps.gridOptions as Record<string, any>)
+        : null;
+    const nextPagerConfig =
+      nextGridOptions?.pagerConfig && typeof nextGridOptions.pagerConfig === 'object'
+        ? (nextGridOptions.pagerConfig as Record<string, any>)
+        : null;
+    const nextPagerSignal = resolvePagerSignal(nextPagerConfig);
+    const incomingPagerUnchanged = isSamePagerSignal(
+      latestIncomingPagerSignalRef.current,
+      nextPagerSignal
+    );
+    const shouldPreservePager =
+      incomingPagerUnchanged &&
+      hasPagerSignal(nextPagerSignal) &&
+      !!nextGridOptions;
+    if (shouldPreservePager) {
+      const runtimeSnapshot = api.getSnapshot().props as AdminTableReactProps<
+        TData,
+        TFormValues
+      >;
+      const runtimeGridOptions =
+        runtimeSnapshot.gridOptions && typeof runtimeSnapshot.gridOptions === 'object'
+          ? (runtimeSnapshot.gridOptions as Record<string, any>)
+          : null;
+      const runtimePagerConfig =
+        runtimeGridOptions?.pagerConfig && typeof runtimeGridOptions.pagerConfig === 'object'
+          ? (runtimeGridOptions.pagerConfig as Record<string, any>)
+          : null;
+      if (runtimePagerConfig) {
+        nextProps = {
+          ...nextProps,
+          gridOptions: {
+            ...nextGridOptions,
+            pagerConfig: {
+              ...(nextPagerConfig ?? {}),
+              currentPage: runtimePagerConfig.currentPage ?? nextPagerConfig?.currentPage,
+              pageSize: runtimePagerConfig.pageSize ?? nextPagerConfig?.pageSize,
+              total: runtimePagerConfig.total ?? nextPagerConfig?.total,
+            },
+          } as any,
+        };
+      }
+    }
+    latestIncomingPagerSignalRef.current = nextPagerSignal;
     if (
       latestPropsRef.current &&
       shallowEqualObjectRecord(
@@ -3611,6 +3700,13 @@ export const AdminTable = memo(function AdminTable<
           return previous === null ? previous : null;
         }
         const normalized = Math.max(1, nextBodyScrollY);
+        if (
+          typeof previous === 'number' &&
+          Number.isFinite(previous) &&
+          Math.abs(previous - normalized) < BODY_SCROLL_HEIGHT_EPSILON
+        ) {
+          return previous;
+        }
         return previous === normalized ? previous : normalized;
       });
     };
@@ -3634,30 +3730,6 @@ export const AdminTable = memo(function AdminTable<
       if (rootElement) {
         const observedElements = new Set<HTMLElement>();
         observedElements.add(rootElement);
-        const wrapperElement = rootElement.querySelector(
-          '.ant-table-wrapper'
-        ) as HTMLElement | null;
-        if (wrapperElement) {
-          observedElements.add(wrapperElement);
-        }
-        const tableElement = rootElement.querySelector(
-          '.ant-table'
-        ) as HTMLElement | null;
-        if (tableElement) {
-          observedElements.add(tableElement);
-        }
-        const bodyElement = rootElement.querySelector(
-          '.ant-table-body'
-        ) as HTMLElement | null;
-        if (bodyElement) {
-          observedElements.add(bodyElement);
-        }
-        const paginationElement = rootElement.querySelector(
-          '.ant-table-pagination'
-        ) as HTMLElement | null;
-        if (paginationElement) {
-          observedElements.add(paginationElement);
-        }
         for (const element of observedElements) {
           resizeObserver.observe(element);
         }
@@ -3735,6 +3807,32 @@ export const AdminTable = memo(function AdminTable<
     };
     sortStateRef.current = { field, order };
 
+    const sourceGridOptionsRecord =
+      (tableStateRef.current.gridOptions ?? {}) as Record<string, any>;
+    const sourcePagerConfig = (sourceGridOptionsRecord.pagerConfig ?? {}) as Record<string, any>;
+    const sourceCurrentPage = Number(sourcePagerConfig.currentPage);
+    const sourcePageSize = Number(sourcePagerConfig.pageSize);
+    const sourcePagerTotal = Number(sourcePagerConfig.total);
+    const shouldSyncPagerConfig =
+      !Number.isFinite(sourceCurrentPage) ||
+      sourceCurrentPage !== nextCurrent ||
+      !Number.isFinite(sourcePageSize) ||
+      sourcePageSize !== nextPageSize ||
+      (Number.isFinite(nextTotal) &&
+        (!Number.isFinite(sourcePagerTotal) || sourcePagerTotal !== nextTotal));
+    if (shouldSyncPagerConfig) {
+      const pagerConfigPatch: Record<string, any> = {
+        currentPage: nextCurrent,
+        pageSize: nextPageSize,
+      };
+      if (Number.isFinite(nextTotal)) {
+        pagerConfigPatch.total = nextTotal;
+      }
+      api.setGridOptions({
+        pagerConfig: pagerConfigPatch as any,
+      });
+    }
+
     setSortState({ field, order });
     visibleDataSourceRef.current = Array.isArray(
       (extra as Record<string, any> | undefined)?.currentDataSource
@@ -3788,6 +3886,7 @@ export const AdminTable = memo(function AdminTable<
       extra
     );
   }, [
+    api,
     computedDataSource,
     executeProxy,
     mergedGridOptions,

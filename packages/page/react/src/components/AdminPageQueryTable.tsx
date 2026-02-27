@@ -280,7 +280,22 @@ function resolveFixedTableHeight(rootElement: HTMLElement, rootHeight: number) {
     ? Math.max(0, formElement.getBoundingClientRect().height)
     : 0;
   const gap = formElement ? resolvePageQueryTableGap(rootElement) : 0;
-  return normalizeFixedHeightToDevicePixel(rootHeight - formHeight - gap);
+  const nextHeight = rootHeight - formHeight - gap;
+  const normalized = normalizeFixedHeightToDevicePixel(nextHeight);
+  if (normalized !== null) {
+    return normalized;
+  }
+  return 1;
+}
+
+function isHeightAlmostEqual(previous: null | number, next: null | number) {
+  if (previous === next) {
+    return true;
+  }
+  if (previous === null || next === null) {
+    return false;
+  }
+  return Math.abs(previous - next) < 1;
 }
 
 export const AdminPageQueryTable = memo(function AdminPageQueryTable<
@@ -336,20 +351,41 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [fixedRootHeight, setFixedRootHeight] = useState<null | number>(null);
   const [fixedTableHeight, setFixedTableHeight] = useState<null | number>(null);
+  const scheduleFixedHeightRecalcRef = useRef<null | ((frames?: number) => void)>(null);
   const pageScrollLocksRef = useRef<
     Array<{ element: HTMLElement; overflowX: string; overflowY: string }>
   >([]);
 
   const mergedFormOptions = useMemo(() => {
-    return resolvePageQueryFormOptionsWithBridge({
+    const resolvedOptions = resolvePageQueryFormOptionsWithBridge({
       bridge: bridgeOptions as any,
       formApi,
       formOptions: (props.formOptions ?? {}) as Record<string, any>,
       normalizeFormOptions: (formOptions) =>
         normalizePageQueryFormOptions(formOptions as Record<string, any>),
       tableApi: tableApi as any,
-    });
-  }, [bridgeOptions, formApi, props.formOptions, tableApi]);
+    }) as Record<string, any>;
+    if (!fixedMode) {
+      return resolvedOptions;
+    }
+    const sourceHandleCollapsedChange =
+      typeof resolvedOptions.handleCollapsedChange === 'function'
+        ? (resolvedOptions.handleCollapsedChange as (collapsed: boolean) => void)
+        : null;
+    return {
+      ...resolvedOptions,
+      handleCollapsedChange: (collapsed: boolean) => {
+        sourceHandleCollapsedChange?.(collapsed);
+        if (typeof window !== 'undefined') {
+          window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+              scheduleFixedHeightRecalcRef.current?.(1);
+            });
+          });
+        }
+      },
+    };
+  }, [bridgeOptions, fixedMode, formApi, props.formOptions, tableApi]);
 
   const mergedTableOptions = useMemo(() => {
     const resolvedOptions = resolvePageQueryTableOptionsWithStripeDefaults(
@@ -412,81 +448,89 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
     if (!fixedMode || typeof window === 'undefined') {
       setFixedRootHeight(null);
       setFixedTableHeight(null);
+      scheduleFixedHeightRecalcRef.current = null;
       return;
     }
 
     let rafId = 0;
-    let frameBudget = 0;
 
     const updateFixedHeight = () => {
       const rootElement = rootRef.current;
       if (!rootElement) {
         return;
       }
-      const resolvedFixedHeight =
-        resolveBestFixedHeight(rootElement);
-      if (resolvedFixedHeight !== null) {
-        const nextFixedHeight =
-          clampFixedHeightToViewport(rootElement, resolvedFixedHeight)
-          ?? resolvedFixedHeight;
-        const nextTableHeight = resolveFixedTableHeight(
-          rootElement,
-          nextFixedHeight
-        );
-        setFixedRootHeight((previousHeight) =>
-          previousHeight === nextFixedHeight ? previousHeight : nextFixedHeight
-        );
-        setFixedTableHeight((previousHeight) =>
-          previousHeight === nextTableHeight ? previousHeight : nextTableHeight
-        );
+      const resolvedFixedHeight = resolveBestFixedHeight(rootElement);
+      if (resolvedFixedHeight === null) {
+        setFixedRootHeight(null);
+        setFixedTableHeight(null);
         return;
       }
-      setFixedRootHeight(null);
-      setFixedTableHeight(null);
+      const nextFixedHeight =
+        clampFixedHeightToViewport(rootElement, resolvedFixedHeight)
+        ?? resolvedFixedHeight;
+      const nextTableHeight = resolveFixedTableHeight(
+        rootElement,
+        nextFixedHeight
+      );
+      setFixedRootHeight((previousHeight) =>
+        isHeightAlmostEqual(previousHeight, nextFixedHeight)
+          ? previousHeight
+          : nextFixedHeight
+      );
+      setFixedTableHeight((previousHeight) =>
+        isHeightAlmostEqual(previousHeight, nextTableHeight)
+          ? previousHeight
+          : nextTableHeight
+      );
     };
 
-    const runStabilizedUpdate = () => {
+    const runUpdate = () => {
+      rafId = 0;
       updateFixedHeight();
-      if (frameBudget <= 0) {
-        rafId = 0;
-        return;
-      }
-      frameBudget -= 1;
-      rafId = window.requestAnimationFrame(runStabilizedUpdate);
     };
 
     const scheduleUpdate = () => {
-      frameBudget = Math.max(frameBudget, 0);
       if (rafId !== 0) {
         return;
       }
-      rafId = window.requestAnimationFrame(runStabilizedUpdate);
+      rafId = window.requestAnimationFrame(runUpdate);
     };
 
-    const scheduleStabilizedUpdate = (frames = 4) => {
-      frameBudget = Math.max(frameBudget, Math.max(0, Math.floor(frames)));
+    const scheduleStabilizedUpdate = (passes = 1) => {
       scheduleUpdate();
+      if (passes > 1) {
+        let remaining = Math.max(0, Math.floor(passes) - 1);
+        const scheduleRemaining = () => {
+          if (remaining <= 0) {
+            return;
+          }
+          remaining -= 1;
+          scheduleUpdate();
+          if (remaining > 0) {
+            window.requestAnimationFrame(scheduleRemaining);
+          }
+        };
+        window.requestAnimationFrame(scheduleRemaining);
+      }
     };
+    scheduleFixedHeightRecalcRef.current = scheduleStabilizedUpdate;
 
     const bootstrapHeight = () => {
       updateFixedHeight();
-      scheduleStabilizedUpdate(10);
-      window.requestAnimationFrame(() => {
-        scheduleStabilizedUpdate(6);
-      });
+      scheduleStabilizedUpdate(1);
     };
     const handleWindowResize = () => {
-      scheduleStabilizedUpdate(6);
+      scheduleStabilizedUpdate(1);
     };
     bootstrapHeight();
     window.addEventListener('resize', handleWindowResize, { passive: true });
     const resizeObserver =
       typeof ResizeObserver !== 'undefined'
         ? new ResizeObserver(() => {
-            scheduleStabilizedUpdate(6);
+            scheduleStabilizedUpdate(1);
           })
         : null;
-    if (resizeObserver && rootRef.current) {
+    if (rootRef.current) {
       const targets = new Set<HTMLElement>();
       targets.add(rootRef.current);
       if (rootRef.current.parentElement) {
@@ -496,22 +540,18 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
       if (primaryContainer) {
         targets.add(primaryContainer);
       }
-      const formElement = rootRef.current.querySelector(
-        '.admin-page-query-table__form'
-      ) as HTMLElement | null;
-      if (formElement) {
-        targets.add(formElement);
-      }
-      for (const target of targets) {
-        resizeObserver.observe(target);
+      if (resizeObserver) {
+        for (const target of targets) {
+          resizeObserver.observe(target);
+        }
       }
     }
     return () => {
+      scheduleFixedHeightRecalcRef.current = null;
       if (rafId !== 0) {
         window.cancelAnimationFrame(rafId);
       }
       rafId = 0;
-      frameBudget = 0;
       window.removeEventListener('resize', handleWindowResize);
       resizeObserver?.disconnect();
     };
@@ -554,34 +594,7 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
       }
     }
     window.requestAnimationFrame(() => {
-      const rootElement = rootRef.current;
-      if (!rootElement) {
-        return;
-      }
-      const resolvedFixedHeight =
-        resolveBestFixedHeight(rootElement);
-      if (resolvedFixedHeight !== null) {
-        const nextFixedHeight =
-          clampFixedHeightToViewport(rootElement, resolvedFixedHeight)
-          ?? resolvedFixedHeight;
-        const nextTableHeight = resolveFixedTableHeight(
-          rootElement,
-          nextFixedHeight
-        );
-        setFixedRootHeight((previousHeight) =>
-          previousHeight === nextFixedHeight
-            ? previousHeight
-            : nextFixedHeight
-        );
-        setFixedTableHeight((previousHeight) =>
-          previousHeight === nextTableHeight
-            ? previousHeight
-            : nextTableHeight
-        );
-      } else {
-        setFixedRootHeight(null);
-        setFixedTableHeight(null);
-      }
+      scheduleFixedHeightRecalcRef.current?.(1);
     });
 
     return unlockPageScroll;
@@ -589,12 +602,12 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
 
   const mergedRootStyle = useMemo(() => {
     const style = { ...(props.style ?? {}) } as CSSProperties & Record<string, any>;
-    if (fixedMode && fixedRootHeight) {
+    if (fixedMode && fixedRootHeight !== null) {
       style['--admin-page-query-table-fixed-root-height'] = `${fixedRootHeight}px`;
     } else {
       delete style['--admin-page-query-table-fixed-root-height'];
     }
-    if (fixedMode && fixedTableHeight) {
+    if (fixedMode && fixedTableHeight !== null) {
       style['--admin-page-query-table-fixed-table-height'] = `${fixedTableHeight}px`;
     } else {
       delete style['--admin-page-query-table-fixed-table-height'];
