@@ -77,6 +77,7 @@ export interface AdminPageQueryTableVueProps<
   formApi?: AdminFormApi;
   formOptions?: AdminFormProps;
   style?: CSSProperties;
+  tableHeight?: number | string;
   tableApi?: AdminTableApi<TData, TFormValues>;
   tableOptions?: AdminTableVueProps<TData, TFormValues>;
 }

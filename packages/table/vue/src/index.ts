@@ -35,6 +35,8 @@ export {
   syncAdminTableVueWithPreferences,
 } from './setup';
 export { useAdminTable } from './hooks';
+export { useLocaleVersion } from './composables/useLocaleVersion';
+export { usePreferencesLocale } from './composables/usePreferencesLocale';
 
 export type {
   AdminTableVueProps,

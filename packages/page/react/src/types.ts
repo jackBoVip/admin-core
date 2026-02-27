@@ -73,6 +73,7 @@ export interface AdminPageQueryTableReactProps<
   formApi?: AdminFormApi;
   formOptions?: AdminFormProps;
   style?: CSSProperties;
+  tableHeight?: number | string;
   tableApi?: AdminTableApi<TData, TFormValues>;
   tableOptions?: AdminTableReactProps<TData, TFormValues>;
 }

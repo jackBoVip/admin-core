@@ -24,6 +24,7 @@ export interface ToolbarToolConfig {
   disabled?: ToolbarToolRule;
   followTheme?: boolean;
   icon?: string;
+  iconOnly?: boolean;
   label?: string;
   name?: string;
   onClick?: (

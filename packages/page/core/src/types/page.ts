@@ -126,4 +126,10 @@ export interface PageQueryTableLayoutOptions {
    * false: page scrolls naturally; table stays non-scrolling unless max-height/scroll is configured on table itself.
    */
   fixed?: boolean;
+  /**
+   * Explicit table viewport height in px (number or `${number}px`).
+   * When provided, page query-table switches to flow mode automatically and
+   * applies this value to table height so data scrolls inside table body.
+   */
+  tableHeight?: number | string;
 }

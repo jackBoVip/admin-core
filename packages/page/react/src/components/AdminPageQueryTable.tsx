@@ -14,6 +14,7 @@ import {
   cleanupPageQueryTableApis,
   createPageQueryTableApi,
   createPageQueryTableLazyApiOwner,
+  getLocaleMessages,
   isPageScrollableContainerOverflow,
   normalizePageFormTableBridgeOptions,
   resolvePageQueryTableFixed,
@@ -24,7 +25,9 @@ import {
 import {
   AdminTable,
   createTableApi,
+  getAdminTableReactSetupState,
   resolveTableStripeConfig,
+  useLocaleVersion as useTableLocaleVersion,
 } from '@admin-core/table-react';
 import {
   CSSProperties,
@@ -34,6 +37,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useLocaleVersion } from '../hooks/useLocaleVersion';
 import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
 type DataRecord = Record<string, any>;
@@ -41,6 +45,9 @@ type FormValuesRecord = Record<string, any>;
 const PAGE_QUERY_FIXED_TABLE_CLASS = 'admin-table--lock-body-scroll';
 const PAGE_SCROLL_LOCK_ATTR = 'data-admin-page-query-table-scroll-lock';
 const FIXED_HEIGHT_SAFE_GAP = 2;
+const PAGE_QUERY_LAYOUT_TOOL_CODE = 'layout-mode-toggle';
+const PAGE_QUERY_LAYOUT_FIXED_ICON = 'vxe-table-icon-fixed-left-fill';
+const PAGE_QUERY_LAYOUT_FLOW_ICON = 'vxe-table-icon-fixed-left';
 
 function appendClassToken(source: unknown, token: string) {
   const normalized = typeof source === 'string' ? source.trim() : '';
@@ -68,6 +75,28 @@ function removeClassToken(source: unknown, token: string) {
 function parseCssPixel(value: string) {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function resolvePageQueryTableHeight(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0
+      ? Math.max(1, Math.floor(value))
+      : null;
+  }
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const text = value.trim();
+  if (!text) {
+    return null;
+  }
+  if (!/^[+]?\d+(\.\d+)?(px)?$/i.test(text)) {
+    return null;
+  }
+  const parsed = Number.parseFloat(text);
+  return Number.isFinite(parsed) && parsed > 0
+    ? Math.max(1, Math.floor(parsed))
+    : null;
 }
 
 function isPotentialScrollContainer(element: HTMLElement) {
@@ -345,9 +374,38 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
     () => normalizePageFormTableBridgeOptions(props.bridge),
     [props.bridge]
   );
-  const fixedMode = resolvePageQueryTableFixed(
-    props.fixed ?? DEFAULT_PAGE_QUERY_TABLE_FIXED
+  const localeVersion = useLocaleVersion();
+  void localeVersion;
+  const tableLocaleVersion = useTableLocaleVersion();
+  void tableLocaleVersion;
+  const preferredLocale = getAdminTableReactSetupState().locale;
+  const preferredLocaleText = getLocaleMessages(
+    preferredLocale
+  ).page as Record<string, string>;
+  const localeText = getLocaleMessages().page as Record<string, string>;
+  const layoutModeTitleToFixed =
+    preferredLocaleText.queryTableSwitchToFixed
+    ?? localeText.queryTableSwitchToFixed
+    ?? 'Switch to fixed mode';
+  const layoutModeTitleToFlow =
+    preferredLocaleText.queryTableSwitchToFlow
+    ?? localeText.queryTableSwitchToFlow
+    ?? 'Switch to flow mode';
+  const preferredFixedMode = useMemo(
+    () =>
+      resolvePageQueryTableFixed(
+        props.fixed ?? DEFAULT_PAGE_QUERY_TABLE_FIXED
+      ),
+    [props.fixed]
   );
+  const explicitTableHeight = useMemo(
+    () => resolvePageQueryTableHeight(props.tableHeight),
+    [props.tableHeight]
+  );
+  const [innerFixedMode, setInnerFixedMode] = useState(preferredFixedMode);
+  const fixedMode =
+    explicitTableHeight === null &&
+    innerFixedMode;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [fixedRootHeight, setFixedRootHeight] = useState<null | number>(null);
   const [fixedTableHeight, setFixedTableHeight] = useState<null | number>(null);
@@ -355,6 +413,17 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
   const pageScrollLocksRef = useRef<
     Array<{ element: HTMLElement; overflowX: string; overflowY: string }>
   >([]);
+
+  useEffect(() => {
+    setInnerFixedMode(preferredFixedMode);
+  }, [preferredFixedMode]);
+
+  const handleLayoutModeToggle = () => {
+    if (explicitTableHeight !== null) {
+      return;
+    }
+    setInnerFixedMode((previous) => !previous);
+  };
 
   const mergedFormOptions = useMemo(() => {
     const resolvedOptions = resolvePageQueryFormOptionsWithBridge({
@@ -398,10 +467,40 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
       resolvedOptions.gridOptions && typeof resolvedOptions.gridOptions === 'object'
         ? (resolvedOptions.gridOptions as Record<string, any>)
         : {};
+    const sourceToolbarConfig =
+      sourceGridOptions.toolbarConfig && typeof sourceGridOptions.toolbarConfig === 'object'
+        ? (sourceGridOptions.toolbarConfig as Record<string, any>)
+        : {};
+    const sourceToolbarTools = Array.isArray(sourceToolbarConfig.tools)
+      ? sourceToolbarConfig.tools
+      : [];
+    const mergedToolbarTools = sourceToolbarTools.filter((tool) => {
+      return (tool as Record<string, any>)?.code !== PAGE_QUERY_LAYOUT_TOOL_CODE;
+    });
+    if (explicitTableHeight === null) {
+      mergedToolbarTools.push({
+        code: PAGE_QUERY_LAYOUT_TOOL_CODE,
+        icon: fixedMode
+          ? PAGE_QUERY_LAYOUT_FIXED_ICON
+          : PAGE_QUERY_LAYOUT_FLOW_ICON,
+        iconOnly: true,
+        onClick: handleLayoutModeToggle,
+        title: fixedMode
+          ? layoutModeTitleToFlow
+          : layoutModeTitleToFixed,
+      });
+    }
+    const nextGridOptions = {
+      ...sourceGridOptions,
+      toolbarConfig: {
+        ...sourceToolbarConfig,
+        tools: mergedToolbarTools,
+      },
+    };
     if (!fixedMode) {
       const nextFlowGridOptions = {
-        ...sourceGridOptions,
-        height: null,
+        ...nextGridOptions,
+        height: explicitTableHeight ?? null,
         maxHeight: null,
       };
       return {
@@ -420,7 +519,7 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
         PAGE_QUERY_FIXED_TABLE_CLASS
       ),
       gridOptions: {
-        ...sourceGridOptions,
+        ...nextGridOptions,
         height:
           typeof fixedTableHeight === 'number'
           && Number.isFinite(fixedTableHeight)
@@ -430,7 +529,15 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
         maxHeight: null,
       },
     };
-  }, [fixedMode, fixedTableHeight, props.tableOptions]);
+  }, [
+    explicitTableHeight,
+    fixedMode,
+    fixedTableHeight,
+    handleLayoutModeToggle,
+    layoutModeTitleToFixed,
+    layoutModeTitleToFlow,
+    props.tableOptions,
+  ]);
 
   useEffect(() => {
     return () => {

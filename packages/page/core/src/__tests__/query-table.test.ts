@@ -13,6 +13,7 @@ import {
   resolvePageQueryFormDefaults,
   resolvePageQueryTableOptions,
   resolvePageQueryTableFixed,
+  resolvePageQueryTableHeight,
   resolvePageQueryTableFixedHeight,
   resolvePageQueryTableOptionsWithStripeDefaults,
   isPageScrollableContainerOverflow,
@@ -207,6 +208,21 @@ describe('page query-table helpers', () => {
     expect(resolvePageQueryTableFixed(null)).toBe(true);
     expect(resolvePageQueryTableFixed(true)).toBe(true);
     expect(resolvePageQueryTableFixed(false)).toBe(false);
+  });
+
+  it('resolves query-table explicit height from number or px string', () => {
+    expect(resolvePageQueryTableHeight(420)).toBe(420);
+    expect(resolvePageQueryTableHeight(420.8)).toBe(420);
+    expect(resolvePageQueryTableHeight('420')).toBe(420);
+    expect(resolvePageQueryTableHeight('420px')).toBe(420);
+    expect(resolvePageQueryTableHeight(' 420.9px ')).toBe(420);
+
+    expect(resolvePageQueryTableHeight(0)).toBeNull();
+    expect(resolvePageQueryTableHeight(-1)).toBeNull();
+    expect(resolvePageQueryTableHeight('')).toBeNull();
+    expect(resolvePageQueryTableHeight('auto')).toBeNull();
+    expect(resolvePageQueryTableHeight('100%')).toBeNull();
+    expect(resolvePageQueryTableHeight(undefined)).toBeNull();
   });
 
   it('recognizes page scrollable overflow values for fixed lock target', () => {

@@ -241,6 +241,7 @@ const formOptions: AdminFormProps = {
 };
 
 const fixedMode = ref(true);
+const useTableHeight = ref(false);
 
 const tableOptions = computed<AdminTableVueProps<DemoRow, SearchFormValues>>(() => ({
   gridOptions: {
@@ -299,24 +300,9 @@ console.log('[page-vue] exposed api', pageApi.formApi, pageApi.tableApi);
 </script>
 
 <template>
-  <div class="admin-page-mode-switch">
-    <button
-      type="button"
-      :class="['admin-page-mode-btn', fixedMode ? 'is-active' : '']"
-      @click="fixedMode = true"
-    >
-      固定模式（页面不滚动）
-    </button>
-    <button
-      type="button"
-      :class="['admin-page-mode-btn', !fixedMode ? 'is-active' : '']"
-      @click="fixedMode = false"
-    >
-      页面滚动模式
-    </button>
-  </div>
   <PageQueryTable
     :fixed="fixedMode"
+    :table-height="useTableHeight ? 420 : undefined"
     :form-options="formOptions"
     :table-options="tableOptions"
   />

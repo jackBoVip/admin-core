@@ -51,6 +51,7 @@ const themeSignal = shallowRef(0);
 const setupState: {
   accessCodes?: SetupAdminTableVueOptions['accessCodes'];
   accessRoles?: SetupAdminTableVueOptions['accessRoles'];
+  locale: 'en-US' | 'zh-CN';
   permissionChecker?: SetupAdminTableVueOptions['permissionChecker'];
   theme: {
     colorPrimary?: string;
@@ -58,6 +59,7 @@ const setupState: {
 } = {
   accessCodes: undefined,
   accessRoles: undefined,
+  locale: 'zh-CN',
   permissionChecker: undefined,
   theme: {},
 };
@@ -103,6 +105,7 @@ function registerDefaultFormatters(locale: 'en-US' | 'zh-CN') {
 }
 
 function applyLocale(locale: 'en-US' | 'zh-CN') {
+  setupState.locale = locale;
   setTableLocale(locale);
   registerDefaultFormatters(locale);
   VxeUI.setI18n(locale, localeMap[locale]);

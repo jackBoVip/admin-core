@@ -22,18 +22,19 @@ function normalizeToolbarToolIconClass(icon: unknown) {
 }
 
 export function resolveToolbarActionPresentation(
-  tool?: Pick<ResolvedToolbarActionTool, 'icon' | 'text' | 'title'> | null
+  tool?: Pick<ResolvedToolbarActionTool, 'icon' | 'iconOnly' | 'text' | 'title'> | null
 ): ResolvedToolbarActionPresentation {
   const iconClass = normalizeToolbarToolIconClass(tool?.icon);
   const hasIcon = !!iconClass;
+  const forceIconOnly = tool?.iconOnly === true;
   const explicitText = isTableNonEmptyString(tool?.text) ? tool?.text.trim() : '';
   const fallbackText =
     !hasIcon && isTableNonEmptyString(tool?.title) ? tool?.title.trim() : '';
-  const text = explicitText || fallbackText;
+  const text = forceIconOnly ? '' : explicitText || fallbackText;
   return {
     hasIcon,
     iconClass,
-    iconOnly: hasIcon && !text,
+    iconOnly: hasIcon && (forceIconOnly || !text),
     text,
   };
 }

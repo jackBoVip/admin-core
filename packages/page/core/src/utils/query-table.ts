@@ -39,6 +39,29 @@ export function resolvePageQueryTableFixed(fixed: null | undefined | boolean) {
   return fixed ?? DEFAULT_PAGE_QUERY_TABLE_FIXED;
 }
 
+export function resolvePageQueryTableHeight(height: unknown) {
+  if (typeof height === 'number') {
+    return Number.isFinite(height) && height > 0
+      ? Math.max(1, Math.floor(height))
+      : null;
+  }
+  if (typeof height !== 'string') {
+    return null;
+  }
+  const text = height.trim();
+  if (!text) {
+    return null;
+  }
+  if (!/^[+]?\d+(\.\d+)?(px)?$/i.test(text)) {
+    return null;
+  }
+  const parsed = Number.parseFloat(text);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return Math.max(1, Math.floor(parsed));
+}
+
 export function resolvePageQueryTableFixedHeight(options: {
   elementTop: number;
   minHeight?: number;

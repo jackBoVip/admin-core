@@ -29,7 +29,6 @@ export {
 } from '@admin-core/table-core';
 
 export { AdminTable } from './components';
-export { useAdminTable } from './hooks';
 export {
   getReactTableRenderer,
   getReactTableRendererRegistry,
@@ -42,6 +41,7 @@ export {
   setupAdminTableReact,
   syncAdminTableReactWithPreferences,
 } from './setup';
+export { useAdminTable, useLocaleVersion } from './hooks';
 
 export type {
   AdminTableReactProps,

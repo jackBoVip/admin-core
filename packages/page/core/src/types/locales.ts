@@ -5,6 +5,8 @@ export interface PageLocaleMessages {
   page: {
     empty: string;
     noMatchRoute: string;
+    queryTableSwitchToFixed: string;
+    queryTableSwitchToFlow: string;
     untitled: string;
   };
 }

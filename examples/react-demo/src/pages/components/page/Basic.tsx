@@ -301,57 +301,15 @@ export default function PageBasic() {
 
   const [PageQueryTable, pageApi] =
     useAdminPageQueryTable<DemoRow, SearchFormValues>(pageOptions);
-  const [fixedMode, setFixedMode] = useState(true);
+  const [fixedMode] = useState(true);
+  const [useTableHeight] = useState(false);
 
   console.log('[page-react] exposed api', pageApi.formApi, pageApi.tableApi);
 
   return (
-    <>
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 12,
-        }}
-      >
-        <button
-          type="button"
-          style={{
-            background: fixedMode ? 'var(--primary, #1677ff)' : 'var(--background, #ffffff)',
-            border: '1px solid var(--border, #d1d5db)',
-            borderColor: fixedMode ? 'var(--primary, #1677ff)' : 'var(--border, #d1d5db)',
-            borderRadius: 'var(--radius, 8px)',
-            color: fixedMode ? '#fff' : 'var(--foreground, #111827)',
-            cursor: 'pointer',
-            fontSize: 12,
-            lineHeight: 1,
-            padding: '8px 12px',
-            transition: 'all 0.2s ease',
-          }}
-          onClick={() => setFixedMode(true)}
-        >
-          固定模式（页面不滚动）
-        </button>
-        <button
-          type="button"
-          style={{
-            background: !fixedMode ? 'var(--primary, #1677ff)' : 'var(--background, #ffffff)',
-            border: '1px solid var(--border, #d1d5db)',
-            borderColor: !fixedMode ? 'var(--primary, #1677ff)' : 'var(--border, #d1d5db)',
-            borderRadius: 'var(--radius, 8px)',
-            color: !fixedMode ? '#fff' : 'var(--foreground, #111827)',
-            cursor: 'pointer',
-            fontSize: 12,
-            lineHeight: 1,
-            padding: '8px 12px',
-            transition: 'all 0.2s ease',
-          }}
-          onClick={() => setFixedMode(false)}
-        >
-          页面滚动模式
-        </button>
-      </div>
-      <PageQueryTable fixed={fixedMode} />
-    </>
+    <PageQueryTable
+      fixed={fixedMode}
+      tableHeight={useTableHeight ? 420 : undefined}
+    />
   );
 }
