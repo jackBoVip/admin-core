@@ -24,6 +24,10 @@ packages/
 │   ├── core/             # 核心包（框架无关）
 │   ├── react/            # React 集成包
 │   └── vue/              # Vue 集成包
+├── page/                  # 内容页系统
+│   ├── core/             # 核心包（框架无关）
+│   ├── react/            # React 集成包
+│   └── vue/              # Vue 集成包
 ├── preferences/           # 偏好设置系统
 │   ├── core/             # 核心包（框架无关）
 │   ├── react/            # React集成包
@@ -183,7 +187,32 @@ const [Table, tableApi] = useAdminTable({
 - 行/列策略（样式、计算、点击、正则条件）
 - 主题和国际化联动（偏好系统）
 
-### 4. 静态 + 动态路由
+### 4. 内容页系统 (@admin-core/page-vue / @admin-core/page-react)
+
+内容区域的 Page 容器与“查询表单 + 表格”组合页：
+
+```ts
+import { useAdminPageQueryTable } from '@admin-core/page-vue'; // 或 @admin-core/page-react
+
+const [PageQueryTable, pageApi] = useAdminPageQueryTable({
+  formOptions: {
+    schema: [{ fieldName: 'keyword', component: 'input', label: '关键词' }],
+  },
+  tableOptions: {
+    tableTitle: '用户列表',
+    gridOptions: { columns: [{ field: 'name', title: 'Name' }], data: [] },
+  },
+});
+```
+
+主要能力：
+
+- Page 容器（路由页 + 组件页 + 滚动配置）
+- 查询表单与表格上下布局开箱即用
+- `pageApi.formApi` / `pageApi.tableApi` 透传
+- `bridge` 支持提交查询、重置刷新、参数映射
+
+### 5. 静态 + 动态路由
 
 框架提供“静态路由常量 + 动态菜单 API”统一构建能力，自动生成 **路由、菜单、面包屑**。  
 静态路由与动态菜单都使用 **RouteRecord 风格**，其中 `component` 使用字符串路径（如 `/system/user`），由框架解析为真实组件。
@@ -255,6 +284,7 @@ admin-core/
 ├── packages/             # 核心包
 │   ├── form/             # 表单系统
 │   ├── table/            # 表格系统
+│   ├── page/             # 内容页系统
 │   ├── layout/           # 布局系统
 │   └── preferences/      # 偏好设置
 ├── scripts/              # 脚本工具
@@ -309,6 +339,9 @@ admin-core/
 | `@admin-core/table-core` | [README](./packages/table/core/README.md) | [README.en](./packages/table/core/README.en.md) |
 | `@admin-core/table-vue` | [README](./packages/table/vue/README.md) | [README.en](./packages/table/vue/README.en.md) |
 | `@admin-core/table-react` | [README](./packages/table/react/README.md) | [README.en](./packages/table/react/README.en.md) |
+| `@admin-core/page-core` | [README](./packages/page/core/README.md) | [README.en](./packages/page/core/README.en.md) |
+| `@admin-core/page-vue` | [README](./packages/page/vue/README.md) | [README.en](./packages/page/vue/README.en.md) |
+| `@admin-core/page-react` | [README](./packages/page/react/README.md) | [README.en](./packages/page/react/README.en.md) |
 
 ### API 文档
 

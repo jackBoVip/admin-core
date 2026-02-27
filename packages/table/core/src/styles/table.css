@@ -10,18 +10,40 @@
   --admin-table-font-size-lg: calc(var(--admin-table-font-size) + 2px);
   --admin-table-selection-color: var(--primary, #1677ff);
   --admin-table-selection-color-hover: var(
-    --primary-400,
+    --admin-table-selection-color-hover-raw,
     var(--admin-table-selection-color)
   );
   --admin-table-selection-color-active: var(
-    --primary-600,
+    --admin-table-selection-color-active-raw,
     var(--admin-table-selection-color)
   );
   --admin-table-selection-control-border: var(--border, #dcdfe6);
   --admin-table-selection-control-bg: var(--background, #ffffff);
-  --admin-table-row-hover-bg: var(--primary-50, #eff6ff);
-  --admin-table-selection-row-bg: var(--primary-100, #dbeafe);
-  --admin-table-selection-row-hover-bg: var(--primary-200, #bfdbfe);
+  --admin-table-stripe-neutral-bg: rgba(15, 23, 42, 0.04);
+  --admin-table-stripe-neutral-bg-hover: rgba(15, 23, 42, 0.065);
+  --admin-table-stripe-theme-bg: var(--primary-50, #eff6ff);
+  --admin-table-stripe-theme-bg-hover: var(--primary-100, #dbeafe);
+  --admin-table-stripe-bg: var(--admin-table-stripe-neutral-bg);
+  --admin-table-stripe-bg-hover: var(--admin-table-stripe-neutral-bg-hover);
+  --admin-table-row-hover-neutral-bg: var(--admin-table-stripe-neutral-bg-hover);
+  --admin-table-row-hover-theme-bg: var(--primary-100, #dbeafe);
+  --admin-table-row-hover-bg: var(--admin-table-row-hover-neutral-bg);
+  --admin-table-pager-bg: var(--background, #ffffff);
+  --admin-table-pager-border: var(--admin-table-tool-border);
+  --admin-table-pager-muted-text: var(--muted-foreground, #64748b);
+  --admin-table-pager-text: var(--foreground, #0f172a);
+  --admin-table-pager-hover-bg: var(--admin-table-tool-active-bg);
+  --admin-table-pager-hover-border: var(--admin-table-selection-color-hover);
+  --admin-table-pager-hover-text: var(--admin-table-selection-color-hover);
+  --admin-table-pager-active-bg: var(--admin-table-selection-color);
+  --admin-table-pager-active-border: var(--admin-table-selection-color);
+  --admin-table-pager-active-text: #ffffff;
+  --admin-table-pager-active-hover-bg: var(--admin-table-selection-color-hover);
+  --admin-table-pager-active-hover-border: var(
+    --admin-table-selection-color-hover
+  );
+  --admin-table-selection-row-bg: rgba(22, 119, 255, 0.14);
+  --admin-table-selection-row-hover-bg: rgba(22, 119, 255, 0.2);
   --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
   --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
   --admin-table-tool-active-bg: rgba(64, 158, 255, 0.08);
@@ -66,9 +88,124 @@
   --admin-table-tool-info-static-hover-bg: #0284c7;
   --admin-table-tool-info-static-text: #ffffff;
   --admin-table-tool-text: var(--muted-foreground, #606266);
+  /* Keep light-mode resolution stable even when browser/OS prefers dark */
+  color-scheme: only light;
+  forced-color-adjust: none;
   font-size: var(--admin-table-font-size);
   display: block;
   width: 100%;
+}
+
+.admin-table.admin-table--lock-body-scroll {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table__toolbar,
+.admin-table.admin-table--lock-body-scroll .admin-table__search {
+  flex-shrink: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe,
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe {
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe.vxe-grid,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe.vxe-grid > .vxe-grid--layout-wrapper {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe.vxe-grid > .vxe-grid--layout-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-content-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--table-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--viewport-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--main-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--body-wrapper {
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe.vxe-grid,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-content-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--table-wrapper {
+  flex: 1;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--table-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--viewport-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--main-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-content-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: auto !important;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-footer-wrapper {
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-content-wrapper,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--body-wrapper {
+  overflow: hidden;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--body-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--layout-body-wrapper {
+  overflow: hidden;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-grid--pager-wrapper {
+  flex-shrink: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--body-inner-wrapper {
+  overflow-y: auto;
+}
+
+.admin-table.admin-table--stripe-theme {
+  --admin-table-stripe-bg: var(--admin-table-stripe-theme-bg);
+  --admin-table-stripe-bg-hover: var(--admin-table-stripe-theme-bg-hover);
+  --admin-table-row-hover-bg: var(--admin-table-row-hover-theme-bg);
+}
+
+.admin-table.admin-table--stripe-neutral {
+  --admin-table-stripe-bg: var(--admin-table-stripe-neutral-bg);
+  --admin-table-stripe-bg-hover: var(--admin-table-stripe-neutral-bg-hover);
+  --admin-table-row-hover-bg: var(--admin-table-row-hover-neutral-bg);
 }
 
 :is(
@@ -77,78 +214,152 @@
     body.dark,
     body[data-theme='dark']
   ) .admin-table {
-  --admin-table-row-hover-bg: var(--primary-900, #1e3a8a);
-  --admin-table-selection-row-bg: var(--primary-800, #1e40af);
-  --admin-table-selection-row-hover-bg: var(--primary-700, #1d4ed8);
+  color-scheme: only dark;
+  forced-color-adjust: auto;
+  --admin-table-stripe-neutral-bg: rgba(255, 255, 255, 0.06);
+  --admin-table-stripe-neutral-bg-hover: rgba(255, 255, 255, 0.1);
+  --admin-table-stripe-theme-bg: var(--primary-900, #1e3a8a);
+  --admin-table-stripe-theme-bg-hover: var(--primary-800, #1e40af);
+  --admin-table-stripe-bg: var(--admin-table-stripe-neutral-bg);
+  --admin-table-stripe-bg-hover: var(--admin-table-stripe-neutral-bg-hover);
+  --admin-table-row-hover-neutral-bg: var(--admin-table-stripe-neutral-bg-hover);
+  --admin-table-row-hover-theme-bg: var(--primary-800, #1e40af);
+  --admin-table-row-hover-bg: var(--admin-table-row-hover-neutral-bg);
+  --admin-table-pager-bg: var(--background, #0f172a);
+  --admin-table-pager-border: var(--border, #334155);
+  --admin-table-pager-muted-text: var(--muted-foreground, #94a3b8);
+  --admin-table-pager-text: var(--foreground, #e2e8f0);
+  --admin-table-pager-hover-bg: rgba(255, 255, 255, 0.08);
+  --admin-table-pager-hover-border: var(--admin-table-selection-color-hover);
+  --admin-table-pager-hover-text: var(--admin-table-selection-color-hover);
+  --admin-table-pager-active-bg: var(--admin-table-selection-color);
+  --admin-table-pager-active-border: var(--admin-table-selection-color);
+  --admin-table-pager-active-text: #ffffff;
+  --admin-table-pager-active-hover-bg: var(--admin-table-selection-color-hover);
+  --admin-table-pager-active-hover-border: var(
+    --admin-table-selection-color-hover
+  );
+  --admin-table-selection-row-bg: rgba(22, 119, 255, 0.28);
+  --admin-table-selection-row-hover-bg: rgba(22, 119, 255, 0.36);
   --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
   --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
   --admin-table-selection-control-bg: var(--background, #0f172a);
 }
 
-@supports (background-color: color-mix(in oklch, black 20%, white)) {
+@supports (background-color: color-mix(in srgb, black 20%, white)) {
   .admin-table {
+    --admin-table-selection-color-hover-raw: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 82%,
+      #ffffff
+    );
+    --admin-table-selection-color-active-raw: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 74%,
+      #000000
+    );
+    --admin-table-stripe-theme-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 8%,
+      var(--background, #ffffff)
+    );
+    --admin-table-stripe-theme-bg-hover: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 14%,
+      var(--background, #ffffff)
+    );
+    --admin-table-row-hover-theme-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 10%,
+      var(--background, #ffffff)
+    );
+    --admin-table-selection-row-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 14%,
+      var(--background, #ffffff)
+    );
+    --admin-table-selection-row-hover-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 20%,
+      var(--background, #ffffff)
+    );
+    --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
+    --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
     --admin-table-tool-active-bg: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 8%,
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 8%,
       var(--background, #ffffff)
     );
     --admin-table-tool-active-color: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 76%,
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 76%,
       #000000
     );
     --admin-table-tool-hover-color: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 84%,
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 84%,
       #000000
     );
     --admin-table-tool-primary-active-bg: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 74%,
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 74%,
       #000000
     );
     --admin-table-tool-primary-hover-bg: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 82%,
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 82%,
       #000000
     );
+    --admin-table-pager-hover-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 10%,
+      var(--background, #ffffff)
+    );
+    --admin-table-pager-active-hover-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #1677ff) 84%,
+      #000000
+    );
+    --admin-table-pager-active-hover-border: var(
+      --admin-table-pager-active-hover-bg
+    );
     --admin-table-tool-success-active-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--success, #16a34a) 74%,
       #000000
     );
     --admin-table-tool-success-hover-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--success, #16a34a) 82%,
       #000000
     );
     --admin-table-tool-warning-active-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--warning, #f59e0b) 74%,
       #000000
     );
     --admin-table-tool-warning-hover-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--warning, #f59e0b) 82%,
       #000000
     );
     --admin-table-tool-danger-active-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--destructive, #ef4444) 74%,
       #000000
     );
     --admin-table-tool-danger-hover-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--destructive, #ef4444) 82%,
       #000000
     );
     --admin-table-tool-info-active-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--info, #0ea5e9) 74%,
       #000000
     );
     --admin-table-tool-info-hover-bg: color-mix(
-      in oklch,
+      in srgb,
       var(--info, #0ea5e9) 82%,
       #000000
     );
@@ -160,20 +371,53 @@
       body.dark,
       body[data-theme='dark']
     ) .admin-table {
-    --admin-table-row-hover-bg: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 18%,
+    --admin-table-selection-color-hover-raw: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 88%,
+      #ffffff
+    );
+    --admin-table-selection-color-active-raw: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 72%,
+      #000000
+    );
+    --admin-table-stripe-theme-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 22%,
+      var(--background, #0f172a)
+    );
+    --admin-table-stripe-theme-bg-hover: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 30%,
+      var(--background, #0f172a)
+    );
+    --admin-table-row-hover-theme-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 18%,
       var(--background, #0f172a)
     );
     --admin-table-selection-row-bg: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 28%,
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 28%,
       var(--background, #0f172a)
     );
     --admin-table-selection-row-hover-bg: color-mix(
-      in oklch,
-      var(--primary, #1677ff) 38%,
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 38%,
       var(--background, #0f172a)
+    );
+    --admin-table-pager-hover-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 16%,
+      var(--background, #0f172a)
+    );
+    --admin-table-pager-active-hover-bg: color-mix(
+      in srgb,
+      var(--admin-table-selection-color, #60a5fa) 78%,
+      #000000
+    );
+    --admin-table-pager-active-hover-border: var(
+      --admin-table-pager-active-hover-bg
     );
     --admin-table-strategy-row-bg: var(--admin-table-selection-row-bg);
     --admin-table-strategy-row-hover-bg: var(--admin-table-selection-row-hover-bg);
@@ -181,6 +425,9 @@
 }
 
 .admin-table .admin-table-vxe {
+  --vxe-ui-base-border-radius: var(--admin-table-radius);
+  --vxe-ui-border-radius: var(--admin-table-radius);
+  --vxe-ui-table-border-radius: var(--admin-table-radius);
   --vxe-ui-font-primary-color: var(--admin-table-selection-color);
   --vxe-ui-font-primary-lighten-color: var(--admin-table-selection-color-hover);
   --vxe-ui-font-primary-darken-color: var(--admin-table-selection-color-active);
@@ -196,7 +443,10 @@
     --admin-table-selection-control-bg
   );
   --vxe-ui-table-row-hover-background-color: var(--admin-table-row-hover-bg);
-  --vxe-ui-table-row-hover-striped-background-color: var(--admin-table-row-hover-bg);
+  --vxe-ui-table-row-striped-background-color: var(--admin-table-stripe-bg);
+  --vxe-ui-table-row-hover-striped-background-color: var(
+    --admin-table-stripe-bg-hover
+  );
   --vxe-ui-table-row-checkbox-checked-background-color: var(
     --admin-table-selection-row-bg
   );
@@ -209,6 +459,69 @@
   --vxe-ui-table-row-hover-radio-checked-background-color: var(
     --admin-table-selection-row-hover-bg
   );
+  --vxe-ui-base-hover-background-color: var(--admin-table-pager-hover-bg);
+  --vxe-ui-base-active-background-color: var(--admin-table-pager-hover-bg);
+}
+
+.admin-table .admin-table-vxe .vxe-grid--table-wrapper,
+.admin-table .admin-table-vxe .vxe-table--viewport-wrapper,
+.admin-table .admin-table-vxe .vxe-table--render-wrapper {
+  border-radius: var(--admin-table-radius);
+}
+
+.admin-table .admin-table-vxe .vxe-grid--table-wrapper,
+.admin-table .admin-table-vxe .vxe-table--viewport-wrapper {
+  overflow: hidden;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper,
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper > .ant-spin-nested-loading,
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper > .ant-spin-nested-loading > .ant-spin-container,
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-content {
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto !important;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-pagination {
+  flex-shrink: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-placeholder,
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-placeholder > td {
+  height: 100%;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-placeholder > td {
+  padding-bottom: 0;
+  padding-top: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .ant-table-wrapper .ant-table-placeholder .admin-table__empty--no-data {
+  min-height: 100%;
+}
+
+.admin-table .admin-table-vxe .vxe-table--render-default .vxe-table--border-line {
+  border-radius: var(--admin-table-radius);
 }
 
 .admin-table .admin-table-vxe .vxe-body--row.row--checked > .vxe-body--column,
@@ -1400,6 +1713,7 @@
 }
 
 .admin-table .admin-table-vxe .vxe-pager {
+  color: var(--admin-table-pager-text);
   position: relative;
 }
 
@@ -1410,6 +1724,80 @@
   gap: 10px;
   min-height: 30px;
   position: static;
+}
+
+.admin-table
+  .admin-table-vxe
+  .vxe-pager
+  :is(
+    .vxe-pager--end-btn,
+    .vxe-pager--home-btn,
+    .vxe-pager--jump-next,
+    .vxe-pager--jump-prev,
+    .vxe-pager--next-btn,
+    .vxe-pager--num-btn,
+    .vxe-pager--prev-btn
+  ) {
+  background-color: var(--admin-table-pager-bg) !important;
+  border-color: var(--admin-table-pager-border) !important;
+  color: var(--admin-table-pager-text);
+}
+
+.admin-table
+  .admin-table-vxe
+  .vxe-pager
+  :is(
+    .vxe-pager--end-btn,
+    .vxe-pager--home-btn,
+    .vxe-pager--jump-next,
+    .vxe-pager--jump-prev,
+    .vxe-pager--next-btn,
+    .vxe-pager--num-btn,
+    .vxe-pager--prev-btn
+  ):not(.is--disabled):hover {
+  background-color: var(--admin-table-pager-hover-bg) !important;
+  border-color: var(--admin-table-pager-hover-border) !important;
+  color: var(--admin-table-pager-hover-text);
+}
+
+.admin-table
+  .admin-table-vxe
+  .vxe-pager
+  :is(
+    .vxe-pager--jump-next,
+    .vxe-pager--jump-prev,
+    .vxe-pager--num-btn
+  ):not(.is--disabled).is--active {
+  background-color: var(--admin-table-pager-active-bg) !important;
+  border-color: var(--admin-table-pager-active-border) !important;
+  color: var(--admin-table-pager-active-text) !important;
+}
+
+.admin-table
+  .admin-table-vxe
+  .vxe-pager
+  :is(
+    .vxe-pager--jump-next,
+    .vxe-pager--jump-prev,
+    .vxe-pager--num-btn
+  ):not(.is--disabled).is--active:hover {
+  background-color: var(--admin-table-pager-active-hover-bg) !important;
+  border-color: var(--admin-table-pager-active-hover-border) !important;
+  color: var(--admin-table-pager-active-text) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--sizes .vxe-input--inner,
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--jump .vxe-input--inner {
+  background-color: var(--admin-table-pager-bg) !important;
+  border-color: var(--admin-table-pager-border) !important;
+  color: var(--admin-table-pager-text) !important;
+}
+
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--sizes .vxe-input--inner:hover,
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--jump .vxe-input--inner:hover,
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--sizes .vxe-input--inner:focus,
+.admin-table .admin-table-vxe .vxe-pager .vxe-pager--jump .vxe-input--inner:focus {
+  border-color: var(--admin-table-pager-hover-border) !important;
 }
 
 .admin-table .admin-table-vxe .vxe-pager--left-wrapper .admin-table__pager-region.is-left {
@@ -1874,8 +2262,47 @@
 }
 
 .admin-table__empty {
+  align-items: center;
   color: var(--muted-foreground, #64748b);
   display: flex;
+  flex-direction: column;
+  gap: 8px;
   justify-content: center;
   padding: 32px 0;
+  text-align: center;
+}
+
+.admin-table__empty--loading {
+  flex-direction: row;
+  gap: 0;
+}
+
+.admin-table__empty--no-data {
+  min-height: 120px;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table__empty--no-data {
+  box-sizing: border-box;
+  height: 100%;
+  min-height: 0;
+}
+
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--empty-content,
+.admin-table.admin-table--lock-body-scroll .admin-table-vxe .vxe-table--empty-placeholder {
+  height: 100%;
+  min-height: 100%;
+}
+
+.admin-table__empty-illustration {
+  color: var(--muted-foreground, #64748b);
+  display: block;
+  height: auto;
+  opacity: 0.92;
+  width: 72px;
+}
+
+.admin-table__empty-text {
+  color: inherit;
+  font-size: var(--admin-table-font-size-sm);
+  line-height: 1.35;
 }

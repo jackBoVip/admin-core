@@ -250,6 +250,11 @@ export interface TableOperationColumnConfig {
   width?: number | string;
 }
 
+export interface TableStripeConfig {
+  enabled?: boolean;
+  followTheme?: boolean;
+}
+
 export interface ColumnCustomSnapshot {
   filterable: Record<string, boolean>;
   fixed: Record<string, TableColumnFixedValue>;
@@ -459,6 +464,7 @@ export interface AdminTableOptions<
     pagerConfig?: TablePagerConfig<TData>;
     proxyConfig?: ProxyConfig;
     rowStrategy?: TableRowStrategy[];
+    stripe?: boolean | TableStripeConfig;
     seqColumn?: boolean | TableSeqColumnConfig;
     strategy?: TableStrategyConfig;
     toolbarConfig?: ToolbarConfig;

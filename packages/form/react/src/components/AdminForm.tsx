@@ -85,13 +85,17 @@ function normalizeAntdPopupProps(componentProps: Record<string, any>) {
     zIndex: 'var(--admin-form-page-popup-z-index, 2300)',
   };
 
-  const userPopupClassName = componentProps.popupClassName ?? componentProps.dropdownClassName;
+  const userPopupClassName =
+    componentProps.popupClassName ?? componentProps.dropdownClassName;
   const userPopupStyle = componentProps.popupStyle ?? componentProps.dropdownStyle;
 
   const classNames = asRecord(componentProps.classNames);
   const popupClassNames = asRecord(classNames?.popup);
+  const mergedPopupClassName =
+    [defaultPopupClassName, userPopupClassName].filter(Boolean).join(' ') ||
+    defaultPopupClassName;
   const popupRootClassName =
-    popupClassNames?.root ?? userPopupClassName ?? defaultPopupClassName;
+    popupClassNames?.root ?? mergedPopupClassName;
   componentProps.classNames = {
     ...(classNames ?? {}),
     popup: {

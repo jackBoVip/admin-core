@@ -24,6 +24,10 @@ packages/
 │   ├── core/             # Core package (framework agnostic)
 │   ├── react/            # React integration package
 │   └── vue/              # Vue integration package
+├── page/                  # Content page system
+│   ├── core/             # Core package (framework agnostic)
+│   ├── react/            # React integration package
+│   └── vue/              # Vue integration package
 ├── preferences/           # Preference system
 │   ├── core/             # Core package (framework agnostic)
 │   ├── react/            # React integration package
@@ -183,7 +187,32 @@ Main capabilities:
 - Row/cell strategy (style, compute, click, regex conditions)
 - Theme and locale integration with preferences
 
-### 4. Static + Dynamic Routes
+### 4. Page System (@admin-core/page-vue / @admin-core/page-react)
+
+Content-area page container plus built-in "query form + table" composition:
+
+```ts
+import { useAdminPageQueryTable } from '@admin-core/page-vue'; // or @admin-core/page-react
+
+const [PageQueryTable, pageApi] = useAdminPageQueryTable({
+  formOptions: {
+    schema: [{ fieldName: 'keyword', component: 'input', label: 'Keyword' }],
+  },
+  tableOptions: {
+    tableTitle: 'Users',
+    gridOptions: { columns: [{ field: 'name', title: 'Name' }], data: [] },
+  },
+});
+```
+
+Main capabilities:
+
+- Page container (route page + component page + scroll control)
+- Out-of-the-box top query form and bottom table layout
+- API passthrough via `pageApi.formApi` / `pageApi.tableApi`
+- `bridge` for submit-query, reset-reload, and param mapping
+
+### 5. Static + Dynamic Routes
 
 The framework provides a unified builder for **static route constants + dynamic menu API**, and generates **routes, menus, and breadcrumbs** automatically.  
 Both static and dynamic routes use **RouteRecord style**, and `component` is a string path (e.g. `/system/user`) resolved by the framework.
@@ -255,6 +284,7 @@ admin-core/
 ├── packages/             # Core packages
 │   ├── form/             # Form system
 │   ├── table/            # Table system
+│   ├── page/             # Content page system
 │   ├── layout/           # Layout system
 │   └── preferences/      # Preference system
 ├── scripts/              # Script tools
@@ -309,6 +339,9 @@ admin-core/
 | `@admin-core/table-core` | [README](./packages/table/core/README.md) | [README.en](./packages/table/core/README.en.md) |
 | `@admin-core/table-vue` | [README](./packages/table/vue/README.md) | [README.en](./packages/table/vue/README.en.md) |
 | `@admin-core/table-react` | [README](./packages/table/react/README.md) | [README.en](./packages/table/react/README.en.md) |
+| `@admin-core/page-core` | [README](./packages/page/core/README.md) | [README.en](./packages/page/core/README.en.md) |
+| `@admin-core/page-vue` | [README](./packages/page/vue/README.md) | [README.en](./packages/page/vue/README.en.md) |
+| `@admin-core/page-react` | [README](./packages/page/react/README.md) | [README.en](./packages/page/react/README.en.md) |
 
 ### API Docs
 

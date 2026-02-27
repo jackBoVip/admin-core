@@ -38,6 +38,7 @@ import {
   createColumnCustomChangePayload,
   createPagerExportEventPayload,
   createTableComparableSelectionKeySet,
+  createTableSearchFormActionHandlers,
   createTableLocaleText,
   createTableApi,
   deepEqual,
@@ -83,6 +84,9 @@ import {
   resolveTablePagerLayoutSet,
   resolveTablePagerPageSizes,
   resolveTablePagerExportConfig,
+  resolveTableStripeConfig,
+  resolveTableStripePresentation,
+  resolveTableThemeCssVars,
   resolveTableCellStrategyResult,
   resolveTableRowStrategyInlineStyle,
   resolveTableRowStrategyResult,
@@ -92,6 +96,9 @@ import {
   resolveToolbarHintConfig,
   resolveVisibleToolbarActionTools,
   resolveVisibleOperationActionTools,
+  cleanupTableRuntimeApis,
+  pickTableRuntimeStateOptions,
+  resolveTableMobileMatched,
   resolveToolbarToolVisibility,
   resolveToolbarToolsSlotPosition,
   isSelectionColumnTypeColumn,
@@ -107,10 +114,11 @@ import {
   toTableComparableSelectionKey,
   triggerTableCellStrategyClick,
   triggerTableRowStrategyClick,
+  TABLE_MOBILE_MEDIA_QUERY,
   writeColumnCustomStateToStorage,
 } from '@admin-core/table-core';
 import { useAdminForm } from '@admin-core/form-react';
-import { ConfigProvider, Empty, Input, Table, theme as antdTheme } from 'antd';
+import { ConfigProvider, Input, Table, theme as antdTheme } from 'antd';
 import antdEnUS from 'antd/locale/en_US';
 import antdZhCN from 'antd/locale/zh_CN';
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -134,6 +142,59 @@ function resolveSlot(
     return slot(params);
   }
   return slot ?? null;
+}
+
+function compareTableSortValues(left: unknown, right: unknown) {
+  if (left === right) {
+    return 0;
+  }
+  if (left === null || left === undefined || left === '') {
+    return 1;
+  }
+  if (right === null || right === undefined || right === '') {
+    return -1;
+  }
+
+  const toComparableNumber = (value: unknown) => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'bigint') {
+      return Number(value);
+    }
+    if (value instanceof Date) {
+      const timestamp = value.getTime();
+      return Number.isFinite(timestamp) ? timestamp : undefined;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return undefined;
+      }
+      const numeric = Number(trimmed);
+      if (Number.isFinite(numeric) && /^[-+]?(\d+\.?\d*|\.\d+)$/.test(trimmed)) {
+        return numeric;
+      }
+      const timestamp = Date.parse(trimmed);
+      if (Number.isFinite(timestamp)) {
+        return timestamp;
+      }
+    }
+    return undefined;
+  };
+
+  const leftNumber = toComparableNumber(left);
+  const rightNumber = toComparableNumber(right);
+  if (leftNumber !== undefined && rightNumber !== undefined) {
+    return leftNumber - rightNumber;
+  }
+
+  const leftText = String(left);
+  const rightText = String(right);
+  return leftText.localeCompare(rightText, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
 }
 
 function transformTreeData<TData extends Record<string, any>>(
@@ -171,13 +232,6 @@ function resolveBooleanOption(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined;
 }
 
-function resolveTableMobileState() {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-  return window.matchMedia('(max-width: 768px)').matches;
-}
-
 function resolveTableScrollHeight(height: unknown, fallback = 500) {
   if (typeof height === 'number' && Number.isFinite(height) && height > 0) {
     return height;
@@ -190,6 +244,8 @@ function resolveTableScrollHeight(height: unknown, fallback = 500) {
   }
   return fallback;
 }
+
+const BODY_SCROLL_LOCK_CLASS = 'admin-table--lock-body-scroll';
 
 function resolveAntdTableLocale(locale: unknown): AntdLocale {
   if (locale === 'en-US') {
@@ -230,7 +286,17 @@ export const AdminTable = memo(function AdminTable<
   TData extends Record<string, any> = Record<string, any>,
   TFormValues extends Record<string, any> = Record<string, any>,
 >(props: AdminTableReactProps<TData, TFormValues> & { api?: AdminTableApi<TData, TFormValues> }) {
-  const api = useMemo(() => props.api ?? createTableApi<TData, TFormValues>(props), [props.api]);
+  const api = useMemo(
+    () =>
+      props.api
+      ?? createTableApi<TData, TFormValues>(
+        pickTableRuntimeStateOptions<TData, TFormValues>(
+          props as Record<string, any>
+        )
+      ),
+    [props.api]
+  );
+  const ownsTableApi = !props.api;
   const setupState = getAdminTableReactSetupState();
   const localeVersion = useLocaleVersion();
   const preferencesVersion = usePreferencesVersion();
@@ -264,7 +330,7 @@ export const AdminTable = memo(function AdminTable<
       tableState.gridOptions?.pagerConfig?.pageSizes
     ).map((item) => String(item)),
   }));
-  const [mobile, setMobile] = useState(() => resolveTableMobileState());
+  const [mobile, setMobile] = useState(() => resolveTableMobileMatched());
   const [innerSelectedRowKeys, setInnerSelectedRowKeys] = useState<Key[]>(() => {
     const rowSelection = tableState.gridOptions?.rowSelection;
     if (Array.isArray(rowSelection?.selectedRowKeys)) {
@@ -417,6 +483,15 @@ export const AdminTable = memo(function AdminTable<
     }
   }, []);
 
+  const tableSearchFormActions = createTableSearchFormActionHandlers({
+    getFormApi: () => formApi as any,
+    onValuesResolved: (values) => {
+      latestFormValuesRef.current = values;
+    },
+    reload: async (values) => api.reload(values),
+    shouldReloadOnReset: () => !tableStateRef.current.formOptions?.submitOnChange,
+  });
+
   const [SearchForm, formApi] = useAdminForm({
     compact: true,
     commonConfig: {
@@ -424,22 +499,8 @@ export const AdminTable = memo(function AdminTable<
         className: 'w-full',
       },
     },
-    handleSubmit: async () => {
-      const values = await formApi.getValues();
-      latestFormValuesRef.current = values;
-      formApi.setLatestSubmissionValues(values);
-      await api.reload(values);
-    },
-    handleReset: async () => {
-      const prevValues = await formApi.getValues();
-      await formApi.resetForm();
-      const values = await formApi.getValues();
-      latestFormValuesRef.current = values;
-      formApi.setLatestSubmissionValues(values);
-      if (deepEqual(prevValues, values) || !tableStateRef.current.formOptions?.submitOnChange) {
-        await api.reload(values);
-      }
-    },
+    handleSubmit: tableSearchFormActions.handleSubmit,
+    handleReset: tableSearchFormActions.handleReset,
     showCollapseButton: true,
     submitButtonOptions: {
       content: localeText.search,
@@ -466,7 +527,9 @@ export const AdminTable = memo(function AdminTable<
   }, [api]);
 
   useEffect(() => {
-    const { api: _api, ...nextProps } = props;
+    const nextProps = pickTableRuntimeStateOptions<TData, TFormValues>(
+      props as Record<string, any>
+    );
     if (
       latestPropsRef.current &&
       shallowEqualObjectRecord(
@@ -477,8 +540,19 @@ export const AdminTable = memo(function AdminTable<
       return;
     }
     latestPropsRef.current = nextProps as AdminTableReactProps<TData, TFormValues>;
-    api.setState(nextProps as AdminTableReactProps<TData, TFormValues>);
-  }, [api, props]);
+    api.setState(nextProps as any);
+  }, [
+    api,
+    props.class,
+    props.formOptions,
+    props.gridClass,
+    props.gridEvents,
+    props.gridOptions,
+    props.separator,
+    props.showSearchForm,
+    props.tableTitle,
+    props.tableTitleHelp,
+  ]);
 
   useEffect(() => {
     setDataSource((tableState.gridOptions?.data as TData[]) ?? []);
@@ -498,7 +572,7 @@ export const AdminTable = memo(function AdminTable<
     if (typeof window === 'undefined') {
       return undefined;
     }
-    const media = window.matchMedia('(max-width: 768px)');
+    const media = window.matchMedia(TABLE_MOBILE_MEDIA_QUERY);
     const update = () => {
       setMobile(media.matches);
     };
@@ -684,10 +758,14 @@ export const AdminTable = memo(function AdminTable<
     });
 
     return () => {
-      api.unmount();
-      formApi.unmount();
+      cleanupTableRuntimeApis({
+        formApi,
+        ownsFormApi: true,
+        ownsTableApi,
+        tableApi: api,
+      });
     };
-  }, [api, executeProxy, formApi]);
+  }, [api, executeProxy, formApi, ownsTableApi]);
 
   useEffect(() => {
     const proxy = tableState.gridOptions?.proxyConfig;
@@ -841,6 +919,19 @@ export const AdminTable = memo(function AdminTable<
   const runtimeFormOptions = props.formOptions ?? tableState.formOptions;
   const runtimeShowSearchForm = props.showSearchForm ?? tableState.showSearchForm;
   const runtimeGridEvents = props.gridEvents ?? tableState.gridEvents;
+  const runtimeRootStyle = useMemo<CSSProperties | undefined>(
+    () => resolveTableThemeCssVars(setupState.theme) as CSSProperties | undefined,
+    [preferencesVersion, setupState.theme.colorPrimary]
+  );
+  const bodyScrollLockEnabled = useMemo(() => {
+    if (typeof runtimeClassName !== 'string' || !runtimeClassName.trim()) {
+      return false;
+    }
+    return runtimeClassName
+      .split(/\s+/)
+      .filter(Boolean)
+      .includes(BODY_SCROLL_LOCK_CLASS);
+  }, [runtimeClassName]);
 
   const computedDataSource = useMemo(() => {
     const treeConfig = mergedGridOptions.treeConfig;
@@ -1091,6 +1182,9 @@ export const AdminTable = memo(function AdminTable<
   ]);
 
   const columns = useMemo(() => {
+    const isRemoteSortEnabled =
+      mergedGridOptions.sortConfig?.remote === true ||
+      isProxyEnabled(mergedGridOptions.proxyConfig as Record<string, any>);
     const seqOffset = mergedGridOptions.pagerConfig?.enabled === false
       ? 0
       : ((pagination.current ?? 1) - 1) * (pagination.pageSize ?? 20);
@@ -1184,15 +1278,23 @@ export const AdminTable = memo(function AdminTable<
         };
       }
       const dataIndex = String(column.dataIndex ?? column.field ?? '');
+      const defaultLocalSorter =
+        dataIndex && !isRemoteSortEnabled
+          ? (leftRecord: TData, rightRecord: TData) =>
+              compareTableSortValues(
+                getColumnValueByPath(leftRecord as Record<string, any>, dataIndex),
+                getColumnValueByPath(rightRecord as Record<string, any>, dataIndex)
+              )
+          : undefined;
       const columnSorter =
         column.sortable === false
           ? undefined
           : column.sortable === true
-            ? (column.sorter ?? true)
+            ? (column.sorter ?? defaultLocalSorter ?? true)
             : column.sorter;
       const filterable = column.filterable !== false;
       const hasFilterConfig =
-        Array.isArray(column.filters) ||
+        (Array.isArray(column.filters) && column.filters.length > 0) ||
         typeof column.filterDropdown === 'function' ||
         typeof column.onFilter === 'function';
       const defaultFilters =
@@ -1458,6 +1560,8 @@ export const AdminTable = memo(function AdminTable<
     filterableColumns,
     mergedGridOptions.editConfig,
     mergedGridOptions.pagerConfig?.enabled,
+    mergedGridOptions.proxyConfig,
+    mergedGridOptions.sortConfig?.remote,
     mergedGridOptions.strategy,
     mergedGridOptions.cellStrategy,
     localeText.seq,
@@ -3139,15 +3243,49 @@ export const AdminTable = memo(function AdminTable<
   );
   const sourceTableScroll =
     (mergedGridOptions.scroll as Record<string, any> | undefined) ?? {};
-  const resolvedTableScroll = virtualScrollEnabled
-    ? {
+  const hasExplicitGridHeight = Object.prototype.hasOwnProperty.call(
+    (tableState.gridOptions ?? {}) as Record<string, any>,
+    'height'
+  );
+  const resolvedTableScroll = (() => {
+    if (bodyScrollLockEnabled) {
+      if (
+        typeof sourceTableScroll.y === 'number' ||
+        typeof sourceTableScroll.y === 'string'
+      ) {
+        return mergedGridOptions.scroll;
+      }
+      return {
+        ...sourceTableScroll,
+        y: '100%',
+      };
+    }
+    if (virtualScrollEnabled) {
+      return {
         ...sourceTableScroll,
         y:
           typeof sourceTableScroll.y === 'number'
             ? sourceTableScroll.y
             : resolveTableScrollHeight(mergedGridOptions.height, 500),
-      }
-    : mergedGridOptions.scroll;
+      };
+    }
+    if (typeof sourceTableScroll.y === 'number') {
+      return mergedGridOptions.scroll;
+    }
+    const heightFromGrid = hasExplicitGridHeight
+      ? resolveTableScrollHeight(
+          mergedGridOptions.height,
+          0
+        )
+      : 0;
+    if (heightFromGrid > 0) {
+      return {
+        ...sourceTableScroll,
+        y: heightFromGrid,
+      };
+    }
+    return mergedGridOptions.scroll;
+  })();
   const resolvedTableVirtual =
     typeof (mergedGridOptions as Record<string, any>).virtual === 'boolean'
       ? (mergedGridOptions as Record<string, any>).virtual
@@ -3202,7 +3340,18 @@ export const AdminTable = memo(function AdminTable<
   );
   const pagerPageCount = Math.max(1, Math.ceil(pagerTotal / pagerPageSize));
   const showPagerExport = paginationEnabled && pagerExportActions.length > 0;
-  const striped = !!mergedGridOptions.stripe;
+  const stripePresentation = useMemo(
+    () =>
+      resolveTableStripePresentation(
+        resolveTableStripeConfig(mergedGridOptions.stripe, {
+          enabled: false,
+          followTheme: false,
+        })
+      ),
+    [mergedGridOptions.stripe]
+  );
+  const striped = stripePresentation.enabled;
+  const stripeClassName = stripePresentation.className;
   const resolvePopupContainer = useCallback((triggerNode: HTMLElement) => {
     const sourceResolver = mergedGridOptions.getPopupContainer;
     if (typeof sourceResolver === 'function') {
@@ -3641,9 +3790,11 @@ export const AdminTable = memo(function AdminTable<
           'admin-table',
           runtimeClassName ?? '',
           striped ? 'admin-table--striped' : '',
+          stripeClassName,
           paginationEnabled ? `admin-table--pager-align-${pagerPosition}` : '',
           maximized ? 'admin-table--maximized' : '',
         ].join(' ')}
+        style={runtimeRootStyle}
       >
       {showToolbar ? (
         <div className="admin-table__toolbar">
@@ -3808,15 +3959,45 @@ export const AdminTable = memo(function AdminTable<
                         localeText.pagerTotal.replace('{total}', String(total))
                     : undefined),
                 size: 'small',
-                position: mobile
+                placement: mobile
                   ? ['bottomCenter']
-                  : [pagerPosition === 'left' ? 'bottomLeft' : 'bottomRight'],
+                  : [pagerPosition === 'left' ? 'bottomStart' : 'bottomEnd'],
               }
             : false
         }
         scroll={resolvedTableScroll}
         locale={{
-          emptyText: resolveSlot(runtimeSlots, 'empty') ?? <Empty description={localeText.noData} />,
+          emptyText:
+            resolveSlot(runtimeSlots, 'empty') ?? (
+              <div className="admin-table__empty admin-table__empty--no-data">
+                <svg
+                  aria-hidden="true"
+                  className="admin-table__empty-illustration"
+                  viewBox="0 0 88 72"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <ellipse cx="44" cy="62" rx="24" ry="6" fill="currentColor" opacity="0.1" />
+                  <rect x="16" y="18" width="56" height="38" rx="8" fill="currentColor" opacity="0.14" />
+                  <path
+                    d="M28 36h32v14a6 6 0 0 1-6 6H34a6 6 0 0 1-6-6V36Z"
+                    fill="currentColor"
+                    opacity="0.22"
+                  />
+                  <rect x="30" y="8" width="28" height="30" rx="4" fill="currentColor" opacity="0.28" />
+                  <path
+                    d="M36 16h16M36 22h16M36 28h10"
+                    stroke="currentColor"
+                    strokeLinecap="round"
+                    strokeWidth="2"
+                    opacity="0.75"
+                  />
+                  <circle cx="66" cy="14" r="7" fill="currentColor" opacity="0.18" />
+                  <circle cx="64" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+                  <circle cx="68" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+                </svg>
+                <span className="admin-table__empty-text">{localeText.noData}</span>
+              </div>
+            ),
         }}
         onChange={(nextPagination, nextFilters, sorter, extra) => {
           handleTableChange(

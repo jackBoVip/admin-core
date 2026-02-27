@@ -1,5 +1,12 @@
 <script setup lang="ts">
 import { getVueFormAdapterRegistry } from '@admin-core/form-vue';
+import {
+  VxeButton,
+  VxeCheckbox,
+  VxeInput,
+  VxeSelect,
+  VxeSwitch,
+} from 'vxe-pc-ui';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 const demoSwitch = ref(true);
@@ -39,9 +46,9 @@ onUnmounted(() => {
       第三方组件库验证：{{ activeFormLibrary }} | --primary: {{ primaryColor || '-' }}
     </p>
     <div style="align-items: center; display: flex; flex-wrap: wrap; gap: 12px">
-      <vxe-switch v-model="demoSwitch" size="small" />
-      <vxe-checkbox v-model="demoChecked" content="Checkbox" />
-      <vxe-select
+      <VxeSwitch v-model="demoSwitch" size="small" />
+      <VxeCheckbox v-model="demoChecked" content="Checkbox" />
+      <VxeSelect
         v-model="demoLevel"
         :options="[
           { label: '高', value: 'high' },
@@ -51,14 +58,14 @@ onUnmounted(() => {
         size="small"
         style="width: 120px"
       />
-      <vxe-input
+      <VxeInput
         v-model="demoName"
         size="small"
         style="width: 180px"
       />
-      <vxe-button status="primary" size="small">
+      <VxeButton status="primary" size="small">
         主按钮
-      </vxe-button>
+      </VxeButton>
     </div>
   </div>
 </template>

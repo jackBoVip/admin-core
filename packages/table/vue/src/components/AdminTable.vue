@@ -53,6 +53,7 @@ import {
   createColumnCustomDragResetState,
   createColumnCustomChangePayload,
   createPagerExportEventPayload,
+  createTableSearchFormActionHandlers,
   createTableLocaleText,
   deepEqual,
   ensureSeqColumn,
@@ -90,8 +91,12 @@ import {
   resolveColumnCustomPersistenceConfig,
   resolveToolbarInlinePosition,
   resolveToolbarHintConfig,
+  resolveTableMobileMatched,
   resolveSelectionMode,
   resolveSelectionRowsByKeys,
+  resolveTableStripeConfig,
+  resolveTableStripePresentation,
+  resolveTableThemeCssVars,
   resolveTableExportColumns,
   resolveTablePagerLayouts,
   resolveTablePagerPageSizes,
@@ -101,6 +106,8 @@ import {
   resolveTableRowStrategyResult,
   resolveOperationColumnConfig,
   resolveOperationCellAlignClass,
+  cleanupTableRuntimeApis,
+  pickTableRuntimeStateOptions,
   resolveVisibleOperationActionTools,
   resolveVisibleToolbarActionTools,
   resolveToolbarToolVisibility,
@@ -123,7 +130,11 @@ import { useAdminForm } from '@admin-core/form-vue';
 import { VxeGrid, VxeUI } from 'vxe-table';
 
 import { useLocaleVersion } from '../composables/useLocaleVersion';
-import { getAdminTableVueSetupState, syncAdminTableVueWithPreferences } from '../setup';
+import {
+  getAdminTableVueSetupState,
+  getAdminTableVueThemeSignal,
+  syncAdminTableVueWithPreferences,
+} from '../setup';
 import '../styles/index.css';
 
 interface Props extends AdminTableVueProps {
@@ -136,7 +147,9 @@ type TableSelectionMode = 'checkbox' | 'radio';
 const props = defineProps<Props>();
 const slots = useSlots() as Record<string, (...args: any[]) => any>;
 const setupState = getAdminTableVueSetupState();
+const themeSignal = getAdminTableVueThemeSignal();
 const appDirectives = (getCurrentInstance()?.appContext.directives ?? {}) as Record<string, any>;
+const tableRootRef = ref<HTMLElement | null>(null);
 const gridRef = ref<VxeGridInstance>();
 const toolbarHintViewportRef = ref<HTMLDivElement | null>(null);
 const toolbarHintTextRef = ref<HTMLSpanElement | null>(null);
@@ -173,7 +186,9 @@ watch(
   ],
   () => {
     const { api: _api, ...rest } = props;
-    const nextProps = rest as AdminTableVueProps;
+    const nextProps = pickTableRuntimeStateOptions(
+      rest as Record<string, any>
+    ) as AdminTableVueProps;
     if (
       latestIncomingProps &&
       shallowEqualObjectRecord(
@@ -190,25 +205,16 @@ watch(
 );
 
 const [SearchForm, formApi] = useAdminForm({
+  ...createTableSearchFormActionHandlers({
+    getFormApi: () => formApi as any,
+    reload: async (values) => props.api.reload(values),
+    shouldReloadOnReset: () => !state.value.formOptions?.submitOnChange,
+  }),
   compact: true,
   commonConfig: {
     componentProps: {
       class: 'w-full',
     },
-  },
-  handleSubmit: async () => {
-    const values = await formApi.getValues();
-    formApi.setLatestSubmissionValues(values);
-    await props.api.reload(values);
-  },
-  handleReset: async () => {
-    const prevValues = await formApi.getValues();
-    await formApi.resetForm();
-    const values = await formApi.getValues();
-    formApi.setLatestSubmissionValues(values);
-    if (deepEqual(prevValues, values) || !state.value.formOptions?.submitOnChange) {
-      await props.api.reload(values);
-    }
   },
   showCollapseButton: true,
   submitButtonOptions: {
@@ -243,6 +249,7 @@ const isMobile = ref(false);
 const maximized = ref(false);
 const refreshing = ref(false);
 const resetPageSizeToFirstPending = ref(false);
+const autoBodyScrollHeight = ref<null | number>(null);
 
 const customPanelOpen = ref(false);
 const customDraftVisibleColumns = ref<Record<string, boolean>>({});
@@ -282,15 +289,187 @@ let customPendingMove: null | {
 } = null;
 const customDraggingKey = ref<null | string>(null);
 const customDragHover = ref<ColumnCustomDragHoverState>(initialCustomDragState.dragHover);
+const runtimeFilterRows = ref<null | Array<Record<string, any>>>(null);
 let syncingSelectionFromState = false;
 let hasAppliedDefaultSelection = false;
 
 const updateMobile = () => {
-  if (typeof window === 'undefined') return;
-  isMobile.value = window.matchMedia('(max-width: 768px)').matches;
+  isMobile.value = resolveTableMobileMatched();
   void nextTick(syncToolbarHintOverflow);
   void nextTick(syncPagerHintOverflow);
+  void nextTick(syncBodyScrollHeight);
 };
+
+const BODY_SCROLL_LOCK_CLASS = 'admin-table--lock-body-scroll';
+const BODY_SCROLL_SAFE_GAP = 2;
+const FIXED_FOOTER_SELECTOR = '.layout-footer--fixed, .layout-footer[data-fixed="true"]';
+const bodyScrollLockEnabled = computed(() => {
+  const className = typeof state.value.class === 'string'
+    ? state.value.class
+    : '';
+  if (!className.trim()) {
+    return false;
+  }
+  return className
+    .split(/\s+/)
+    .filter(Boolean)
+    .includes(BODY_SCROLL_LOCK_CLASS);
+});
+
+function parseCssPixel(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function resolveBodyScrollBottomBoundary(rootElement: HTMLElement) {
+  if (typeof window === 'undefined') {
+    return 0;
+  }
+  let bottomBoundary = window.innerHeight;
+  if (typeof document !== 'undefined') {
+    const fixedFooter = document.querySelector(FIXED_FOOTER_SELECTOR) as HTMLElement | null;
+    if (fixedFooter) {
+      const styles = window.getComputedStyle(fixedFooter);
+      if (styles.display !== 'none' && styles.visibility !== 'hidden') {
+        bottomBoundary = Math.min(
+          bottomBoundary,
+          Math.max(0, fixedFooter.getBoundingClientRect().top)
+        );
+      }
+    }
+  }
+  const contentElement = rootElement.closest('.layout-content') as HTMLElement | null;
+  if (contentElement) {
+    const contentRect = contentElement.getBoundingClientRect();
+    const contentStyles = window.getComputedStyle(contentElement);
+    const contentBottom = contentRect.bottom - parseCssPixel(contentStyles.paddingBottom);
+    bottomBoundary = Math.min(bottomBoundary, contentBottom);
+  }
+  return bottomBoundary;
+}
+
+function syncBodyScrollHeight() {
+  if (!bodyScrollLockEnabled.value) {
+    autoBodyScrollHeight.value = null;
+    return;
+  }
+  const rootElement = tableRootRef.value;
+  if (!rootElement) {
+    return;
+  }
+  const gridElement = rootElement.querySelector(
+    '.admin-table-vxe.vxe-grid, .admin-table-vxe .vxe-grid'
+  ) as HTMLElement | null;
+  const rootRect = rootElement.getBoundingClientRect();
+  const gridRect = gridElement?.getBoundingClientRect() ?? null;
+  let nextHeightByClient = Math.floor(
+    rootElement.clientHeight - BODY_SCROLL_SAFE_GAP
+  );
+  if (gridRect) {
+    const occupiedBeforeGrid = Math.max(
+      0,
+      Math.round(gridRect.top - rootRect.top)
+    );
+    const occupiedAfterGrid = Math.max(
+      0,
+      Math.round(rootRect.bottom - gridRect.bottom)
+    );
+    nextHeightByClient = Math.floor(
+      rootElement.clientHeight
+      - occupiedBeforeGrid
+      - occupiedAfterGrid
+      - BODY_SCROLL_SAFE_GAP
+    );
+  }
+  if (nextHeightByClient > 0) {
+    autoBodyScrollHeight.value = nextHeightByClient;
+    return;
+  }
+  const viewportBottomBoundary = resolveBodyScrollBottomBoundary(rootElement);
+  const viewportTop = gridRect?.top ?? rootRect.top;
+  const nextHeightByViewport = Math.floor(
+    viewportBottomBoundary - viewportTop - BODY_SCROLL_SAFE_GAP
+  );
+  if (nextHeightByViewport > 0) {
+    autoBodyScrollHeight.value = nextHeightByViewport;
+    return;
+  }
+
+  if (gridRect) {
+    const nextHeightByRect = Math.floor(rootRect.bottom - gridRect.top) - BODY_SCROLL_SAFE_GAP;
+    if (nextHeightByRect > 0) {
+      autoBodyScrollHeight.value = nextHeightByRect;
+      return;
+    }
+  }
+
+  const nextHeightByRoot = Math.floor(rootElement.clientHeight - BODY_SCROLL_SAFE_GAP);
+  if (nextHeightByRoot > 0) {
+    autoBodyScrollHeight.value = nextHeightByRoot;
+    return;
+  }
+
+  autoBodyScrollHeight.value = null;
+}
+
+function scheduleSyncBodyScrollHeight() {
+  void nextTick(() => {
+    syncBodyScrollHeight();
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        syncBodyScrollHeight();
+      });
+    }
+  });
+}
+
+function resolveStateGridRows() {
+  return Array.isArray(state.value.gridOptions?.data)
+    ? (state.value.gridOptions?.data as Array<Record<string, any>>)
+    : [];
+}
+
+function resolveGridRuntimeRows() {
+  const grid = gridRef.value as
+    | (VxeGridInstance & {
+        getData?: () => unknown;
+        getTableData?: () => { tableData?: unknown };
+      })
+    | undefined;
+  if (!grid) {
+    return null;
+  }
+  const tableData = grid.getTableData?.()?.tableData;
+  if (Array.isArray(tableData)) {
+    return tableData as Array<Record<string, any>>;
+  }
+  const gridData = grid.getData?.();
+  if (Array.isArray(gridData)) {
+    return gridData as Array<Record<string, any>>;
+  }
+  return null;
+}
+
+function syncRuntimeFilterRows() {
+  const runtimeRows = resolveGridRuntimeRows();
+  const nextRows = runtimeRows ?? resolveStateGridRows();
+  if (runtimeFilterRows.value !== nextRows) {
+    runtimeFilterRows.value = nextRows;
+  }
+}
+
+function createProxySuccessHook(callback: unknown) {
+  return async (...args: any[]) => {
+    const result =
+      typeof callback === 'function'
+        ? await (callback as (...innerArgs: any[]) => any)(...args)
+        : undefined;
+    await nextTick();
+    syncRuntimeFilterRows();
+    scheduleSyncBodyScrollHeight();
+    return result;
+  };
+}
 
 const toolbarConfig = computed(() => {
   return (state.value.gridOptions?.toolbarConfig ?? {}) as Record<string, any>;
@@ -634,10 +813,22 @@ const sourceGridOptions = computed(() => {
   ) as VxeTableGridProps;
 
   if (merged.proxyConfig) {
+    const proxyConfig = merged.proxyConfig as Record<string, any>;
+    const ajax =
+      proxyConfig.ajax && typeof proxyConfig.ajax === 'object'
+        ? {
+            ...(proxyConfig.ajax as Record<string, any>),
+          }
+        : proxyConfig.ajax;
+    if (ajax && typeof ajax === 'object') {
+      ajax.querySuccess = createProxySuccessHook(ajax.querySuccess);
+      ajax.reloadSuccess = createProxySuccessHook(ajax.reloadSuccess);
+    }
     merged.proxyConfig = {
-      ...merged.proxyConfig,
+      ...proxyConfig,
+      ajax,
       autoLoad: false,
-      enabled: !!merged.proxyConfig.ajax,
+      enabled: !!proxyConfig.ajax,
     };
   }
 
@@ -654,6 +845,17 @@ const sourceGridOptions = computed(() => {
       enabled: false,
     } as any;
   }
+
+  const resolvedStripeConfig = resolveTableStripeConfig(
+    (merged as Record<string, any>).stripe as any,
+    {
+      enabled: false,
+      followTheme: false,
+    }
+  );
+  (merged as Record<string, any>).stripe = resolvedStripeConfig.enabled;
+  (merged as Record<string, any>).__adminStripeFollowTheme =
+    resolvedStripeConfig.followTheme;
 
   if (merged.pagerConfig) {
     const {
@@ -724,6 +926,27 @@ const sourceGridOptions = computed(() => {
   return merged;
 });
 
+const stripeConfig = computed(() => {
+  const source = sourceGridOptions.value as Record<string, any>;
+  const enabled = source?.stripe === true;
+  const followTheme = enabled && source?.__adminStripeFollowTheme === true;
+  return {
+    enabled,
+    followTheme,
+  };
+});
+
+const stripeClassName = computed(() => {
+  return resolveTableStripePresentation(stripeConfig.value).className;
+});
+
+const runtimeRootStyle = computed(() => {
+  themeSignal.value;
+  return resolveTableThemeCssVars(setupState.theme) as
+    | Record<string, string>
+    | undefined;
+});
+
 const resetToFirstOnPageSizeChange = computed(() => {
   return (state.value.gridOptions as Record<string, any> | undefined)?.pagerConfig
     ?.resetToFirstOnPageSizeChange === true;
@@ -749,9 +972,7 @@ const externalColumnCustomState = computed(() => {
 });
 
 const runtimeColumns = computed<TableColumnRecord[]>(() => {
-  const sourceData = Array.isArray(sourceGridOptions.value.data)
-    ? (sourceGridOptions.value.data as Array<Record<string, any>>)
-    : [];
+  const sourceData = runtimeFilterRows.value ?? resolveStateGridRows();
   const emptyFilterLabel = localeText.value.emptyValue;
   const sourceGridOptionsRecord = sourceGridOptions.value as Record<string, any>;
   const formatterRegistry = getGlobalTableFormatterRegistry();
@@ -849,7 +1070,7 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
     if (
       item.filterable &&
       field &&
-      !Array.isArray(column.filters) &&
+      (!Array.isArray(column.filters) || column.filters.length <= 0) &&
       typeof column.filterRender === 'undefined' &&
       typeof column.filterMethod !== 'function'
     ) {
@@ -1139,6 +1360,8 @@ const effectiveSelectedRowKeys = computed<TableSelectionKey[]>(() => {
 const gridOptions = computed(() => {
   const sourceGridOptionsRecord =
     sourceGridOptions.value as Record<string, any>;
+  const stateGridOptionsRecord =
+    (state.value.gridOptions ?? {}) as Record<string, any>;
   const runtimeColumnsWithSelection = ensureSelectionColumn(
     runtimeColumnsWithSeq.value,
     selectionMode.value,
@@ -1358,6 +1581,35 @@ const gridOptions = computed(() => {
       radioConfig.checkRowKey = defaultKeys[0];
     }
     (merged as Record<string, any>).radioConfig = radioConfig;
+  }
+
+  if (bodyScrollLockEnabled.value) {
+    const hasStateHeight = Object.prototype.hasOwnProperty.call(
+      stateGridOptionsRecord,
+      'height'
+    );
+    const hasStateMaxHeight = Object.prototype.hasOwnProperty.call(
+      stateGridOptionsRecord,
+      'maxHeight'
+    );
+    if (!hasStateHeight && !hasStateMaxHeight) {
+      const measuredHeight = autoBodyScrollHeight.value;
+      if (
+        typeof measuredHeight === 'number'
+        && Number.isFinite(measuredHeight)
+        && measuredHeight > 0
+      ) {
+        (merged as Record<string, any>).height = Math.max(
+          1,
+          Math.floor(measuredHeight)
+        );
+      } else {
+        (merged as Record<string, any>).height = '100%';
+      }
+      delete (merged as Record<string, any>).maxHeight;
+    } else if (!hasStateMaxHeight) {
+      delete (merged as Record<string, any>).maxHeight;
+    }
   }
 
   delete (merged as Record<string, any>).seqColumn;
@@ -1811,6 +2063,14 @@ watch(
   ],
   () => {
     void nextTick(() => syncGridSelectionFromState());
+  },
+  { flush: 'post', immediate: true }
+);
+
+watch(
+  [() => gridRef.value, () => state.value.gridOptions?.data],
+  () => {
+    void nextTick(syncRuntimeFilterRows);
   },
   { flush: 'post', immediate: true }
 );
@@ -2620,7 +2880,11 @@ async function runCommitProxy(mode: 'query' | 'reload', params: Record<string, a
   if (!gridRef.value?.commitProxy) {
     return undefined;
   }
-  return await gridRef.value.commitProxy(mode, toRaw(params));
+  const result = await gridRef.value.commitProxy(mode, toRaw(params));
+  await nextTick();
+  syncRuntimeFilterRows();
+  scheduleSyncBodyScrollHeight();
+  return result;
 }
 
 async function handleBuiltinToolClick(code: 'refresh' | 'zoom') {
@@ -2932,8 +3196,51 @@ onMounted(() => {
   if (typeof document !== 'undefined') {
     document.addEventListener('mousedown', handleDocumentMouseDown);
   }
+  if (typeof ResizeObserver !== 'undefined' && tableRootRef.value) {
+    const observer = new ResizeObserver(() => {
+      scheduleSyncBodyScrollHeight();
+    });
+    observer.observe(tableRootRef.value);
+    const toolbarElement = tableRootRef.value.querySelector(
+      '.admin-table__toolbar'
+    ) as HTMLElement | null;
+    const searchElement = tableRootRef.value.querySelector(
+      '.admin-table__search'
+    ) as HTMLElement | null;
+    if (toolbarElement) {
+      observer.observe(toolbarElement);
+    }
+    if (searchElement) {
+      observer.observe(searchElement);
+    }
+    bodyScrollResizeObserver = observer;
+  }
+  scheduleSyncBodyScrollHeight();
   void initialize();
 });
+
+let bodyScrollResizeObserver: null | ResizeObserver = null;
+
+watch(
+  () => {
+    const gridOptions = (state.value.gridOptions ?? {}) as Record<string, any>;
+    const dataLength = Array.isArray(gridOptions.data) ? gridOptions.data.length : 0;
+    const pagerConfig = (gridOptions.pagerConfig ?? {}) as Record<string, any>;
+    return [
+      bodyScrollLockEnabled.value,
+      state.value.showSearchForm,
+      !!state.value.formOptions,
+      dataLength,
+      Number(pagerConfig.total ?? 0),
+      Number(pagerConfig.pageSize ?? 0),
+      Number(pagerConfig.currentPage ?? 0),
+    ];
+  },
+  () => {
+    scheduleSyncBodyScrollHeight();
+  },
+  { immediate: true }
+);
 
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
@@ -2946,14 +3253,30 @@ onUnmounted(() => {
   }
   cancelCustomRowAnimation();
   clearCustomMoveFrame();
-  formApi.unmount();
-  props.api.unmount();
+  cleanupTableRuntimeApis({
+    formApi,
+    ownsFormApi: true,
+    ownsTableApi: false,
+    tableApi: props.api,
+  });
+  bodyScrollResizeObserver?.disconnect();
+  bodyScrollResizeObserver = null;
   unsub();
 });
 </script>
 
 <template>
-  <div :class="['admin-table', state.class, maximized ? 'admin-table--maximized' : '']">
+  <div
+    ref="tableRootRef"
+    :class="[
+      'admin-table',
+      state.class,
+      stripeConfig.enabled ? 'admin-table--striped' : '',
+      stripeClassName,
+      maximized ? 'admin-table--maximized' : '',
+    ]"
+    :style="runtimeRootStyle"
+  >
     <div v-if="showToolbar" class="admin-table__toolbar">
       <div class="admin-table__toolbar-actions">
         <slot v-if="showTableTitle" name="table-title">
@@ -3406,13 +3729,73 @@ onUnmounted(() => {
 
       <template #loading>
         <slot name="loading">
-          <div class="admin-table__empty">Loading...</div>
+          <div class="admin-table__empty admin-table__empty--loading">Loading...</div>
         </slot>
       </template>
 
       <template #empty>
         <slot name="empty">
-          <div class="admin-table__empty">{{ localeText.noData }}</div>
+          <div class="admin-table__empty admin-table__empty--no-data">
+            <svg
+              aria-hidden="true"
+              class="admin-table__empty-illustration"
+              viewBox="0 0 88 72"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <ellipse cx="44" cy="62" rx="24" ry="6" fill="currentColor" opacity="0.1" />
+              <rect x="16" y="18" width="56" height="38" rx="8" fill="currentColor" opacity="0.14" />
+              <path
+                d="M28 36h32v14a6 6 0 0 1-6 6H34a6 6 0 0 1-6-6V36Z"
+                fill="currentColor"
+                opacity="0.22"
+              />
+              <rect x="30" y="8" width="28" height="30" rx="4" fill="currentColor" opacity="0.28" />
+              <path
+                d="M36 16h16M36 22h16M36 28h10"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="2"
+                opacity="0.75"
+              />
+              <circle cx="66" cy="14" r="7" fill="currentColor" opacity="0.18" />
+              <circle cx="64" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+              <circle cx="68" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+            </svg>
+            <span class="admin-table__empty-text">{{ localeText.noData }}</span>
+          </div>
+        </slot>
+      </template>
+
+      <template #empty-content>
+        <slot name="empty">
+          <div class="admin-table__empty admin-table__empty--no-data">
+            <svg
+              aria-hidden="true"
+              class="admin-table__empty-illustration"
+              viewBox="0 0 88 72"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <ellipse cx="44" cy="62" rx="24" ry="6" fill="currentColor" opacity="0.1" />
+              <rect x="16" y="18" width="56" height="38" rx="8" fill="currentColor" opacity="0.14" />
+              <path
+                d="M28 36h32v14a6 6 0 0 1-6 6H34a6 6 0 0 1-6-6V36Z"
+                fill="currentColor"
+                opacity="0.22"
+              />
+              <rect x="30" y="8" width="28" height="30" rx="4" fill="currentColor" opacity="0.28" />
+              <path
+                d="M36 16h16M36 22h16M36 28h10"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="2"
+                opacity="0.75"
+              />
+              <circle cx="66" cy="14" r="7" fill="currentColor" opacity="0.18" />
+              <circle cx="64" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+              <circle cx="68" cy="14" r="1.5" fill="currentColor" opacity="0.8" />
+            </svg>
+            <span class="admin-table__empty-text">{{ localeText.noData }}</span>
+          </div>
         </slot>
       </template>
     </VxeGrid>

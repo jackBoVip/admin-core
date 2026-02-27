@@ -142,6 +142,36 @@ export async function fetchMenuList(): Promise<RouteRecordStringComponent[]> {
           },
         },
         {
+          name: 'ComponentsTabs',
+          path: '/components/tabs',
+          component: '/components/Tabs',
+          meta: {
+            title: 'Tabs',
+            icon: '🗂️',
+          },
+        },
+        {
+          name: 'ComponentsPage',
+          path: '/components/page',
+          component: 'LAYOUT',
+          redirect: '/components/page/basic',
+          meta: {
+            title: '内容页',
+            icon: '📑',
+          },
+          children: [
+            {
+              name: 'ComponentsPageBasic',
+              path: '/components/page/basic',
+              component: '/components/page/Basic',
+              meta: {
+                title: 'Page 容器',
+                icon: '🗂️',
+              },
+            },
+          ],
+        },
+        {
           name: 'ComponentsTable',
           path: '/components/table',
           component: 'LAYOUT',

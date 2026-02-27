@@ -1,0 +1,239 @@
+.admin-tabs,
+.admin-page__tabs {
+  --admin-tabs-active: var(--color-primary, var(--primary, #1677ff));
+  --admin-tabs-border: color-mix(in oklab, var(--color-foreground, #111827) 12%, transparent);
+  --admin-tabs-content-inset-top: 0px;
+  --admin-tabs-text: color-mix(in oklab, var(--color-foreground, #111827) 64%, transparent);
+  --admin-tabs-sticky-top: 0px;
+  align-items: center;
+  border-bottom: 1px solid var(--admin-tabs-border);
+  display: flex;
+  margin-top: var(--admin-tabs-content-inset-top, 0px);
+  min-height: 48px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 12px;
+  scrollbar-width: none;
+}
+
+.admin-tabs--align-left,
+.admin-page__tabs--align-left {
+  justify-content: flex-start;
+}
+
+.admin-tabs--align-center,
+.admin-page__tabs--align-center {
+  justify-content: center;
+}
+
+.admin-tabs--align-right,
+.admin-page__tabs--align-right {
+  justify-content: flex-end;
+}
+
+.admin-tabs--sticky,
+.admin-page__tabs--sticky {
+  background: var(--color-background, #ffffff);
+  position: sticky;
+  top: var(--admin-tabs-sticky-top, 0px);
+  z-index: 20;
+}
+
+.admin-tabs__tab,
+.admin-page__tab {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--admin-tabs-text);
+  cursor: pointer;
+  display: inline-flex;
+  flex: none;
+  font-size: 15px;
+  font-weight: 400;
+  gap: 6px;
+  line-height: 22px;
+  margin-right: 32px;
+  max-width: 260px;
+  min-height: 48px;
+  padding: 10px 0;
+  position: relative;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.admin-tabs__tab::after,
+.admin-page__tab::after {
+  background: var(--admin-tabs-active);
+  border-radius: 999px;
+  bottom: -1px;
+  content: '';
+  height: 2px;
+  left: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  transform: scaleX(0.2);
+  transform-origin: center center;
+  transition:
+    opacity 0.2s ease,
+    transform 0.24s cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform, opacity;
+}
+
+.admin-tabs__tab:hover,
+.admin-page__tab:hover {
+  color: var(--admin-tabs-active);
+}
+
+.admin-tabs__tab.is-active,
+.admin-page__tab.is-active {
+  color: var(--admin-tabs-active);
+}
+
+.admin-tabs__tab.is-active::after,
+.admin-page__tab.is-active::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.admin-tabs__tab:disabled,
+.admin-page__tab:disabled {
+  color: color-mix(in oklab, var(--color-foreground, #111827) 32%, transparent);
+  cursor: not-allowed;
+}
+
+.admin-tabs__tab:disabled::after,
+.admin-page__tab:disabled::after {
+  opacity: 0;
+}
+
+.admin-tabs__tab-label-wrap,
+.admin-page__tab-label-wrap {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.admin-tabs__tab-label,
+.admin-page__tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-tabs__tab-close,
+.admin-page__tab-close {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 14px;
+  height: 18px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 18px;
+}
+
+.admin-tabs__tab-close:hover,
+.admin-page__tab-close:hover {
+  background: color-mix(in oklab, var(--color-foreground, #111827) 10%, transparent);
+}
+
+.admin-tabs--antd.ant-tabs,
+.admin-page__tabs--antd.ant-tabs {
+  border-bottom: 0;
+  display: block;
+  overflow: visible;
+  padding: 0 12px;
+}
+
+.admin-tabs--antd.ant-tabs > .ant-tabs-nav,
+.admin-page__tabs--antd.ant-tabs > .ant-tabs-nav {
+  margin: 0 !important;
+}
+
+.admin-tabs--align-left.ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap,
+.admin-page__tabs--align-left.ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
+  justify-content: flex-start;
+}
+
+.admin-tabs--align-center.ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap,
+.admin-page__tabs--align-center.ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
+  justify-content: center;
+}
+
+.admin-tabs--align-right.ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap,
+.admin-page__tabs--align-right.ant-tabs > .ant-tabs-nav .ant-tabs-nav-wrap {
+  justify-content: flex-end;
+}
+
+.admin-tabs--antd.ant-tabs > .ant-tabs-nav::before,
+.admin-page__tabs--antd.ant-tabs > .ant-tabs-nav::before {
+  border-bottom-color: var(--admin-tabs-border);
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-tab,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-tab {
+  margin: 0 32px 0 0;
+  padding: 10px 0;
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-tab:last-of-type,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-tab:last-of-type {
+  margin-right: 0;
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-tab-btn,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-tab-btn {
+  color: var(--admin-tabs-text);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 22px;
+  transition: color 0.2s ease;
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-tab:hover .ant-tabs-tab-btn {
+  color: var(--admin-tabs-active);
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--admin-tabs-active) !important;
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-ink-bar,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-ink-bar {
+  background: var(--admin-tabs-active);
+  transition:
+    width 0.24s cubic-bezier(0.2, 0, 0, 1),
+    inset-inline-start 0.24s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.24s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-tab.ant-tabs-tab-disabled .ant-tabs-tab-btn,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-tab.ant-tabs-tab-disabled .ant-tabs-tab-btn {
+  color: color-mix(in oklab, var(--color-foreground, #111827) 32%, transparent);
+}
+
+.admin-tabs--antd.ant-tabs .ant-tabs-content-holder,
+.admin-page__tabs--antd.ant-tabs .ant-tabs-content-holder {
+  display: none;
+}
+
+.admin-tabs::-webkit-scrollbar,
+.admin-page__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-tabs__content {
+  margin-top: var(--admin-tabs-content-gap, 12px);
+  min-width: 0;
+}

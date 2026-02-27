@@ -242,7 +242,7 @@ html {
     --admin-z-index-toast: 1080;
 
     /* ========== 默认按应用浅色模式解析（避免受系统/浏览器深色偏好干扰） ========== */
-    color-scheme: only light;
+    color-scheme: light;
   }
 
   /* 显式暗色模式覆盖（当 light-dark() 不生效时的降级方案） */

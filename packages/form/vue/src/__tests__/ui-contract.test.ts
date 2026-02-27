@@ -270,6 +270,70 @@ describe('vue ui contract', () => {
     expect(receivedProps?.transfer).toBe(true);
   });
 
+  it('should fallback to VxeNumberInput when vxe input type is number', async () => {
+    const renderMarkers = {
+      input: 0,
+      number: 0,
+    };
+    const ProbeVxeInput = defineComponent({
+      name: 'VxeInput',
+      setup() {
+        return () => {
+          renderMarkers.input += 1;
+          return h('div', { class: 'probe-vxe-input' });
+        };
+      },
+    });
+    const ProbeVxeNumberInput = defineComponent({
+      name: 'VxeNumberInput',
+      setup() {
+        return () => {
+          renderMarkers.number += 1;
+          return h('div', { class: 'probe-vxe-number-input' });
+        };
+      },
+    });
+
+    setupAdminFormVue({
+      library: 'vxe',
+      libraries: {
+        vxe: {
+          capabilities: {},
+          components: {
+            input: ProbeVxeInput,
+          },
+        },
+      },
+    });
+
+    const schema = [
+      {
+        component: 'input' as const,
+        componentProps: {
+          type: 'number',
+        },
+        fieldName: 'age',
+      },
+    ];
+    const api = createFormApi({ schema });
+    mount(AdminForm as any, {
+      global: {
+        components: {
+          VxeNumberInput: ProbeVxeNumberInput,
+        },
+      },
+      props: {
+        formApi: api,
+        schema,
+        showDefaultActions: false,
+      },
+    });
+    await flushTasks();
+
+    expect(renderMarkers.number).toBeGreaterThan(0);
+    expect(renderMarkers.input).toBe(0);
+  });
+
   it('should validate on blur when formFieldProps.validateOnBlur is enabled', async () => {
     const schema = [
       {

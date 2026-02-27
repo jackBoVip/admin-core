@@ -1,0 +1,69 @@
+{
+  "name": "@admin-core/tabs-core",
+  "version": "0.0.1",
+  "description": "框架无关的 tabs 核心协议，提供 tabs 配置与显示策略能力",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/index.global.js",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./styles": {
+      "import": "./dist/styles/index.js",
+      "require": "./dist/styles/index.cjs"
+    },
+    "./styles/tabs.css": "./dist/styles/tabs.css"
+  },
+  "files": [
+    "dist",
+    "src/styles",
+    "styles"
+  ],
+  "scripts": {
+    "build": "pnpm run typecheck && tsup",
+    "postbuild": "node ./scripts/copy-tabs-css.mjs",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "keywords": [
+    "admin",
+    "tabs",
+    "core"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/tabs/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

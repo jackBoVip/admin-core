@@ -1,4 +1,7 @@
-import { getDefaultPreferencesStore } from '@admin-core/preferences';
+import {
+  getActualThemeMode,
+  getDefaultPreferencesStore,
+} from '@admin-core/preferences';
 import { useSyncExternalStore } from 'react';
 
 const preferencesStore = getDefaultPreferencesStore();
@@ -9,8 +12,11 @@ function getThemeSnapshotVersion() {
     return '';
   }
   const theme = preferences.theme;
+  const actualMode = getActualThemeMode(theme.mode);
   return [
+    theme.builtinType,
     theme.mode,
+    actualMode,
     theme.colorPrimary,
     theme.fontScale,
     theme.radius,
@@ -24,4 +30,3 @@ export function usePreferencesVersion() {
     getThemeSnapshotVersion
   );
 }
-

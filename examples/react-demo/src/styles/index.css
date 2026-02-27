@@ -7,6 +7,10 @@
 
 /* 引入布局样式 */
 @import "@admin-core/layout-react/style.css";
+/* 引入页面容器系统内置样式 */
+@import "@admin-core/page-react/style.css";
+/* 引入 tabs 组件系统内置样式 */
+@import "@admin-core/tabs-react/style.css";
 /* 引入表单系统内置 UI 样式 */
 @import "@admin-core/form-react/style.css";
 /* 引入表格系统内置 UI 样式 */

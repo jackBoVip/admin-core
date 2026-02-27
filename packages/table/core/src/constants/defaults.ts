@@ -19,7 +19,7 @@ export function createDefaultTableOptions<
         tools: [],
       },
     },
-    separator: true,
+    separator: false,
     showSearchForm: true,
     tableTitle: '',
     tableTitleHelp: '',

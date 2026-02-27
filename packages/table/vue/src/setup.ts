@@ -10,6 +10,8 @@ import {
 import {
   getActualThemeMode,
   getDefaultPreferencesStore,
+  getThemePrimaryColor,
+  oklchToHex,
   type Preferences,
 } from '@admin-core/preferences';
 import {
@@ -37,6 +39,7 @@ import {
   VxeTable,
   VxeToolbar,
 } from 'vxe-table';
+import { shallowRef } from 'vue';
 
 import { registerBuiltinVueRenderers } from './renderers';
 
@@ -44,14 +47,19 @@ let initialized = false;
 let formatterInitialized = false;
 let currentFormatterLocale: 'en-US' | 'zh-CN' = 'zh-CN';
 let preferenceUnsubscribe: null | (() => void) = null;
+const themeSignal = shallowRef(0);
 const setupState: {
   accessCodes?: SetupAdminTableVueOptions['accessCodes'];
   accessRoles?: SetupAdminTableVueOptions['accessRoles'];
   permissionChecker?: SetupAdminTableVueOptions['permissionChecker'];
+  theme: {
+    colorPrimary?: string;
+  };
 } = {
   accessCodes: undefined,
   accessRoles: undefined,
   permissionChecker: undefined,
+  theme: {},
 };
 
 const localeMap = {
@@ -59,6 +67,17 @@ const localeMap = {
   'zh-CN': zhCN,
 } as const;
 const preferencesStore = getDefaultPreferencesStore();
+
+function normalizeThemePrimaryColor(value: null | string | undefined) {
+  const raw = value?.trim();
+  if (!raw) {
+    return '';
+  }
+  if (/^oklch\(/i.test(raw)) {
+    return oklchToHex(raw);
+  }
+  return raw;
+}
 
 function registerDefaultFormatters(locale: 'en-US' | 'zh-CN') {
   currentFormatterLocale = locale;
@@ -95,6 +114,20 @@ function applyTheme(preferences: Preferences | null | undefined) {
     return;
   }
   const actualMode = getActualThemeMode(preferences.theme.mode);
+  const isDark = actualMode === 'dark';
+  const themePrimary = preferences.theme.builtinType === 'custom'
+    ? preferences.theme.colorPrimary
+    : getThemePrimaryColor(preferences.theme.builtinType, isDark);
+  const cssVarPrimary = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary')
+        .trim()
+    : '';
+  const resolvedPrimary = normalizeThemePrimaryColor(cssVarPrimary || themePrimary);
+  setupState.theme = {
+    colorPrimary: resolvedPrimary || undefined,
+  };
+  themeSignal.value += 1;
   (VxeUI as any).setTheme?.(actualMode === 'dark' ? 'dark' : 'light');
 }
 
@@ -169,4 +202,8 @@ export function setupAdminTableVue(options: SetupAdminTableVueOptions = {}) {
 
 export function getAdminTableVueSetupState() {
   return setupState;
+}
+
+export function getAdminTableVueThemeSignal() {
+  return themeSignal;
 }

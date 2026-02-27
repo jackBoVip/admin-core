@@ -10,6 +10,15 @@
   border-radius: var(--admin-table-radius, var(--radius, 8px));
 }
 
+.admin-table .ant-table-container {
+  border: 1px solid var(
+    --admin-table-ant-border,
+    var(--admin-table-selection-control-border, var(--border, #d9d9d9))
+  ) !important;
+  border-radius: var(--admin-table-radius, var(--radius, 8px));
+  overflow: hidden;
+}
+
 .admin-table.admin-table--maximized {
   display: flex;
   flex-direction: column;
@@ -44,8 +53,6 @@
   );
   --admin-table-ant-text: var(--foreground, #0f172a);
   --admin-table-ant-text-muted: var(--muted-foreground, #64748b);
-  --admin-table-stripe-bg: rgba(15, 23, 42, 0.06);
-  --admin-table-stripe-bg-hover: var(--admin-table-row-hover-bg);
   --admin-table-light-bg: #ffffff;
   --admin-table-light-border: #e2e8f0;
   --admin-table-light-text: #0f172a;
@@ -71,7 +78,7 @@
     body.dark,
     body[data-theme='dark']
   ) .admin-table {
-  color-scheme: dark;
+  color-scheme: only dark;
   forced-color-adjust: auto;
 }
 
@@ -116,53 +123,83 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
   accent-color: var(--admin-table-selection-color, #1677ff);
 }
 
-@supports (background-color: color-mix(in oklch, black 10%, white)) {
-  .admin-table {
-    --admin-table-stripe-bg: color-mix(
-      in oklch,
-      var(--foreground, #0f172a) 8%,
-      var(--background, #ffffff)
-    );
-    --admin-table-stripe-bg-hover: var(--admin-table-row-hover-bg);
-  }
-}
-
 .admin-table .ant-pagination .ant-pagination-item {
-  border-color: var(--admin-table-ant-border);
+  background-color: var(--admin-table-pager-bg) !important;
+  border-color: var(--admin-table-pager-border) !important;
+  color: var(--admin-table-pager-text) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item a {
-  color: var(--admin-table-ant-text);
+  color: var(--admin-table-pager-text) !important;
+}
+
+.admin-table .ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-next .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-jump-prev .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-jump-next .ant-pagination-item-link {
+  background-color: var(--admin-table-pager-bg) !important;
+  border-color: var(--admin-table-pager-border) !important;
+  color: var(--admin-table-pager-text) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item-active {
-  border-color: var(--admin-table-ant-primary);
+  background-color: var(--admin-table-pager-active-bg) !important;
+  border-color: var(--admin-table-pager-active-border) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item-active a {
-  color: var(--admin-table-ant-primary);
+  color: var(--admin-table-pager-active-text) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item-active:hover {
-  border-color: var(--admin-table-ant-primary-hover);
+  background-color: var(--admin-table-pager-active-hover-bg) !important;
+  border-color: var(--admin-table-pager-active-hover-border) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item-active:hover a {
-  color: var(--admin-table-ant-primary-hover);
+  color: var(--admin-table-pager-active-text) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item:hover {
-  border-color: var(--admin-table-ant-primary-hover);
+  background-color: var(--admin-table-pager-hover-bg) !important;
+  border-color: var(--admin-table-pager-hover-border) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-item:hover a {
-  color: var(--admin-table-ant-primary-hover);
+  color: var(--admin-table-pager-hover-text) !important;
 }
 
 .admin-table .ant-pagination .ant-pagination-prev:hover .ant-pagination-item-link,
-.admin-table .ant-pagination .ant-pagination-next:hover .ant-pagination-item-link {
-  border-color: var(--admin-table-ant-primary-hover);
-  color: var(--admin-table-ant-primary-hover);
+.admin-table .ant-pagination .ant-pagination-next:hover .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-jump-prev:hover .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-jump-next:hover .ant-pagination-item-link {
+  background-color: var(--admin-table-pager-hover-bg) !important;
+  border-color: var(--admin-table-pager-hover-border) !important;
+  color: var(--admin-table-pager-hover-text) !important;
+}
+
+.admin-table .ant-pagination .ant-pagination-total-text {
+  color: var(--admin-table-pager-text) !important;
+}
+
+.admin-table .ant-pagination .ant-pagination-options .ant-select-selector,
+.admin-table .ant-pagination .ant-pagination-options-quick-jumper input {
+  background-color: var(--admin-table-pager-bg) !important;
+  border-color: var(--admin-table-pager-border) !important;
+  color: var(--admin-table-pager-text) !important;
+}
+
+.admin-table .ant-pagination .ant-pagination-options .ant-select-selector:hover,
+.admin-table .ant-pagination .ant-pagination-options .ant-select-focused .ant-select-selector,
+.admin-table .ant-pagination .ant-pagination-options-quick-jumper input:hover,
+.admin-table .ant-pagination .ant-pagination-options-quick-jumper input:focus {
+  border-color: var(--admin-table-pager-hover-border) !important;
+}
+
+.admin-table .ant-pagination .ant-pagination-disabled .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-disabled:hover .ant-pagination-item-link,
+.admin-table .ant-pagination .ant-pagination-disabled a {
+  color: var(--admin-table-pager-muted-text) !important;
 }
 
 .admin-table .ant-btn-primary {
@@ -322,7 +359,7 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
 .admin-table .ant-input-affix-wrapper-focused,
 .admin-table .ant-pagination-options-quick-jumper input:focus {
   border-color: var(--admin-table-ant-primary);
-  box-shadow: 0 0 0 2px color-mix(in oklch, var(--admin-table-ant-primary) 20%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-table-ant-primary) 20%, transparent);
 }
 
 .admin-table .ant-select-focused .ant-select-selector,
@@ -430,7 +467,7 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
   border-color: var(--admin-table-selection-color-hover, #3b82f6);
   box-shadow: 0 0 0 2px
     color-mix(
-      in oklch,
+      in srgb,
       var(--admin-table-selection-color, #1677ff) 24%,
       transparent
     );
@@ -466,11 +503,76 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
   background-color: var(--admin-table-stripe-bg-hover) !important;
 }
 
+.admin-table .ant-table-tbody > tr.admin-table__row--stripe:hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
 .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
   background-color: var(--admin-table-stripe-bg) !important;
 }
 
 .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+.admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
+  background-color: var(--admin-table-stripe-neutral-bg, rgba(0, 0, 0, 0.03)) !important;
+}
+
+.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
+  background-color: var(--admin-table-stripe-neutral-bg-hover, rgba(0, 0, 0, 0.05)) !important;
+}
+
+.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-stripe-neutral-bg-hover, rgba(0, 0, 0, 0.05)) !important;
+}
+
+.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr.ant-table-row:hover > td,
+.admin-table.admin-table--stripe-neutral .ant-table-tbody > tr.ant-table-row:hover > .ant-table-cell-row-hover {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+.admin-table.admin-table--striped .ant-table-thead > tr > th {
+  background-color: var(--admin-table-stripe-bg) !important;
+}
+
+.admin-table.admin-table--striped .ant-table-thead > tr > th.ant-table-column-sort {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--stripe > td {
+  background-color: var(--admin-table-stripe-bg) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--stripe:hover > td {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--stripe:hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even) > td {
+  background-color: var(--admin-table-stripe-bg) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-tbody > tr:not(.ant-table-expanded-row):nth-child(even):hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-stripe-bg-hover) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-thead > tr > th {
+  background-color: var(--admin-table-stripe-bg) !important;
+}
+
+html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table.admin-table--striped .ant-table-thead > tr > th.ant-table-column-sort {
   background-color: var(--admin-table-stripe-bg-hover) !important;
 }
 
@@ -512,8 +614,9 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
   background-color: var(--admin-table-selection-row-hover-bg, rgba(59, 130, 246, 0.2)) !important;
 }
 
-.admin-table .ant-table-tbody > tr:not(.ant-table-row-selected):hover > .ant-table-cell-row-hover {
-  background-color: var(--admin-table-row-hover-bg, #eff6ff) !important;
+.admin-table .ant-table-tbody > tr:not(.admin-table__row--selected):not(.ant-table-row-selected):not(.admin-table__row--strategy):hover > td,
+.admin-table .ant-table-tbody > tr:not(.admin-table__row--selected):not(.ant-table-row-selected):not(.admin-table__row--strategy):hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-row-hover-bg, rgba(0, 0, 0, 0.05)) !important;
 }
 
 html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']) .admin-table .ant-table-tbody > tr.admin-table__row--selected > td,
@@ -574,7 +677,16 @@ html:not(.dark):not([data-theme='dark']) body:not(.dark):not([data-theme='dark']
     body.dark,
     body[data-theme='dark']
   ) .admin-table .ant-table-tbody > tr.ant-table-row:hover > td {
-  background-color: var(--admin-table-row-hover-bg, #172554) !important;
+  background-color: var(--admin-table-row-hover-bg, rgba(255, 255, 255, 0.08)) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-table .ant-table-tbody > tr.ant-table-row:hover > td.ant-table-cell-row-hover {
+  background-color: var(--admin-table-row-hover-bg, rgba(255, 255, 255, 0.08)) !important;
 }
 
 :is(

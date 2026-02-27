@@ -5,12 +5,20 @@ packages:
   - packages/preferences/*
   - packages/layout/*
   - packages/table/*
+  - packages/page/*
+  - packages/tabs/*
   - internal/*
 
 # 包名映射
 # packages/preferences/core   -> @admin-core/preferences       核心包（框架无关）
 # packages/preferences/vue    -> @admin-core/preferences-vue   Vue 实现
 # packages/preferences/react  -> @admin-core/preferences-react React 实现
+# packages/page/core          -> @admin-core/page-core         内容页核心包（框架无关）
+# packages/page/vue           -> @admin-core/page-vue          Vue 实现
+# packages/page/react         -> @admin-core/page-react        React 实现
+# packages/tabs/core          -> @admin-core/tabs-core         tabs 核心包（框架无关）
+# packages/tabs/vue           -> @admin-core/tabs-vue          Vue 实现
+# packages/tabs/react         -> @admin-core/tabs-react        React 实现
 #
 # core 包内部结构:
 # - types/      类型定义

@@ -1,5 +1,5 @@
 {
-  "name": "@admin-core",
+  "name": "admin-core",
   "private": true,
   "packageManager": "pnpm@10.28.0",
   "scripts": {

@@ -1,0 +1,74 @@
+{
+  "name": "@admin-core/page-core",
+  "version": "0.0.1",
+  "description": "框架无关的页面容器核心，提供路由页与组件页的统一状态协议",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "browser": "./dist/index.global.js",
+  "unpkg": "./dist/index.global.js",
+  "jsdelivr": "./dist/index.global.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./styles": {
+      "import": "./dist/styles/index.js",
+      "require": "./dist/styles/index.cjs"
+    },
+    "./styles/page.css": "./dist/styles/page.css",
+    "./locales/*": {
+      "import": "./dist/locales/*.js",
+      "require": "./dist/locales/*.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src/styles",
+    "styles"
+  ],
+  "scripts": {
+    "build": "pnpm run typecheck && tsup",
+    "postbuild": "node ./scripts/copy-page-css.mjs",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "keywords": [
+    "admin",
+    "page",
+    "route",
+    "core"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/page/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

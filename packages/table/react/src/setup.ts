@@ -10,6 +10,8 @@ import {
 import {
   getActualThemeMode,
   getDefaultPreferencesStore,
+  getThemePrimaryColor,
+  oklchToHex,
   type Preferences,
 } from '@admin-core/preferences';
 
@@ -40,6 +42,17 @@ const state: {
 let preferenceUnsubscribe: null | (() => void) = null;
 const preferencesStore = getDefaultPreferencesStore();
 
+function normalizeThemePrimaryColor(value: null | string | undefined) {
+  const raw = value?.trim();
+  if (!raw) {
+    return '';
+  }
+  if (/^oklch\(/i.test(raw)) {
+    return oklchToHex(raw);
+  }
+  return raw;
+}
+
 function applyLocale(locale: 'en-US' | 'zh-CN') {
   state.locale = locale;
   setTableLocale(locale);
@@ -51,10 +64,21 @@ function applyTheme(preferences: Preferences | null | undefined) {
     return;
   }
   const theme = preferences.theme;
+  const actualMode = getActualThemeMode(theme.mode);
+  const isDark = actualMode === 'dark';
+  const themePrimary = theme.builtinType === 'custom'
+    ? theme.colorPrimary
+    : getThemePrimaryColor(theme.builtinType, isDark);
+  const cssVarPrimary = typeof document !== 'undefined'
+    ? getComputedStyle(document.documentElement)
+        .getPropertyValue('--primary')
+        .trim()
+    : '';
+  const resolvedPrimary = normalizeThemePrimaryColor(cssVarPrimary || themePrimary);
   state.theme = {
-    colorPrimary: theme.colorPrimary,
+    colorPrimary: resolvedPrimary || undefined,
     fontScale: theme.fontScale,
-    mode: getActualThemeMode(theme.mode),
+    mode: actualMode,
     radius: theme.radius,
   };
 }

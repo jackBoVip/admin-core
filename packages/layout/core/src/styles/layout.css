@@ -94,11 +94,11 @@
  * ============================================================ */
 html:not(.dark):not([data-theme='dark']),
 body:not(.dark):not([data-theme='dark']) {
-  color-scheme: only light;
+  color-scheme: light;
 }
 
 :root:not(.dark):not([data-theme='dark']) {
-  color-scheme: only light;
+  color-scheme: light;
 }
 
 html.dark,
@@ -117,7 +117,7 @@ body[data-theme='dark'] {
 @media (prefers-color-scheme: dark) {
   html:not(.dark):not([data-theme='dark']),
   body:not(.dark):not([data-theme='dark']) {
-    color-scheme: only light;
+    color-scheme: light;
   }
 
   html[data-platform='macOs']:not(.dark):not([data-theme='dark'])::-webkit-scrollbar {

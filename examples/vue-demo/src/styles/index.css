@@ -9,6 +9,10 @@
 
 /* 引入布局样式 */
 @import "@admin-core/layout-vue/styles";
+/* 引入页面容器系统内置样式 */
+@import "@admin-core/page-vue/style.css";
+/* 引入 tabs 组件系统内置样式 */
+@import "@admin-core/tabs-vue/style.css";
 /* 引入 vxe 组件库样式（当前示例表单适配使用 vxe） */
 @import "vxe-table/lib/style.css";
 @import "vxe-pc-ui/lib/style.css";

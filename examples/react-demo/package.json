@@ -11,7 +11,10 @@
   "dependencies": {
     "@admin-core/form-react": "workspace:*",
     "@admin-core/layout-react": "workspace:*",
+    "@admin-core/page-react": "workspace:*",
+    "@admin-core/preferences": "workspace:*",
     "@admin-core/table-react": "workspace:*",
+    "@admin-core/tabs-react": "workspace:*",
     "antd": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

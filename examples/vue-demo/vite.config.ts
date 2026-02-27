@@ -3,6 +3,12 @@ import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
 
+const alias = [
+  {
+    find: /^@\//,
+    replacement: `${resolve(__dirname, 'src')}/`,
+  },
+];
 
 export default defineConfig({
   plugins: [
@@ -10,13 +16,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-      '@admin-core/preferences/styles/element': resolve(
-        __dirname,
-        '../../packages/preferences/core/src/styles/css/adapters/element.css'
-      ),
-    },
+    alias,
   },
   server: {
     port: 3000,

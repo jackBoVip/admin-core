@@ -37,6 +37,40 @@ body {
     var(--admin-form-muted-fg-color) 55%,
     var(--admin-form-bg-color)
   );
+  --admin-form-vxe-option-hover-bg: light-dark(
+    var(
+      --primary-50,
+      color-mix(in oklch, var(--admin-form-primary-color) 12%, var(--admin-form-bg-color))
+    ),
+    var(
+      --primary-900,
+      color-mix(in oklch, var(--admin-form-primary-color) 24%, var(--admin-form-bg-color))
+    )
+  );
+  --admin-form-vxe-option-selected-bg: light-dark(
+    var(
+      --primary-100,
+      color-mix(in oklch, var(--admin-form-primary-color) 18%, var(--admin-form-bg-color))
+    ),
+    var(
+      --primary-800,
+      color-mix(in oklch, var(--admin-form-primary-color) 34%, var(--admin-form-bg-color))
+    )
+  );
+  --admin-form-vxe-option-selected-hover-bg: light-dark(
+    var(
+      --primary-200,
+      color-mix(in oklch, var(--admin-form-primary-color) 24%, var(--admin-form-bg-color))
+    ),
+    var(
+      --primary-700,
+      color-mix(in oklch, var(--admin-form-primary-color) 42%, var(--admin-form-bg-color))
+    )
+  );
+  --admin-form-vxe-option-selected-color: light-dark(
+    var(--primary-700, var(--admin-form-primary-color)),
+    var(--primary-100, var(--admin-form-primary-color))
+  );
   --vxe-ui-layout-background-color: var(--admin-form-bg-color);
   --vxe-ui-font-color: var(--admin-form-fg-color);
   --vxe-ui-font-secondary-color: var(--admin-form-muted-fg-color);
@@ -53,6 +87,8 @@ body {
     var(--admin-form-bg-color)
   );
   --vxe-ui-font-primary-color: var(--admin-form-primary-color);
+  --vxe-ui-base-border-radius: var(--admin-form-radius);
+  --vxe-ui-border-radius: var(--admin-form-radius);
   --vxe-ui-input-border-color: var(--admin-form-border-color);
   --vxe-ui-input-placeholder-color: var(--admin-form-placeholder-color);
   --vxe-ui-input-disabled-background-color: var(--admin-form-muted-color);
@@ -69,6 +105,8 @@ body {
   --vxe-ui-base-popup-box-shadow:
     0 12px 34px color-mix(in oklch, var(--admin-form-fg-color) 18%, transparent),
     0 4px 14px color-mix(in oklch, var(--admin-form-fg-color) 12%, transparent);
+  --vxe-ui-base-hover-background-color: var(--admin-form-vxe-option-hover-bg);
+  --vxe-ui-base-active-background-color: var(--admin-form-vxe-option-selected-bg);
   --vxe-ui-switch-close-background-color: color-mix(
     in oklch,
     var(--admin-form-fg-color) 34%,
@@ -89,6 +127,7 @@ body {
   --vxe-ui-status-warning-color: var(--admin-form-warning-color);
   --vxe-ui-status-danger-color: var(--admin-form-danger-color);
   --vxe-ui-status-error-color: var(--admin-form-danger-color);
+  --vxe-ui-checkbox-border-radius: var(--admin-form-radius-sm);
 }
 
 .admin-form {
@@ -103,6 +142,9 @@ body {
   --ant-font-size: var(--admin-form-font-size);
   --ant-font-size-sm: var(--admin-form-font-size-sm);
   --ant-font-size-lg: var(--admin-form-font-size-lg);
+  --vxe-ui-base-border-radius: var(--admin-form-radius);
+  --vxe-ui-border-radius: var(--admin-form-radius);
+  --vxe-ui-checkbox-border-radius: var(--admin-form-radius-sm);
 }
 
 .admin-form__grid {
@@ -180,8 +222,15 @@ body {
 .admin-form__control .vxe-input,
 .admin-form__control .vxe-date-picker,
 .admin-form__control .vxe-date-range-picker,
+.admin-form__control .vxe-number-input,
 .admin-form__control .vxe-select,
 .admin-form__control .vxe-textarea {
+  width: 100%;
+  max-width: 100%;
+}
+
+.admin-form__control .vxe-number-input .vxe-number-input--inner,
+.admin-form__control .vxe-number-input .vxe-input--inner {
   width: 100%;
   max-width: 100%;
 }
@@ -218,17 +267,15 @@ body {
     var(--admin-form-primary-color)
   );
   --ant-select-active-border-color: var(--admin-form-primary-color);
-  --ant-select-option-active-bg: color-mix(
-    in oklch,
-    var(--admin-form-primary-color) 12%,
-    var(--admin-form-bg-color)
+  --ant-select-option-active-bg: var(
+    --primary-50,
+    color-mix(in oklch, var(--admin-form-primary-color) 12%, var(--admin-form-bg-color))
   );
-  --ant-select-option-selected-bg: color-mix(
-    in oklch,
-    var(--admin-form-primary-color) 18%,
-    var(--admin-form-bg-color)
+  --ant-select-option-selected-bg: var(
+    --primary-100,
+    color-mix(in oklch, var(--admin-form-primary-color) 18%, var(--admin-form-bg-color))
   );
-  --ant-select-option-selected-color: var(--admin-form-fg-color);
+  --ant-select-option-selected-color: var(--primary-700, var(--admin-form-fg-color));
   --ant-select-z-index-popup: var(--admin-form-page-popup-z-index, 2300);
 }
 
@@ -447,17 +494,15 @@ body {
   --ant-color-bg-elevated: var(--admin-form-surface-color);
   --ant-color-text: var(--admin-form-fg-color);
   --ant-color-text-description: var(--admin-form-muted-fg-color);
-  --ant-select-option-active-bg: color-mix(
-    in oklch,
-    var(--admin-form-primary-color) 12%,
-    var(--admin-form-bg-color)
+  --ant-select-option-active-bg: var(
+    --primary-50,
+    color-mix(in oklch, var(--admin-form-primary-color) 12%, var(--admin-form-bg-color))
   );
-  --ant-select-option-selected-bg: color-mix(
-    in oklch,
-    var(--admin-form-primary-color) 18%,
-    var(--admin-form-bg-color)
+  --ant-select-option-selected-bg: var(
+    --primary-100,
+    color-mix(in oklch, var(--admin-form-primary-color) 18%, var(--admin-form-bg-color))
   );
-  --ant-select-option-selected-color: var(--admin-form-fg-color);
+  --ant-select-option-selected-color: var(--primary-700, var(--admin-form-fg-color));
 }
 
 .admin-form-popup.ant-select-dropdown .ant-select-item-option-content,
@@ -474,16 +519,69 @@ body {
   color: var(--admin-form-fg-color);
 }
 
-.admin-form-popup .ant-select-item-option-active:not(.ant-select-item-option-disabled),
-.admin-form-popup .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
 .admin-form-popup .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner,
 .admin-form-popup .ant-picker-cell-in-view.ant-picker-cell-range-start .ant-picker-cell-inner,
 .admin-form-popup .ant-picker-cell-in-view.ant-picker-cell-range-end .ant-picker-cell-inner {
-  background: color-mix(in oklch, var(--admin-form-primary-color) 16%, var(--admin-form-bg-color));
+  background: var(
+    --primary-100,
+    color-mix(in oklch, var(--admin-form-primary-color) 16%, var(--admin-form-bg-color))
+  ) !important;
 }
 
 .admin-form-popup.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
-  color: var(--admin-form-fg-color);
+  color: var(--primary-700, var(--admin-form-fg-color)) !important;
+}
+
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: var(
+    --primary-50,
+    color-mix(in oklch, var(--admin-form-primary-color) 12%, var(--admin-form-bg-color))
+  ) !important;
+}
+
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled):hover {
+  background: var(
+    --primary-100,
+    color-mix(in oklch, var(--admin-form-primary-color) 18%, var(--admin-form-bg-color))
+  ) !important;
+}
+
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-selected .ant-select-item-option-state,
+.admin-form-popup.ant-select-dropdown .ant-select-item-option-selected .anticon-check {
+  color: var(--primary-600, var(--admin-form-primary-color)) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-form-popup.ant-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled) {
+  background: var(
+    --primary-900,
+    color-mix(in oklch, var(--admin-form-primary-color) 26%, var(--admin-form-bg-color))
+  ) !important;
+}
+
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-form-popup.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled),
+:is(
+    html.dark,
+    html[data-theme='dark'],
+    body.dark,
+    body[data-theme='dark']
+  ) .admin-form-popup.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled):hover {
+  background: var(
+    --primary-800,
+    color-mix(in oklch, var(--admin-form-primary-color) 34%, var(--admin-form-bg-color))
+  ) !important;
+  color: var(--primary-100, var(--admin-form-fg-color)) !important;
 }
 
 .admin-form__control .vxe-input .vxe-input--inner::placeholder,
@@ -491,6 +589,19 @@ body {
 .admin-form__control .vxe-date-range-picker .vxe-date-range-picker--inner::placeholder,
 .admin-form__control .vxe-textarea .vxe-textarea--inner::placeholder {
   color: var(--admin-form-placeholder-color);
+}
+
+.vxe-select--panel .vxe-select-option:not(.is--disabled).is--hover {
+  background-color: var(--admin-form-vxe-option-hover-bg);
+}
+
+.vxe-select--panel .vxe-select-option.is--selected {
+  color: var(--admin-form-vxe-option-selected-color);
+  background-color: var(--admin-form-vxe-option-selected-bg);
+}
+
+.vxe-select--panel .vxe-select-option.is--selected:not(.is--disabled).is--hover {
+  background-color: var(--admin-form-vxe-option-selected-hover-bg);
 }
 
 .admin-form__control[data-admin-status='error'],

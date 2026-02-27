@@ -33,6 +33,7 @@ import {
 import {
   computed,
   defineComponent,
+  getCurrentInstance,
   h,
   onBeforeUnmount,
   onMounted,
@@ -64,6 +65,27 @@ function shouldEnableTransfer(
     (resolved.component as any)?.__name ??
     '';
   return `${componentName}`.toLowerCase().includes('vxe');
+}
+
+function isVxeResolvedComponent(resolved: ResolvedComponentBinding<any>) {
+  if (resolved.library === 'vxe') {
+    return true;
+  }
+  const componentName =
+    (resolved.component as any)?.name ??
+    (resolved.component as any)?.__name ??
+    '';
+  return `${componentName}`.toLowerCase().includes('vxe');
+}
+
+function shouldUseVxeNumberInput(
+  resolved: ResolvedComponentBinding<any>,
+  rawFieldProps: Record<string, any>
+) {
+  if (resolved.key !== 'input' || !isVxeResolvedComponent(resolved)) {
+    return false;
+  }
+  return `${rawFieldProps?.type ?? ''}`.toLowerCase() === 'number';
 }
 
 function resolveRenderComponentSlots(
@@ -115,6 +137,11 @@ const AdminFormField = defineComponent({
     },
   },
   setup(props) {
+    const currentInstance = getCurrentInstance();
+    const appComponents = currentInstance?.appContext.components ?? {};
+    const vxeNumberInputComponent =
+      appComponents.VxeNumberInput ??
+      appComponents['vxe-number-input'];
     const modelValue = ref(getByPath(props.api.getSnapshot().values, props.field.fieldName));
     const error = ref(props.api.getSnapshot().errors[props.field.fieldName]);
     const renderComponentValues = ref(
@@ -222,6 +249,10 @@ const AdminFormField = defineComponent({
       if (componentProps.transfer === undefined && shouldEnableTransfer(resolved, field)) {
         componentProps.transfer = true;
       }
+      const renderComponent =
+        shouldUseVxeNumberInput(resolved, rawFieldProps) && vxeNumberInputComponent
+          ? toRaw(vxeNumberInputComponent as any)
+          : toRaw(resolved.component as any);
       const hideLabel = fieldRuntime.hideLabel;
       const hideRequiredMark = fieldRuntime.hideRequiredMark;
       const required = isFieldRequiredMark(field) && !hideRequiredMark;
@@ -290,7 +321,7 @@ const AdminFormField = defineComponent({
                     setValue: (value: any) => api.setFieldValue(field.fieldName, value),
                     field,
                   })
-                : h(toRaw(resolved.component as any), componentProps, renderComponentSlots),
+                : h(renderComponent, componentProps, renderComponentSlots),
               field.suffix
                 ? h('div', { class: 'admin-form__suffix' }, renderTextContent(field.suffix))
                 : null,

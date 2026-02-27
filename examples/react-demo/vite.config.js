@@ -2,16 +2,19 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
+var alias = [
+    {
+        find: /^@\//,
+        replacement: "".concat(resolve(__dirname, 'src'), "/"),
+    },
+];
 export default defineConfig({
     plugins: [
         react(),
         tailwindcss(),
     ],
     resolve: {
-        alias: {
-            '@': resolve(__dirname, 'src'),
-            '@admin-core/preferences/styles/antd': resolve(__dirname, '../../packages/preferences/core/src/styles/css/adapters/antd.css'),
-        },
+        alias: alias,
         // 确保 monorepo 中依赖正确去重
         dedupe: ['react', 'react-dom'],
     },
@@ -21,6 +24,8 @@ export default defineConfig({
         exclude: [
             '@admin-core/form-react',
             '@admin-core/layout-react',
+            '@admin-core/page-core',
+            '@admin-core/page-react',
             '@admin-core/preferences',
             '@admin-core/preferences-react',
             '@admin-core/table-react',

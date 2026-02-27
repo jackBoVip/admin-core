@@ -1,6 +1,9 @@
 import type { ExtendedAdminTableApi, AdminTableVueProps } from '../types';
 
-import { createTableApi } from '@admin-core/table-core';
+import {
+  createTableApi,
+  pickTableRuntimeStateOptions,
+} from '@admin-core/table-core';
 import { defineComponent, h, onBeforeUnmount } from 'vue';
 
 import { useTableStore } from './use-table-store';
@@ -10,7 +13,11 @@ export function useAdminTable<
   TData extends Record<string, any> = Record<string, any>,
   TFormValues extends Record<string, any> = Record<string, any>,
 >(options: AdminTableVueProps<TData, TFormValues> = {}) {
-  const api = createTableApi<TData, TFormValues>(options as any);
+  const api = createTableApi<TData, TFormValues>(
+    pickTableRuntimeStateOptions<TData, TFormValues>(
+      options as Record<string, any>
+    ) as any
+  );
   const extendedApi = api as ExtendedAdminTableApi<TData, TFormValues>;
 
   extendedApi.useStore = <TSlice = AdminTableVueProps<TData, TFormValues>>(
@@ -26,8 +33,6 @@ export function useAdminTable<
       onBeforeUnmount(() => {
         api.unmount();
       });
-
-      api.setState({ ...props, ...(attrs as any) });
 
       return () =>
         h(

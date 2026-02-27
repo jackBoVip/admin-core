@@ -1,6 +1,10 @@
 import type { AdminTableReactProps, ExtendedAdminTableApi } from '../types';
 
-import { createTableApi, deepEqual } from '@admin-core/table-core';
+import {
+  createTableApi,
+  deepEqual,
+  pickTableRuntimeStateOptions,
+} from '@admin-core/table-core';
 import { useEffect, useMemo, useRef } from 'react';
 
 import { AdminTable } from '../components/AdminTable';
@@ -10,21 +14,27 @@ export function useAdminTable<
   TData extends Record<string, any> = Record<string, any>,
   TFormValues extends Record<string, any> = Record<string, any>,
 >(options: AdminTableReactProps<TData, TFormValues> = {}) {
+  const initialRuntimeOptions = pickTableRuntimeStateOptions<TData, TFormValues>(
+    options as Record<string, any>
+  );
   const apiRef = useRef<ExtendedAdminTableApi<TData, TFormValues> | null>(null);
   if (!apiRef.current) {
     apiRef.current = createTableApi<TData, TFormValues>(
-      options
+      initialRuntimeOptions
     ) as ExtendedAdminTableApi<TData, TFormValues>;
   }
   const api = apiRef.current;
-  const optionsRef = useRef(options);
+  const optionsRef = useRef(initialRuntimeOptions);
 
   useEffect(() => {
-    if (deepEqual(optionsRef.current, options)) {
+    const nextRuntimeOptions = pickTableRuntimeStateOptions<TData, TFormValues>(
+      options as Record<string, any>
+    );
+    if (deepEqual(optionsRef.current, nextRuntimeOptions)) {
       return;
     }
-    optionsRef.current = options;
-    api.setState(options);
+    optionsRef.current = nextRuntimeOptions;
+    api.setState(nextRuntimeOptions);
   }, [api, options]);
 
   useEffect(() => {

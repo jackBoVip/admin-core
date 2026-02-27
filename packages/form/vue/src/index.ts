@@ -10,6 +10,7 @@ export { z } from '@admin-core/form-core';
 export {
   createRangeRule,
   createFormApi,
+  resolveSearchFormDefaults,
   registerFormRules,
   setupAdminFormCore,
   type AdapterCapabilities,

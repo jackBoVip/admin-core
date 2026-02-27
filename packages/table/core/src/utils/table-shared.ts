@@ -92,10 +92,24 @@ export {
   toTableComparableSelectionKey,
 } from './table-selection';
 export {
+  cleanupTableRuntimeApis,
+  createTableSearchFormActionHandlers,
   getSeparatorStyle,
   isProxyEnabled,
+  pickTableRuntimeStateOptions,
+  resolveTableMobileMatched,
+  resolveTableStripeConfig,
+  resolveTableStripePresentation,
+  resolveTableThemeCssVars,
   shallowEqualObjectRecord,
   shouldShowSeparator,
+  TABLE_MOBILE_MEDIA_QUERY,
+} from './table-base';
+export type {
+  ResolvedTableStripePresentation,
+  ResolvedTableStripeConfig,
+  TableThemeCssVarSource,
+  TableSearchFormRuntimeApi,
 } from './table-base';
 
 export type {

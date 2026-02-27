@@ -5,6 +5,7 @@ describe('table api', () => {
   it('should initialize with default state', () => {
     const api = createTableApi();
     expect(api.getState().showSearchForm).toBe(true);
+    expect(api.getState().separator).toBe(false);
     expect(api.getState().gridOptions).toBeTruthy();
   });
 

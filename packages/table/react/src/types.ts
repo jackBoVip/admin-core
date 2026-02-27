@@ -11,6 +11,7 @@ import type {
   TableOperationColumnConfig,
   TablePagerConfig,
   TableSeqColumnConfig,
+  TableStripeConfig,
   ToolbarToolPermissionDirective,
   ToolbarConfig,
 } from '@admin-core/table-core';
@@ -118,7 +119,7 @@ export interface AntdGridOptions<
     };
     remote?: boolean;
   };
-  stripe?: boolean;
+  stripe?: boolean | TableStripeConfig;
   toolbarConfig?: ToolbarConfig;
   treeConfig?: {
     parentField?: string;

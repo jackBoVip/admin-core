@@ -1,0 +1,172 @@
+.admin-page {
+  background: var(--color-background, #fff);
+  color: var(--color-foreground, #111827);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.admin-page__content {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  width: 100%;
+}
+
+.admin-page__content--scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.admin-page__content--static {
+  overflow: hidden;
+}
+
+.admin-page__pane {
+  height: 100%;
+  min-height: 0;
+}
+
+.admin-page__pane.is-inactive {
+  display: none;
+}
+
+.admin-page__empty {
+  color: color-mix(in oklab, var(--color-foreground, #111827) 55%, transparent);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.admin-page-query-table {
+  --admin-page-query-table-gap: 16px;
+  --admin-page-query-table-card-bg: var(--color-card, var(--card, #ffffff));
+  --admin-page-query-table-card-fg: var(
+    --color-card-foreground,
+    var(--card-foreground, var(--color-foreground, #111827))
+  );
+  --admin-page-query-table-card-radius: var(--radius, 8px);
+  --admin-page-query-table-card-padding: 16px;
+  --admin-page-query-table-fixed-bottom-safe: 2px;
+  --admin-page-query-table-card-shadow: 0 1px 3px
+    color-mix(in oklch, var(--foreground, #0f172a) 12%, transparent);
+  --admin-page-query-table-toolbar-min-height: 40px;
+  --admin-page-query-table-toolbar-spacing: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-page-query-table-gap);
+  width: 100%;
+}
+
+.admin-page-query-table--fixed {
+  align-content: stretch;
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: var(--admin-page-query-table-fixed-root-height, 100%);
+  max-height: var(--admin-page-query-table-fixed-root-height, 100%);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-page-query-table--flow {
+  height: auto;
+  min-height: initial;
+  overflow: visible;
+}
+
+.admin-page-query-table__form,
+.admin-page-query-table__table {
+  background: var(--admin-page-query-table-card-bg);
+  box-sizing: border-box;
+  border-radius: var(--admin-page-query-table-card-radius);
+  box-shadow: var(--admin-page-query-table-card-shadow);
+  color: var(--admin-page-query-table-card-fg);
+  padding: var(--admin-page-query-table-card-padding);
+}
+
+.admin-page-query-table__form {
+  flex: none;
+}
+
+.admin-page-query-table__form > .admin-form {
+  margin: 0;
+}
+
+.admin-page-query-table__table {
+  min-height: 0;
+}
+
+.admin-page-query-table--fixed .admin-page-query-table__table {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: var(--admin-page-query-table-fixed-table-height, 100%);
+  max-height: var(--admin-page-query-table-fixed-table-height, 100%);
+  min-height: 0;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.admin-page-query-table--flow .admin-page-query-table__table {
+  flex: none;
+  min-height: initial;
+  overflow: visible;
+}
+
+.admin-page-query-table__table .admin-table__toolbar {
+  margin-bottom: var(--admin-page-query-table-toolbar-spacing);
+  min-height: var(--admin-page-query-table-toolbar-min-height);
+}
+
+@media (min-width: 768px) {
+  .admin-page-query-table {
+    --admin-page-query-table-card-padding: 24px;
+  }
+}
+
+.admin-page-query-table--fixed .admin-page-query-table__table > .admin-table {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: var(--admin-page-query-table-fixed-bottom-safe);
+}
+
+.admin-page-query-table--fixed .admin-page-query-table__table > .admin-table .admin-table-vxe,
+.admin-page-query-table--fixed .admin-page-query-table__table > .admin-table .ant-table-wrapper {
+  height: 100%;
+  min-height: 0;
+}
+
+.admin-page-query-table--flow .admin-page-query-table__table > .admin-table {
+  height: auto;
+  min-height: initial;
+  overflow: visible;
+}
+
+.admin-page-query-table--fixed .admin-page-query-table__table > .admin-page,
+.admin-page-query-table--fixed .admin-page-query-table__table > .vxe-grid,
+.admin-page-query-table--fixed .admin-page-query-table__table > .vxe-grid--wrapper {
+  height: 100%;
+  min-height: 0;
+}
+
+.admin-page-query-table--fixed .admin-page-query-table__table .vxe-pager,
+.admin-page-query-table--fixed .admin-page-query-table__table .ant-table-pagination {
+  margin-bottom: 0 !important;
+}
+
+.admin-page-query-table--flow .admin-page-query-table__table > .admin-page,
+.admin-page-query-table--flow .admin-page-query-table__table > .vxe-grid,
+.admin-page-query-table--flow .admin-page-query-table__table > .vxe-grid--wrapper {
+  height: auto;
+  min-height: initial;
+}

@@ -11,6 +11,7 @@ import type {
   TableOperationColumnConfig,
   TablePagerConfig,
   TableSeqColumnConfig,
+  TableStripeConfig,
   ToolbarConfig,
   ToolbarToolPermissionDirective,
 } from '@admin-core/table-core';
@@ -54,7 +55,7 @@ export interface VxeRowSelectionConfig<
 
 export interface VxeTableGridOptions<
   T extends Record<string, any> = Record<string, any>,
-> extends Omit<VxeTableGridProps<T>, 'pagerConfig' | 'toolbarConfig'> {
+> extends Omit<VxeTableGridProps<T>, 'pagerConfig' | 'stripe' | 'toolbarConfig'> {
   cellStrategy?: Record<string, TableCellStrategy>;
   columnCustomPersistence?: boolean | ColumnCustomPersistenceConfig;
   columnCustomState?: ColumnCustomState;
@@ -68,6 +69,7 @@ export interface VxeTableGridOptions<
   rowStrategy?: TableRowStrategy[];
   rowSelection?: VxeRowSelectionConfig<T>;
   seqColumn?: boolean | TableSeqColumnConfig;
+  stripe?: boolean | TableStripeConfig;
   strategy?: TableStrategyConfig;
   toolbarConfig?: VxeToolbarConfig;
 }
