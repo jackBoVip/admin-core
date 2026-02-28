@@ -34,7 +34,7 @@
     "dev": "vite build --watch",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -69,8 +69,12 @@
     "tailwindcss": ">=4.0.0"
   },
   "peerDependenciesMeta": {
-    "tailwindcss": { "optional": true },
-    "react-router-dom": { "optional": true }
+    "tailwindcss": {
+      "optional": true
+    },
+    "react-router-dom": {
+      "optional": true
+    }
   },
   "keywords": [
     "admin",

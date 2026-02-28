@@ -20,19 +20,19 @@ export function setLoggerLevel(level: LogLevel) {
 }
 
 export const logger = {
-  error(...args: any[]) {
+  error(...args: unknown[]) {
     if (!shouldPrint('error')) {
       return;
     }
     console.error('[admin-page]', ...args);
   },
-  info(...args: any[]) {
+  info(...args: unknown[]) {
     if (!shouldPrint('info')) {
       return;
     }
-    console.info('[admin-page]', ...args);
+    console.warn('[admin-page:info]', ...args);
   },
-  warn(...args: any[]) {
+  warn(...args: unknown[]) {
     if (!shouldPrint('warn')) {
       return;
     }

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps -- large stateful table module with intentional hook dependency partitioning */
 import type {
   SortOrder,
   TablePaginationConfig,

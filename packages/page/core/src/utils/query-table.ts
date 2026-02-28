@@ -4,12 +4,25 @@ import type {
   PageQueryTableApi,
   PageQueryTableExecutor,
 } from '../types';
+import {
+  PAGE_QUERY_FIXED_TABLE_CLASS,
+  PAGE_QUERY_LAYOUT_FIXED_ICON,
+  PAGE_QUERY_LAYOUT_FLOW_ICON,
+  PAGE_QUERY_LAYOUT_SWITCH_DEFAULT_TITLES,
+  PAGE_QUERY_LAYOUT_TOOL_CODE,
+} from '../constants';
+import {
+  appendClassToken,
+  removeClassToken,
+} from './query-table-layout';
 
 type QueryFormLikeOptions = {
   gridColumns?: number;
   queryMode?: boolean;
   schema?: unknown[];
 };
+
+type OptionSource<TOptions> = TOptions | undefined | (() => TOptions | undefined);
 
 type PageQueryTableLazyApiOwnerState<TFormApi, TTableApi> = {
   formApi: null | TFormApi;
@@ -83,7 +96,7 @@ export function resolvePageQueryTableFixedHeight(options: {
   return Math.max(safeMinHeight, next, 0);
 }
 
-function isObjectRecord(value: unknown): value is Record<string, any> {
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -92,13 +105,13 @@ type UnmountableLike = {
 };
 
 export function resolvePageQuerySearchFormOptions<
-  TOptions extends QueryFormLikeOptions & Record<string, any>,
+  TOptions extends QueryFormLikeOptions & Record<string, unknown>,
 >(
   options: TOptions | undefined,
   resolveSearchDefaults: (options: TOptions) => TOptions
 ) {
   const source = resolvePageQueryFormDefaults(
-    (options ?? {}) as TOptions & Record<string, any>
+    (options ?? {}) as TOptions & Record<string, unknown>
   );
 
   return resolveSearchDefaults({
@@ -107,7 +120,7 @@ export function resolvePageQuerySearchFormOptions<
 }
 
 export function resolvePageQueryFormDefaults<
-  TOptions extends QueryFormLikeOptions & Record<string, any>,
+  TOptions extends QueryFormLikeOptions & Record<string, unknown>,
 >(options: TOptions | undefined) {
   const source = (options ?? {}) as TOptions;
   const schemaCount = Array.isArray(source.schema) ? source.schema.length : 0;
@@ -129,10 +142,112 @@ export function createPageQueryTableApi<
 ): PageQueryTableApi<TFormApi, TTableApi> {
   return {
     formApi,
-    query: (params?: Record<string, any>) => tableApi.query(params),
-    reload: (params?: Record<string, any>) => tableApi.reload(params),
+    query: (params?: Record<string, unknown>) => tableApi.query(params),
+    reload: (params?: Record<string, unknown>) => tableApi.reload(params),
     tableApi,
   };
+}
+
+function resolveOptionSourceGetter<TOptions>(source: OptionSource<TOptions>) {
+  if (typeof source === 'function') {
+    return source as () => TOptions | undefined;
+  }
+  return () => source;
+}
+
+export function createPageQueryTableApiFactoriesWithOptions<
+  TFormApi = unknown,
+  TTableApi extends PageQueryTableExecutor = PageQueryTableExecutor,
+  TFormOptions = Record<string, unknown>,
+  TTableOptions = Record<string, unknown>,
+>(options: {
+  createFormApi: (options: TFormOptions) => TFormApi;
+  createTableApi: (options: TTableOptions) => TTableApi;
+  formOptions: OptionSource<TFormOptions>;
+  normalizeFormOptions: (options: TFormOptions | undefined) => TFormOptions;
+  normalizeTableOptions: (options: TTableOptions | undefined) => TTableOptions;
+  tableOptions: OptionSource<TTableOptions>;
+}) {
+  const readFormOptions = resolveOptionSourceGetter(options.formOptions);
+  const readTableOptions = resolveOptionSourceGetter(options.tableOptions);
+
+  return {
+    createFormApi: () =>
+      options.createFormApi(
+        options.normalizeFormOptions(readFormOptions())
+      ),
+    createTableApi: () =>
+      options.createTableApi(
+        options.normalizeTableOptions(readTableOptions())
+      ),
+  };
+}
+
+export function createPageQueryTableApiFactoriesWithStripeDefaults<
+  TFormApi = unknown,
+  TTableApi extends PageQueryTableExecutor = PageQueryTableExecutor,
+  TFormOptions extends Record<string, unknown> = Record<string, unknown>,
+  TTableOptions extends Record<string, unknown> = Record<string, unknown>,
+  TStripeDefaults extends Record<string, unknown> = Record<string, unknown>,
+>(options: {
+  createFormApi: (options: TFormOptions) => TFormApi;
+  createTableApi: (options: TTableOptions) => TTableApi;
+  formOptions: OptionSource<TFormOptions>;
+  normalizeFormOptions: (options: TFormOptions | undefined) => TFormOptions;
+  resolveStripeConfig: (
+    value: unknown,
+    defaults: TStripeDefaults
+  ) => unknown;
+  stripeDefaults: TStripeDefaults;
+  tableOptions: OptionSource<TTableOptions>;
+}) {
+  return createPageQueryTableApiFactoriesWithOptions({
+    createFormApi: options.createFormApi,
+    createTableApi: options.createTableApi,
+    formOptions: options.formOptions,
+    normalizeFormOptions: options.normalizeFormOptions,
+    normalizeTableOptions: (tableOptions) =>
+      resolvePageQueryTableOptionsWithStripeDefaults(
+        tableOptions,
+        options.resolveStripeConfig,
+        options.stripeDefaults
+      ) as TTableOptions,
+    tableOptions: options.tableOptions,
+  });
+}
+
+export function createPageQueryTableLazyApiOwnerWithStripeDefaults<
+  TFormApi = unknown,
+  TTableApi extends PageQueryTableExecutor = PageQueryTableExecutor,
+  TFormOptions extends Record<string, unknown> = Record<string, unknown>,
+  TTableOptions extends Record<string, unknown> = Record<string, unknown>,
+  TStripeDefaults extends Record<string, unknown> = Record<string, unknown>,
+>(options: {
+  createFormApi: (options: TFormOptions) => TFormApi;
+  createTableApi: (options: TTableOptions) => TTableApi;
+  formOptions: OptionSource<TFormOptions>;
+  normalizeFormOptions: (options: TFormOptions | undefined) => TFormOptions;
+  resolveStripeConfig: (
+    value: unknown,
+    defaults: TStripeDefaults
+  ) => unknown;
+  stripeDefaults: TStripeDefaults;
+  tableOptions: OptionSource<TTableOptions>;
+}) {
+  const factories = createPageQueryTableApiFactoriesWithStripeDefaults({
+    createFormApi: options.createFormApi,
+    createTableApi: options.createTableApi,
+    formOptions: options.formOptions,
+    normalizeFormOptions: options.normalizeFormOptions,
+    resolveStripeConfig: options.resolveStripeConfig,
+    stripeDefaults: options.stripeDefaults,
+    tableOptions: options.tableOptions,
+  });
+
+  return createPageQueryTableLazyApiOwner({
+    createFormApi: factories.createFormApi,
+    createTableApi: factories.createTableApi,
+  });
 }
 
 export function createPageQueryTableLazyApiOwner<
@@ -205,6 +320,52 @@ export function resolvePageQueryTableApiBundle<
   };
 }
 
+export function resolvePageQueryTableApiBundleWithStripeDefaults<
+  TFormApi = unknown,
+  TTableApi extends PageQueryTableExecutor = PageQueryTableExecutor,
+  TApi extends PageQueryTableApi<TFormApi, TTableApi> = PageQueryTableApi<
+    TFormApi,
+    TTableApi
+  >,
+  TFormOptions extends Record<string, unknown> = Record<string, unknown>,
+  TTableOptions extends Record<string, unknown> = Record<string, unknown>,
+  TStripeDefaults extends Record<string, unknown> = Record<string, unknown>,
+>(options: {
+  api?: TApi;
+  createApi?: (formApi: TFormApi, tableApi: TTableApi) => TApi;
+  createFormApi: (options: TFormOptions) => TFormApi;
+  createTableApi: (options: TTableOptions) => TTableApi;
+  formApi?: TFormApi;
+  formOptions: OptionSource<TFormOptions>;
+  normalizeFormOptions: (options: TFormOptions | undefined) => TFormOptions;
+  resolveStripeConfig: (
+    value: unknown,
+    defaults: TStripeDefaults
+  ) => unknown;
+  stripeDefaults: TStripeDefaults;
+  tableApi?: TTableApi;
+  tableOptions: OptionSource<TTableOptions>;
+}) {
+  const factories = createPageQueryTableApiFactoriesWithStripeDefaults({
+    createFormApi: options.createFormApi,
+    createTableApi: options.createTableApi,
+    formOptions: options.formOptions,
+    normalizeFormOptions: options.normalizeFormOptions,
+    resolveStripeConfig: options.resolveStripeConfig,
+    stripeDefaults: options.stripeDefaults,
+    tableOptions: options.tableOptions,
+  });
+
+  return resolvePageQueryTableApiBundle({
+    api: options.api,
+    createApi: options.createApi,
+    createFormApi: factories.createFormApi,
+    createTableApi: factories.createTableApi,
+    formApi: options.formApi,
+    tableApi: options.tableApi,
+  });
+}
+
 export function cleanupPageQueryTableApis(options: {
   formApi?: null | UnmountableLike;
   ownsFormApi?: boolean;
@@ -220,13 +381,13 @@ export function cleanupPageQueryTableApis(options: {
 }
 
 export function resolvePageQueryTableOptions<
-  TOptions extends Record<string, any> = Record<string, any>,
+  TOptions extends Record<string, unknown> = Record<string, unknown>,
 >(
   options: TOptions | undefined,
   resolveStripe: (value: unknown) => unknown
 ) {
   const source = (options ?? {}) as TOptions & {
-    gridOptions?: Record<string, any>;
+    gridOptions?: Record<string, unknown>;
   };
   const sourceGridOptions = isObjectRecord(source.gridOptions)
     ? source.gridOptions
@@ -270,8 +431,8 @@ export function resolvePageQueryTableOptions<
 }
 
 export function resolvePageQueryTableOptionsWithStripeDefaults<
-  TOptions extends Record<string, any>,
-  TStripeDefaults extends Record<string, any>,
+  TOptions extends Record<string, unknown>,
+  TStripeDefaults extends Record<string, unknown>,
 >(
   options: TOptions | undefined,
   resolveStripeConfig: (
@@ -285,18 +446,158 @@ export function resolvePageQueryTableOptionsWithStripeDefaults<
   );
 }
 
+export function resolvePageQueryTableDisplayOptionsWithStripeDefaults<
+  TOptions extends Record<string, unknown>,
+  TStripeDefaults extends Record<string, unknown>,
+>(options: {
+  explicitTableHeight: null | number;
+  fixedMode: boolean;
+  fixedTableHeight: null | number;
+  layoutModeTitleToFixed: string;
+  layoutModeTitleToFlow: string;
+  onLayoutModeToggle: () => void;
+  resolveStripeConfig: (
+    value: unknown,
+    defaults: TStripeDefaults
+  ) => unknown;
+  stripeDefaults: TStripeDefaults;
+  tableOptions: TOptions | undefined;
+}) {
+  const resolvedOptions = resolvePageQueryTableOptionsWithStripeDefaults(
+    options.tableOptions,
+    options.resolveStripeConfig,
+    options.stripeDefaults
+  ) as TOptions;
+
+  return resolvePageQueryTableDisplayOptions({
+    explicitTableHeight: options.explicitTableHeight,
+    fixedMode: options.fixedMode,
+    fixedTableHeight: options.fixedTableHeight,
+    layoutModeTitleToFixed: options.layoutModeTitleToFixed,
+    layoutModeTitleToFlow: options.layoutModeTitleToFlow,
+    onLayoutModeToggle: options.onLayoutModeToggle,
+    resolvedOptions,
+  });
+}
+
+export function resolvePageQueryTableLayoutModeTitles(options?: {
+  localeText?: Record<string, unknown> | null | undefined;
+  preferredLocaleText?: Record<string, unknown> | null | undefined;
+}) {
+  const localeText =
+    (options?.localeText ?? {}) as Record<string, unknown>;
+  const preferredLocaleText =
+    (options?.preferredLocaleText ?? {}) as Record<string, unknown>;
+
+  return {
+    layoutModeTitleToFixed:
+      (preferredLocaleText.queryTableSwitchToFixed as string | undefined)
+      ?? (localeText.queryTableSwitchToFixed as string | undefined)
+      ?? PAGE_QUERY_LAYOUT_SWITCH_DEFAULT_TITLES.toFixed,
+    layoutModeTitleToFlow:
+      (preferredLocaleText.queryTableSwitchToFlow as string | undefined)
+      ?? (localeText.queryTableSwitchToFlow as string | undefined)
+      ?? PAGE_QUERY_LAYOUT_SWITCH_DEFAULT_TITLES.toFlow,
+  };
+}
+
+export function resolvePageQueryTableDisplayOptions<
+  TOptions extends Record<string, unknown> = Record<string, unknown>,
+>(options: {
+  explicitTableHeight: null | number;
+  fixedMode: boolean;
+  fixedTableHeight: null | number;
+  layoutModeTitleToFixed: string;
+  layoutModeTitleToFlow: string;
+  onLayoutModeToggle: () => void;
+  resolvedOptions: TOptions;
+}) {
+  const source = options.resolvedOptions as TOptions & {
+    class?: unknown;
+    gridOptions?: Record<string, unknown>;
+  };
+  const sourceGridOptions = isObjectRecord(source.gridOptions)
+    ? source.gridOptions
+    : {};
+  const sourceToolbarConfig = isObjectRecord(sourceGridOptions.toolbarConfig)
+    ? sourceGridOptions.toolbarConfig
+    : {};
+  const sourceToolbarTools = Array.isArray(sourceToolbarConfig.tools)
+    ? sourceToolbarConfig.tools
+    : [];
+  const mergedToolbarTools = sourceToolbarTools.filter((tool) => {
+    return (tool as Record<string, unknown>)?.code !== PAGE_QUERY_LAYOUT_TOOL_CODE;
+  });
+
+  if (options.explicitTableHeight === null) {
+    mergedToolbarTools.push({
+      code: PAGE_QUERY_LAYOUT_TOOL_CODE,
+      icon: options.fixedMode
+        ? PAGE_QUERY_LAYOUT_FIXED_ICON
+        : PAGE_QUERY_LAYOUT_FLOW_ICON,
+      iconOnly: true,
+      onClick: options.onLayoutModeToggle,
+      title: options.fixedMode
+        ? options.layoutModeTitleToFlow
+        : options.layoutModeTitleToFixed,
+    });
+  }
+
+  const nextGridOptions = {
+    ...sourceGridOptions,
+    toolbarConfig: {
+      ...sourceToolbarConfig,
+      tools: mergedToolbarTools,
+    },
+  };
+
+  if (!options.fixedMode) {
+    const nextFlowGridOptions = {
+      ...nextGridOptions,
+      height: options.explicitTableHeight ?? null,
+      maxHeight: null,
+    };
+    return {
+      ...source,
+      class: removeClassToken(
+        source.class,
+        PAGE_QUERY_FIXED_TABLE_CLASS
+      ),
+      gridOptions: nextFlowGridOptions,
+    } as TOptions;
+  }
+
+  return {
+    ...source,
+    class: appendClassToken(
+      source.class,
+      PAGE_QUERY_FIXED_TABLE_CLASS
+    ),
+    gridOptions: {
+      ...nextGridOptions,
+      height:
+        typeof options.fixedTableHeight === 'number'
+        && Number.isFinite(options.fixedTableHeight)
+        && options.fixedTableHeight > 0
+          ? Math.max(1, Math.floor(options.fixedTableHeight))
+          : '100%',
+      maxHeight: null,
+    },
+  } as TOptions;
+}
+
 type FormHandlerContext = {
   signal: unknown;
   version: number;
 };
 
-type FormHandler<TValues extends Record<string, any>, TContext> = (
+type FormHandler<TValues extends Record<string, unknown>, TContext> = (
   values: TValues,
   context?: TContext
 ) => Promise<void> | void;
 
 export function createPageQueryBridgeHandlers<
-  TValues extends Record<string, any> = Record<string, any>,
+  TValues extends Record<string, unknown> = Record<string, unknown>,
   TFormApi = unknown,
   TTableApi extends PageQueryTableExecutor = PageQueryTableExecutor,
   TContext = FormHandlerContext,
@@ -352,10 +653,10 @@ export function createPageQueryBridgeHandlers<
 }
 
 export function resolvePageQueryFormOptionsWithBridge<
-  TValues extends Record<string, any> = Record<string, any>,
+  TValues extends Record<string, unknown> = Record<string, unknown>,
   TFormApi = unknown,
   TTableApi extends PageQueryTableExecutor = PageQueryTableExecutor,
-  TOptions extends Record<string, any> = Record<string, any>,
+  TOptions extends Record<string, unknown> = Record<string, unknown>,
 >(
   options: {
     bridge: NormalizedPageFormTableBridgeOptions<TValues, TFormApi, TTableApi>;
@@ -365,13 +666,16 @@ export function resolvePageQueryFormOptionsWithBridge<
     tableApi: TTableApi;
   }
 ) {
-  const source = (options.formOptions ?? {}) as TOptions;
+  const source = (options.formOptions ?? {}) as TOptions & {
+    handleReset?: FormHandler<TValues, unknown>;
+    handleSubmit?: FormHandler<TValues, unknown>;
+  };
   const normalizedSource = options.normalizeFormOptions(source);
   const handlers = createPageQueryBridgeHandlers({
     bridge: options.bridge,
     formApi: options.formApi,
-    onReset: source.handleReset as any,
-    onSubmit: source.handleSubmit as any,
+    onReset: source.handleReset,
+    onSubmit: source.handleSubmit,
     tableApi: options.tableApi,
   });
 

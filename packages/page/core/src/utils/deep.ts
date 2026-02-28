@@ -1,4 +1,4 @@
-function isPlainObject(value: unknown): value is Record<string, any> {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
@@ -41,13 +41,13 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 }
 
 export function mergeWithArrayOverride<T extends object>(source: Partial<T>, target: T): T {
-  const output: Record<string, any> = { ...target };
+  const output: Record<string, unknown> = { ...target } as Record<string, unknown>;
 
   for (const [key, sourceValue] of Object.entries(source ?? {})) {
     if (sourceValue === undefined) {
       continue;
     }
-    const targetValue = (target as Record<string, any>)[key];
+    const targetValue = (target as Record<string, unknown>)[key];
 
     if (Array.isArray(sourceValue)) {
       output[key] = [...sourceValue];
@@ -55,7 +55,10 @@ export function mergeWithArrayOverride<T extends object>(source: Partial<T>, tar
     }
 
     if (isPlainObject(sourceValue) && isPlainObject(targetValue)) {
-      output[key] = mergeWithArrayOverride(sourceValue, targetValue);
+      output[key] = mergeWithArrayOverride(
+        sourceValue as Record<string, unknown>,
+        targetValue as Record<string, unknown>
+      );
       continue;
     }
 

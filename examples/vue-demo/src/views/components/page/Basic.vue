@@ -8,7 +8,7 @@ import { computed, ref } from 'vue';
 
 import { BASIC_ROWS, sleep } from '../table/data';
 
-interface SearchFormValues {
+interface SearchFormValues extends Record<string, unknown> {
   keyword?: string;
   level?: '' | DemoRow['level'];
   maxAge?: string;

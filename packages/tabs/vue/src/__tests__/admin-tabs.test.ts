@@ -1,3 +1,5 @@
+/** @vitest-environment jsdom */
+
 import { setAdminTabsLocale } from '@admin-core/tabs-core';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';

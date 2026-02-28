@@ -1,4 +1,4 @@
-export interface DemoRow {
+export interface DemoRow extends Record<string, unknown> {
   id: number;
   name: string;
   age: number;
@@ -10,7 +10,7 @@ export interface DemoRow {
   level?: 'high' | 'low' | 'medium';
 }
 
-export interface DemoProductRow {
+export interface DemoProductRow extends Record<string, unknown> {
   id: string;
   category: string;
   color: string;
@@ -22,7 +22,7 @@ export interface DemoProductRow {
   open: boolean;
 }
 
-export interface DemoTreeRow {
+export interface DemoTreeRow extends Record<string, unknown> {
   id: number;
   parentId: null | number;
   name: string;

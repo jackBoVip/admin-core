@@ -1,2 +1,5 @@
 export { AdminPage } from './AdminPage';
-export { AdminPageQueryTable } from './AdminPageQueryTable';
+export {
+  AdminPageQueryTable,
+  createAdminPageQueryTableApi,
+} from './AdminPageQueryTable';

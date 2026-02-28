@@ -54,6 +54,12 @@ vi.mock('antd', async () => {
 });
 
 describe('AdminTabs (react)', () => {
+  const ensureRenderer = (renderer: null | ReactTestRenderer) => {
+    if (!renderer) {
+      throw new Error('expected react test renderer instance');
+    }
+    return renderer;
+  };
   const items = [
     { closable: true, key: 'overview', title: 'Overview' },
     { closable: true, key: 'detail', title: 'Detail' },
@@ -64,7 +70,7 @@ describe('AdminTabs (react)', () => {
   });
 
   it('renders close control as native button and injects css vars', () => {
-    let tree: ReactTestRenderer;
+    let tree: null | ReactTestRenderer = null;
     act(() => {
       tree = create(
         <AdminTabs
@@ -76,8 +82,9 @@ describe('AdminTabs (react)', () => {
         />
       );
     });
+    const renderer = ensureRenderer(tree);
 
-    const root = tree!.root.find((node) => {
+    const root = renderer.root.find((node) => {
       return (
         node.type === 'div' &&
         typeof node.props.className === 'string' &&
@@ -87,7 +94,7 @@ describe('AdminTabs (react)', () => {
     expect(root.props.style['--admin-tabs-content-inset-top']).toBe('-20px');
     expect(root.props.style['--admin-tabs-sticky-top']).toBe('8px');
 
-    const [closeButton] = tree!.root.findAll((node) => {
+    const [closeButton] = renderer.root.findAll((node) => {
       return (
         node.type === 'button' &&
         node.props.className === 'admin-tabs__tab-close'
@@ -96,17 +103,18 @@ describe('AdminTabs (react)', () => {
     expect(closeButton.props.type).toBe('button');
 
     act(() => {
-      tree!.unmount();
+      renderer.unmount();
     });
   });
 
   it('uses react adapter default contentInsetTop when user does not configure', () => {
-    let tree: ReactTestRenderer;
+    let tree: null | ReactTestRenderer = null;
     act(() => {
       tree = create(<AdminTabs items={items} />);
     });
+    const renderer = ensureRenderer(tree);
 
-    const root = tree!.root.find((node) => {
+    const root = renderer.root.find((node) => {
       return (
         node.type === 'div' &&
         typeof node.props.className === 'string' &&
@@ -116,17 +124,18 @@ describe('AdminTabs (react)', () => {
     expect(root.props.style['--admin-tabs-content-inset-top']).toBe('-10px');
 
     act(() => {
-      tree!.unmount();
+      renderer.unmount();
     });
   });
 
   it('updates close label when locale changes at runtime', () => {
-    let tree: ReactTestRenderer;
+    let tree: null | ReactTestRenderer = null;
     act(() => {
       tree = create(<AdminTabs items={items} />);
     });
+    const renderer = ensureRenderer(tree);
 
-    const [firstCloseBefore] = tree!.root.findAll((node) => {
+    const [firstCloseBefore] = renderer.root.findAll((node) => {
       return (
         node.type === 'button' &&
         node.props.className === 'admin-tabs__tab-close'
@@ -138,7 +147,7 @@ describe('AdminTabs (react)', () => {
       setAdminTabsLocale({ close: '关闭' });
     });
 
-    const [firstCloseAfter] = tree!.root.findAll((node) => {
+    const [firstCloseAfter] = renderer.root.findAll((node) => {
       return (
         node.type === 'button' &&
         node.props.className === 'admin-tabs__tab-close'
@@ -147,18 +156,19 @@ describe('AdminTabs (react)', () => {
     expect(firstCloseAfter.props['aria-label']).toBe('关闭');
 
     act(() => {
-      tree!.unmount();
+      renderer.unmount();
     });
   });
 
   it('emits onClose when close button is clicked', () => {
     const onClose = vi.fn();
-    let tree: ReactTestRenderer;
+    let tree: null | ReactTestRenderer = null;
     act(() => {
       tree = create(<AdminTabs items={items} onClose={onClose} />);
     });
+    const renderer = ensureRenderer(tree);
 
-    const [closeButton] = tree!.root.findAll((node) => {
+    const [closeButton] = renderer.root.findAll((node) => {
       return (
         node.type === 'button' &&
         node.props.className === 'admin-tabs__tab-close'
@@ -180,7 +190,7 @@ describe('AdminTabs (react)', () => {
     );
 
     act(() => {
-      tree!.unmount();
+      renderer.unmount();
     });
   });
 });

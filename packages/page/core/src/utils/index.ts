@@ -4,3 +4,4 @@ export * from './guards';
 export * from './logger';
 export * from './page';
 export * from './query-table';
+export * from './query-table-layout';

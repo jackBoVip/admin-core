@@ -8,8 +8,7 @@ import { createFormApi } from '@admin-core/form-vue';
 import {
   DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
   cleanupPageQueryTableApis,
-  resolvePageQueryTableApiBundle,
-  resolvePageQueryTableOptionsWithStripeDefaults,
+  resolvePageQueryTableApiBundleWithStripeDefaults,
 } from '@admin-core/page-core';
 import {
   createTableApi,
@@ -17,6 +16,7 @@ import {
   resolveTableStripeConfig,
 } from '@admin-core/table-vue';
 import {
+  type Component,
   defineComponent,
   h,
   onBeforeUnmount,
@@ -26,60 +26,64 @@ import { AdminPageQueryTable } from '../components/AdminPageQueryTable';
 import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
 export function useAdminPageQueryTable<
-  TData extends Record<string, any> = Record<string, any>,
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TData extends Record<string, unknown> = Record<string, unknown>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 >(
   options: AdminPageQueryTableVueProps<TData, TFormValues> = {}
 ): UseAdminPageQueryTableReturn<TData, TFormValues> {
+  type FormOptionsRecord = Record<string, unknown>;
+  type CreateTableApiOptions = Parameters<
+    typeof createTableApi<TData, TFormValues>
+  >[0];
+  type StripeResolveDefaults = Parameters<typeof resolveTableStripeConfig>[1];
+  type TableOptionsRecord = Record<string, unknown>;
   const {
     api,
     formApi,
     providedFormApi,
     providedTableApi,
     tableApi,
-  } = resolvePageQueryTableApiBundle({
+  } = resolvePageQueryTableApiBundleWithStripeDefaults({
     api: options.api as AdminPageQueryTableApi<TData, TFormValues> | undefined,
-    createFormApi: () =>
-      createFormApi(
-        normalizePageQueryFormOptions(
-          (options.formOptions ?? {}) as Record<string, any>
-        )
-      ),
-      createTableApi: () =>
-        createTableApi<TData, TFormValues>(
-        resolvePageQueryTableOptionsWithStripeDefaults(
-          (options.tableOptions ?? {}) as Record<string, any>,
-          (stripe: unknown, stripeDefaults: Record<string, any>) =>
-            resolveTableStripeConfig(stripe as any, stripeDefaults as any),
-          DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS
-        ) as any
+    createFormApi: (formOptions: FormOptionsRecord) => createFormApi(formOptions),
+    createTableApi: (tableOptions: TableOptionsRecord) =>
+      createTableApi<TData, TFormValues>(
+        tableOptions as CreateTableApiOptions
       ) as AdminTableApi<TData, TFormValues>,
     formApi: options.formApi,
+    formOptions: (options.formOptions ?? {}) as FormOptionsRecord,
+    normalizeFormOptions: (formOptions: FormOptionsRecord | undefined) =>
+      normalizePageQueryFormOptions(
+        (formOptions ?? {}) as FormOptionsRecord
+      ),
+    resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
+      resolveTableStripeConfig(
+        stripe as Parameters<typeof resolveTableStripeConfig>[0],
+        stripeDefaults as StripeResolveDefaults
+      ),
+    stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
     tableApi: options.tableApi,
+    tableOptions: (options.tableOptions ?? {}) as TableOptionsRecord,
+  });
+
+  onBeforeUnmount(() => {
+    cleanupPageQueryTableApis({
+      formApi,
+      ownsFormApi: !providedFormApi,
+      ownsTableApi: !providedTableApi,
+      tableApi,
+    });
   });
 
   const PageQueryTable = defineComponent(
     (props: Partial<AdminPageQueryTableVueProps<TData, TFormValues>>, { attrs, slots }) => {
-      onBeforeUnmount(() => {
-        cleanupPageQueryTableApis({
-          formApi,
-          ownsFormApi: !providedFormApi,
-          ownsTableApi: !providedTableApi,
-          tableApi,
-        });
-      });
-
       return () =>
-        h(
-          AdminPageQueryTable as any,
-          {
-            ...(options as any),
-            ...props,
-            ...(attrs as any),
-            api,
-          },
-          slots
-        );
+        h(AdminPageQueryTable as unknown as Component, {
+          ...(options as Record<string, unknown>),
+          ...(props as Record<string, unknown>),
+          ...(attrs as Record<string, unknown>),
+          api,
+        }, slots);
     },
     {
       name: 'AdminPageQueryTableUse',

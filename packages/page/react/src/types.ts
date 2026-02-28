@@ -24,7 +24,7 @@ import type {
   ReactNode,
 } from 'react';
 
-export type ReactPageComponent = ComponentType<any> | ReactNode;
+export type ReactPageComponent = ComponentType<unknown> | ReactNode;
 
 export type AdminPageReactItem = AdminPageItem<ReactPageComponent>;
 
@@ -52,16 +52,16 @@ export interface SetupAdminPageReactOptions
 }
 
 export type AdminPageQueryTableApi<
-  TData extends Record<string, any> = Record<string, any>,
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TData extends Record<string, unknown> = Record<string, unknown>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 > = PageQueryTableApi<
   AdminFormApi,
   AdminTableApi<TData, TFormValues>
 >;
 
 export interface AdminPageQueryTableReactProps<
-  TData extends Record<string, any> = Record<string, any>,
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TData extends Record<string, unknown> = Record<string, unknown>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 > extends PageQueryTableLayoutOptions {
   api?: AdminPageQueryTableApi<TData, TFormValues>;
   bridge?: boolean | PageFormTableBridgeOptions<
@@ -79,8 +79,8 @@ export interface AdminPageQueryTableReactProps<
 }
 
 export type UseAdminPageQueryTableReturn<
-  TData extends Record<string, any> = Record<string, any>,
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TData extends Record<string, unknown> = Record<string, unknown>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 > = readonly [
   ComponentType<Partial<AdminPageQueryTableReactProps<TData, TFormValues>>>,
   AdminPageQueryTableApi<TData, TFormValues>,

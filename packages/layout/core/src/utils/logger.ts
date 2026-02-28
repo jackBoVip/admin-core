@@ -92,7 +92,6 @@ export const logger = {
    */
   info(...args: unknown[]): void {
     if (shouldLog('info')) {
-      // eslint-disable-next-line no-console -- logger API
       console.info(...formatArgs(args));
     }
   },

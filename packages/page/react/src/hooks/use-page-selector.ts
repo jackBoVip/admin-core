@@ -3,15 +3,22 @@ import type {
   AdminPageOptions,
 } from '@admin-core/page-core';
 
-import { useSyncExternalStore } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 
 export function usePageSelector<TComponent = unknown, TSlice = unknown>(
   api: AdminPageApi<TComponent>,
   selector: (state: AdminPageOptions<TComponent>) => TSlice
 ): TSlice {
+  const selectorRef = useRef(selector);
+  selectorRef.current = selector;
+
   return useSyncExternalStore(
-    (onStoreChange) => api.store.subscribe(onStoreChange),
-    () => selector(api.getSnapshot().props),
-    () => selector(api.getSnapshot().props)
+    (onStoreChange) =>
+      api.store.subscribeSelector(
+        (snapshot) => selectorRef.current(snapshot.props),
+        () => onStoreChange()
+      ),
+    () => selectorRef.current(api.getSnapshot().props),
+    () => selectorRef.current(api.getSnapshot().props)
   );
 }

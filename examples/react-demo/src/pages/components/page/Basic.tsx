@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react';
 
 import { BASIC_ROWS, sleep } from '../table/data';
 
-interface SearchFormValues {
+interface SearchFormValues extends Record<string, unknown> {
   keyword?: string;
   level?: '' | DemoRow['level'];
   maxAge?: string;

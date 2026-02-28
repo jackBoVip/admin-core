@@ -12,6 +12,11 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    onConsoleLog(log) {
+      if (log.includes('react-test-renderer is deprecated.')) {
+        return false;
+      }
+    },
     include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     exclude: [
       '**/node_modules/**',

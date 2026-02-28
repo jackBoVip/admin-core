@@ -17,7 +17,7 @@ describe('page form-table bridge', () => {
   });
 
   it('normalizes object bridge options', () => {
-    const mapParams = vi.fn((values: Record<string, any>) => values);
+    const mapParams = vi.fn((values: Record<string, unknown>) => values);
     expect(
       normalizePageFormTableBridgeOptions({
         enabled: true,

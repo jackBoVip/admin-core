@@ -370,10 +370,16 @@ describe('submit-page-shared helpers', () => {
     expect(viewState.isLastStep).toBe(false);
     expect(viewState.currentStep?.title).toBe('s1');
 
+    const firstStep = built.steps[0];
+    expect(firstStep).toBeDefined();
+    if (!firstStep) {
+      throw new Error('expected first submit-page step to exist');
+    }
+
     const stepState = resolveSubmitPageStepItemState({
       activeStep: 1,
       index: 0,
-      step: built.steps[0]!,
+      step: firstStep,
     });
     expect(stepState.done).toBe(true);
     expect(stepState.dotLabel).toBe('✓');

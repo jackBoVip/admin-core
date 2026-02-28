@@ -3,7 +3,8 @@ import type {
   AdminPageQueryTableVueProps,
 } from '../types';
 import type { AdminFormApi } from '@admin-core/form-vue';
-import type { PropType } from 'vue';
+import type { PageScrollLockState } from '@admin-core/page-core';
+import type { Component, PropType, VNodeChild } from 'vue';
 
 import {
   AdminSearchForm,
@@ -12,16 +13,26 @@ import {
 import {
   DEFAULT_PAGE_QUERY_TABLE_FIXED,
   DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
+  clampFixedHeightToViewport,
   cleanupPageQueryTableApis,
+  createPageQueryFrameScheduler,
   createPageQueryTableApi,
-  createPageQueryTableLazyApiOwner,
+  createPageQueryTableLazyApiOwnerWithStripeDefaults,
   getLocaleMessages,
-  isPageScrollableContainerOverflow,
+  isHeightAlmostEqual,
   normalizePageFormTableBridgeOptions,
+  resolveBestFixedHeight,
+  resolveFixedTableHeight,
+  resolvePageQueryTableDisplayOptionsWithStripeDefaults,
+  resolvePageQueryTableHeight,
+  resolvePageQueryTableLayoutModeTitles,
+  resolvePageQueryTableRootStyleVariables,
+  reconcilePageScrollLocks,
+  schedulePageQueryStabilizedRecalc,
+  resolvePageScrollLockTargets,
+  resolvePrimaryPageScrollContainer,
   resolvePageQueryTableFixed,
-  resolvePreferredPageScrollLockTarget,
   resolvePageQueryFormOptionsWithBridge,
-  resolvePageQueryTableOptionsWithStripeDefaults,
 } from '@admin-core/page-core';
 import {
   AdminTable,
@@ -47,284 +58,8 @@ import {
 import { useLocaleVersion as usePageLocaleVersion } from '../composables/useLocaleVersion';
 import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
-type DataRecord = Record<string, any>;
-type FormValuesRecord = Record<string, any>;
-const PAGE_QUERY_FIXED_TABLE_CLASS = 'admin-table--lock-body-scroll';
-const PAGE_SCROLL_LOCK_ATTR = 'data-admin-page-query-table-scroll-lock';
-const FIXED_HEIGHT_SAFE_GAP = 2;
-const PAGE_QUERY_LAYOUT_TOOL_CODE = 'layout-mode-toggle';
-const PAGE_QUERY_LAYOUT_FIXED_ICON = 'vxe-table-icon-fixed-left-fill';
-const PAGE_QUERY_LAYOUT_FLOW_ICON = 'vxe-table-icon-fixed-left';
-
-function appendClassToken(source: unknown, token: string) {
-  const normalized = typeof source === 'string' ? source.trim() : '';
-  if (!normalized) {
-    return token;
-  }
-  const tokens = normalized.split(/\s+/);
-  if (tokens.includes(token)) {
-    return normalized;
-  }
-  return `${normalized} ${token}`;
-}
-
-function removeClassToken(source: unknown, token: string) {
-  const normalized = typeof source === 'string' ? source.trim() : '';
-  if (!normalized) {
-    return '';
-  }
-  return normalized
-    .split(/\s+/)
-    .filter((item) => item && item !== token)
-    .join(' ');
-}
-
-function parseCssPixel(value: string) {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function resolvePageQueryTableHeight(value: unknown) {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) && value > 0
-      ? Math.max(1, Math.floor(value))
-      : null;
-  }
-  if (typeof value !== 'string') {
-    return null;
-  }
-  const text = value.trim();
-  if (!text) {
-    return null;
-  }
-  if (!/^[+]?\d+(\.\d+)?(px)?$/i.test(text)) {
-    return null;
-  }
-  const parsed = Number.parseFloat(text);
-  return Number.isFinite(parsed) && parsed > 0
-    ? Math.max(1, Math.floor(parsed))
-    : null;
-}
-
-function isPotentialScrollContainer(element: HTMLElement) {
-  const styles = window.getComputedStyle(element);
-  return (
-    isPageScrollableContainerOverflow(styles.overflowY)
-    || isPageScrollableContainerOverflow(styles.overflow)
-  );
-}
-
-function normalizeFixedHeightToDevicePixel(height: number) {
-  if (!Number.isFinite(height) || height <= 0) {
-    return null;
-  }
-  const dpr = typeof window !== 'undefined' && window.devicePixelRatio > 0
-    ? window.devicePixelRatio
-    : 1;
-  return Math.max(1, Math.round(height * dpr) / dpr);
-}
-
-function resolvePrimaryPageScrollContainer(element: null | HTMLElement) {
-  if (!element) {
-    return null as HTMLElement | null;
-  }
-  return (
-    (element.closest('.admin-page__content') as HTMLElement | null)
-    ?? (element.closest('.layout-content') as HTMLElement | null)
-    ?? (element.closest('.layout-content__transition') as HTMLElement | null)
-    ?? (element.closest('.layout-content__inner') as HTMLElement | null)
-    ?? (element.closest('.admin-page__pane') as HTMLElement | null)
-  );
-}
-
-function resolvePageScrollLockTargets(element: null | HTMLElement) {
-  if (typeof window === 'undefined' || !element) {
-    return [] as HTMLElement[];
-  }
-  const targets = new Set<HTMLElement>();
-  const primaryContainer = resolvePrimaryPageScrollContainer(element);
-  const resolvedPrimaryContainer =
-    primaryContainer && isPotentialScrollContainer(primaryContainer)
-      ? primaryContainer
-      : null;
-  if (resolvedPrimaryContainer) {
-    targets.add(resolvedPrimaryContainer);
-  }
-  let current: null | HTMLElement = element.parentElement;
-  while (current) {
-    if (isPotentialScrollContainer(current)) {
-      targets.add(current);
-    }
-    current = current.parentElement;
-  }
-  const documentScrollElement = document.scrollingElement instanceof HTMLElement
-    ? document.scrollingElement
-    : document.documentElement;
-  const preferredTarget = resolvePreferredPageScrollLockTarget({
-    ancestorScrollContainers: Array.from(targets),
-    documentScrollElement,
-    primaryScrollContainer: resolvedPrimaryContainer,
-  });
-  if (preferredTarget) {
-    targets.add(preferredTarget);
-  }
-  if (documentScrollElement) {
-    targets.add(documentScrollElement);
-  }
-  if (document.documentElement) {
-    targets.add(document.documentElement);
-  }
-  if (document.body) {
-    targets.add(document.body);
-  }
-  return Array.from(targets);
-}
-
-function resolveViewportHeight() {
-  if (typeof window === 'undefined') {
-    return 0;
-  }
-  const innerHeight = window.innerHeight;
-  if (Number.isFinite(innerHeight) && innerHeight > 0) {
-    return innerHeight;
-  }
-  const clientHeight = document.documentElement?.clientHeight ?? 0;
-  return clientHeight > 0 ? clientHeight : 0;
-}
-
-function resolveViewportBottomBoundary() {
-  const viewportHeight = resolveViewportHeight();
-  if (typeof document === 'undefined' || typeof window === 'undefined') {
-    return viewportHeight;
-  }
-  const footers = Array.from(
-    document.querySelectorAll('.layout-footer')
-  ) as HTMLElement[];
-  let boundary = viewportHeight;
-  for (const footer of footers) {
-    const styles = window.getComputedStyle(footer);
-    if (styles.display === 'none' || styles.visibility === 'hidden') {
-      continue;
-    }
-    if (styles.position !== 'fixed') {
-      continue;
-    }
-    const footerTop = footer.getBoundingClientRect().top;
-    if (!Number.isFinite(footerTop) || footerTop <= 0 || footerTop >= viewportHeight) {
-      continue;
-    }
-    boundary = Math.min(boundary, Math.max(0, footerTop));
-  }
-  return boundary;
-}
-
-function resolveFixedHeightByContainerBoundary(
-  element: HTMLElement,
-  container: HTMLElement
-) {
-  const containerRect = container.getBoundingClientRect();
-  const viewportBottomBoundary = resolveViewportBottomBoundary();
-  const elementRect = element.getBoundingClientRect();
-  const containerStyles = window.getComputedStyle(container);
-  const containerPaddingBottom = Math.max(
-    0,
-    parseCssPixel(containerStyles.paddingBottom)
-  );
-  const containerBottomBoundary = Math.max(
-    0,
-    containerRect.bottom - containerPaddingBottom
-  );
-  const visibleBottom = Math.max(
-    0,
-    Math.min(
-      viewportBottomBoundary,
-      containerBottomBoundary
-    )
-  );
-  const elementTop = Math.max(
-    Math.max(0, elementRect.top),
-    containerRect.top
-  );
-  const nextHeight = visibleBottom
-    - elementTop
-    - FIXED_HEIGHT_SAFE_GAP;
-  return normalizeFixedHeightToDevicePixel(nextHeight);
-}
-
-function resolveBestFixedHeight(element: HTMLElement) {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  const primaryContainer = resolvePrimaryPageScrollContainer(element);
-  if (primaryContainer) {
-    const nextHeight = resolveFixedHeightByContainerBoundary(
-      element,
-      primaryContainer
-    );
-    if (nextHeight !== null) {
-      return nextHeight;
-    }
-  }
-  const lockTargets = resolvePageScrollLockTargets(element);
-  for (const target of lockTargets) {
-    const nextHeight = resolveFixedHeightByContainerBoundary(element, target);
-    if (nextHeight !== null) {
-      return nextHeight;
-    }
-  }
-  const viewportBottomBoundary = resolveViewportBottomBoundary();
-  return normalizeFixedHeightToDevicePixel(
-    viewportBottomBoundary
-    - Math.max(0, element.getBoundingClientRect().top)
-    - FIXED_HEIGHT_SAFE_GAP
-  );
-}
-
-function clampFixedHeightToViewport(
-  element: HTMLElement,
-  height: number
-) {
-  if (!Number.isFinite(height) || height <= 0) {
-    return null;
-  }
-  const viewportBottomBoundary = resolveViewportBottomBoundary();
-  const elementTop = Math.max(0, element.getBoundingClientRect().top);
-  const maxHeight = normalizeFixedHeightToDevicePixel(
-    viewportBottomBoundary - elementTop - FIXED_HEIGHT_SAFE_GAP
-  );
-  if (maxHeight === null) {
-    return null;
-  }
-  return Math.min(height, maxHeight);
-}
-
-function resolvePageQueryTableGap(rootElement: HTMLElement) {
-  const styles = window.getComputedStyle(rootElement);
-  const rowGap = parseCssPixel(styles.rowGap);
-  if (rowGap > 0) {
-    return rowGap;
-  }
-  return parseCssPixel(styles.gap);
-}
-
-function resolveFixedTableHeight(rootElement: HTMLElement, rootHeight: number) {
-  if (!Number.isFinite(rootHeight) || rootHeight <= 0) {
-    return null;
-  }
-  const formElement = rootElement.querySelector(
-    '.admin-page-query-table__form'
-  ) as HTMLElement | null;
-  const formHeight = formElement
-    ? Math.max(0, formElement.getBoundingClientRect().height)
-    : 0;
-  const gap = formElement ? resolvePageQueryTableGap(rootElement) : 0;
-  const nextHeight = rootHeight - formHeight - gap;
-  const normalized = normalizeFixedHeightToDevicePixel(nextHeight);
-  if (normalized !== null) {
-    return normalized;
-  }
-  return 1;
-}
+type DataRecord = Record<string, unknown>;
+type FormValuesRecord = Record<string, unknown>;
 
 export const AdminPageQueryTable = defineComponent({
   name: 'AdminPageQueryTable',
@@ -374,6 +109,10 @@ export const AdminPageQueryTable = defineComponent({
     },
   },
   setup(props, { attrs, expose, slots }) {
+    type CreateTableApiOptions = Parameters<
+      typeof createTableApi<DataRecord, FormValuesRecord>
+    >[0];
+    type StripeResolveDefaults = Parameters<typeof resolveTableStripeConfig>[1];
     const pageLocaleVersion = usePageLocaleVersion();
     const tableLocaleVersion = useTableLocaleVersion();
     const preferencesLocale = usePreferencesLocale();
@@ -397,36 +136,39 @@ export const AdminPageQueryTable = defineComponent({
         resolvedPreferredLocale
       ).page as Record<string, string>;
     });
-    const layoutModeTitleToFixed = computed(() => {
-      return preferredLocaleText.value.queryTableSwitchToFixed
-        ?? localeText.value.queryTableSwitchToFixed
-        ?? 'Switch to fixed mode';
-    });
-    const layoutModeTitleToFlow = computed(() => {
-      return preferredLocaleText.value.queryTableSwitchToFlow
-        ?? localeText.value.queryTableSwitchToFlow
-        ?? 'Switch to flow mode';
-    });
+    const layoutModeTitles = computed(() =>
+      resolvePageQueryTableLayoutModeTitles({
+        localeText: localeText.value,
+        preferredLocaleText: preferredLocaleText.value,
+      })
+    );
 
-    const lazyApiOwner = createPageQueryTableLazyApiOwner<
+    const lazyApiOwner = createPageQueryTableLazyApiOwnerWithStripeDefaults<
       AdminFormApi,
-      AdminTableApi<DataRecord, FormValuesRecord>
+      AdminTableApi<DataRecord, FormValuesRecord>,
+      Record<string, unknown>,
+      Record<string, unknown>,
+      Record<string, unknown>
     >({
-      createFormApi: () =>
-        createFormApi(
-          normalizePageQueryFormOptions(
-            (props.formOptions ?? {}) as Record<string, any>
-          )
-        ),
-      createTableApi: () =>
+      createFormApi: (formOptions) => createFormApi(formOptions),
+      createTableApi: (tableOptions) =>
         createTableApi(
-          resolvePageQueryTableOptionsWithStripeDefaults(
-            (props.tableOptions ?? {}) as Record<string, any>,
-            (stripe: unknown, stripeDefaults: Record<string, any>) =>
-              resolveTableStripeConfig(stripe as any, stripeDefaults as any),
-            DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS
-          ) as any
+          tableOptions as CreateTableApiOptions
         ) as AdminTableApi<DataRecord, FormValuesRecord>,
+      formOptions: () =>
+        (props.formOptions ?? {}) as Record<string, unknown>,
+      normalizeFormOptions: (formOptions) =>
+        normalizePageQueryFormOptions(
+          (formOptions ?? {}) as Record<string, unknown>
+        ),
+      resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
+        resolveTableStripeConfig(
+          stripe as Parameters<typeof resolveTableStripeConfig>[0],
+          stripeDefaults as StripeResolveDefaults
+        ),
+      stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
+      tableOptions: () =>
+        (props.tableOptions ?? {}) as Record<string, unknown>,
     });
 
     const formApi = computed(() => {
@@ -447,11 +189,7 @@ export const AdminPageQueryTable = defineComponent({
     const rootRef = ref<HTMLElement | null>(null);
     const fixedRootHeight = ref<null | number>(null);
     const fixedTableHeight = ref<null | number>(null);
-    const pageScrollLocksRef = ref<
-      Array<{ element: HTMLElement; overflowX: string; overflowY: string }>
-    >([]);
-    let fixedHeightRafId: null | number = null;
-    let fixedHeightFrameBudget = 0;
+    const pageScrollLocksRef = ref<PageScrollLockState[]>([]);
 
     watch(
       preferredFixedMode,
@@ -469,15 +207,10 @@ export const AdminPageQueryTable = defineComponent({
     };
 
     const unlockPageScroll = () => {
-      if (pageScrollLocksRef.value.length <= 0) {
-        return;
-      }
-      for (const lock of pageScrollLocksRef.value) {
-        lock.element.style.overflowY = lock.overflowY;
-        lock.element.style.overflowX = lock.overflowX;
-        lock.element.removeAttribute(PAGE_SCROLL_LOCK_ATTR);
-      }
-      pageScrollLocksRef.value = [];
+      pageScrollLocksRef.value = reconcilePageScrollLocks(
+        pageScrollLocksRef.value,
+        []
+      );
     };
 
     const lockPageScroll = () => {
@@ -486,23 +219,10 @@ export const AdminPageQueryTable = defineComponent({
         return;
       }
       const lockTargets = resolvePageScrollLockTargets(rootRef.value);
-      if (lockTargets.length <= 0) {
-        return;
-      }
-      unlockPageScroll();
-      pageScrollLocksRef.value = lockTargets.map((target) => ({
-        element: target,
-        overflowX: target.style.overflowX ?? '',
-        overflowY: target.style.overflowY ?? '',
-      }));
-      for (const lock of pageScrollLocksRef.value) {
-        lock.element.style.overflowY = 'hidden';
-        lock.element.style.overflowX = 'hidden';
-        lock.element.setAttribute(PAGE_SCROLL_LOCK_ATTR, 'true');
-        if (lock.element.scrollTop > 0) {
-          lock.element.scrollTop = 0;
-        }
-      }
+      pageScrollLocksRef.value = reconcilePageScrollLocks(
+        pageScrollLocksRef.value,
+        lockTargets
+      );
     };
 
     const updateFixedHeight = () => {
@@ -524,39 +244,30 @@ export const AdminPageQueryTable = defineComponent({
         const nextFixedHeight =
           clampFixedHeightToViewport(measureElement, resolvedFixedHeight)
           ?? resolvedFixedHeight;
-        fixedRootHeight.value = nextFixedHeight;
-        fixedTableHeight.value = resolveFixedTableHeight(
+        const nextTableHeight = resolveFixedTableHeight(
           measureElement,
           nextFixedHeight
         );
+        if (!isHeightAlmostEqual(fixedRootHeight.value, nextFixedHeight)) {
+          fixedRootHeight.value = nextFixedHeight;
+        }
+        if (!isHeightAlmostEqual(fixedTableHeight.value, nextTableHeight)) {
+          fixedTableHeight.value = nextTableHeight;
+        }
         return;
       }
-      fixedRootHeight.value = null;
-      fixedTableHeight.value = null;
-    };
-
-    const runStabilizedFixedHeightUpdate = () => {
-      updateFixedHeight();
-      if (fixedHeightFrameBudget <= 0) {
-        fixedHeightRafId = null;
-        return;
+      if (fixedRootHeight.value !== null) {
+        fixedRootHeight.value = null;
       }
-      fixedHeightFrameBudget -= 1;
-      fixedHeightRafId = window.requestAnimationFrame(runStabilizedFixedHeightUpdate);
+      if (fixedTableHeight.value !== null) {
+        fixedTableHeight.value = null;
+      }
     };
-
+    const fixedHeightFrameScheduler = createPageQueryFrameScheduler(
+      updateFixedHeight
+    );
     const scheduleStabilizedFixedHeightUpdate = (frames = 2) => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-      fixedHeightFrameBudget = Math.max(
-        fixedHeightFrameBudget,
-        Math.max(0, Math.floor(frames))
-      );
-      if (fixedHeightRafId !== null) {
-        return;
-      }
-      fixedHeightRafId = window.requestAnimationFrame(runStabilizedFixedHeightUpdate);
+      fixedHeightFrameScheduler.schedule(frames);
     };
 
     const rootClass = computed(() => {
@@ -571,30 +282,26 @@ export const AdminPageQueryTable = defineComponent({
     });
 
     const rootStyle = computed(() => {
-      const fixedHeightStyle = {
-        '--admin-page-query-table-fixed-root-height':
-          fixedMode.value && fixedRootHeight.value !== null
-            ? `${fixedRootHeight.value}px`
-            : undefined,
-      };
-      const fixedTableHeightStyle = {
-        '--admin-page-query-table-fixed-table-height':
-          fixedMode.value && fixedTableHeight.value !== null
-            ? `${fixedTableHeight.value}px`
-            : undefined,
-      };
-      return [attrs.style, props.style, fixedHeightStyle, fixedTableHeightStyle];
+      return [
+        attrs.style,
+        props.style,
+        resolvePageQueryTableRootStyleVariables({
+          fixedMode: fixedMode.value,
+          fixedRootHeight: fixedRootHeight.value,
+          fixedTableHeight: fixedTableHeight.value,
+        }),
+      ];
     });
 
     const resolvedFormOptions = computed(() => {
       const resolvedOptions = resolvePageQueryFormOptionsWithBridge({
-        bridge: bridgeOptions.value as any,
+        bridge: bridgeOptions.value,
         formApi: formApi.value,
-        formOptions: (props.formOptions ?? {}) as Record<string, any>,
+        formOptions: (props.formOptions ?? {}) as Record<string, unknown>,
         normalizeFormOptions: (formOptions) =>
-          normalizePageQueryFormOptions(formOptions as Record<string, any>),
-        tableApi: tableApi.value as any,
-      }) as Record<string, any>;
+          normalizePageQueryFormOptions(formOptions as Record<string, unknown>),
+        tableApi: tableApi.value,
+      }) as Record<string, unknown>;
       if (!fixedMode.value) {
         return resolvedOptions;
       }
@@ -606,95 +313,38 @@ export const AdminPageQueryTable = defineComponent({
         ...resolvedOptions,
         handleCollapsedChange: (collapsed: boolean) => {
           sourceHandleCollapsedChange?.(collapsed);
-          scheduleStabilizedFixedHeightUpdate(3);
-          if (typeof window !== 'undefined') {
-            window.requestAnimationFrame(() => {
-              scheduleStabilizedFixedHeightUpdate(2);
-            });
-          }
+          schedulePageQueryStabilizedRecalc(
+            scheduleStabilizedFixedHeightUpdate
+          );
         },
       };
     });
 
     const resolvedTableOptions = computed(() => {
-      const resolvedOptions = resolvePageQueryTableOptionsWithStripeDefaults(
-        (props.tableOptions ?? {}) as Record<string, any>,
-        (stripe: unknown, stripeDefaults: Record<string, any>) =>
-          resolveTableStripeConfig(stripe as any, stripeDefaults as any),
-        DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS
-      ) as Record<string, any>;
-      const sourceGridOptions =
-        resolvedOptions.gridOptions && typeof resolvedOptions.gridOptions === 'object'
-          ? (resolvedOptions.gridOptions as Record<string, any>)
-          : {};
-      const sourceToolbarConfig =
-        sourceGridOptions.toolbarConfig && typeof sourceGridOptions.toolbarConfig === 'object'
-          ? (sourceGridOptions.toolbarConfig as Record<string, any>)
-          : {};
-      const sourceToolbarTools = Array.isArray(sourceToolbarConfig.tools)
-        ? sourceToolbarConfig.tools
-        : [];
-      const mergedToolbarTools = sourceToolbarTools.filter((tool) => {
-        return (tool as Record<string, any>)?.code !== PAGE_QUERY_LAYOUT_TOOL_CODE;
-      });
-      if (explicitTableHeight.value === null) {
-        mergedToolbarTools.push({
-          code: PAGE_QUERY_LAYOUT_TOOL_CODE,
-          icon: fixedMode.value
-            ? PAGE_QUERY_LAYOUT_FIXED_ICON
-            : PAGE_QUERY_LAYOUT_FLOW_ICON,
-          iconOnly: true,
-          onClick: handleLayoutModeToggle,
-          title: fixedMode.value
-            ? layoutModeTitleToFlow.value
-            : layoutModeTitleToFixed.value,
-        });
-      }
-      const nextGridOptions = {
-        ...sourceGridOptions,
-        toolbarConfig: {
-          ...sourceToolbarConfig,
-          tools: mergedToolbarTools,
-        },
-      };
-      if (!fixedMode.value) {
-        const nextFlowGridOptions = {
-          ...nextGridOptions,
-          height: explicitTableHeight.value ?? null,
-          maxHeight: null,
-        };
-        return {
-          ...resolvedOptions,
-          class: removeClassToken(
-            resolvedOptions.class,
-            PAGE_QUERY_FIXED_TABLE_CLASS
+      return resolvePageQueryTableDisplayOptionsWithStripeDefaults({
+        explicitTableHeight: explicitTableHeight.value,
+        fixedMode: fixedMode.value,
+        fixedTableHeight: fixedTableHeight.value,
+        layoutModeTitleToFixed: layoutModeTitles.value.layoutModeTitleToFixed,
+        layoutModeTitleToFlow: layoutModeTitles.value.layoutModeTitleToFlow,
+        onLayoutModeToggle: handleLayoutModeToggle,
+        resolveStripeConfig: (
+          stripe: unknown,
+          stripeDefaults: Record<string, unknown>
+        ) =>
+          resolveTableStripeConfig(
+            stripe as Parameters<typeof resolveTableStripeConfig>[0],
+            stripeDefaults as StripeResolveDefaults
           ),
-          gridOptions: nextFlowGridOptions,
-        };
-      }
-      return {
-        ...resolvedOptions,
-        class: appendClassToken(
-          resolvedOptions.class,
-          PAGE_QUERY_FIXED_TABLE_CLASS
-        ),
-        gridOptions: {
-          ...nextGridOptions,
-          height:
-            typeof fixedTableHeight.value === 'number'
-            && Number.isFinite(fixedTableHeight.value)
-            && fixedTableHeight.value > 0
-              ? Math.max(1, Math.floor(fixedTableHeight.value))
-              : '100%',
-          maxHeight: null,
-        },
-      };
+        stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
+        tableOptions: (props.tableOptions ?? {}) as Record<string, unknown>,
+      });
     });
 
     const forwardedTableSlots = computed(() => {
       return Object.fromEntries(
         Object.entries(slots).filter(([name]) => !['form', 'table'].includes(name))
-      ) as Record<string, (...args: any[]) => any>;
+      ) as Record<string, (...args: unknown[]) => VNodeChild>;
     });
 
     const internalApi = computed(() =>
@@ -806,34 +456,30 @@ export const AdminPageQueryTable = defineComponent({
       cleanupResizeListener?.();
       resizeObserver?.disconnect();
       resizeObserver = null;
-      if (typeof window !== 'undefined' && fixedHeightRafId !== null) {
-        window.cancelAnimationFrame(fixedHeightRafId);
-      }
-      fixedHeightRafId = null;
-      fixedHeightFrameBudget = 0;
+      fixedHeightFrameScheduler.cancel();
       unlockPageScroll();
     });
 
     return () => {
-      const formNode = slots.form
+      const formNode: VNodeChild = slots.form
         ? slots.form({
             formApi: formApi.value,
             tableApi: tableApi.value,
           })
-        : h(AdminSearchForm as any, {
-            ...(resolvedFormOptions.value as any),
+        : h(AdminSearchForm as unknown as Component, {
+            ...(resolvedFormOptions.value as Record<string, unknown>),
             formApi: formApi.value,
           });
 
-      const tableNode = slots.table
+      const tableNode: VNodeChild = slots.table
         ? slots.table({
             formApi: formApi.value,
             tableApi: tableApi.value,
           })
         : h(
-            AdminTable as any,
+            AdminTable as unknown as Component,
             {
-              ...(resolvedTableOptions.value as any),
+              ...(resolvedTableOptions.value as Record<string, unknown>),
               api: tableApi.value,
             },
             forwardedTableSlots.value
@@ -844,19 +490,23 @@ export const AdminPageQueryTable = defineComponent({
         {
           class: rootClass.value,
           ref: rootRef,
-          style: rootStyle.value as any,
+          style: rootStyle.value,
         },
         [
-          h('div', { class: 'admin-page-query-table__form' }, formNode as any),
+          h('div', { class: 'admin-page-query-table__form' }, formNode ?? undefined),
           h(
             'div',
             {
               class: 'admin-page-query-table__table',
             },
-            tableNode as any
+            tableNode ?? undefined
           ),
         ]
       );
     };
   },
 });
+
+export {
+  createPageQueryTableApi as createAdminPageQueryTableApi,
+};

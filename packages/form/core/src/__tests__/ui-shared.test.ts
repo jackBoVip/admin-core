@@ -207,6 +207,13 @@ describe('ui shared utils', () => {
       showCollapseButton: true,
     });
     const items = resolveFormActionRenderItems(plan);
+    const resetItem = items[0];
+    const collapseItem = items[2];
+    expect(resetItem).toBeDefined();
+    expect(collapseItem).toBeDefined();
+    if (!resetItem || !collapseItem) {
+      throw new Error('expected reset and collapse action items to exist');
+    }
     expect(items.map((item) => item.actionKey)).toEqual([
       'reset',
       'submit',
@@ -221,7 +228,7 @@ describe('ui shared utils', () => {
 
     const called: string[] = [];
     await handleFormActionItemClick(
-      items[0]!,
+      resetItem,
       {
         preventDefault: () => {
           called.push('prevent');
@@ -240,7 +247,7 @@ describe('ui shared utils', () => {
       }
     );
     await handleFormActionItemClick(
-      items[2]!,
+      collapseItem,
       {
         preventDefault: () => {
           called.push('prevent-collapse');

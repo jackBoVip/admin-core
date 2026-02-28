@@ -116,7 +116,10 @@ describe('form-react adapter', () => {
     });
 
     expect(capturedApi).toBeTruthy();
-    const result = await capturedApi!.validate();
+    if (!capturedApi) {
+      throw new Error('expected form api from useAdminFormSubmitPage');
+    }
+    const result = await capturedApi.validate();
     expect(result.valid).toBe(true);
     expect(controller.getOpen()).toBe(false);
     await act(async () => {

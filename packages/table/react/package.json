@@ -34,7 +34,7 @@
     "dev": "vite build --watch",
     "test": "vitest --passWithNoTests",
     "test:run": "vitest run --passWithNoTests",
-    "lint": "eslint src",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

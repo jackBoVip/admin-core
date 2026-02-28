@@ -10,8 +10,7 @@ import { createFormApi } from '@admin-core/form-react';
 import {
   DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
   cleanupPageQueryTableApis,
-  resolvePageQueryTableApiBundle,
-  resolvePageQueryTableOptionsWithStripeDefaults,
+  resolvePageQueryTableApiBundleWithStripeDefaults,
 } from '@admin-core/page-core';
 import {
   createTableApi,
@@ -29,34 +28,49 @@ import {
 import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
 export function useAdminPageQueryTable<
-  TData extends Record<string, any> = Record<string, any>,
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TData extends Record<string, unknown> = Record<string, unknown>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
 >(
   options: AdminPageQueryTableReactProps<TData, TFormValues> = {}
 ): UseAdminPageQueryTableReturn<TData, TFormValues> {
   const initialRuntimeRef = useRef<ReturnType<
-    typeof resolvePageQueryTableApiBundle<AdminFormApi, AdminTableApi<TData, TFormValues>, AdminPageQueryTableApi<TData, TFormValues>>
+    typeof resolvePageQueryTableApiBundleWithStripeDefaults<
+      AdminFormApi,
+      AdminTableApi<TData, TFormValues>,
+      AdminPageQueryTableApi<TData, TFormValues>,
+      Record<string, unknown>,
+      Record<string, unknown>,
+      Record<string, unknown>
+    >
   > | null>(null);
   if (!initialRuntimeRef.current) {
-    initialRuntimeRef.current = resolvePageQueryTableApiBundle({
+    type FormOptionsRecord = Record<string, unknown>;
+    type StripeResolveDefaults = Parameters<typeof resolveTableStripeConfig>[1];
+    type TableOptionsRecord = Record<string, unknown>;
+    type CreateTableApiOptions = Parameters<
+      typeof createTableApi<TData, TFormValues>
+    >[0];
+    initialRuntimeRef.current = resolvePageQueryTableApiBundleWithStripeDefaults({
       api: options.api as AdminPageQueryTableApi<TData, TFormValues> | undefined,
-      createFormApi: () =>
-        createFormApi(
-          normalizePageQueryFormOptions(
-            (options.formOptions ?? {}) as Record<string, any>
-          )
+      createFormApi: (formOptions: FormOptionsRecord) => createFormApi(formOptions),
+      createTableApi: (tableOptions: TableOptionsRecord) =>
+        createTableApi<TData, TFormValues>(
+          tableOptions as CreateTableApiOptions
         ),
-      createTableApi: () =>
-        createTableApi<TData, TFormValues>({
-          ...(resolvePageQueryTableOptionsWithStripeDefaults(
-            (options.tableOptions ?? {}) as Record<string, any>,
-            (stripe: unknown, stripeDefaults: Record<string, any>) =>
-              resolveTableStripeConfig(stripe as any, stripeDefaults as any),
-            DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS
-          ) as any),
-        } as any),
       formApi: options.formApi,
+      formOptions: (options.formOptions ?? {}) as FormOptionsRecord,
+      normalizeFormOptions: (formOptions: FormOptionsRecord | undefined) =>
+        normalizePageQueryFormOptions(
+          (formOptions ?? {}) as FormOptionsRecord
+        ),
+      resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
+        resolveTableStripeConfig(
+          stripe as Parameters<typeof resolveTableStripeConfig>[0],
+          stripeDefaults as StripeResolveDefaults
+        ),
+      stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
       tableApi: options.tableApi,
+      tableOptions: (options.tableOptions ?? {}) as TableOptionsRecord,
     });
   }
   const runtime = initialRuntimeRef.current;
@@ -84,11 +98,14 @@ export function useAdminPageQueryTable<
         props: Partial<AdminPageQueryTableReactProps<TData, TFormValues>>
       ) {
         const runtimeOptions = optionsRef.current;
+        const mergedProps = {
+          ...runtimeOptions,
+          ...props,
+          api,
+        } as unknown as AdminPageQueryTableReactProps;
         return (
           <AdminPageQueryTable
-            {...(runtimeOptions as any)}
-            {...(props as any)}
-            api={api}
+            {...mergedProps}
           />
         );
       },

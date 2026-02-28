@@ -319,15 +319,24 @@ const FormFieldItem = memo(function FormFieldItem({
 );
 
 export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
+  const initialFormPropsRef = useRef<Record<string, any> | null>(null);
+  if (!initialFormPropsRef.current) {
+    initialFormPropsRef.current = pickFormProps(props as Record<string, any>);
+  }
   const api = useMemo(
-    () => props.formApi ?? createFormApi(pickFormProps(props as Record<string, any>)),
+    () => props.formApi ?? createFormApi(initialFormPropsRef.current ?? {}),
     [props.formApi]
   );
   const localeVersion = useLocaleVersion();
   const runtime = useFormSelector(api, useCallback((snapshot) => snapshot.runtime, []));
   const runtimeProps = useFormSelector(api, useCallback((snapshot) => snapshot.props, []));
-  const renderState = useMemo(() => api.getRenderState(), [api, runtime, runtimeProps]);
-  const messages = useMemo(() => getLocaleMessages().form, [localeVersion]);
+  void runtime;
+  void runtimeProps;
+  const renderState = api.getRenderState();
+  const messages = useMemo(() => {
+    void localeVersion;
+    return getLocaleMessages().form;
+  }, [localeVersion]);
   const resolvedBindingCacheRef = useRef(
     new Map<string, ResolvedComponentBinding<any> | null>()
   );
@@ -336,6 +345,7 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
     createControlledValuesBridge<Record<string, any>>()
   );
   const queryAutoCollapsedRef = useRef(false);
+  const onValuesChange = props.onValuesChange;
   useEffect(() => {
     api.mount();
     return () => {
@@ -381,7 +391,7 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
   }, [api, props.values]);
 
   useEffect(() => {
-    if (!props.onValuesChange) {
+    if (!onValuesChange) {
       return;
     }
     return api.store.subscribeSelector(
@@ -395,11 +405,11 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
           return;
         }
         bridge.markEmitted(nextValues);
-        props.onValuesChange?.(nextValues);
+        onValuesChange(nextValues);
       },
       Object.is
     );
-  }, [api, props.onValuesChange]);
+  }, [api, onValuesChange]);
 
   useEffect(() => {
     resolvedBindingCacheRef.current.clear();

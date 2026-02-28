@@ -6,7 +6,7 @@
 export * from './config';
 export * from './constants';
 export * from './locales';
-export { createPageApi } from './page-api';
+export { createPageApi, createPageApiWithRuntimeOptions } from './page-api';
 export * from './store';
 export * from './styles';
 export type * from './types';

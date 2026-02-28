@@ -5,8 +5,9 @@ import type {
 } from '../types';
 
 import {
-  createPageApi,
-  pickPageRuntimeStateOptions,
+  createPageApiWithRuntimeOptions,
+  resolvePageStoreSelector,
+  syncPageRuntimeState,
 } from '@admin-core/page-core';
 import { useEffect, useMemo, useRef } from 'react';
 
@@ -16,29 +17,44 @@ import { usePageSelector } from './use-page-selector';
 export function useAdminPage(
   options: AdminPageReactProps = {}
 ) {
+  const {
+    activeKey,
+    keepInactivePages,
+    onActiveChange,
+    onPagesChange,
+    pages,
+    router,
+    scroll,
+  } = options;
   const apiRef = useRef<ExtendedAdminPageApi | null>(null);
   if (!apiRef.current) {
-    apiRef.current = createPageApi<ReactPageComponent>(
-      options
+    apiRef.current = createPageApiWithRuntimeOptions<ReactPageComponent>(
+      options as Record<string, unknown>
     ) as ExtendedAdminPageApi;
   }
 
   const api = apiRef.current;
 
   useEffect(() => {
-    api.setState(pickPageRuntimeStateOptions(options));
-    if (options.router?.currentPath) {
-      api.syncRoute(options.router.currentPath);
-    }
+    syncPageRuntimeState(api, {
+      activeKey,
+      keepInactivePages,
+      onActiveChange,
+      onPagesChange,
+      pages,
+      router,
+      scroll,
+    });
   }, [
     api,
-    options.activeKey,
-    options.keepInactivePages,
-    options.onActiveChange,
-    options.onPagesChange,
-    options.pages,
-    options.router,
-    options.scroll,
+    activeKey,
+    keepInactivePages,
+    onActiveChange,
+    onPagesChange,
+    pages,
+    router,
+    router?.currentPath,
+    scroll,
   ]);
 
   useEffect(() => {
@@ -49,11 +65,15 @@ export function useAdminPage(
 
   function useStore<TSlice = AdminPageReactProps>(
     selector?: (state: AdminPageReactProps) => TSlice
-  ) {
-    const safeSelector =
-      selector ??
-      ((state: AdminPageReactProps) => state as unknown as TSlice);
-    return usePageSelector(api, safeSelector);
+  ): TSlice {
+    const safeSelector = resolvePageStoreSelector<
+      AdminPageReactProps,
+      TSlice
+    >(selector);
+    return usePageSelector<ReactPageComponent, TSlice>(
+      api,
+      safeSelector
+    );
   }
 
   api.useStore = useStore;

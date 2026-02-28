@@ -53,9 +53,21 @@ interface Props extends AdminTabsReactProps {
   items?: AdminTabReactItem[];
 }
 
+const EMPTY_TAB_ITEMS: AdminTabReactItem[] = [];
+
 export const AdminTabs = memo(function AdminTabs(props: Props) {
-  const items = props.items ?? [];
-  const isControlled = props.activeKey !== undefined;
+  const {
+    activeKey,
+    className,
+    closeAriaLabel: closeAriaLabelProp,
+    defaultActiveKey,
+    onChange,
+    onClose,
+    style,
+    tabs,
+  } = props;
+  const items = props.items ?? EMPTY_TAB_ITEMS;
+  const isControlled = activeKey !== undefined;
   const [internalActiveKey, setInternalActiveKey] = useState<null | string>(null);
   const localeVersion = useSyncExternalStore(
     subscribeAdminTabsLocale,
@@ -63,31 +75,32 @@ export const AdminTabs = memo(function AdminTabs(props: Props) {
     getAdminTabsLocaleVersion
   );
   const localeCloseLabel = useMemo(() => {
+    void localeVersion;
     return getAdminTabsLocale().close;
   }, [localeVersion]);
 
   const mergedTabs = useMemo<boolean | AdminTabsOptions | undefined>(() => {
     const setupState = getAdminTabsReactSetupState();
-    const rawTabs = props.tabs ?? setupState.defaults.tabs;
+    const rawTabs = tabs ?? setupState.defaults.tabs;
     return resolveAdminTabsOptionsWithDefaults(rawTabs, REACT_TABS_DEFAULTS);
-  }, [props.tabs]);
+  }, [tabs]);
   const normalizedTabs = useMemo(() => {
     return normalizeAdminTabsOptions(mergedTabs);
   }, [mergedTabs]);
 
   const mergedDefaultActiveKey = useMemo<null | string>(() => {
     const setupState = getAdminTabsReactSetupState();
-    return props.defaultActiveKey ?? setupState.defaults.defaultActiveKey ?? null;
-  }, [props.defaultActiveKey]);
+    return defaultActiveKey ?? setupState.defaults.defaultActiveKey ?? null;
+  }, [defaultActiveKey]);
 
   const closeAriaLabel = useMemo(() => {
     const setupState = getAdminTabsReactSetupState();
     return (
-      props.closeAriaLabel ??
+      closeAriaLabelProp ??
       setupState.defaults.closeAriaLabel ??
       localeCloseLabel
     );
-  }, [localeCloseLabel, props.closeAriaLabel]);
+  }, [closeAriaLabelProp, localeCloseLabel]);
 
   const visible = useMemo(() => {
     return resolveAdminTabsVisible(normalizedTabs, items);
@@ -119,8 +132,8 @@ export const AdminTabs = memo(function AdminTabs(props: Props) {
       items,
       nextKey
     );
-    props.onChange?.(payload);
-  }, [isControlled, items, props.onChange]);
+    onChange?.(payload);
+  }, [isControlled, items, onChange]);
 
   const tabItems = useMemo<NonNullable<TabsProps['items']>>(() => {
     const showClose = resolveAdminTabsShowClose(items);
@@ -140,7 +153,7 @@ export const AdminTabs = memo(function AdminTabs(props: Props) {
                   event.preventDefault();
                   event.stopPropagation();
                   const payload: AdminTabsClosePayload = createAdminTabsClosePayload(item);
-                  props.onClose?.(payload);
+                  onClose?.(payload);
                 }}
               >
                 ×
@@ -150,15 +163,15 @@ export const AdminTabs = memo(function AdminTabs(props: Props) {
         ),
       };
     });
-  }, [closeAriaLabel, items, props.onClose]);
+  }, [closeAriaLabel, items, onClose]);
 
   const selectedActiveKey = useMemo(() => {
     return resolveAdminTabsSelectedActiveKey(items, {
-      controlledActiveKey: props.activeKey ?? null,
+      controlledActiveKey: activeKey ?? null,
       isControlled,
       uncontrolledActiveKey: internalActiveKey,
     }) ?? undefined;
-  }, [internalActiveKey, isControlled, items, props.activeKey]);
+  }, [activeKey, internalActiveKey, isControlled, items]);
 
   const activeItem = useMemo(() => {
     return resolveAdminTabsActiveItem(items, selectedActiveKey ?? null);
@@ -182,13 +195,13 @@ export const AdminTabs = memo(function AdminTabs(props: Props) {
       className={[
         'admin-tabs--antd',
         ...resolveAdminTabsRootClassNames(normalizedTabs),
-        props.className ?? '',
+        className ?? '',
       ].filter(Boolean).join(' ')}
       items={tabItems}
       onChange={handleChange}
       style={{
         ...resolveAdminTabsStyleVars(normalizedTabs),
-        ...(props.style ?? {}),
+        ...(style ?? {}),
       } as CSSProperties}
     />
   ) : null;

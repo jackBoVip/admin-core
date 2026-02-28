@@ -138,11 +138,13 @@ export function createFormAdapterRegistry<TComponent = unknown>(
         );
       }
 
-      if (isString(explicitComponent) && libraryMap.has(explicitComponent)) {
-        const selected = libraryMap.get(explicitComponent)!;
-        const candidate = selected.components[key as SemanticFormComponentType];
-        if (candidate) {
-          return toResolvedBinding('library', key, candidate, selected, explicitComponent);
+      if (isString(explicitComponent)) {
+        const selected = libraryMap.get(explicitComponent);
+        if (selected) {
+          const candidate = selected.components[key as SemanticFormComponentType];
+          if (candidate) {
+            return toResolvedBinding('library', key, candidate, selected, explicitComponent);
+          }
         }
       }
 

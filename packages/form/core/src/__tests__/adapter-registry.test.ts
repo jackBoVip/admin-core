@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   createFormAdapterBridge,
   createFormAdapterRegistry,
@@ -64,28 +64,34 @@ describe('form adapter registry', () => {
   });
 
   it('should fallback to native when library lacks required capability', () => {
-    const registry = createFormAdapterRegistry<string>({
-      activeLibrary: 'mini-ui',
-      nativeAdapter: createNativeAdapter({
-        'date-range': 'native-range',
-      }),
-      libraries: {
-        'mini-ui': {
-          version: 1,
-          name: 'mini-ui',
-          capabilities: {
-            dateRange: false,
-          },
-          components: {
-            'date-range': 'mini-range',
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const registry = createFormAdapterRegistry<string>({
+        activeLibrary: 'mini-ui',
+        nativeAdapter: createNativeAdapter({
+          'date-range': 'native-range',
+        }),
+        libraries: {
+          'mini-ui': {
+            version: 1,
+            name: 'mini-ui',
+            capabilities: {
+              dateRange: false,
+            },
+            components: {
+              'date-range': 'mini-range',
+            },
           },
         },
-      },
-    });
+      });
 
-    const resolved = registry.resolveComponent({ key: 'date-range' });
-    expect(resolved?.source).toBe('native');
-    expect(resolved?.component).toBe('native-range');
+      const resolved = registry.resolveComponent({ key: 'date-range' });
+      expect(resolved?.source).toBe('native');
+      expect(resolved?.component).toBe('native-range');
+      expect(warnSpy).toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+    }
   });
 
   it('should expose setup/register flow through adapter bridge', () => {

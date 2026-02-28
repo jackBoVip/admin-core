@@ -1,3 +1,5 @@
+/** @vitest-environment jsdom */
+
 import { createTableApi } from '@admin-core/table-core';
 import { act, create } from 'react-test-renderer';
 import { beforeEach, describe, expect, it, vi } from 'vitest';

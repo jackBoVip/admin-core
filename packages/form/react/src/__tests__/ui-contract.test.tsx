@@ -1,13 +1,15 @@
 
 import { createFormApi, setLocale } from '@admin-core/form-core';
 import { act, create } from 'react-test-renderer';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminForm } from '../components/AdminForm';
 import { AdminSearchForm } from '../components/AdminSearchForm';
 import { setupAdminFormReact } from '../registry';
 import type { ReactElement } from 'react';
 import type { ReactTestRenderer } from 'react-test-renderer';
 import { useState } from 'react';
+
+const mountedRenderers = new Set<ReactTestRenderer>();
 
 async function mountForm(element: ReactElement) {
   let renderer: ReactTestRenderer | null = null;
@@ -17,6 +19,7 @@ async function mountForm(element: ReactElement) {
   if (!renderer) {
     throw new Error('renderer not created');
   }
+  mountedRenderers.add(renderer);
   return renderer;
 }
 
@@ -33,6 +36,15 @@ describe('react ui contract', () => {
         },
       },
     });
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      mountedRenderers.forEach((renderer) => {
+        renderer.unmount();
+      });
+    });
+    mountedRenderers.clear();
   });
 
   it('input should sync value to api through change event', async () => {

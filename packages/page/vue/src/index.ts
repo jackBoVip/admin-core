@@ -27,7 +27,11 @@ export {
   type RoutePageItem,
 } from '@admin-core/page-core';
 
-export { AdminPage, AdminPageQueryTable } from './components';
+export {
+  AdminPage,
+  AdminPageQueryTable,
+  createAdminPageQueryTableApi,
+} from './components';
 export { useAdminPage } from './hooks';
 export { useAdminPageQueryTable } from './hooks';
 export { getAdminPageVueSetupState, setupAdminPageVue } from './setup';

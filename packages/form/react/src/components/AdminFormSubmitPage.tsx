@@ -59,7 +59,10 @@ function useStableFormApi(
 export function AdminFormSubmitPage(props: AdminFormSubmitPageInternalProps) {
   const localeVersion = useLocaleVersion();
   const localeMessages = useMemo(
-    () => getLocaleMessages().submitPage,
+    () => {
+      void localeVersion;
+      return getLocaleMessages().submitPage;
+    },
     [localeVersion]
   );
   const {

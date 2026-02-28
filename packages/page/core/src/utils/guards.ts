@@ -1,6 +1,6 @@
 import type { AdminPageItem, ComponentPageItem, RoutePageItem } from '../types';
 
-export function isFunction<T extends (...args: any[]) => any>(
+export function isFunction<T extends (...args: unknown[]) => unknown>(
   value: unknown
 ): value is T {
   return typeof value === 'function';

@@ -4,6 +4,7 @@ import {
 } from '../constants';
 import { getLocaleMessages } from '../locales';
 import type {
+  AdminPageApi,
   AdminPageItem,
   AdminPageOptions,
   NormalizedPageFormTableBridgeOptions,
@@ -13,7 +14,10 @@ import type {
   PageRouterLike,
   RoutePageItem,
 } from '../types';
-import { isPageRouteItem } from './guards';
+import {
+  isPageComponentItem,
+  isPageRouteItem,
+} from './guards';
 
 type PageRuntimeStateKeys =
   | 'activeKey'
@@ -24,8 +28,17 @@ type PageRuntimeStateKeys =
   | 'router'
   | 'scroll';
 
+export function resolvePageStoreSelector<TState, TSlice = TState>(
+  selector?: (state: TState) => TSlice
+) {
+  return (
+    selector
+    ?? ((state: TState) => state as unknown as TSlice)
+  );
+}
+
 export function pickPageRuntimeStateOptions<TComponent = unknown>(
-  options: Record<string, any> | undefined
+  options: Record<string, unknown> | undefined
 ): Pick<AdminPageOptions<TComponent>, PageRuntimeStateKeys> {
   const source = (options ?? {}) as Partial<
     Pick<AdminPageOptions<TComponent>, PageRuntimeStateKeys>
@@ -39,6 +52,18 @@ export function pickPageRuntimeStateOptions<TComponent = unknown>(
     router: source.router,
     scroll: source.scroll,
   };
+}
+
+export function syncPageRuntimeState<TComponent = unknown>(
+  api: Pick<AdminPageApi<TComponent>, 'setState' | 'syncRoute'>,
+  options: Record<string, unknown> | undefined
+) {
+  const runtimeOptions = pickPageRuntimeStateOptions<TComponent>(options);
+  api.setState(runtimeOptions);
+  const currentPath = runtimeOptions.router?.currentPath;
+  if (currentPath) {
+    api.syncRoute(currentPath);
+  }
 }
 
 export function normalizeScrollOptions(
@@ -57,7 +82,7 @@ export function normalizeScrollOptions(
 }
 
 export function normalizePageFormTableBridgeOptions<
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
   TFormApi = unknown,
   TTableApi = unknown,
 >(
@@ -127,6 +152,170 @@ export function normalizePageItems<TComponent = unknown>(
       title,
     };
   });
+}
+
+export function resolvePageItemContent<
+  TComponent = unknown,
+  TResult = unknown,
+>(options: {
+  page: AdminPageItem<TComponent>;
+  renderComponent: (
+    component: TComponent,
+    props?: Record<string, unknown>
+  ) => TResult;
+  renderRoute: (page: RoutePageItem<TComponent>) => TResult;
+}) {
+  if (isPageComponentItem(options.page)) {
+    return options.renderComponent(
+      options.page.component,
+      options.page.props
+    );
+  }
+
+  const routePage = options.page as RoutePageItem<TComponent>;
+  if (routePage.component !== undefined && routePage.component !== null) {
+    return options.renderComponent(
+      routePage.component,
+      routePage.props
+    );
+  }
+
+  return options.renderRoute(routePage);
+}
+
+export function resolvePageActiveContent<
+  TComponent = unknown,
+  TResult = unknown,
+>(options: {
+  activePage: AdminPageItem<TComponent> | null;
+  renderEmpty: () => TResult;
+  renderPage: (page: AdminPageItem<TComponent>) => TResult;
+}) {
+  if (!options.activePage) {
+    return options.renderEmpty();
+  }
+  return options.renderPage(options.activePage);
+}
+
+export type PagePaneDescriptor<TComponent = unknown> = {
+  active: boolean;
+  className: string;
+  page: AdminPageItem<TComponent>;
+};
+
+export type KeepInactivePagePaneState<TComponent = unknown> = {
+  activeKey: null | string;
+  descriptors: Array<PagePaneDescriptor<TComponent>>;
+  indexByKey: Map<string, number>;
+  pagesRef: AdminPageItem<TComponent>[];
+};
+
+export function resolvePageContentClassName(scrollEnabled: boolean) {
+  return [
+    'admin-page__content',
+    scrollEnabled
+      ? 'admin-page__content--scroll'
+      : 'admin-page__content--static',
+  ].join(' ');
+}
+
+export function isPagePaneActive(
+  pageKey: string | undefined,
+  activeKey: null | string
+) {
+  return pageKey === activeKey;
+}
+
+export function resolvePagePaneClassName(active: boolean) {
+  return [
+    'admin-page__pane',
+    active ? 'is-active' : 'is-inactive',
+  ].join(' ');
+}
+
+export function resolveKeepInactivePagePanes<TComponent = unknown>(
+  pages: AdminPageItem<TComponent>[],
+  activeKey: null | string
+): Array<PagePaneDescriptor<TComponent>> {
+  return pages.map((page) => {
+    const active = isPagePaneActive(page.key, activeKey);
+    return {
+      active,
+      className: resolvePagePaneClassName(active),
+      page,
+    };
+  });
+}
+
+export function createKeepInactivePagePaneState<TComponent = unknown>(
+  pages: AdminPageItem<TComponent>[],
+  activeKey: null | string
+): KeepInactivePagePaneState<TComponent> {
+  const descriptors = resolveKeepInactivePagePanes(pages, activeKey);
+  const indexByKey = new Map<string, number>();
+  for (let index = 0; index < pages.length; index += 1) {
+    const key = pages[index]?.key;
+    if (!key || indexByKey.has(key)) {
+      continue;
+    }
+    indexByKey.set(key, index);
+  }
+  return {
+    activeKey,
+    descriptors,
+    indexByKey,
+    pagesRef: pages,
+  };
+}
+
+export function reconcileKeepInactivePagePaneState<TComponent = unknown>(
+  previous: KeepInactivePagePaneState<TComponent> | null | undefined,
+  pages: AdminPageItem<TComponent>[],
+  activeKey: null | string
+): KeepInactivePagePaneState<TComponent> {
+  if (!previous || previous.pagesRef !== pages) {
+    return createKeepInactivePagePaneState(pages, activeKey);
+  }
+  if (previous.activeKey === activeKey) {
+    return previous;
+  }
+
+  const descriptors = previous.descriptors.slice();
+  const previousActiveKey = previous.activeKey;
+  if (previousActiveKey) {
+    const previousIndex = previous.indexByKey.get(previousActiveKey);
+    if (previousIndex !== undefined) {
+      const previousDescriptor = descriptors[previousIndex];
+      if (previousDescriptor?.active) {
+        descriptors[previousIndex] = {
+          ...previousDescriptor,
+          active: false,
+          className: resolvePagePaneClassName(false),
+        };
+      }
+    }
+  }
+
+  if (activeKey) {
+    const nextIndex = previous.indexByKey.get(activeKey);
+    if (nextIndex !== undefined) {
+      const nextDescriptor = descriptors[nextIndex];
+      if (nextDescriptor && !nextDescriptor.active) {
+        descriptors[nextIndex] = {
+          ...nextDescriptor,
+          active: true,
+          className: resolvePagePaneClassName(true),
+        };
+      }
+    }
+  }
+
+  return {
+    activeKey,
+    descriptors,
+    indexByKey: previous.indexByKey,
+    pagesRef: pages,
+  };
 }
 
 function isRouteMatched<TComponent = unknown>(

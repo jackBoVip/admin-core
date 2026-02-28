@@ -14,7 +14,7 @@ export interface PageRouterLike<TComponent = unknown> {
 
 export interface BasePageItem {
   key?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
   scroll?: boolean | PageScrollOptions;
   title?: string;
 }
@@ -22,14 +22,14 @@ export interface BasePageItem {
 export interface RoutePageItem<TComponent = unknown> extends BasePageItem {
   exact?: boolean;
   path: string;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
   component?: TComponent;
   type: 'route';
 }
 
 export interface ComponentPageItem<TComponent = unknown> extends BasePageItem {
   component: TComponent;
-  props?: Record<string, any>;
+  props?: Record<string, unknown>;
   type: 'component';
 }
 
@@ -81,7 +81,7 @@ export interface PageFormTableBridgeContext<
 }
 
 export interface PageFormTableBridgeOptions<
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
   TFormApi = unknown,
   TTableApi = unknown,
 > {
@@ -89,13 +89,13 @@ export interface PageFormTableBridgeOptions<
   mapParams?: (
     values: TFormValues,
     context: PageFormTableBridgeContext<TFormApi, TTableApi>
-  ) => Promise<Record<string, any>> | Record<string, any>;
+  ) => Promise<Record<string, unknown>> | Record<string, unknown>;
   queryOnSubmit?: boolean;
   reloadOnReset?: boolean;
 }
 
 export interface NormalizedPageFormTableBridgeOptions<
-  TFormValues extends Record<string, any> = Record<string, any>,
+  TFormValues extends Record<string, unknown> = Record<string, unknown>,
   TFormApi = unknown,
   TTableApi = unknown,
 > extends Omit<
@@ -108,8 +108,8 @@ export interface NormalizedPageFormTableBridgeOptions<
 }
 
 export interface PageQueryTableExecutor {
-  query: (params?: Record<string, any>) => Promise<any>;
-  reload: (params?: Record<string, any>) => Promise<any>;
+  query: (params?: Record<string, unknown>) => Promise<unknown>;
+  reload: (params?: Record<string, unknown>) => Promise<unknown>;
 }
 
 export interface PageQueryTableApi<
