@@ -12,6 +12,14 @@ pnpm add @admin-core/page-react
 
 - `@admin-core/form-react` and `@admin-core/table-react` are internal dependencies of `@admin-core/page-react`; no extra install is required in app code.
 
+## Styles
+
+```tsx
+import '@admin-core/page-react/style.css';
+```
+
+- `@admin-core/page-react/style.css` already includes page/form/table styles, so you do not need to import `@admin-core/form-react/style.css` or `@admin-core/table-react/style.css` separately.
+
 ### CDN (Production / Development)
 
 ```html

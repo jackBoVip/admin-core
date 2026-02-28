@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/table-shared",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared table re-exports for framework adapters",
   "type": "module",
   "main": "./dist/index.cjs",

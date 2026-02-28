@@ -12,6 +12,14 @@ pnpm add @admin-core/page-react
 
 - `@admin-core/form-react` 与 `@admin-core/table-react` 为 `@admin-core/page-react` 的内部依赖，业务侧无需额外安装。
 
+## 样式
+
+```tsx
+import '@admin-core/page-react/style.css';
+```
+
+- `@admin-core/page-react/style.css` 已聚合 `page/form/table` 所需样式，无需再单独引入 `@admin-core/form-react/style.css` 或 `@admin-core/table-react/style.css`。
+
 ### CDN（生产/开发）
 
 ```html

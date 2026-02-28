@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/table-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React 表格适配包，基于 antd Table 并内置搜索表单集成",
   "type": "module",
   "sideEffects": [

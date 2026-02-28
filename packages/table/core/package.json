@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/table-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "框架无关的表格核心引擎，提供统一 Table API、代理请求增强与渲染器协议",
   "type": "module",
   "sideEffects": [

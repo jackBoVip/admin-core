@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/preferences-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React 18 偏好设置集成，提供 hooks 和组件",
   "type": "module",
   "sideEffects": false,

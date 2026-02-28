@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/form-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React 表单适配包，仅负责 UI 渲染与组件映射",
   "type": "module",
   "sideEffects": [

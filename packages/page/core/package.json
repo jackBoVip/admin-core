@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/page-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "框架无关的页面容器核心，提供路由页与组件页的统一状态协议",
   "type": "module",
   "sideEffects": [

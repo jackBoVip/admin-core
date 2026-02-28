@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/tabs-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React tabs 适配包，基于 antd Tabs",
   "type": "module",
   "sideEffects": [

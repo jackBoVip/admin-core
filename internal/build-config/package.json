@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/build-config",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Shared build config helpers for the monorepo",

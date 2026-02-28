@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/shared-vue",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared Vue composables for @admin-core packages",
   "type": "module",
   "main": "./dist/index.cjs",

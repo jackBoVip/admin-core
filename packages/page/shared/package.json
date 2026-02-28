@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/page-shared",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared page re-exports for framework adapters",
   "type": "module",
   "main": "./dist/index.cjs",

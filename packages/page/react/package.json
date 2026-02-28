@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/page-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React 页面容器适配包，支持路由页与组件页",
   "type": "module",
   "sideEffects": [

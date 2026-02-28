@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/tabs-core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "框架无关的 tabs 核心协议，提供 tabs 配置与显示策略能力",
   "type": "module",
   "sideEffects": [

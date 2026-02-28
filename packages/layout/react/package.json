@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/layout-react",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "React 基础布局组件，开箱即用，高度集成偏好设置",
   "type": "module",
   "sideEffects": [
