@@ -3,9 +3,9 @@ import {
   getCachedMenuPathIndex,
   resolveDynamicTitleSnapshot,
 } from '@admin-core/layout';
+import { EMPTY_MENUS } from '@admin-core/layout-shared';
 import { computed, watch } from 'vue';
 import { useLayoutContext } from '../use-layout-context';
-import { EMPTY_MENUS } from './common';
 import { useRouter } from './router';
 
 export function useDynamicTitle() {

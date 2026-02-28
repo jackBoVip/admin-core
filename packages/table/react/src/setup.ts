@@ -1,19 +1,18 @@
 import type { SetupAdminTableReactOptions } from './types';
 
 import {
-  createTableDateFormatter,
   normalizeTableLocale,
-  registerTableFormatters,
-  setLocale as setTableLocale,
   setupAdminTableCore,
 } from '@admin-core/table-core';
 import {
-  getActualThemeMode,
-  getDefaultPreferencesStore,
-  getThemePrimaryColor,
-  oklchToHex,
   type Preferences,
 } from '@admin-core/preferences';
+import {
+  applyTableLocaleCore,
+  applyTableSetupPermissionState,
+  createTablePreferencesBinder,
+  resolveTableThemeContext,
+} from '@admin-core/table-shared';
 
 import { registerBuiltinReactRenderers } from './renderers';
 
@@ -39,67 +38,37 @@ const state: {
   permissionChecker: undefined,
   theme: {},
 };
-let preferenceUnsubscribe: null | (() => void) = null;
-const preferencesStore = getDefaultPreferencesStore();
-
-function normalizeThemePrimaryColor(value: null | string | undefined) {
-  const raw = value?.trim();
-  if (!raw) {
-    return '';
-  }
-  if (/^oklch\(/i.test(raw)) {
-    return oklchToHex(raw);
-  }
-  return raw;
-}
 
 function applyLocale(locale: 'en-US' | 'zh-CN') {
-  state.locale = locale;
-  setTableLocale(locale);
-  registerTableFormatters(createTableDateFormatter(state.locale));
+  applyTableLocaleCore(locale, {
+    onBeforeApply(nextLocale) {
+      state.locale = nextLocale;
+    },
+  });
 }
 
 function applyTheme(preferences: Preferences | null | undefined) {
-  if (!preferences) {
+  const resolvedTheme = resolveTableThemeContext(preferences);
+  if (!resolvedTheme) {
     return;
   }
-  const theme = preferences.theme;
-  const actualMode = getActualThemeMode(theme.mode);
-  const isDark = actualMode === 'dark';
-  const themePrimary = theme.builtinType === 'custom'
-    ? theme.colorPrimary
-    : getThemePrimaryColor(theme.builtinType, isDark);
-  const cssVarPrimary = typeof document !== 'undefined'
-    ? getComputedStyle(document.documentElement)
-        .getPropertyValue('--primary')
-        .trim()
-    : '';
-  const resolvedPrimary = normalizeThemePrimaryColor(cssVarPrimary || themePrimary);
+
+  const theme = resolvedTheme.preferences.theme;
   state.theme = {
-    colorPrimary: resolvedPrimary || undefined,
+    colorPrimary: resolvedTheme.resolvedPrimary || undefined,
     fontScale: theme.fontScale,
-    mode: actualMode,
+    mode: resolvedTheme.actualMode,
     radius: theme.radius,
   };
 }
 
-function ensurePreferencesBinding() {
-  if (preferenceUnsubscribe) {
-    return;
-  }
-  preferenceUnsubscribe = preferencesStore.subscribe((preferences) => {
-    applyLocale(normalizeTableLocale(preferences?.app?.locale));
-    applyTheme(preferences);
-  });
-}
+const preferencesBinder = createTablePreferencesBinder({
+  applyLocale,
+  applyTheme,
+});
 
 export function syncAdminTableReactWithPreferences() {
-  const currentPreferences = preferencesStore.getPreferences();
-  if (!currentPreferences) {
-    return;
-  }
-  applyLocale(normalizeTableLocale(currentPreferences.app.locale));
-  applyTheme(currentPreferences);
+  preferencesBinder.syncWithPreferences();
 }
 
 export function setupAdminTableReact(options: SetupAdminTableReactOptions = {}) {
@@ -110,12 +79,10 @@ export function setupAdminTableReact(options: SetupAdminTableReactOptions = {}) 
     ...state.defaultGridOptions,
     ...(options.defaultGridOptions ?? {}),
   };
-  state.accessCodes = options.accessCodes ?? state.accessCodes;
-  state.accessRoles = options.accessRoles ?? state.accessRoles;
-  state.permissionChecker = options.permissionChecker ?? state.permissionChecker;
+  applyTableSetupPermissionState(state, options);
 
   if (options.bindPreferences !== false) {
-    ensurePreferencesBinding();
+    preferencesBinder.ensurePreferencesBinding();
     syncAdminTableReactWithPreferences();
   }
 

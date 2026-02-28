@@ -3,6 +3,7 @@
  * @description 完全自定义样式，解决原生 select 无法自定义下拉菜单的问题
  */
 import { getIcon, type SelectItemBaseProps } from '@admin-core/preferences';
+import { useListItemHeight, useVirtualListScroll } from '@admin-core/shared-react';
 import { memo, useCallback, useId, useState, useRef, useEffect, useMemo } from 'react';
 
 export interface SelectItemProps extends SelectItemBaseProps {
@@ -33,8 +34,6 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const listResizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const optionsIndexMap = useMemo(() => {
     const map = new Map<string | number, number>();
@@ -165,6 +164,12 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
   const OPTION_OVERSCAN = 4;
   const totalHeight = options.length * itemHeight;
   const viewportHeight = Math.min(totalHeight, OPTION_MAX_HEIGHT);
+  const { scrollTop, setScrollTop, handleScroll, handleWheel } = useVirtualListScroll({
+    isOpen,
+    listRef,
+    totalHeight,
+    viewportHeight,
+  });
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - OPTION_OVERSCAN);
   const endIndex = Math.min(
     options.length,
@@ -175,19 +180,14 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
     [options, startIndex, endIndex]
   );
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLUListElement>) => {
-    const nextTop = e.currentTarget.scrollTop;
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLUListElement>) => {
-    if (e.ctrlKey) return;
-    e.preventDefault();
-    const target = e.currentTarget;
-    target.scrollTop += e.deltaY;
-    const nextTop = target.scrollTop;
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, []);
+  useListItemHeight({
+    isOpen,
+    listRef,
+    itemHeight,
+    itemCount: options.length,
+    setItemHeight,
+    itemSelector: '.custom-select-option',
+  });
 
   const ensureIndexVisible = useCallback((index: number) => {
     const list = listRef.current;
@@ -203,7 +203,7 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
     }
     const nextTop = list.scrollTop;
     setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, [itemHeight, viewportHeight]);
+  }, [itemHeight, setScrollTop, viewportHeight]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -214,61 +214,12 @@ export const SelectItem = memo<SelectItemProps>(function SelectItem({
       listRef.current.scrollTop = 0;
       setScrollTop((prev) => (prev === 0 ? prev : 0));
     }
-  }, [isOpen, optionsIndexMap, value, ensureIndexVisible]);
-
-  useEffect(() => {
-    if (isOpen) return;
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
-    setScrollTop((prev) => (prev === 0 ? prev : 0));
-  }, [isOpen]);
+  }, [isOpen, optionsIndexMap, setScrollTop, value, ensureIndexVisible]);
 
   useEffect(() => {
     if (!isOpen || focusedIndex < 0) return;
     ensureIndexVisible(focusedIndex);
   }, [isOpen, focusedIndex, ensureIndexVisible]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const list = listRef.current;
-    if (!list) return;
-    const updateItemHeight = () => {
-      const firstItem = list.querySelector('.custom-select-option') as HTMLElement | null;
-      if (!firstItem) return;
-      const height = firstItem.getBoundingClientRect().height;
-      if (height > 0 && height !== itemHeight) {
-        setItemHeight(height);
-      }
-    };
-    const frame = requestAnimationFrame(updateItemHeight);
-    if (typeof ResizeObserver !== 'undefined') {
-      const firstItem = list.querySelector('.custom-select-option') as HTMLElement | null;
-      if (firstItem) {
-        const observer = new ResizeObserver(updateItemHeight);
-        observer.observe(firstItem);
-        listResizeObserverRef.current = observer;
-      }
-    }
-    return () => {
-      cancelAnimationFrame(frame);
-      if (listResizeObserverRef.current) {
-        listResizeObserverRef.current.disconnect();
-        listResizeObserverRef.current = null;
-      }
-    };
-  }, [isOpen, options.length, itemHeight]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const maxScrollTop = Math.max(0, totalHeight - viewportHeight);
-    if (scrollTop <= maxScrollTop) return;
-    const nextTop = Math.max(0, maxScrollTop);
-    if (listRef.current) {
-      listRef.current.scrollTop = nextTop;
-    }
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, [isOpen, totalHeight, viewportHeight, scrollTop]);
 
   return (
     <div

@@ -19,6 +19,8 @@ import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useTabsState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderLayoutIcon } from '../../utils';
 
+type TabbarMenuItem = ReturnType<typeof generateContextMenuItems>[number];
+
 export interface LayoutTabbarProps {
   left?: ReactNode;
   tabs?: ReactNode;
@@ -414,28 +416,7 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     toggleMaximize,
   ]);
 
-  const contextMenuItems = useMemo(() => {
-    if (!contextMenu.targetKey) return [];
-    const tab = tabMap.get(contextMenu.targetKey);
-    if (!tab) return [];
-    const items = generateContextMenuItems(
-      tab,
-      tabs,
-      activeKey ?? '',
-      context.t,
-      tabIndexMap,
-      { isMaximized, isFavorite: isFavorite(tab), canFavorite: canFavorite(tab) }
-    );
-    return items.filter((item) => {
-      if (item.key === 'maximize' || item.key === 'restoreMaximize') {
-        return tabbarConfig.showMaximize !== false;
-      }
-      return true;
-    });
-  }, [contextMenu.targetKey, tabMap, tabs, activeKey, tabIndexMap, context.t, isMaximized, tabbarConfig.showMaximize, isFavorite, canFavorite]);
-
-  const moreMenuItems = useMemo(() => {
-    const key = activeKey ?? tabs[0]?.key ?? '';
+  const buildMenuItemsForTabKey = useCallback((key: string | null): TabbarMenuItem[] => {
     if (!key) return [];
     const tab = tabMap.get(key);
     if (!tab) return [];
@@ -453,7 +434,47 @@ export const LayoutTabbar = memo(function LayoutTabbar({
       }
       return true;
     });
-  }, [activeKey, tabs, tabMap, tabIndexMap, context.t, isMaximized, tabbarConfig.showMaximize, isFavorite, canFavorite]);
+  }, [
+    tabMap,
+    tabs,
+    activeKey,
+    context.t,
+    tabIndexMap,
+    isMaximized,
+    isFavorite,
+    canFavorite,
+    tabbarConfig.showMaximize,
+  ]);
+
+  const renderMenuItems = useCallback(
+    (items: TabbarMenuItem[], onItemClick: (action: ContextMenuAction | string) => void) => (
+      items.map((item) => (
+        item.divider ? (
+          <div key={item.key} className="my-1 h-px bg-border" />
+        ) : (
+          <button
+            key={item.key}
+            type="button"
+            className="layout-tabbar__menu-item flex w-full items-center px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={item.disabled}
+            onClick={() => onItemClick(item.key)}
+          >
+            {item.label}
+          </button>
+        )
+      ))
+    ),
+    []
+  );
+
+  const contextMenuItems = useMemo(() => {
+    return buildMenuItemsForTabKey(contextMenu.targetKey);
+  }, [contextMenu.targetKey, buildMenuItemsForTabKey]);
+
+  const moreMenuItems = useMemo(() => {
+    const key = activeKey ?? tabs[0]?.key ?? '';
+    return buildMenuItemsForTabKey(key || null);
+  }, [activeKey, tabs, buildMenuItemsForTabKey]);
 
   const onContextMenu = useCallback((e: React.MouseEvent, key: string) => {
     e.preventDefault();
@@ -631,6 +652,35 @@ export const LayoutTabbar = memo(function LayoutTabbar({
               const showIcon = tabbarConfig.showIcon && tab.icon;
               const showPin = !!tab.affix;
               const showClose = tab.closable !== false && !tab.affix;
+              const tabMainContent = (
+                <>
+                  {showIcon ? (
+                    <span className="layout-tabbar__tab-icon">
+                      <span className="text-sm">{tab.icon}</span>
+                    </span>
+                  ) : null}
+                  <span className="layout-tabbar__tab-name truncate">{getTabTitle(tab)}</span>
+                </>
+              );
+              const pinButton = showPin ? (
+                <button
+                  type="button"
+                  className="layout-tabbar__tab-pin"
+                  onClick={(e) => { e.stopPropagation(); handleToggleAffix(tab.key); }}
+                >
+                  {renderLayoutIcon('tabbar-pin', 'xs')}
+                </button>
+              ) : null;
+              const closeButton = showClose ? (
+                <button
+                  type="button"
+                  data-key={tab.key}
+                  className="layout-tabbar__tab-close"
+                  onClick={handleTabCloseClick}
+                >
+                  {renderLayoutIcon('tabbar-close', 'xs')}
+                </button>
+              ) : null;
               return (
                 <div
                   key={tab.key}
@@ -690,67 +740,19 @@ export const LayoutTabbar = memo(function LayoutTabbar({
                           <path d={TABBAR_CHROME_SVG_PATHS.after} />
                         </svg>
                       </div>
-                      <div className="layout-tabbar__chrome-main">
-                        {showIcon ? (
-                          <span className="layout-tabbar__tab-icon">
-                            <span className="text-sm">{tab.icon}</span>
-                          </span>
-                        ) : null}
-                        <span className="layout-tabbar__tab-name truncate">{getTabTitle(tab)}</span>
-                      </div>
+                      <div className="layout-tabbar__chrome-main">{tabMainContent}</div>
                       <div className="layout-tabbar__chrome-extra">
-                        {showPin ? (
-                          <button
-                            type="button"
-                            className="layout-tabbar__tab-pin"
-                            onClick={(e) => { e.stopPropagation(); handleToggleAffix(tab.key); }}
-                          >
-                            {renderLayoutIcon('tabbar-pin', 'xs')}
-                          </button>
-                        ) : null}
-                        {showClose ? (
-                          <button
-                            type="button"
-                            data-key={tab.key}
-                            className="layout-tabbar__tab-close"
-                            onClick={handleTabCloseClick}
-                          >
-                            {renderLayoutIcon('tabbar-close', 'xs')}
-                          </button>
-                        ) : null}
+                        {pinButton}
+                        {closeButton}
                       </div>
                     </div>
                   ) : (
                     <div className="layout-tabbar__tab-content">
                       <div className="layout-tabbar__tab-extra">
-                        {showClose ? (
-                          <button
-                            type="button"
-                            data-key={tab.key}
-                            className="layout-tabbar__tab-close"
-                            onClick={handleTabCloseClick}
-                          >
-                            {renderLayoutIcon('tabbar-close', 'xs')}
-                          </button>
-                        ) : null}
-                        {showPin ? (
-                          <button
-                            type="button"
-                            className="layout-tabbar__tab-pin"
-                            onClick={(e) => { e.stopPropagation(); handleToggleAffix(tab.key); }}
-                          >
-                            {renderLayoutIcon('tabbar-pin', 'xs')}
-                          </button>
-                        ) : null}
+                        {closeButton}
+                        {pinButton}
                       </div>
-                      <div className="layout-tabbar__tab-main">
-                        {showIcon ? (
-                          <span className="layout-tabbar__tab-icon">
-                            <span className="text-sm">{tab.icon}</span>
-                          </span>
-                        ) : null}
-                        <span className="layout-tabbar__tab-name truncate">{getTabTitle(tab)}</span>
-                      </div>
+                      <div className="layout-tabbar__tab-main">{tabMainContent}</div>
                     </div>
                   )}
                 </div>
@@ -811,21 +813,10 @@ export const LayoutTabbar = memo(function LayoutTabbar({
             className="layout-tabbar__context-menu fixed z-layout-overlay min-w-40 rounded-md border border-border py-1 shadow-lg"
             style={{ left: `${contextMenu.x}px`, top: `${contextMenu.y}px` }}
           >
-            {contextMenuItems.map((item) => (
-              item.divider ? (
-                <div key={item.key} className="my-1 h-px bg-border" />
-              ) : (
-                <button
-                  key={item.key}
-                  type="button"
-                  className="layout-tabbar__menu-item flex w-full items-center px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={item.disabled}
-                  onClick={() => { handleMenuAction(item.key, contextMenu.targetKey); closeContextMenu(); }}
-                >
-                  {item.label}
-                </button>
-              )
-            ))}
+            {renderMenuItems(contextMenuItems, (key) => {
+              handleMenuAction(key, contextMenu.targetKey);
+              closeContextMenu();
+            })}
           </div>
           <div className="fixed inset-0 z-layout-overlay" onClick={closeContextMenu} />
         </>,
@@ -839,21 +830,10 @@ export const LayoutTabbar = memo(function LayoutTabbar({
             className="layout-tabbar__more-menu fixed z-layout-overlay min-w-40 rounded-md border border-border py-1 shadow-lg"
             style={{ left: `${moreMenu.x}px`, top: `${moreMenu.y}px` }}
           >
-            {moreMenuItems.map((item) => (
-              item.divider ? (
-                <div key={item.key} className="my-1 h-px bg-border" />
-              ) : (
-                <button
-                  key={item.key}
-                  type="button"
-                  className="layout-tabbar__menu-item flex w-full items-center px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={item.disabled}
-                  onClick={() => { handleMenuAction(item.key, activeKey ?? tabs[0]?.key ?? null); closeMoreMenu(); }}
-                >
-                  {item.label}
-                </button>
-              )
-            ))}
+            {renderMenuItems(moreMenuItems, (key) => {
+              handleMenuAction(key, activeKey ?? tabs[0]?.key ?? null);
+              closeMoreMenu();
+            })}
           </div>
           <div className="fixed inset-0 z-layout-overlay" onClick={closeMoreMenu} />
         </>,

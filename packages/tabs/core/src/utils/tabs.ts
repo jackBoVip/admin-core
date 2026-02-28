@@ -1,4 +1,4 @@
-import { DEFAULT_ADMIN_TABS_OPTIONS } from '../constants';
+import { DEFAULT_ADMIN_TABS_OPTIONS } from '../constants/defaults';
 import type {
   AdminTabsChangePayload,
   AdminTabsClosePayload,

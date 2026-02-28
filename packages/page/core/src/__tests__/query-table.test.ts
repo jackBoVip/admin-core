@@ -10,6 +10,7 @@ import {
   cleanupPageQueryTableApis,
   createPageQueryTableApiFactoriesWithOptions,
   createPageQueryTableApiFactoriesWithStripeDefaults,
+  createPageQueryTableOptionResolvers,
   createPageQueryFrameScheduler,
   createPageQueryBridgeHandlers,
   createPageQueryTableApi,
@@ -22,6 +23,7 @@ import {
   resolvePageQueryTableDisplayOptionsWithStripeDefaults,
   resolvePageQueryTableLayoutModeTitles,
   resolvePageQueryFormOptionsWithBridge,
+  normalizePageQueryFormOptions,
   resolvePageQuerySearchFormOptions,
   resolvePageQueryTableApiBundle,
   resolvePageQueryTableApiBundleWithStripeDefaults,
@@ -330,6 +332,47 @@ describe('page query-table helpers', () => {
       gridColumns: 2,
       queryMode: true,
     });
+  });
+
+  it('normalizes query form options with built-in search defaults', () => {
+    const result = normalizePageQueryFormOptions({
+      schema: [{ fieldName: 'keyword' }],
+    } as Record<string, unknown>);
+
+    expect(result).toMatchObject({
+      gridColumns: 2,
+      queryMode: true,
+    });
+  });
+
+  it('creates normalized form and stripe resolvers for query-table options', () => {
+    const normalizeFormOptions = vi.fn((options: Record<string, unknown> | undefined) => ({
+      ...options,
+      normalized: true,
+    }));
+    const resolveStripeConfig = vi.fn((stripe: boolean, defaults: { enabled: boolean }) => ({
+      enabled: stripe,
+      followTheme: defaults.enabled,
+    }));
+
+    const resolvers = createPageQueryTableOptionResolvers<
+      Record<string, unknown>,
+      boolean,
+      { enabled: boolean }
+    >({
+      normalizeFormOptions,
+      resolveStripeConfig,
+    });
+
+    expect(resolvers.normalizeFormOptions(undefined)).toEqual({ normalized: true });
+    expect(resolvers.normalizeFormOptions({ a: 1 })).toEqual({ a: 1, normalized: true });
+    expect(normalizeFormOptions).toHaveBeenCalledTimes(2);
+
+    expect(resolvers.resolveStripeConfig(true, { enabled: false })).toEqual({
+      enabled: true,
+      followTheme: false,
+    });
+    expect(resolveStripeConfig).toHaveBeenCalledWith(true, { enabled: false });
   });
 
   it('creates query-table api by delegating query/reload', async () => {

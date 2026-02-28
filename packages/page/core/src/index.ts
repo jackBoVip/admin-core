@@ -7,7 +7,7 @@ export * from './config';
 export * from './constants';
 export * from './locales';
 export { createPageApi, createPageApiWithRuntimeOptions } from './page-api';
-export * from './store';
 export * from './styles';
 export type * from './types';
 export * from './utils';
+export { createStore } from '@admin-core/shared-core';

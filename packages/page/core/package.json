@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/page-core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "框架无关的页面容器核心，提供路由页与组件页的统一状态协议",
   "type": "module",
   "sideEffects": [
@@ -40,12 +40,15 @@
   ],
   "scripts": {
     "build": "pnpm run typecheck && tsup",
-    "postbuild": "node ./scripts/copy-page-css.mjs",
     "dev": "tsup --watch",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/core-disable-import-order.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@admin-core/form-core": "workspace:*",
+    "@admin-core/shared-core": "workspace:*"
   },
   "devDependencies": {
     "@admin-core/tsconfig": "workspace:*",
@@ -70,5 +73,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "private": true
 }

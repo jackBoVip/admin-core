@@ -1,53 +1,21 @@
 import { defineConfig } from 'tsup';
+import { createCoreLibraryTsupConfig } from '../../../internal/build-config/tsup.js';
 
-export default defineConfig([
-  {
+export default defineConfig(
+  createCoreLibraryTsupConfig({
     entry: {
       index: 'src/index.ts',
       'styles/index': 'src/styles/index.ts',
       'locales/zh-CN': 'src/locales/zh-CN.ts',
-      'locales/en-US': 'src/locales/en-US.ts'
+      'locales/en-US': 'src/locales/en-US.ts',
     },
-    format: ['cjs', 'esm'],
-    dts: true,
-    clean: true,
-    sourcemap: process.env.NODE_ENV !== 'production',
-    treeshake: true,
-    minify: true,
-    target: 'es2020'
-  },
-  {
-    entry: ['src/index.ts'],
-    outDir: 'dist',
-    format: ['iife'],
+    packageName: '@admin-core/page-core',
     globalName: 'AdminCorePageCore',
-    clean: false,
-    outExtension: () => ({ js: '.global.js' }),
-    sourcemap: process.env.NODE_ENV !== 'production',
-    treeshake: true,
-    minify: true,
-    target: 'es2020',
-    esbuildOptions(options) {
-      options.banner = {
-        js: '/* @admin-core/page-core - CDN Build */'
-      };
-    }
-  },
-  {
-    entry: ['src/index.ts'],
-    outDir: 'dist',
-    format: ['iife'],
-    globalName: 'AdminCorePageCore',
-    clean: false,
-    outExtension: () => ({ js: '.global.dev.js' }),
-    sourcemap: true,
-    treeshake: true,
-    minify: false,
-    target: 'es2020',
-    esbuildOptions(options) {
-      options.banner = {
-        js: '/* @admin-core/page-core - CDN Development Build */'
-      };
-    }
-  }
-]);
+    copyEntries: [
+      {
+        from: 'src/styles/page.css',
+        to: 'dist/styles/page.css',
+      },
+    ],
+  })
+);

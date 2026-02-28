@@ -4,6 +4,7 @@ import type {
   PageQueryTableApi,
   PageQueryTableExecutor,
 } from '../types';
+import { resolveSearchFormDefaults } from '@admin-core/form-core';
 import {
   PAGE_QUERY_FIXED_TABLE_CLASS,
   PAGE_QUERY_LAYOUT_FIXED_ICON,
@@ -117,6 +118,37 @@ export function resolvePageQuerySearchFormOptions<
   return resolveSearchDefaults({
     ...source,
   } as TOptions);
+}
+
+export function normalizePageQueryFormOptions<
+  TOptions extends QueryFormLikeOptions & Record<string, unknown>,
+>(options: TOptions | undefined) {
+  return resolvePageQuerySearchFormOptions(
+    (options ?? {}) as TOptions & Record<string, unknown>,
+    (resolved) =>
+      resolveSearchFormDefaults(
+        resolved as Record<string, unknown>
+      ) as TOptions & Record<string, unknown>
+  ) as TOptions;
+}
+
+export function createPageQueryTableOptionResolvers<
+  TFormOptions extends Record<string, unknown>,
+  TStripe,
+  TStripeDefaults extends Record<string, unknown>,
+>(options: {
+  normalizeFormOptions: (options: TFormOptions | undefined) => TFormOptions;
+  resolveStripeConfig: (stripe: TStripe, defaults: TStripeDefaults) => unknown;
+}) {
+  return {
+    normalizeFormOptions: (formOptions: TFormOptions | undefined) =>
+      options.normalizeFormOptions((formOptions ?? {}) as TFormOptions),
+    resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
+      options.resolveStripeConfig(
+        stripe as TStripe,
+        stripeDefaults as TStripeDefaults
+      ),
+  };
 }
 
 export function resolvePageQueryFormDefaults<

@@ -1,5 +1,5 @@
 import type { AdminPageOptions, PageComputedState } from './page';
-import type { StoreApi } from './store';
+import type { StoreApi } from '@admin-core/shared-core';
 
 export interface AdminPageSnapshot<TComponent = unknown> {
   computed: PageComputedState<TComponent>;

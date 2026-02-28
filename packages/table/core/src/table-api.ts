@@ -1,8 +1,8 @@
 
 import { ensureTableCoreSetup } from './config';
-import { createDefaultTableOptions } from './constants';
-import { createStore } from './store';
+import { createDefaultTableOptions } from './constants/defaults';
 import { deepEqual, isBoolean, isFunction, mergeWithArrayOverride } from './utils';
+import { createStore } from '@admin-core/shared-core';
 import type {
   AdminTableApi,
   AdminTableOptions,

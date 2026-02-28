@@ -1,13 +1,12 @@
 import type {
   AdminPageApi,
-  AdminPageItem,
-  AdminPageOptions,
-  PageQueryTableLayoutOptions,
-  PageFormTableBridgeOptions,
-  PageQueryTableApi,
-  RoutePageItem,
-  SetupAdminPageCoreOptions,
-} from '@admin-core/page-core';
+  AdminPageAdapterItem,
+  AdminPageAdapterProps,
+  AdminPageQueryTableAdapterApi,
+  AdminPageQueryTableAdapterProps,
+  PageAdapterSetupOptions,
+  UseAdminPageQueryTableAdapterReturn,
+} from '@admin-core/page-shared';
 import type {
   AdminFormApi,
   AdminFormProps,
@@ -26,17 +25,10 @@ import type {
 
 export type ReactPageComponent = ComponentType<unknown> | ReactNode;
 
-export type AdminPageReactItem = AdminPageItem<ReactPageComponent>;
+export type AdminPageReactItem = AdminPageAdapterItem<ReactPageComponent>;
 
 export interface AdminPageReactProps
-  extends Omit<AdminPageOptions<ReactPageComponent>, 'pages'> {
-  className?: string;
-  pages?: AdminPageReactItem[];
-  renderEmpty?: () => ReactNode;
-  renderRoutePage?: (page: RoutePageItem<ReactPageComponent>) => ReactNode;
-  routeFallback?: ReactNode;
-  style?: CSSProperties;
-}
+  extends AdminPageAdapterProps<ReactPageComponent, ReactNode, CSSProperties> {}
 
 export interface ExtendedAdminPageApi
   extends AdminPageApi<ReactPageComponent> {
@@ -46,15 +38,17 @@ export interface ExtendedAdminPageApi
 }
 
 export interface SetupAdminPageReactOptions
-  extends SetupAdminPageCoreOptions {
-  form?: false | SetupAdminFormReactOptions;
-  table?: false | SetupAdminTableReactOptions;
-}
+  extends PageAdapterSetupOptions<
+    SetupAdminFormReactOptions,
+    SetupAdminTableReactOptions
+  > {}
 
 export type AdminPageQueryTableApi<
   TData extends Record<string, unknown> = Record<string, unknown>,
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
-> = PageQueryTableApi<
+> = AdminPageQueryTableAdapterApi<
+  TData,
+  TFormValues,
   AdminFormApi,
   AdminTableApi<TData, TFormValues>
 >;
@@ -62,26 +56,23 @@ export type AdminPageQueryTableApi<
 export interface AdminPageQueryTableReactProps<
   TData extends Record<string, unknown> = Record<string, unknown>,
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
-> extends PageQueryTableLayoutOptions {
-  api?: AdminPageQueryTableApi<TData, TFormValues>;
-  bridge?: boolean | PageFormTableBridgeOptions<
-    TFormValues,
-    AdminFormApi,
-    AdminTableApi<TData, TFormValues>
-  >;
-  className?: string;
-  formApi?: AdminFormApi;
-  formOptions?: AdminFormProps;
-  style?: CSSProperties;
-  tableHeight?: number | string;
-  tableApi?: AdminTableApi<TData, TFormValues>;
-  tableOptions?: AdminTableReactProps<TData, TFormValues>;
-}
+> extends AdminPageQueryTableAdapterProps<
+  TData,
+  TFormValues,
+  AdminFormApi,
+  AdminTableApi<TData, TFormValues>,
+  AdminFormProps,
+  AdminTableReactProps<TData, TFormValues>,
+  CSSProperties
+> {}
 
 export type UseAdminPageQueryTableReturn<
   TData extends Record<string, unknown> = Record<string, unknown>,
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
-> = readonly [
+> = UseAdminPageQueryTableAdapterReturn<
   ComponentType<Partial<AdminPageQueryTableReactProps<TData, TFormValues>>>,
-  AdminPageQueryTableApi<TData, TFormValues>,
-];
+  TData,
+  TFormValues,
+  AdminFormApi,
+  AdminTableApi<TData, TFormValues>
+>;

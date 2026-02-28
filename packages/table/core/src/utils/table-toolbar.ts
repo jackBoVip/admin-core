@@ -1,3 +1,4 @@
+import { isPlainObject } from '@admin-core/shared-core';
 import type {
   ToolbarConfig,
   ToolbarHintAlign,
@@ -111,10 +112,6 @@ export interface ResolvePagerSlotBindingsOptions {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
-}
-
-function isPlainObject(value: unknown): value is Record<string, any> {
-  return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
 export function resolveToolbarInlinePosition(
@@ -277,10 +274,10 @@ export function resolvePagerSlotBindings(
 }
 
 export function resolveToolbarConfigRecord(source: unknown): Record<string, any> {
-  if (!source || typeof source !== 'object' || Array.isArray(source)) {
+  if (!isPlainObject(source)) {
     return {};
   }
-  return source as Record<string, any>;
+  return source;
 }
 
 function resolveToolbarHintAlign(

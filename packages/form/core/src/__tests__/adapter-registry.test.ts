@@ -3,7 +3,7 @@ import {
   createFormAdapterBridge,
   createFormAdapterRegistry,
   createNativeAdapter,
-} from '../adapter';
+} from '../adapter/registry';
 
 describe('form adapter registry', () => {
   it('should resolve explicit component first', () => {

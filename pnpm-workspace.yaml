@@ -2,6 +2,7 @@ packages:
   - examples/*
   - '!examples/vue-*-admin-main'
   - packages/form/*
+  - packages/shared/*
   - packages/preferences/*
   - packages/layout/*
   - packages/table/*
@@ -13,10 +14,24 @@ packages:
 # packages/preferences/core   -> @admin-core/preferences       核心包（框架无关）
 # packages/preferences/vue    -> @admin-core/preferences-vue   Vue 实现
 # packages/preferences/react  -> @admin-core/preferences-react React 实现
+# packages/layout/core        -> @admin-core/layout            基础布局核心包（框架无关）
+# packages/layout/shared      -> @admin-core/layout-shared     布局共享导出包（供 React/Vue 复用）
+# packages/layout/vue         -> @admin-core/layout-vue        Vue 实现
+# packages/layout/react       -> @admin-core/layout-react      React 实现
+# packages/form/core          -> @admin-core/form-core         表单核心包（框架无关）
+# packages/form/shared        -> @admin-core/form-shared       表单共享导出包（供 React/Vue 复用）
+# packages/form/vue           -> @admin-core/form-vue          Vue 实现
+# packages/form/react         -> @admin-core/form-react        React 实现
 # packages/page/core          -> @admin-core/page-core         内容页核心包（框架无关）
+# packages/page/shared        -> @admin-core/page-shared       内容页共享导出包（供 React/Vue 复用）
 # packages/page/vue           -> @admin-core/page-vue          Vue 实现
 # packages/page/react         -> @admin-core/page-react        React 实现
+# packages/table/core         -> @admin-core/table-core        表格核心包（框架无关）
+# packages/table/shared       -> @admin-core/table-shared      表格共享导出包（供 React/Vue 复用）
+# packages/table/vue          -> @admin-core/table-vue         Vue 实现
+# packages/table/react        -> @admin-core/table-react       React 实现
 # packages/tabs/core          -> @admin-core/tabs-core         tabs 核心包（框架无关）
+# packages/tabs/shared        -> @admin-core/tabs-shared       tabs 共享导出包（供 React/Vue 复用）
 # packages/tabs/vue           -> @admin-core/tabs-vue          Vue 实现
 # packages/tabs/react         -> @admin-core/tabs-react        React 实现
 #

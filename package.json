@@ -18,12 +18,17 @@
     "changeset:status": "changeset status",
     "changeset:publish": "changeset publish",
     "version": "changeset version",
+    "check:duplicates": "node scripts/check-packages-duplicates.mjs",
     "check:catalog": "node scripts/check-catalog.mjs",
     "catalog:replace": "node scripts/replace-catalog.mjs",
     "catalog:restore": "node scripts/replace-catalog.mjs --restore",
     "catalog:preview": "node scripts/replace-catalog.mjs --dry-run",
-    "release": "pnpm check:catalog && pnpm build && pnpm catalog:replace && pnpm changeset:publish && pnpm catalog:restore",
-    "release:skip-check": "pnpm build && pnpm catalog:replace && pnpm changeset:publish && pnpm catalog:restore"
+    "workspace:replace": "node scripts/replace-workspace.mjs",
+    "workspace:restore": "node scripts/replace-workspace.mjs --restore",
+    "workspace:preview": "node scripts/replace-workspace.mjs --dry-run",
+    "release": "node scripts/release.mjs",
+    "release:skip-check": "node scripts/release.mjs --skip-check",
+    "release:dry-run": "node scripts/release.mjs --skip-check --dry-run"
   },
   "devDependencies": {
     "@admin-core/eslint-config": "workspace:*",

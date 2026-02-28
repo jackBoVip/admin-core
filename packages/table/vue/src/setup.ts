@@ -3,17 +3,17 @@ import type { SetupAdminTableVueOptions } from './types';
 import {
   createTableDateFormatter,
   normalizeTableLocale,
-  registerTableFormatters,
-  setLocale as setTableLocale,
   setupAdminTableCore,
 } from '@admin-core/table-core';
 import {
-  getActualThemeMode,
-  getDefaultPreferencesStore,
-  getThemePrimaryColor,
-  oklchToHex,
   type Preferences,
 } from '@admin-core/preferences';
+import {
+  applyTableLocaleCore,
+  applyTableSetupPermissionState,
+  createTablePreferencesBinder,
+  resolveTableThemeContext,
+} from '@admin-core/table-shared';
 import {
   VxeButton,
   VxeCheckbox,
@@ -46,7 +46,6 @@ import { registerBuiltinVueRenderers } from './renderers';
 let initialized = false;
 let formatterInitialized = false;
 let currentFormatterLocale: 'en-US' | 'zh-CN' = 'zh-CN';
-let preferenceUnsubscribe: null | (() => void) = null;
 const themeSignal = shallowRef(0);
 const setupState: {
   accessCodes?: SetupAdminTableVueOptions['accessCodes'];
@@ -68,22 +67,9 @@ const localeMap = {
   'en-US': enUS,
   'zh-CN': zhCN,
 } as const;
-const preferencesStore = getDefaultPreferencesStore();
-
-function normalizeThemePrimaryColor(value: null | string | undefined) {
-  const raw = value?.trim();
-  if (!raw) {
-    return '';
-  }
-  if (/^oklch\(/i.test(raw)) {
-    return oklchToHex(raw);
-  }
-  return raw;
-}
 
 function registerDefaultFormatters(locale: 'en-US' | 'zh-CN') {
   currentFormatterLocale = locale;
-  registerTableFormatters(createTableDateFormatter(currentFormatterLocale));
 
   if (formatterInitialized) {
     return;
@@ -105,53 +91,37 @@ function registerDefaultFormatters(locale: 'en-US' | 'zh-CN') {
 }
 
 function applyLocale(locale: 'en-US' | 'zh-CN') {
-  setupState.locale = locale;
-  setTableLocale(locale);
-  registerDefaultFormatters(locale);
-  VxeUI.setI18n(locale, localeMap[locale]);
-  VxeUI.setLanguage(locale);
-}
-
-function applyTheme(preferences: Preferences | null | undefined) {
-  if (!preferences) {
-    return;
-  }
-  const actualMode = getActualThemeMode(preferences.theme.mode);
-  const isDark = actualMode === 'dark';
-  const themePrimary = preferences.theme.builtinType === 'custom'
-    ? preferences.theme.colorPrimary
-    : getThemePrimaryColor(preferences.theme.builtinType, isDark);
-  const cssVarPrimary = typeof document !== 'undefined'
-    ? getComputedStyle(document.documentElement)
-        .getPropertyValue('--primary')
-        .trim()
-    : '';
-  const resolvedPrimary = normalizeThemePrimaryColor(cssVarPrimary || themePrimary);
-  setupState.theme = {
-    colorPrimary: resolvedPrimary || undefined,
-  };
-  themeSignal.value += 1;
-  (VxeUI as any).setTheme?.(actualMode === 'dark' ? 'dark' : 'light');
-}
-
-function ensurePreferencesBinding() {
-  if (preferenceUnsubscribe) {
-    return;
-  }
-  preferenceUnsubscribe = preferencesStore.subscribe((preferences) => {
-    const nextLocale = normalizeTableLocale(preferences?.app?.locale);
-    applyLocale(nextLocale);
-    applyTheme(preferences);
+  applyTableLocaleCore(locale, {
+    onBeforeApply(nextLocale) {
+      setupState.locale = nextLocale;
+      registerDefaultFormatters(nextLocale);
+    },
+    onAfterApply(nextLocale) {
+      VxeUI.setI18n(nextLocale, localeMap[nextLocale]);
+      VxeUI.setLanguage(nextLocale);
+    },
   });
 }
 
-export function syncAdminTableVueWithPreferences() {
-  const currentPreferences = preferencesStore.getPreferences();
-  if (!currentPreferences) {
+function applyTheme(preferences: Preferences | null | undefined) {
+  const resolvedTheme = resolveTableThemeContext(preferences);
+  if (!resolvedTheme) {
     return;
   }
-  applyLocale(normalizeTableLocale(currentPreferences.app.locale));
-  applyTheme(currentPreferences);
+  setupState.theme = {
+    colorPrimary: resolvedTheme.resolvedPrimary || undefined,
+  };
+  themeSignal.value += 1;
+  (VxeUI as any).setTheme?.(resolvedTheme.actualMode === 'dark' ? 'dark' : 'light');
+}
+
+const preferencesBinder = createTablePreferencesBinder({
+  applyLocale,
+  applyTheme,
+});
+
+export function syncAdminTableVueWithPreferences() {
+  preferencesBinder.syncWithPreferences();
 }
 
 function initVxeTable() {
@@ -184,15 +154,13 @@ function initVxeTable() {
 export function setupAdminTableVue(options: SetupAdminTableVueOptions = {}) {
   setupAdminTableCore({ locale: options.locale });
   initVxeTable();
-  setupState.accessCodes = options.accessCodes ?? setupState.accessCodes;
-  setupState.accessRoles = options.accessRoles ?? setupState.accessRoles;
-  setupState.permissionChecker = options.permissionChecker ?? setupState.permissionChecker;
+  applyTableSetupPermissionState(setupState, options);
 
   const locale = normalizeTableLocale(options.locale);
   applyLocale(locale);
 
   if (options.bindPreferences !== false) {
-    ensurePreferencesBinding();
+    preferencesBinder.ensurePreferencesBinding();
     syncAdminTableVueWithPreferences();
   }
 

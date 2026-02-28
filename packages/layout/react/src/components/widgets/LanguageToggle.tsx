@@ -3,7 +3,8 @@
  * @description 切换应用语言
  */
 import { getLocaleDisplayList, createI18n, type SupportedLocale } from '@admin-core/layout';
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useOpenState } from '@admin-core/shared-react';
+import { useCallback, useMemo, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
@@ -16,7 +17,7 @@ interface LanguageOption {
 
 export const LanguageToggle = memo(function LanguageToggle() {
   const { props, events } = useLayoutContext();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, close: handleClose, toggle: handleToggleOpen } = useOpenState();
 
   const currentLocale = (props.locale || 'zh-CN') as SupportedLocale;
   const portalTarget = typeof document === 'undefined' ? null : document.body;
@@ -46,18 +47,10 @@ export const LanguageToggle = memo(function LanguageToggle() {
   const handleLocaleChange = useCallback(
     (locale: string) => {
       events.onLocaleChange?.(locale);
-      setIsOpen(false);
+      handleClose();
     },
-    [events]
+    [events, handleClose]
   );
-
-  const handleToggleOpen = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setIsOpen(false);
-  }, []);
 
   const handleOptionClick = useCallback((e: React.MouseEvent) => {
     const locale = (e.currentTarget as HTMLElement).dataset.value;

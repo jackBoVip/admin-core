@@ -14,6 +14,7 @@ import {
   DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
   clampFixedHeightToViewport,
   cleanupPageQueryTableApis,
+  createPageQueryTableOptionResolvers,
   createPageQueryFrameScheduler,
   createPageQueryTableApi,
   createPageQueryTableLazyApiOwnerWithStripeDefaults,
@@ -31,6 +32,7 @@ import {
   resolvePageScrollLockTargets,
   resolvePrimaryPageScrollContainer,
   resolvePageQueryTableFixed,
+  normalizePageQueryFormOptions,
   resolvePageQueryFormOptionsWithBridge,
 } from '@admin-core/page-core';
 import {
@@ -50,7 +52,6 @@ import {
   useState,
 } from 'react';
 import { useLocaleVersion } from '../hooks/useLocaleVersion';
-import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
 type DataRecord = Record<string, unknown>;
 type FormValuesRecord = Record<string, unknown>;
@@ -73,12 +74,23 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
       Record<string, unknown>
     >
   > | null>(null);
+  const pageQueryOptionResolvers = useMemo(
+    () =>
+      createPageQueryTableOptionResolvers<
+        Record<string, unknown>,
+        Parameters<typeof resolveTableStripeConfig>[0],
+        NonNullable<Parameters<typeof resolveTableStripeConfig>[1]>
+      >({
+        normalizeFormOptions: normalizePageQueryFormOptions,
+        resolveStripeConfig: resolveTableStripeConfig,
+      }),
+    []
+  );
   if (!lazyApiOwnerRef.current) {
     type FormOptionsRecord = Record<string, unknown>;
     type CreateTableApiOptions = Parameters<
       typeof createTableApi<TData, TFormValues>
     >[0];
-    type StripeResolveDefaults = Parameters<typeof resolveTableStripeConfig>[1];
     type TableOptionsRecord = Record<string, unknown>;
     lazyApiOwnerRef.current = createPageQueryTableLazyApiOwnerWithStripeDefaults<
       AdminFormApi,
@@ -94,15 +106,8 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
         ),
       formOptions: () =>
         (latestFormOptionsRef.current ?? {}) as FormOptionsRecord,
-      normalizeFormOptions: (formOptions) =>
-        normalizePageQueryFormOptions(
-          (formOptions ?? {}) as FormOptionsRecord
-        ),
-      resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
-        resolveTableStripeConfig(
-          stripe as Parameters<typeof resolveTableStripeConfig>[0],
-          stripeDefaults as StripeResolveDefaults
-        ),
+      normalizeFormOptions: pageQueryOptionResolvers.normalizeFormOptions,
+      resolveStripeConfig: pageQueryOptionResolvers.resolveStripeConfig,
       stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
       tableOptions: () =>
         (latestTableOptionsRef.current ?? {}) as TableOptionsRecord,
@@ -170,8 +175,7 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
       bridge: bridgeOptions,
       formApi,
       formOptions: (props.formOptions ?? {}) as Record<string, unknown>,
-      normalizeFormOptions: (formOptions) =>
-        normalizePageQueryFormOptions(formOptions as Record<string, unknown>),
+      normalizeFormOptions: pageQueryOptionResolvers.normalizeFormOptions,
       tableApi,
     }) as Record<string, unknown>;
     if (!fixedMode) {
@@ -190,7 +194,14 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
         });
       },
     };
-  }, [bridgeOptions, fixedMode, formApi, props.formOptions, tableApi]);
+  }, [
+    bridgeOptions,
+    fixedMode,
+    formApi,
+    pageQueryOptionResolvers,
+    props.formOptions,
+    tableApi,
+  ]);
 
   const mergedTableOptions = useMemo(() => {
     return resolvePageQueryTableDisplayOptionsWithStripeDefaults({
@@ -200,14 +211,7 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
       layoutModeTitleToFixed,
       layoutModeTitleToFlow,
       onLayoutModeToggle: handleLayoutModeToggle,
-      resolveStripeConfig: (
-        stripe: unknown,
-        stripeDefaults: Record<string, unknown>
-      ) =>
-        resolveTableStripeConfig(
-          stripe as Parameters<typeof resolveTableStripeConfig>[0],
-          stripeDefaults as Parameters<typeof resolveTableStripeConfig>[1]
-        ),
+      resolveStripeConfig: pageQueryOptionResolvers.resolveStripeConfig,
       stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
       tableOptions: (props.tableOptions ?? {}) as Record<string, unknown>,
     });
@@ -218,6 +222,7 @@ export const AdminPageQueryTable = memo(function AdminPageQueryTable<
     handleLayoutModeToggle,
     layoutModeTitleToFixed,
     layoutModeTitleToFlow,
+    pageQueryOptionResolvers,
     props.tableOptions,
   ]);
 

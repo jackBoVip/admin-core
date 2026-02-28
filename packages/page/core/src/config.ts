@@ -1,22 +1,20 @@
+import { createSetupController } from '@admin-core/shared-core';
 import { setLocale } from './locales';
 import { setLoggerLevel } from './utils';
 import type { SetupAdminPageCoreOptions } from './types';
 
-let initialized = false;
+const setupController = createSetupController<SetupAdminPageCoreOptions>(
+  (options) => {
+    if (options.locale) {
+      setLocale(options.locale);
+    }
+    if (options.logLevel) {
+      setLoggerLevel(options.logLevel);
+    }
+  },
+  {}
+);
 
-export function setupAdminPageCore(options: SetupAdminPageCoreOptions = {}) {
-  if (options.locale) {
-    setLocale(options.locale);
-  }
-  if (options.logLevel) {
-    setLoggerLevel(options.logLevel);
-  }
-  initialized = true;
-}
+export const setupAdminPageCore = setupController.setup;
 
-export function ensurePageCoreSetup() {
-  if (initialized) {
-    return;
-  }
-  setupAdminPageCore();
-}
+export const ensurePageCoreSetup = setupController.ensure;

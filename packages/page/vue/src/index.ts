@@ -5,33 +5,13 @@
 
 import './styles/index.css';
 
-export {
-  createPageApi,
-  getLocale,
-  getLocaleMessages,
-  getLocaleVersion,
-  normalizePageLocale,
-  normalizePageFormTableBridgeOptions,
-  registerPageLocaleMessages,
-  setLocale,
-  setupAdminPageCore,
-  subscribeLocaleChange,
-  type AdminPageApi,
-  type AdminPageItem,
-  type AdminPageOptions,
-  type ComponentPageItem,
-  type NormalizedPageFormTableBridgeOptions,
-  type PageFormTableBridgeContext,
-  type PageFormTableBridgeOptions,
-  type PageScrollOptions,
-  type RoutePageItem,
-} from '@admin-core/page-core';
+export * from '@admin-core/page-shared';
 
+export { AdminPage } from './components/AdminPage';
 export {
-  AdminPage,
   AdminPageQueryTable,
   createAdminPageQueryTableApi,
-} from './components';
+} from './components/AdminPageQueryTable';
 export { useAdminPage } from './hooks';
 export { useAdminPageQueryTable } from './hooks';
 export { getAdminPageVueSetupState, setupAdminPageVue } from './setup';

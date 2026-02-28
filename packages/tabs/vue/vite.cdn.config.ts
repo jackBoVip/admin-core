@@ -1,36 +1,14 @@
 import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { createCdnLibraryConfig } from '../../../internal/build-config/vite.js';
 
-export default defineConfig(({ mode }) => {
-  const isDev = mode === 'development';
-
-  return {
-    plugins: [vue()],
-    build: {
-      emptyOutDir: false,
-      lib: {
-        entry: resolve(__dirname, 'src/index.ts'),
-        name: 'AdminCoreTabsVue',
-        formats: ['iife'],
-        fileName: () => (isDev ? 'index.global.dev.js' : 'index.global.js'),
-      },
-      rollupOptions: {
-        external: ['vue', '@admin-core/tabs-core'],
-        output: {
-          globals: {
-            vue: 'Vue',
-            '@admin-core/tabs-core': 'AdminCoreTabsCore',
-          },
-          banner: isDev
-            ? '/* @admin-core/tabs-vue - CDN Development Build */'
-            : '/* @admin-core/tabs-vue - CDN Build */',
-        },
-      },
-      cssCodeSplit: false,
-      sourcemap: true,
-      minify: isDev ? false : 'esbuild',
-      target: 'es2020',
-    },
-  };
+export default createCdnLibraryConfig({
+  entry: resolve(__dirname, 'src/index.ts'),
+  name: 'AdminCoreTabsVue',
+  packageName: '@admin-core/tabs-vue',
+  plugins: [vue()],
+  external: ['vue'],
+  globals: {
+    vue: 'Vue',
+  },
 });

@@ -3,11 +3,11 @@ import { useRouter, useRoute } from 'vue-router';
 import {
   BasicLayout,
   useVueRouterAdapter,
-  type MenuItem,
+  type BasicLayoutProps,
 } from '@admin-core/layout-vue';
 
 const props = defineProps<{
-  menus: MenuItem[];
+  menus: NonNullable<BasicLayoutProps['menus']>;
 }>();
 
 // 用户信息

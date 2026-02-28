@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/page-react",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "React 页面容器适配包，支持路由页与组件页",
   "type": "module",
   "sideEffects": [
@@ -32,14 +32,16 @@
   "scripts": {
     "build": "pnpm run typecheck && vite build && vite build --config vite.cdn.config.ts --mode production && vite build --config vite.cdn.config.ts --mode development",
     "dev": "vite build --watch",
-    "test": "vitest --passWithNoTests",
-    "test:run": "vitest run --passWithNoTests",
-    "lint": "eslint src --max-warnings=0",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/page-react.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/page-react.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/react-disable-import-order.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@admin-core/form-react": "workspace:*",
     "@admin-core/page-core": "workspace:*",
+    "@admin-core/page-shared": "workspace:*",
+    "@admin-core/shared-react": "workspace:*",
     "@admin-core/table-react": "workspace:*"
   },
   "devDependencies": {
@@ -78,5 +80,10 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "bundledDependencies": [
+    "@admin-core/page-core",
+    "@admin-core/page-shared",
+    "@admin-core/shared-react"
+  ]
 }

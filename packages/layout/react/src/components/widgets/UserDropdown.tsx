@@ -2,7 +2,8 @@
  * 用户下拉菜单组件
  * @description 显示用户信息和操作菜单
  */
-import { useState, useCallback, useMemo, memo, type ReactNode } from 'react';
+import { useOpenState } from '@admin-core/shared-react';
+import { useCallback, useMemo, memo, type ReactNode } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
 
@@ -12,7 +13,7 @@ export interface UserDropdownProps {
 
 export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdownProps) {
   const { props, events, t } = useLayoutContext();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, close: handleClose, toggle: handleToggleOpen } = useOpenState();
 
   const userInfo = props.userInfo;
 
@@ -26,7 +27,7 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
   const handleMenuSelect = useCallback(
     (key: string) => {
       events.onUserMenuSelect?.(key);
-      setIsOpen(false);
+      handleClose();
 
       if (key === 'logout') {
         events.onLogout?.();
@@ -34,7 +35,7 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
         events.onLockScreen?.();
       }
     },
-    [events]
+    [events, handleClose]
   );
 
   const handleMenuClick = useCallback((e: React.MouseEvent) => {
@@ -43,14 +44,6 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
       handleMenuSelect(key);
     }
   }, [handleMenuSelect]);
-
-  const handleToggleOpen = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setIsOpen(false);
-  }, []);
 
   return (
     <div

@@ -13,9 +13,12 @@ import type {
   TableSeqColumnConfig,
   TableStripeConfig,
   ToolbarConfig,
-  ToolbarToolPermissionDirective,
 } from '@admin-core/table-core';
 import type { AdminFormProps } from '@admin-core/form-vue';
+import type {
+  BuiltInTableLocale,
+  SetupAdminTableSharedOptions,
+} from '@admin-core/table-shared';
 import type {
   VxeGridListeners,
   VxeGridProps as VxeTableGridProps,
@@ -96,15 +99,8 @@ export type ExtendedAdminTableApi<
   ) => Readonly<Ref<TSlice>>;
 };
 
-export interface SetupAdminTableVueOptions {
-  accessCodes?: string[] | (() => null | string[] | undefined);
-  accessRoles?: string[] | (() => null | string[] | undefined);
-  bindPreferences?: boolean;
+export interface SetupAdminTableVueOptions extends SetupAdminTableSharedOptions {
   configVxeTable?: (ui: VxeUIExport) => void;
-  locale?: 'en-US' | 'zh-CN';
-  permissionChecker?: (
-    permission: ToolbarToolPermissionDirective,
-    tool: Record<string, any>
-  ) => boolean;
+  locale?: BuiltInTableLocale;
   setupThemeAndLocale?: (ui: VxeUIExport) => void;
 }

@@ -1,0 +1,60 @@
+{
+  "name": "@admin-core/tabs-shared",
+  "version": "1.0.0",
+  "description": "Shared tabs re-exports for framework adapters",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/core.config.js src --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@admin-core/tabs-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "keywords": [
+    "admin",
+    "tabs",
+    "shared",
+    "reexports"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/tabs/shared"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": true
+}

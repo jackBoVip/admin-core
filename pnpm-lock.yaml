@@ -299,6 +299,8 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(typescript@5.9.3)
 
+  internal/build-config: {}
+
   internal/eslint-config:
     dependencies:
       '@typescript-eslint/eslint-plugin':
@@ -333,6 +335,9 @@ importers:
 
   packages/form/core:
     dependencies:
+      '@admin-core/shared-core':
+        specifier: workspace:*
+        version: link:../../shared/core
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -361,6 +366,12 @@ importers:
       '@admin-core/form-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/form-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@admin-core/shared-react':
+        specifier: workspace:*
+        version: link:../../shared/react
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -405,11 +416,42 @@ importers:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
 
+  packages/form/shared:
+    dependencies:
+      '@admin-core/form-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
   packages/form/vue:
     dependencies:
       '@admin-core/form-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/form-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@admin-core/shared-vue':
+        specifier: workspace:*
+        version: link:../../shared/vue
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -453,6 +495,9 @@ importers:
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../preferences/core
+      '@admin-core/shared-core':
+        specifier: workspace:*
+        version: link:../../shared/core
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -478,12 +523,18 @@ importers:
       '@admin-core/layout':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/layout-shared':
+        specifier: workspace:*
+        version: link:../shared
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../preferences/core
       '@admin-core/preferences-react':
         specifier: workspace:*
         version: link:../../preferences/react
+      '@admin-core/shared-react':
+        specifier: workspace:*
+        version: link:../../shared/react
       '@floating-ui/react':
         specifier: ^0.27.17
         version: 0.27.17(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -543,11 +594,39 @@ importers:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
 
+  packages/layout/shared:
+    dependencies:
+      '@admin-core/layout':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
   packages/layout/vue:
     dependencies:
       '@admin-core/layout':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/layout-shared':
+        specifier: workspace:*
+        version: link:../shared
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../preferences/core
@@ -605,6 +684,13 @@ importers:
         version: 3.2.4(typescript@5.9.3)
 
   packages/page/core:
+    dependencies:
+      '@admin-core/form-core':
+        specifier: workspace:*
+        version: link:../../form/core
+      '@admin-core/shared-core':
+        specifier: workspace:*
+        version: link:../../shared/core
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -633,6 +719,12 @@ importers:
       '@admin-core/page-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/page-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@admin-core/shared-react':
+        specifier: workspace:*
+        version: link:../../shared/react
       '@admin-core/table-react':
         specifier: workspace:*
         version: link:../../table/react
@@ -683,6 +775,31 @@ importers:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
 
+  packages/page/shared:
+    dependencies:
+      '@admin-core/page-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
   packages/page/vue:
     dependencies:
       '@admin-core/form-vue':
@@ -691,6 +808,12 @@ importers:
       '@admin-core/page-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/page-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@admin-core/shared-vue':
+        specifier: workspace:*
+        version: link:../../shared/vue
       '@admin-core/table-vue':
         specifier: workspace:*
         version: link:../../table/vue
@@ -740,6 +863,9 @@ importers:
 
   packages/preferences/core:
     dependencies:
+      '@admin-core/shared-core':
+        specifier: workspace:*
+        version: link:../../shared/core
       culori:
         specifier: 'catalog:'
         version: 4.0.2
@@ -774,6 +900,9 @@ importers:
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/shared-react':
+        specifier: workspace:*
+        version: link:../../shared/react
       react-dom:
         specifier: '>=18.0.0'
         version: 19.2.4(react@19.2.4)
@@ -843,7 +972,86 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(typescript@5.9.3)
 
+  packages/shared/core:
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
+  packages/shared/react:
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.10
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      react:
+        specifier: 'catalog:'
+        version: 19.2.4
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
+  packages/shared/vue:
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.27(typescript@5.9.3)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.2.4(typescript@5.9.3)
+
   packages/table/core:
+    dependencies:
+      '@admin-core/shared-core':
+        specifier: workspace:*
+        version: link:../../shared/core
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -872,9 +1080,15 @@ importers:
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../preferences/core
+      '@admin-core/shared-react':
+        specifier: workspace:*
+        version: link:../../shared/react
       '@admin-core/table-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/table-shared':
+        specifier: workspace:*
+        version: link:../shared
       antd:
         specifier: '>=5.0.0'
         version: 6.3.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -922,6 +1136,34 @@ importers:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
 
+  packages/table/shared:
+    dependencies:
+      '@admin-core/preferences':
+        specifier: workspace:*
+        version: link:../../preferences/core
+      '@admin-core/table-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
   packages/table/vue:
     dependencies:
       '@admin-core/form-vue':
@@ -930,9 +1172,15 @@ importers:
       '@admin-core/preferences':
         specifier: workspace:*
         version: link:../../preferences/core
+      '@admin-core/shared-vue':
+        specifier: workspace:*
+        version: link:../../shared/vue
       '@admin-core/table-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/table-shared':
+        specifier: workspace:*
+        version: link:../shared
       vxe-pc-ui:
         specifier: '>=4.0.0'
         version: 4.12.36(vue@3.5.27(typescript@5.9.3))
@@ -1003,6 +1251,9 @@ importers:
       '@admin-core/tabs-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/tabs-shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*
@@ -1050,11 +1301,39 @@ importers:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
 
+  packages/tabs/shared:
+    dependencies:
+      '@admin-core/tabs-core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@admin-core/tsconfig':
+        specifier: workspace:*
+        version: link:../../../internal/tsconfig
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.2.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@microsoft/api-extractor@7.56.0(@types/node@25.2.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.2.0)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.2)(yaml@2.8.2)
+
   packages/tabs/vue:
     dependencies:
       '@admin-core/tabs-core':
         specifier: workspace:*
         version: link:../core
+      '@admin-core/tabs-shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@admin-core/tsconfig':
         specifier: workspace:*

@@ -2,12 +2,13 @@ import {
   getLocaleVersion,
   subscribeLocaleChange,
 } from '@admin-core/form-core';
-import { useSyncExternalStore } from 'react';
+import { createUseLocaleVersionHook } from '@admin-core/shared-react';
+
+const useLocaleVersionHook = createUseLocaleVersionHook(
+  getLocaleVersion,
+  subscribeLocaleChange
+);
 
 export function useLocaleVersion() {
-  return useSyncExternalStore(
-    subscribeLocaleChange,
-    getLocaleVersion,
-    getLocaleVersion
-  );
+  return useLocaleVersionHook();
 }

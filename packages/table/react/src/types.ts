@@ -12,10 +12,13 @@ import type {
   TablePagerConfig,
   TableSeqColumnConfig,
   TableStripeConfig,
-  ToolbarToolPermissionDirective,
   ToolbarConfig,
 } from '@admin-core/table-core';
 import type { AdminFormProps } from '@admin-core/form-react';
+import type {
+  BuiltInTableLocale,
+  SetupAdminTableSharedOptions,
+} from '@admin-core/table-shared';
 import type { TableProps } from 'antd';
 import type { ReactNode } from 'react';
 
@@ -165,14 +168,7 @@ export type ExtendedAdminTableApi<
   ) => TSlice;
 };
 
-export interface SetupAdminTableReactOptions {
-  accessCodes?: string[] | (() => null | string[] | undefined);
-  accessRoles?: string[] | (() => null | string[] | undefined);
-  bindPreferences?: boolean;
+export interface SetupAdminTableReactOptions extends SetupAdminTableSharedOptions {
   defaultGridOptions?: Partial<AntdGridOptions>;
-  locale?: 'en-US' | 'zh-CN';
-  permissionChecker?: (
-    permission: ToolbarToolPermissionDirective,
-    tool: Record<string, any>
-  ) => boolean;
+  locale?: BuiltInTableLocale;
 }

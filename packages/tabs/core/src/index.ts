@@ -4,7 +4,7 @@
  */
 
 export * from './config';
-export * from './constants';
+export * from './constants/defaults';
 export * from './styles';
 export type * from './types';
 export * from './utils';

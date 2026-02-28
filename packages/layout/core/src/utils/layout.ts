@@ -43,6 +43,11 @@ import {
   type LayoutType,
 } from '@admin-core/preferences';
 import {
+  isFullContentLayout as isSharedFullContentLayout,
+  isLayoutInCategory as isSharedLayoutInCategory,
+  type LayoutCategoryKey,
+} from '@admin-core/shared-core';
+import {
   CSS_VAR_NAMES,
   DEFAULT_HEADER_CONFIG,
   DEFAULT_PANEL_CONFIG,
@@ -53,7 +58,6 @@ import {
   DEFAULT_WATERMARK_CONFIG,
   DEFAULT_LOCK_SCREEN_CONFIG,
   DEFAULT_CHECK_UPDATES_CONFIG,
-  LAYOUT_CATEGORIES,
 } from '../constants';
 import { logger } from './logger';
 import type { 
@@ -75,16 +79,16 @@ export { getActualThemeMode, generateThemeCSSVariables, generateThemeClasses, ma
  */
 export function isLayoutInCategory(
   layout: LayoutType,
-  category: keyof typeof LAYOUT_CATEGORIES
+  category: LayoutCategoryKey
 ): boolean {
-  return (LAYOUT_CATEGORIES[category] as readonly string[]).includes(layout);
+  return isSharedLayoutInCategory(layout, category);
 }
 
 /**
  * 判断是否为全屏内容布局
  */
 export function isFullContentLayout(layout: LayoutType): boolean {
-  return layout === 'full-content';
+  return isSharedFullContentLayout(layout);
 }
 
 /**

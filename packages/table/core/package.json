@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/table-core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "框架无关的表格核心引擎，提供统一 Table API、代理请求增强与渲染器协议",
   "type": "module",
   "sideEffects": [
@@ -39,14 +39,16 @@
   ],
   "scripts": {
     "build": "pnpm run typecheck && tsup",
-    "postbuild": "node ./scripts/copy-table-css.mjs",
     "dev": "tsup --watch",
     "bench:column-custom": "pnpm run build && node ./scripts/benchmark-column-custom.mjs",
     "bench:column-custom:check": "pnpm run build && node ./scripts/benchmark-column-custom.mjs --check",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/core-disable-import-order.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@admin-core/shared-core": "workspace:*"
   },
   "devDependencies": {
     "@admin-core/tsconfig": "workspace:*",
@@ -72,5 +74,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "private": true
 }

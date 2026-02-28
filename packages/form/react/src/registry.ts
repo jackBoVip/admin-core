@@ -1,7 +1,4 @@
-
-import {
-  createFormAdapterBridge,
-} from '@admin-core/form-core';
+import { createFormAdapterRuntime } from '@admin-core/form-shared';
 import { nativeReactComponents } from './components/native-components';
 import type {
   ReactAdapterInput,
@@ -10,14 +7,14 @@ import type {
 } from './types';
 import type { ComponentType } from 'react';
 
-const bridge = createFormAdapterBridge<ComponentType<any>, ReactAdapterInput>({
-  activeLibrary: 'auto',
+const runtime = createFormAdapterRuntime<ComponentType<any>, ReactAdapterInput>({
   defaultBaseModelPropName: 'value',
   nativeComponents: nativeReactComponents,
 });
+const bridge = runtime.bridge;
 
 export function setupAdminFormReact(options: SetupAdminFormReactOptions = {}) {
-  bridge.setup(options);
+  runtime.setup(options);
 }
 
 export const setupAdminForm = setupAdminFormReact;
@@ -26,7 +23,7 @@ export function registerFormComponents(
   components: ReactAdapterInput['components'],
   options: RegisterReactFormComponentsOptions = {}
 ) {
-  bridge.register(components, options);
+  runtime.register(components, options);
 }
 
 export function getReactFormAdapterRegistry() {

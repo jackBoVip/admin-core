@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/preferences-react",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "React 18 偏好设置集成，提供 hooks 和组件",
   "type": "module",
   "sideEffects": false,
@@ -30,11 +30,12 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/preferences-react.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@admin-core/preferences": "workspace:*"
+    "@admin-core/preferences": "workspace:*",
+    "@admin-core/shared-react": "workspace:*"
   },
   "devDependencies": {
     "@admin-core/tsconfig": "workspace:*",
@@ -66,5 +67,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "bundledDependencies": [
+    "@admin-core/preferences",
+    "@admin-core/shared-react"
+  ]
 }

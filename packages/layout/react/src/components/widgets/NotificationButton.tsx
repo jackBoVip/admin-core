@@ -3,7 +3,8 @@
  * @description 显示通知列表
  */
 import { LAYOUT_UI_TOKENS, type NotificationItem } from '@admin-core/layout';
-import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { useListItemHeight, useOpenState, useVirtualListScroll } from '@admin-core/shared-react';
+import { useState, useCallback, useMemo, useRef, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
 
@@ -14,10 +15,8 @@ const {
 
 export const NotificationButton = memo(function NotificationButton() {
   const { props, events, t } = useLayoutContext();
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, close: handleClose, toggle: handleToggleOpen } = useOpenState();
   const listRef = useRef<HTMLDivElement>(null);
-  const [scrollTop, setScrollTop] = useState(0);
-  const listResizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const notifications = useMemo<NotificationItem[]>(
     () => props.notifications || [],
@@ -91,6 +90,12 @@ export const NotificationButton = memo(function NotificationButton() {
   const OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
   const totalHeight = formattedNotifications.length * itemHeight;
   const viewportHeight = totalHeight === 0 ? NOTIFICATION_MAX_HEIGHT : Math.min(totalHeight, NOTIFICATION_MAX_HEIGHT);
+  const { scrollTop, handleScroll, handleWheel } = useVirtualListScroll({
+    isOpen,
+    listRef,
+    totalHeight,
+    viewportHeight,
+  });
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - OVERSCAN);
   const endIndex = Math.min(
     formattedNotifications.length,
@@ -101,68 +106,13 @@ export const NotificationButton = memo(function NotificationButton() {
     [formattedNotifications, startIndex, endIndex]
   );
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const nextTop = e.currentTarget.scrollTop;
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    if (e.ctrlKey) return;
-    e.preventDefault();
-    const target = e.currentTarget;
-    target.scrollTop += e.deltaY;
-    const nextTop = target.scrollTop;
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, []);
-
-  useEffect(() => {
-    if (isOpen) return;
-    if (listRef.current) {
-      listRef.current.scrollTop = 0;
-    }
-    setScrollTop((prev) => (prev === 0 ? prev : 0));
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const list = listRef.current;
-    if (!list) return;
-    const updateItemHeight = () => {
-      const firstItem = list.querySelector('.layout-list-item') as HTMLElement | null;
-      if (!firstItem) return;
-      const height = firstItem.getBoundingClientRect().height;
-      if (height > 0 && height !== itemHeight) {
-        setItemHeight(height);
-      }
-    };
-    const frame = requestAnimationFrame(updateItemHeight);
-    if (typeof ResizeObserver !== 'undefined') {
-      const firstItem = list.querySelector('.layout-list-item') as HTMLElement | null;
-      if (firstItem) {
-        const observer = new ResizeObserver(updateItemHeight);
-        observer.observe(firstItem);
-        listResizeObserverRef.current = observer;
-      }
-    }
-    return () => {
-      cancelAnimationFrame(frame);
-      if (listResizeObserverRef.current) {
-        listResizeObserverRef.current.disconnect();
-        listResizeObserverRef.current = null;
-      }
-    };
-  }, [isOpen, formattedNotifications.length, itemHeight]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const maxScrollTop = Math.max(0, totalHeight - viewportHeight);
-    if (scrollTop <= maxScrollTop) return;
-    const nextTop = Math.max(0, maxScrollTop);
-    if (listRef.current) {
-      listRef.current.scrollTop = nextTop;
-    }
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, [isOpen, totalHeight, viewportHeight, scrollTop]);
+  useListItemHeight({
+    isOpen,
+    listRef,
+    itemHeight,
+    itemCount: formattedNotifications.length,
+    setItemHeight,
+  });
 
   const handleNotificationItemClick = useCallback(
     (e: React.MouseEvent) => {
@@ -175,14 +125,6 @@ export const NotificationButton = memo(function NotificationButton() {
     },
     [events, notificationMap]
   );
-
-  const handleToggleOpen = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setIsOpen(false);
-  }, []);
 
   return (
     <div

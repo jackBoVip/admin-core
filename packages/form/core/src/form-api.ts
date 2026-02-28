@@ -6,7 +6,6 @@ import {
   DEFAULT_RUNTIME_FIELD_STATE,
 } from './constants';
 import { getLocaleMessages } from './locales';
-import { createStore } from './store';
 import { computeCollapseKeepIndex } from './utils/collapse';
 import { createDebouncedTask } from './utils/debounce';
 import { deepClone, deepEqual, mergeWithArrayOverride } from './utils/deep';
@@ -33,6 +32,7 @@ import {
   isZodSchema,
   resolveZodIssueMessage,
 } from './utils/zod';
+import { createStore } from '@admin-core/shared-core';
 import type {
   AdminFormApi,
   AdminFormProps,

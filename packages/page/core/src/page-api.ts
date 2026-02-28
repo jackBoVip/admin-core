@@ -1,6 +1,5 @@
 import { ensurePageCoreSetup } from './config';
 import { createDefaultPageOptions } from './constants';
-import { createStore } from './store';
 import {
   deepEqual,
   isFunction,
@@ -13,6 +12,7 @@ import {
   resolveRoutePageByPath,
   resolveScrollEnabled,
 } from './utils';
+import { createStore } from '@admin-core/shared-core';
 import type {
   AddPageOptions,
   AdminPageApi,

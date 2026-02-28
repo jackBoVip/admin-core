@@ -8,6 +8,8 @@ import { createFormApi } from '@admin-core/form-vue';
 import {
   DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
   cleanupPageQueryTableApis,
+  createPageQueryTableOptionResolvers,
+  normalizePageQueryFormOptions,
   resolvePageQueryTableApiBundleWithStripeDefaults,
 } from '@admin-core/page-core';
 import {
@@ -23,7 +25,6 @@ import {
 } from 'vue';
 
 import { AdminPageQueryTable } from '../components/AdminPageQueryTable';
-import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
 export function useAdminPageQueryTable<
   TData extends Record<string, unknown> = Record<string, unknown>,
@@ -35,8 +36,15 @@ export function useAdminPageQueryTable<
   type CreateTableApiOptions = Parameters<
     typeof createTableApi<TData, TFormValues>
   >[0];
-  type StripeResolveDefaults = Parameters<typeof resolveTableStripeConfig>[1];
   type TableOptionsRecord = Record<string, unknown>;
+  const pageQueryOptionResolvers = createPageQueryTableOptionResolvers<
+    FormOptionsRecord,
+    Parameters<typeof resolveTableStripeConfig>[0],
+    NonNullable<Parameters<typeof resolveTableStripeConfig>[1]>
+  >({
+    normalizeFormOptions: normalizePageQueryFormOptions,
+    resolveStripeConfig: resolveTableStripeConfig,
+  });
   const {
     api,
     formApi,
@@ -52,15 +60,8 @@ export function useAdminPageQueryTable<
       ) as AdminTableApi<TData, TFormValues>,
     formApi: options.formApi,
     formOptions: (options.formOptions ?? {}) as FormOptionsRecord,
-    normalizeFormOptions: (formOptions: FormOptionsRecord | undefined) =>
-      normalizePageQueryFormOptions(
-        (formOptions ?? {}) as FormOptionsRecord
-      ),
-    resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
-      resolveTableStripeConfig(
-        stripe as Parameters<typeof resolveTableStripeConfig>[0],
-        stripeDefaults as StripeResolveDefaults
-      ),
+    normalizeFormOptions: pageQueryOptionResolvers.normalizeFormOptions,
+    resolveStripeConfig: pageQueryOptionResolvers.resolveStripeConfig,
     stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
     tableApi: options.tableApi,
     tableOptions: (options.tableOptions ?? {}) as TableOptionsRecord,

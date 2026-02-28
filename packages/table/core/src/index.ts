@@ -4,12 +4,12 @@
  */
 
 export * from './config';
-export * from './constants';
+export * from './constants/defaults';
 export * from './locales';
 export * from './proxy';
-export * from './renderer';
-export * from './store';
+export * from './renderer/registry';
 export { createTableApi } from './table-api';
 export * from './styles';
 export type * from './types';
 export * from './utils';
+export { createStore } from '@admin-core/shared-core';

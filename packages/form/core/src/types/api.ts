@@ -5,7 +5,7 @@ import type {
   FormSchemaRuleType,
   RuntimeFieldState,
 } from './schema';
-import type { StoreApi } from './store';
+import type { LoggerMode, StoreApi } from '@admin-core/shared-core';
 
 export interface FieldValidationResult {
   error?: string;
@@ -88,6 +88,6 @@ export interface RegisterFormRulesOptions {
 
 export interface SetupAdminFormCoreOptions {
   locale?: string;
-  logLevel?: 'error' | 'info' | 'silent' | 'warn';
+  logLevel?: LoggerMode;
   rules?: RegisterFormRulesOptions;
 }

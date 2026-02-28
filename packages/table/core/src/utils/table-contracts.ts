@@ -3,6 +3,7 @@ import type {
   TablePagerExportConfig,
   TablePagerExportOption,
   TablePagerExportType,
+  TableLocaleMessages,
   ToolbarConfig,
   ToolbarToolConfig,
   ToolbarToolPermissionDirective,
@@ -10,39 +11,7 @@ import type {
 
 export type TableColumnRecord = Record<string, any>;
 
-export interface TableToolbarLocaleText {
-  custom: string;
-  customAll: string;
-  customCancel: string;
-  customConfirm: string;
-  customFilter: string;
-  customFixedLeft: string;
-  customFixedRight: string;
-  customFixedUnset: string;
-  customMoveDown: string;
-  customMoveUp: string;
-  customReset: string;
-  customRestoreConfirm: string;
-  customSort: string;
-  emptyValue: string;
-  export: string;
-  exportAll: string;
-  exportAllMissingHandler: string;
-  exportCurrentPage: string;
-  exportSelected: string;
-  hideSearchPanel: string;
-  noData: string;
-  operation: string;
-  pagerFirstPage: string;
-  pagerLastPage: string;
-  pagerTotal: string;
-  refresh: string;
-  seq: string;
-  search: string;
-  showSearchPanel: string;
-  zoomIn: string;
-  zoomOut: string;
-}
+export type TableToolbarLocaleText = TableLocaleMessages['table'];
 
 export interface ResolvedTablePagerExportAction<
   TData extends Record<string, any> = Record<string, any>,

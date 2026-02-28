@@ -1,4 +1,4 @@
-import type { StoreApi } from './store';
+import type { StoreApi } from '@admin-core/shared-core';
 import type {
   AdminTableOptions,
   TableExecutors,

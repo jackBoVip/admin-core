@@ -1,18 +1,7 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
-
-async function resolveDtsPlugin(options: Record<string, any>) {
-  try {
-    const { default: dts } = await import('vite-plugin-dts');
-    return [dts(options)];
-  } catch {
-    console.warn(
-      '[admin-core] vite-plugin-dts is unavailable, skip declaration generation in vite build.'
-    );
-    return [];
-  }
-}
+import { resolveDtsPlugin } from '../../../internal/build-config/vite.js';
 
 // NPM 构建配置
 const npmConfig = defineConfig(async () => {
@@ -39,15 +28,11 @@ const npmConfig = defineConfig(async () => {
         fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
       },
       rollupOptions: {
-        // 将核心包作为外部依赖
-        external: [
-          'vue',
-          '@admin-core/preferences',
-        ],
+        // 仅外部化 Vue，内联 core/shared
+        external: ['vue'],
         output: {
           globals: {
             vue: 'Vue',
-            '@admin-core/preferences': 'AdminCorePreferences',
           },
           banner: '/* @admin-core/preferences-vue */',
         },

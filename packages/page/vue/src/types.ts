@@ -1,13 +1,12 @@
 import type {
   AdminPageApi,
-  AdminPageItem,
-  AdminPageOptions,
-  PageQueryTableLayoutOptions,
-  PageFormTableBridgeOptions,
-  PageQueryTableApi,
-  RoutePageItem,
-  SetupAdminPageCoreOptions,
-} from '@admin-core/page-core';
+  AdminPageAdapterItem,
+  AdminPageAdapterProps,
+  AdminPageQueryTableAdapterApi,
+  AdminPageQueryTableAdapterProps,
+  PageAdapterSetupOptions,
+  UseAdminPageQueryTableAdapterReturn,
+} from '@admin-core/page-shared';
 import type {
   AdminFormApi,
   AdminFormProps,
@@ -30,17 +29,10 @@ export type VuePageComponent =
   | Component
   | VNodeChild;
 
-export type AdminPageVueItem = AdminPageItem<VuePageComponent>;
+export type AdminPageVueItem = AdminPageAdapterItem<VuePageComponent>;
 
 export interface AdminPageVueProps
-  extends Omit<AdminPageOptions<VuePageComponent>, 'pages'> {
-  className?: string;
-  pages?: AdminPageVueItem[];
-  renderEmpty?: () => VNodeChild;
-  renderRoutePage?: (page: RoutePageItem<VuePageComponent>) => VNodeChild;
-  routeFallback?: VNodeChild;
-  style?: CSSProperties;
-}
+  extends AdminPageAdapterProps<VuePageComponent, VNodeChild, CSSProperties> {}
 
 export interface ExtendedAdminPageApi
   extends AdminPageApi<VuePageComponent> {
@@ -50,15 +42,17 @@ export interface ExtendedAdminPageApi
 }
 
 export interface SetupAdminPageVueOptions
-  extends SetupAdminPageCoreOptions {
-  form?: false | SetupAdminFormVueOptions;
-  table?: false | SetupAdminTableVueOptions;
-}
+  extends PageAdapterSetupOptions<
+    SetupAdminFormVueOptions,
+    SetupAdminTableVueOptions
+  > {}
 
 export type AdminPageQueryTableApi<
   TData extends Record<string, unknown> = Record<string, unknown>,
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
-> = PageQueryTableApi<
+> = AdminPageQueryTableAdapterApi<
+  TData,
+  TFormValues,
   AdminFormApi,
   AdminTableApi<TData, TFormValues>
 >;
@@ -66,26 +60,23 @@ export type AdminPageQueryTableApi<
 export interface AdminPageQueryTableVueProps<
   TData extends Record<string, unknown> = Record<string, unknown>,
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
-> extends PageQueryTableLayoutOptions {
-  api?: AdminPageQueryTableApi<TData, TFormValues>;
-  bridge?: boolean | PageFormTableBridgeOptions<
-    TFormValues,
-    AdminFormApi,
-    AdminTableApi<TData, TFormValues>
-  >;
-  className?: string;
-  formApi?: AdminFormApi;
-  formOptions?: AdminFormProps;
-  style?: CSSProperties;
-  tableHeight?: number | string;
-  tableApi?: AdminTableApi<TData, TFormValues>;
-  tableOptions?: AdminTableVueProps<TData, TFormValues>;
-}
+> extends AdminPageQueryTableAdapterProps<
+  TData,
+  TFormValues,
+  AdminFormApi,
+  AdminTableApi<TData, TFormValues>,
+  AdminFormProps,
+  AdminTableVueProps<TData, TFormValues>,
+  CSSProperties
+> {}
 
 export type UseAdminPageQueryTableReturn<
   TData extends Record<string, unknown> = Record<string, unknown>,
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
-> = readonly [
+> = UseAdminPageQueryTableAdapterReturn<
   Component<Partial<AdminPageQueryTableVueProps<TData, TFormValues>>>,
-  AdminPageQueryTableApi<TData, TFormValues>,
-];
+  TData,
+  TFormValues,
+  AdminFormApi,
+  AdminTableApi<TData, TFormValues>
+>;

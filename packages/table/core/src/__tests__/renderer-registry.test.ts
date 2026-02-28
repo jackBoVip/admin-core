@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createTableFormatterRegistry,
   createTableRendererRegistry,
-} from '../renderer';
+} from '../renderer/registry';
 
 describe('table renderer registry', () => {
   it('should register and resolve renderer', () => {

@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/tabs-core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "框架无关的 tabs 核心协议，提供 tabs 配置与显示策略能力",
   "type": "module",
   "sideEffects": [
@@ -36,11 +36,10 @@
   ],
   "scripts": {
     "build": "pnpm run typecheck && tsup",
-    "postbuild": "node ./scripts/copy-tabs-css.mjs",
     "dev": "tsup --watch",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/core.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/core-disable-import-order.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -65,5 +64,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "private": true
 }

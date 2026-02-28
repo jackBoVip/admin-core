@@ -1,10 +1,6 @@
-import type { AdminPageItem, ComponentPageItem, RoutePageItem } from '../types';
+export { isFunction } from '@admin-core/shared-core';
 
-export function isFunction<T extends (...args: unknown[]) => unknown>(
-  value: unknown
-): value is T {
-  return typeof value === 'function';
-}
+import type { AdminPageItem, ComponentPageItem, RoutePageItem } from '../types';
 
 export function isPageRouteItem<TComponent = unknown>(
   page: AdminPageItem<TComponent>

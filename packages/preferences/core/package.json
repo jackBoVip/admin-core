@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/preferences",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "框架无关的偏好设置管理系统，支持主题、布局、国际化等配置",
   "type": "module",
   "sideEffects": [
@@ -96,10 +96,11 @@
     "dev": "tsup --watch",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/core.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@admin-core/shared-core": "workspace:*",
     "culori": "catalog:"
   },
   "devDependencies": {
@@ -131,5 +132,6 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "private": true
 }

@@ -18,6 +18,54 @@ function getNativeForwardAttrs(attrs: Record<string, any>) {
   return omitRecordKeys(attrs, ['class', ...ADMIN_STATE_ATTR_KEYS]);
 }
 
+interface NativeChoiceOption {
+  label: string;
+  value: any;
+}
+
+function renderNativeChoiceGroup(options: {
+  attrs: Record<string, any>;
+  disabled: boolean;
+  inputType: 'checkbox' | 'radio';
+  isChecked: (value: any) => boolean;
+  onChange: (event: Event, option: NativeChoiceOption) => void;
+  options: NativeChoiceOption[];
+}) {
+  const attrs = options.attrs;
+
+  return h(
+    'div',
+    {
+      ...getNativeForwardAttrs(attrs),
+      ...pickAdminStateAttrs(attrs),
+      class: ['admin-form__choice-group', attrs.class],
+    },
+    options.options.map((option) =>
+      h(
+        'label',
+        {
+          class: ['admin-form__choice', options.disabled ? 'admin-form__choice--disabled' : ''],
+          key: String(option.value),
+        },
+        [
+          h('input', {
+            ...pickAdminStateAttrs(attrs),
+            class: 'admin-form__choice-input',
+            type: options.inputType,
+            disabled: options.disabled,
+            checked: options.isChecked(option.value),
+            value: option.value,
+            onChange: (event: Event) => {
+              options.onChange(event, option);
+            },
+          }),
+          option.label,
+        ]
+      )
+    )
+  );
+}
+
 const NativeInput = defineComponent({
   name: 'AdminNativeInput',
   props: {
@@ -247,42 +295,22 @@ const NativeCheckboxGroup = defineComponent({
   emits: ['update:modelValue', 'change'],
   setup(props, { emit, attrs }) {
     return () =>
-      h(
-        'div',
-        {
-          ...getNativeForwardAttrs(attrs as any),
-          ...pickAdminStateAttrs(attrs as any),
-          class: ['admin-form__choice-group', (attrs as any).class],
+      renderNativeChoiceGroup({
+        attrs: attrs as any,
+        disabled: props.disabled,
+        options: props.options,
+        inputType: 'checkbox',
+        isChecked: (value) => props.modelValue.includes(value),
+        onChange: (event, option) => {
+          const values = toggleCollectionValue(
+            props.modelValue,
+            option.value,
+            (event.target as HTMLInputElement).checked
+          );
+          emit('update:modelValue', values);
+          emit('change', values);
         },
-        props.options.map((option) =>
-          h(
-            'label',
-            {
-              class: ['admin-form__choice', props.disabled ? 'admin-form__choice--disabled' : ''],
-              key: String(option.value),
-            },
-            [
-              h('input', {
-                ...pickAdminStateAttrs(attrs as any),
-                class: 'admin-form__choice-input',
-                type: 'checkbox',
-                disabled: props.disabled,
-                checked: props.modelValue.includes(option.value),
-                onChange: (event: Event) => {
-                  const values = toggleCollectionValue(
-                    props.modelValue,
-                    option.value,
-                    (event.target as HTMLInputElement).checked
-                  );
-                  emit('update:modelValue', values);
-                  emit('change', values);
-                },
-              }),
-              option.label,
-            ]
-          )
-        )
-      );
+      });
   },
 });
 
@@ -346,39 +374,18 @@ const NativeRadioGroup = defineComponent({
   emits: ['update:modelValue', 'change'],
   setup(props, { emit, attrs }) {
     return () =>
-      h(
-        'div',
-        {
-          ...getNativeForwardAttrs(attrs as any),
-          ...pickAdminStateAttrs(attrs as any),
-          class: ['admin-form__choice-group', (attrs as any).class],
+      renderNativeChoiceGroup({
+        attrs: attrs as any,
+        disabled: props.disabled,
+        options: props.options,
+        inputType: 'radio',
+        isChecked: (value) => props.modelValue === value,
+        onChange: (event) => {
+          const value = (event.target as HTMLInputElement).value;
+          emit('update:modelValue', value);
+          emit('change', value);
         },
-        props.options.map((option) =>
-          h(
-            'label',
-            {
-              class: ['admin-form__choice', props.disabled ? 'admin-form__choice--disabled' : ''],
-              key: String(option.value),
-            },
-            [
-              h('input', {
-                ...pickAdminStateAttrs(attrs as any),
-                class: 'admin-form__choice-input',
-                type: 'radio',
-                disabled: props.disabled,
-                checked: props.modelValue === option.value,
-                value: option.value,
-                onChange: (event: Event) => {
-                  const value = (event.target as HTMLInputElement).value;
-                  emit('update:modelValue', value);
-                  emit('change', value);
-                },
-              }),
-              option.label,
-            ]
-          )
-        )
-      );
+      });
   },
 });
 

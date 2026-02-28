@@ -1,58 +1,23 @@
 import { resolve } from 'node:path';
-import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import { createLibraryViteConfig } from '../../../internal/build-config/vite.js';
 
-async function resolveDtsPlugin(options: Record<string, any>) {
-  try {
-    const { default: dts } = await import('vite-plugin-dts');
-    return [dts(options)];
-  } catch {
-    console.warn(
-      '[admin-core] vite-plugin-dts is unavailable, skip declaration generation in vite build.'
-    );
-    return [];
-  }
-}
-
-export default defineConfig(async () => {
-  const dtsPlugins = await resolveDtsPlugin({
+export default createLibraryViteConfig({
+  entry: resolve(__dirname, 'src/index.ts'),
+  name: 'AdminCorePageVue',
+  plugins: [vue()],
+  dts: {
     include: ['src/**/*.ts', 'src/**/*.vue'],
     outDir: 'dist',
     staticImport: true,
     insertTypesEntry: true,
     logLevel: 'silent',
     skipDiagnostics: true,
-  });
-
-  return {
-    plugins: [vue(), ...dtsPlugins],
-    build: {
-      lib: {
-        entry: resolve(__dirname, 'src/index.ts'),
-        name: 'AdminCorePageVue',
-        formats: ['es', 'cjs'],
-        fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
-      },
-      rollupOptions: {
-        external: [
-          'vue',
-          '@admin-core/form-vue',
-          '@admin-core/page-core',
-          '@admin-core/table-vue',
-        ],
-        output: {
-          globals: {
-            vue: 'Vue',
-            '@admin-core/form-vue': 'AdminCoreFormVue',
-            '@admin-core/page-core': 'AdminCorePageCore',
-            '@admin-core/table-vue': 'AdminCoreTableVue',
-          },
-        },
-      },
-      cssCodeSplit: false,
-      sourcemap: process.env.NODE_ENV !== 'production',
-      minify: 'esbuild',
-      target: 'es2020',
-    },
-  };
+  },
+  external: ['vue', '@admin-core/form-vue', '@admin-core/table-vue'],
+  globals: {
+    vue: 'Vue',
+    '@admin-core/form-vue': 'AdminCoreFormVue',
+    '@admin-core/table-vue': 'AdminCoreTableVue',
+  },
 });

@@ -4,7 +4,6 @@ import {
   BasicLayout,
   createReactRouteAccess,
   useReactRouterAdapter,
-  type MenuItem,
   type RouteObject,
   type RouteModule,
   type RouteRecordStringComponent,
@@ -17,6 +16,7 @@ const pageMap = import.meta.glob('/src/pages/**/*.tsx') as Record<
   string,
   () => Promise<{ default: ComponentType }>
 >;
+type RouteAccessResult = Awaited<ReturnType<typeof createReactRouteAccess>>;
 
 // 用户信息
 const userInfo = {
@@ -32,7 +32,7 @@ function AppLayout() {
   const location = useLocation();
   const routerConfig = useReactRouterAdapter(navigate, location);
 
-  const [menus, setMenus] = useState<MenuItem[]>([]);
+  const [menus, setMenus] = useState<RouteAccessResult['menus']>([]);
   const [routeObjects, setRouteObjects] = useState<RouteObject[]>([]);
   const [ready, setReady] = useState(false);
 

@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/layout-react",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "React 基础布局组件，开箱即用，高度集成偏好设置",
   "type": "module",
   "sideEffects": [
@@ -34,13 +34,15 @@
     "dev": "vite build --watch",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/layout-react.config.js src --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@admin-core/layout": "workspace:*",
+    "@admin-core/layout-shared": "workspace:*",
     "@admin-core/preferences": "workspace:*",
     "@admin-core/preferences-react": "workspace:*",
+    "@admin-core/shared-react": "workspace:*",
     "@floating-ui/react": "^0.27.17"
   },
   "devDependencies": {
@@ -94,5 +96,11 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "bundledDependencies": [
+    "@admin-core/layout",
+    "@admin-core/layout-shared",
+    "@admin-core/preferences",
+    "@admin-core/shared-react"
+  ]
 }

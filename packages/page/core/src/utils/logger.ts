@@ -1,41 +1,25 @@
-type LogLevel = 'error' | 'info' | 'silent' | 'warn';
+import { createLeveledLogger, type LoggerMode } from '@admin-core/shared-core';
 
-const levelOrder: Record<Exclude<LogLevel, 'silent'>, number> = {
-  error: 0,
-  warn: 1,
-  info: 2,
-};
+type LogLevel = LoggerMode;
 
-let currentLevel: LogLevel = 'warn';
-
-function shouldPrint(level: Exclude<LogLevel, 'silent'>) {
-  if (currentLevel === 'silent') {
-    return false;
-  }
-  return levelOrder[level] <= levelOrder[currentLevel as Exclude<LogLevel, 'silent'>];
-}
+const leveledLogger = createLeveledLogger({
+  infoMethod: 'warn',
+  infoPrefix: '[admin-page:info]',
+  prefix: '[admin-page]',
+});
 
 export function setLoggerLevel(level: LogLevel) {
-  currentLevel = level;
+  leveledLogger.setLoggerLevel(level);
 }
 
 export const logger = {
   error(...args: unknown[]) {
-    if (!shouldPrint('error')) {
-      return;
-    }
-    console.error('[admin-page]', ...args);
+    leveledLogger.logger.error(...args);
   },
   info(...args: unknown[]) {
-    if (!shouldPrint('info')) {
-      return;
-    }
-    console.warn('[admin-page:info]', ...args);
+    leveledLogger.logger.info(...args);
   },
   warn(...args: unknown[]) {
-    if (!shouldPrint('warn')) {
-      return;
-    }
-    console.warn('[admin-page]', ...args);
+    leveledLogger.logger.warn(...args);
   },
 };

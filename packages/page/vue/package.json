@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/page-vue",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Vue 3 页面容器适配包，支持路由页与组件页",
   "type": "module",
   "sideEffects": [
@@ -32,14 +32,16 @@
   "scripts": {
     "build": "pnpm run typecheck && vite build && vite build --config vite.cdn.config.ts --mode production && vite build --config vite.cdn.config.ts --mode development",
     "dev": "vite build --watch",
-    "test": "vitest --passWithNoTests",
-    "test:run": "vitest run --passWithNoTests",
-    "lint": "eslint src --max-warnings=0",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/dom.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/dom.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/vue-disable-import-order.config.js src --max-warnings=0",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
     "@admin-core/form-vue": "workspace:*",
     "@admin-core/page-core": "workspace:*",
+    "@admin-core/page-shared": "workspace:*",
+    "@admin-core/shared-vue": "workspace:*",
     "@admin-core/table-vue": "workspace:*"
   },
   "devDependencies": {
@@ -75,5 +77,10 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "bundledDependencies": [
+    "@admin-core/page-core",
+    "@admin-core/page-shared",
+    "@admin-core/shared-vue"
+  ]
 }

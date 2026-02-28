@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/preferences-vue",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Vue 3 偏好设置集成，提供响应式状态和组件",
   "type": "module",
   "sideEffects": false,
@@ -32,7 +32,7 @@
     "dev": "vite build --watch",
     "test": "vitest",
     "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/preferences-vue.config.js src --max-warnings=0",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -69,5 +69,8 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "bundledDependencies": [
+    "@admin-core/preferences"
+  ]
 }

@@ -1,8 +1,6 @@
 import type { Component } from 'vue';
 
-import {
-  createFormAdapterBridge,
-} from '@admin-core/form-core';
+import { createFormAdapterRuntime } from '@admin-core/form-shared';
 
 import { nativeVueComponents } from './components/native-components';
 import type {
@@ -11,13 +9,13 @@ import type {
   VueAdapterInput,
 } from './types';
 
-const bridge = createFormAdapterBridge<Component, VueAdapterInput>({
-  activeLibrary: 'auto',
+const runtime = createFormAdapterRuntime<Component, VueAdapterInput>({
   nativeComponents: nativeVueComponents,
 });
+const bridge = runtime.bridge;
 
 export function setupAdminFormVue(options: SetupAdminFormVueOptions = {}) {
-  bridge.setup(options);
+  runtime.setup(options);
 }
 
 export const setupAdminForm = setupAdminFormVue;
@@ -26,7 +24,7 @@ export function registerFormComponents(
   components: VueAdapterInput['components'],
   options: RegisterVueFormComponentsOptions = {}
 ) {
-  bridge.register(components, options);
+  runtime.register(components, options);
 }
 
 export function getVueFormAdapterRegistry() {

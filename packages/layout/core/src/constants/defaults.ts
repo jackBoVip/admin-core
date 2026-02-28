@@ -3,6 +3,7 @@
  * @description 所有布局配置的默认值，用户可覆盖
  */
 
+import { LAYOUT_CATEGORIES as SHARED_LAYOUT_CATEGORIES } from '@admin-core/shared-core';
 import type {
   BasicLayoutProps,
   CheckUpdatesConfig,
@@ -379,26 +380,7 @@ export const DEFAULT_LAYOUT_CONFIG: BasicLayoutProps = {
 /**
  * 布局类型分类
  */
-export const LAYOUT_CATEGORIES = {
-  /** 带顶部菜单的布局 */
-  headerMenu: ['header-nav', 'mixed-nav', 'header-mixed-nav'] as const,
-  /** 带侧边菜单的布局 */
-  sidebarMenu: ['sidebar-nav', 'sidebar-mixed-nav', 'header-sidebar-nav'] as const,
-  /** 混合导航布局 */
-  mixed: ['mixed-nav', 'header-mixed-nav', 'sidebar-mixed-nav'] as const,
-  /** 纯内容布局 */
-  fullContent: ['full-content'] as const,
-  /** 所有布局 */
-  all: [
-    'sidebar-nav',
-    'sidebar-mixed-nav',
-    'header-nav',
-    'header-sidebar-nav',
-    'mixed-nav',
-    'header-mixed-nav',
-    'full-content',
-  ] as const,
-};
+export const LAYOUT_CATEGORIES = SHARED_LAYOUT_CATEGORIES;
 
 /**
  * CSS 变量名映射

@@ -1,3 +1,5 @@
+import { isPlainObject } from '@admin-core/shared-core';
+
 const objectIds = new WeakMap<object, number>();
 let objectId = 0;
 
@@ -7,12 +9,6 @@ function getObjectId(value: object): number {
   objectId += 1;
   objectIds.set(value, objectId);
   return objectId;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) return false;
-  const proto = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
 }
 
 function hashValue(value: unknown, seen: WeakSet<object>): string {

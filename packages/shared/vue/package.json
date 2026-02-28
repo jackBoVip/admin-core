@@ -1,0 +1,62 @@
+{
+  "name": "@admin-core/shared-vue",
+  "version": "1.0.0",
+  "description": "Shared Vue composables for @admin-core packages",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/dom.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/dom.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/vue-disable-import-order.config.js src --max-warnings=0",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "devDependencies": {
+    "@admin-core/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "peerDependencies": {
+    "vue": ">=3.3.0"
+  },
+  "keywords": [
+    "admin",
+    "shared",
+    "vue",
+    "composables"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "",
+    "directory": "packages/shared/vue"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "private": true
+}

@@ -15,6 +15,7 @@ import {
   DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
   clampFixedHeightToViewport,
   cleanupPageQueryTableApis,
+  createPageQueryTableOptionResolvers,
   createPageQueryFrameScheduler,
   createPageQueryTableApi,
   createPageQueryTableLazyApiOwnerWithStripeDefaults,
@@ -32,6 +33,7 @@ import {
   resolvePageScrollLockTargets,
   resolvePrimaryPageScrollContainer,
   resolvePageQueryTableFixed,
+  normalizePageQueryFormOptions,
   resolvePageQueryFormOptionsWithBridge,
 } from '@admin-core/page-core';
 import {
@@ -56,7 +58,6 @@ import {
   watch,
 } from 'vue';
 import { useLocaleVersion as usePageLocaleVersion } from '../composables/useLocaleVersion';
-import { normalizePageQueryFormOptions } from '../utils/query-form-options';
 
 type DataRecord = Record<string, unknown>;
 type FormValuesRecord = Record<string, unknown>;
@@ -112,7 +113,14 @@ export const AdminPageQueryTable = defineComponent({
     type CreateTableApiOptions = Parameters<
       typeof createTableApi<DataRecord, FormValuesRecord>
     >[0];
-    type StripeResolveDefaults = Parameters<typeof resolveTableStripeConfig>[1];
+    const pageQueryOptionResolvers = createPageQueryTableOptionResolvers<
+      Record<string, unknown>,
+      Parameters<typeof resolveTableStripeConfig>[0],
+      NonNullable<Parameters<typeof resolveTableStripeConfig>[1]>
+    >({
+      normalizeFormOptions: normalizePageQueryFormOptions,
+      resolveStripeConfig: resolveTableStripeConfig,
+    });
     const pageLocaleVersion = usePageLocaleVersion();
     const tableLocaleVersion = useTableLocaleVersion();
     const preferencesLocale = usePreferencesLocale();
@@ -150,6 +158,7 @@ export const AdminPageQueryTable = defineComponent({
       Record<string, unknown>,
       Record<string, unknown>
     >({
+      ...pageQueryOptionResolvers,
       createFormApi: (formOptions) => createFormApi(formOptions),
       createTableApi: (tableOptions) =>
         createTableApi(
@@ -157,15 +166,6 @@ export const AdminPageQueryTable = defineComponent({
         ) as AdminTableApi<DataRecord, FormValuesRecord>,
       formOptions: () =>
         (props.formOptions ?? {}) as Record<string, unknown>,
-      normalizeFormOptions: (formOptions) =>
-        normalizePageQueryFormOptions(
-          (formOptions ?? {}) as Record<string, unknown>
-        ),
-      resolveStripeConfig: (stripe: unknown, stripeDefaults: Record<string, unknown>) =>
-        resolveTableStripeConfig(
-          stripe as Parameters<typeof resolveTableStripeConfig>[0],
-          stripeDefaults as StripeResolveDefaults
-        ),
       stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
       tableOptions: () =>
         (props.tableOptions ?? {}) as Record<string, unknown>,
@@ -298,8 +298,7 @@ export const AdminPageQueryTable = defineComponent({
         bridge: bridgeOptions.value,
         formApi: formApi.value,
         formOptions: (props.formOptions ?? {}) as Record<string, unknown>,
-        normalizeFormOptions: (formOptions) =>
-          normalizePageQueryFormOptions(formOptions as Record<string, unknown>),
+        normalizeFormOptions: pageQueryOptionResolvers.normalizeFormOptions,
         tableApi: tableApi.value,
       }) as Record<string, unknown>;
       if (!fixedMode.value) {
@@ -328,14 +327,7 @@ export const AdminPageQueryTable = defineComponent({
         layoutModeTitleToFixed: layoutModeTitles.value.layoutModeTitleToFixed,
         layoutModeTitleToFlow: layoutModeTitles.value.layoutModeTitleToFlow,
         onLayoutModeToggle: handleLayoutModeToggle,
-        resolveStripeConfig: (
-          stripe: unknown,
-          stripeDefaults: Record<string, unknown>
-        ) =>
-          resolveTableStripeConfig(
-            stripe as Parameters<typeof resolveTableStripeConfig>[0],
-            stripeDefaults as StripeResolveDefaults
-          ),
+        resolveStripeConfig: pageQueryOptionResolvers.resolveStripeConfig,
         stripeDefaults: DEFAULT_PAGE_QUERY_TABLE_STRIPE_OPTIONS,
         tableOptions: (props.tableOptions ?? {}) as Record<string, unknown>,
       });

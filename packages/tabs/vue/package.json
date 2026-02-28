@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/tabs-vue",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Vue 3 tabs 适配包",
   "type": "module",
   "sideEffects": [
@@ -32,13 +32,14 @@
   "scripts": {
     "build": "pnpm run typecheck && vite build && vite build --config vite.cdn.config.ts --mode production && vite build --config vite.cdn.config.ts --mode development",
     "dev": "vite build --watch",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "lint": "eslint src --max-warnings=0",
+    "test": "vitest -c ../../../internal/build-config/configs/vitest/dom.config.ts",
+    "test:run": "vitest -c ../../../internal/build-config/configs/vitest/dom.config.ts run",
+    "lint": "eslint -c ../../../internal/build-config/configs/eslint/vue-disable-import-order.config.js src --max-warnings=0",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
-    "@admin-core/tabs-core": "workspace:*"
+    "@admin-core/tabs-core": "workspace:*",
+    "@admin-core/tabs-shared": "workspace:*"
   },
   "devDependencies": {
     "@admin-core/tsconfig": "workspace:*",
@@ -71,5 +72,9 @@
   },
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "bundledDependencies": [
+    "@admin-core/tabs-core",
+    "@admin-core/tabs-shared"
+  ]
 }

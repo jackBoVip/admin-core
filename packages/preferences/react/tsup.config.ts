@@ -12,8 +12,9 @@ export default defineConfig([
     treeshake: true,
     minify: true,
     target: 'es2020',
-    // 核心包作为外部依赖（但资源文件需要内联）
-    external: ['react', 'react-dom', '@admin-core/preferences'],
+    // 发布包内联 core/shared，避免消费者额外安装内部包
+    external: ['react', 'react-dom'],
+    noExternal: ['@admin-core/preferences', '@admin-core/shared-react'],
     esbuildOptions(options) {
       options.banner = {
         js: '/* @admin-core/preferences-react */',
@@ -32,9 +33,9 @@ export default defineConfig([
     treeshake: true,
     minify: true,
     target: 'es2020',
-    // CDN 版本内联 @admin-core/preferences，外部化 react 和 react-dom
+    // CDN 版本内联 core/shared，外部化 react 和 react-dom
     external: ['react', 'react-dom'],
-    noExternal: ['@admin-core/preferences'],
+    noExternal: ['@admin-core/preferences', '@admin-core/shared-react'],
     esbuildOptions(options) {
       options.banner = {
         js: '/* @admin-core/preferences-react - CDN Build */',
@@ -53,7 +54,7 @@ export default defineConfig([
     minify: false,
     target: 'es2020',
     external: ['react', 'react-dom'],
-    noExternal: ['@admin-core/preferences'],
+    noExternal: ['@admin-core/preferences', '@admin-core/shared-react'],
     esbuildOptions(options) {
       options.banner = {
         js: '/* @admin-core/preferences-react - CDN Development Build */',

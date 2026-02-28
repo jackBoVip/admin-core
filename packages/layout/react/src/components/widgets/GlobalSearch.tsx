@@ -3,6 +3,7 @@
  * @description 全局菜单搜索导航，支持快捷键 Ctrl+K
  */
 import { LAYOUT_UI_TOKENS, type MenuItem } from '@admin-core/layout';
+import { useListItemHeight, useVirtualListScroll } from '@admin-core/shared-react';
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLayoutContext } from '../../hooks';
@@ -24,8 +25,6 @@ export const GlobalSearch = memo(function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [keyword, setKeyword] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [scrollTop, setScrollTop] = useState(0);
-  const listResizeObserverRef = useRef<ResizeObserver | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultListRef = useRef<HTMLDivElement>(null);
   const isOpenRef = useRef(isOpen);
@@ -83,6 +82,12 @@ export const GlobalSearch = memo(function GlobalSearch() {
   const RESULT_OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
   const totalHeight = searchResults.length * itemHeight;
   const viewportHeight = totalHeight === 0 ? SEARCH_RESULT_MAX_HEIGHT : Math.min(totalHeight, SEARCH_RESULT_MAX_HEIGHT);
+  const { scrollTop, setScrollTop, handleScroll, handleWheel } = useVirtualListScroll({
+    isOpen,
+    listRef: resultListRef,
+    totalHeight,
+    viewportHeight,
+  });
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - RESULT_OVERSCAN);
   const endIndex = Math.min(
     searchResults.length,
@@ -92,6 +97,14 @@ export const GlobalSearch = memo(function GlobalSearch() {
     () => searchResults.slice(startIndex, endIndex),
     [searchResults, startIndex, endIndex]
   );
+
+  useListItemHeight({
+    isOpen,
+    listRef: resultListRef,
+    itemHeight,
+    itemCount: searchResults.length,
+    setItemHeight,
+  });
 
   // 打开搜索框
   const openSearch = useCallback(() => {
@@ -160,7 +173,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
       list.scrollTop = nextTop;
       setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
     }
-  }, [itemHeight]);
+  }, [itemHeight, setScrollTop]);
 
   const scrollToSelected = useCallback(() => {
     const list = resultListRef.current;
@@ -201,20 +214,6 @@ export const GlobalSearch = memo(function GlobalSearch() {
     [selectedIndex, searchResults, selectItem, closeSearch, scrollToSelected]
   );
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const nextTop = e.currentTarget.scrollTop;
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, []);
-
-  const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
-    if (e.ctrlKey) return;
-    e.preventDefault();
-    const target = e.currentTarget;
-    target.scrollTop += e.deltaY;
-    const nextTop = target.scrollTop;
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, []);
-
   // 全局快捷键
   useEffect(() => {
     if (!shortcutEnabled) return;
@@ -245,36 +244,6 @@ export const GlobalSearch = memo(function GlobalSearch() {
     return () => cancelAnimationFrame(focusFrame);
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const list = resultListRef.current;
-    if (!list) return;
-    const updateItemHeight = () => {
-      const firstItem = list.querySelector('.layout-list-item') as HTMLElement | null;
-      if (!firstItem) return;
-      const height = firstItem.getBoundingClientRect().height;
-      if (height > 0 && height !== itemHeight) {
-        setItemHeight(height);
-      }
-    };
-    const frame = requestAnimationFrame(updateItemHeight);
-    if (typeof ResizeObserver !== 'undefined') {
-      const firstItem = list.querySelector('.layout-list-item') as HTMLElement | null;
-      if (firstItem) {
-        const observer = new ResizeObserver(updateItemHeight);
-        observer.observe(firstItem);
-        listResizeObserverRef.current = observer;
-      }
-    }
-    return () => {
-      cancelAnimationFrame(frame);
-      if (listResizeObserverRef.current) {
-        listResizeObserverRef.current.disconnect();
-        listResizeObserverRef.current = null;
-      }
-    };
-  }, [isOpen, searchResults.length, itemHeight]);
-
   // 重置选中索引
   useEffect(() => {
     setSelectedIndex((prev) => (prev === 0 ? prev : 0));
@@ -282,26 +251,7 @@ export const GlobalSearch = memo(function GlobalSearch() {
       resultListRef.current.scrollTop = 0;
     }
     setScrollTop((prev) => (prev === 0 ? prev : 0));
-  }, [keyword]);
-
-  useEffect(() => {
-    if (isOpen) return;
-    if (resultListRef.current) {
-      resultListRef.current.scrollTop = 0;
-    }
-    setScrollTop((prev) => (prev === 0 ? prev : 0));
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const maxScrollTop = Math.max(0, totalHeight - viewportHeight);
-    if (scrollTop <= maxScrollTop) return;
-    const nextTop = Math.max(0, maxScrollTop);
-    if (resultListRef.current) {
-      resultListRef.current.scrollTop = nextTop;
-    }
-    setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
-  }, [isOpen, totalHeight, viewportHeight, scrollTop]);
+  }, [keyword, setScrollTop]);
 
   const shortcutText = useMemo(() => {
     const platform = typeof navigator === 'undefined' ? '' : navigator.platform;
