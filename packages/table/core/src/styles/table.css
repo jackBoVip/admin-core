@@ -28,6 +28,12 @@
   --admin-table-row-hover-neutral-bg: var(--admin-table-stripe-neutral-bg-hover);
   --admin-table-row-hover-theme-bg: var(--primary-100, #dbeafe);
   --admin-table-row-hover-bg: var(--admin-table-row-hover-neutral-bg);
+  --admin-table-surface-bg: var(--background, #ffffff);
+  --admin-table-surface-muted-bg: var(--muted, #f8fafc);
+  --admin-table-surface-elevated-bg: var(--card, var(--admin-table-surface-bg));
+  --admin-table-text: var(--foreground, #0f172a);
+  --admin-table-muted-text: var(--muted-foreground, #64748b);
+  --admin-table-border-color: var(--border, #dcdfe6);
   --admin-table-pager-bg: var(--background, #ffffff);
   --admin-table-pager-border: var(--admin-table-tool-border);
   --admin-table-pager-muted-text: var(--muted-foreground, #64748b);
@@ -225,6 +231,12 @@
   --admin-table-row-hover-neutral-bg: var(--admin-table-stripe-neutral-bg-hover);
   --admin-table-row-hover-theme-bg: var(--primary-800, #1e40af);
   --admin-table-row-hover-bg: var(--admin-table-row-hover-neutral-bg);
+  --admin-table-surface-bg: var(--background, #0f172a);
+  --admin-table-surface-muted-bg: var(--muted, #1e293b);
+  --admin-table-surface-elevated-bg: var(--card, var(--admin-table-surface-bg));
+  --admin-table-text: var(--foreground, #e2e8f0);
+  --admin-table-muted-text: var(--muted-foreground, #94a3b8);
+  --admin-table-border-color: var(--border, #334155);
   --admin-table-pager-bg: var(--background, #0f172a);
   --admin-table-pager-border: var(--border, #334155);
   --admin-table-pager-muted-text: var(--muted-foreground, #94a3b8);
@@ -428,10 +440,23 @@
   --vxe-ui-base-border-radius: var(--admin-table-radius);
   --vxe-ui-border-radius: var(--admin-table-radius);
   --vxe-ui-table-border-radius: var(--admin-table-radius);
+  --vxe-ui-font-color: var(--admin-table-text);
+  --vxe-ui-font-lighten-color: var(--admin-table-muted-text);
   --vxe-ui-font-primary-color: var(--admin-table-selection-color);
   --vxe-ui-font-primary-lighten-color: var(--admin-table-selection-color-hover);
   --vxe-ui-font-primary-darken-color: var(--admin-table-selection-color-active);
+  --vxe-ui-layout-background-color: var(--admin-table-surface-bg);
+  --vxe-ui-table-header-background-color: var(--admin-table-surface-muted-bg);
+  --vxe-ui-table-column-to-row-background-color: var(
+    --admin-table-surface-muted-bg
+  );
+  --vxe-ui-table-footer-background-color: var(--admin-table-surface-muted-bg);
+  --vxe-ui-table-header-font-color: var(--admin-table-text);
+  --vxe-ui-table-footer-font-color: var(--admin-table-text);
+  --vxe-ui-table-border-color: var(--admin-table-border-color);
   --vxe-ui-input-border-color: var(--admin-table-selection-control-border);
+  --vxe-ui-input-placeholder-color: var(--admin-table-muted-text);
+  --vxe-ui-input-disabled-background-color: var(--admin-table-surface-elevated-bg);
   --vxe-ui-checkbox-icon-background-color: var(--admin-table-selection-control-bg);
   --vxe-ui-checkbox-checked-icon-border-color: #fff;
   --vxe-ui-checkbox-indeterminate-icon-background-color: #fff;
