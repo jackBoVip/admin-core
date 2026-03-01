@@ -135,6 +135,25 @@ describe('vue ui contract', () => {
     });
 
     expect(wrapper.find('.admin-form__required').exists()).toBe(true);
+    expect(wrapper.find('.admin-form__item--required').exists()).toBe(true);
+  });
+
+  it('should render themed required mark when requiredMarkFollowTheme is true', async () => {
+    const schema = [
+      { fieldName: 'name', label: '名称', component: 'input' as const, rules: 'required' },
+    ];
+    const api = createFormApi({ schema });
+    const wrapper = mount(AdminForm as any, {
+      props: {
+        formApi: api,
+        schema,
+        showDefaultActions: false,
+        requiredMarkFollowTheme: true,
+      },
+    });
+
+    expect(wrapper.find('.admin-form__required--follow-theme').exists()).toBe(true);
+    expect(wrapper.find('.admin-form__item--required-follow-theme').exists()).toBe(true);
   });
 
   it('should not render required mark for custom optional string rule', async () => {

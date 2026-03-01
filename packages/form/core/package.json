@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/form-core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "框架无关的表单核心引擎，提供 schema 驱动、校验、联动与适配器协议",
   "type": "module",
   "sideEffects": [

@@ -59,6 +59,7 @@ const FORM_PROP_KEYS = new Set<string>([
   'handleValuesChange',
   'hideLabel',
   'hideRequiredMark',
+  'requiredMarkFollowTheme',
   'labelAlign',
   'labelClass',
   'labelWidth',

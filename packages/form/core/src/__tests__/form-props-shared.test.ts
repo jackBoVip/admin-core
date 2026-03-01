@@ -43,6 +43,7 @@ describe('form props shared utils', () => {
       labelAlign: 'right',
       onVnodeUnmounted: () => undefined,
       queryMode: true,
+      requiredMarkFollowTheme: true,
       ref: { current: null },
       schema: [],
       showDefaultActions: false,
@@ -52,6 +53,7 @@ describe('form props shared utils', () => {
     expect(picked).toEqual({
       labelAlign: 'right',
       queryMode: true,
+      requiredMarkFollowTheme: true,
       schema: [],
       showDefaultActions: false,
       wrapperClass: 'w',

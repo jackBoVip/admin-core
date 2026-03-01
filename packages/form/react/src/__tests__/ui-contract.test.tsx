@@ -201,6 +201,45 @@ describe('react ui contract', () => {
       node.props?.className === 'admin-form__required'
     );
     expect(requiredMarks.length).toBe(1);
+
+    const requiredItems = renderer.root.findAll((node) => {
+      const className = node.props?.className;
+      return typeof className === 'string' && className.includes('admin-form__item--required');
+    });
+    expect(requiredItems.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should render themed required mark when requiredMarkFollowTheme is true', async () => {
+    const schema = [
+      { fieldName: 'name', label: '名称', component: 'input' as const, rules: 'required' },
+    ];
+    const api = createFormApi({ schema });
+    const renderer = await mountForm(
+      <AdminForm
+        formApi={api}
+        schema={schema}
+        showDefaultActions={false}
+        requiredMarkFollowTheme
+      />
+    );
+
+    const requiredMarks = renderer.root.findAll((node) => {
+      const className = node.props?.className;
+      return (
+        typeof className === 'string' &&
+        className.includes('admin-form__required--follow-theme')
+      );
+    });
+    expect(requiredMarks.length).toBe(1);
+
+    const followThemeRequiredItems = renderer.root.findAll((node) => {
+      const className = node.props?.className;
+      return (
+        typeof className === 'string' &&
+        className.includes('admin-form__item--required-follow-theme')
+      );
+    });
+    expect(followThemeRequiredItems.length).toBeGreaterThanOrEqual(1);
   });
 
   it('should not render required mark for custom optional string rule', async () => {

@@ -30,6 +30,9 @@ body {
   );
   --admin-form-primary-color: var(--primary, #2563eb);
   --admin-form-danger-color: var(--color-destructive, var(--destructive, #e5484d));
+  --admin-form-required-mark-color: #e5484d;
+  --admin-form-control-error-color: var(--admin-form-danger-color);
+  --admin-form-error-text-color: var(--admin-form-danger-color);
   --admin-form-warning-color: var(--color-warning, var(--warning, #f59e0b));
   --admin-form-success-color: var(--color-success, var(--success, #10b981));
   --admin-form-placeholder-color: color-mix(
@@ -202,8 +205,22 @@ body {
 }
 
 .admin-form__required {
-  color: var(--admin-form-danger-color);
+  color: var(--admin-form-required-mark-color);
   margin-right: 4px;
+}
+
+.admin-form__required--follow-theme {
+  color: var(--admin-form-danger-color);
+}
+
+.admin-form__item--required {
+  --admin-form-required-state-color: var(--admin-form-required-mark-color);
+  --admin-form-control-error-color: var(--admin-form-required-state-color);
+  --admin-form-error-text-color: var(--admin-form-required-state-color);
+}
+
+.admin-form__item--required.admin-form__item--required-follow-theme {
+  --admin-form-required-state-color: var(--admin-form-danger-color);
 }
 
 .admin-form__help {
@@ -216,6 +233,34 @@ body {
 .admin-form__control {
   flex: 1;
   min-width: 0;
+  --admin-form-control-border-color: var(--admin-form-border-color);
+  --admin-form-control-hover-border-color: color-mix(
+    in oklch,
+    var(--admin-form-border-color) 60%,
+    var(--admin-form-primary-color)
+  );
+  --admin-form-control-focus-border-color: var(--admin-form-primary-color);
+  --admin-form-control-focus-ring-color: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 15%,
+    transparent
+  );
+  --admin-form-control-switch-track-color: color-mix(
+    in oklch,
+    var(--admin-form-fg-color) 34%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-track-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-fg-color) 42%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-color: var(--admin-form-primary-color);
+  --admin-form-control-switch-checked-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-primary-color) 84%,
+    var(--admin-form-bg-color)
+  );
   --vxe-ui-input-placeholder-color: var(--admin-form-placeholder-color);
 }
 
@@ -290,7 +335,7 @@ body {
   ) {
   background-color: var(--admin-form-bg-color);
   color: var(--admin-form-fg-color);
-  border-color: var(--admin-form-border-color);
+  border-color: var(--admin-form-control-border-color);
   border-radius: var(--admin-form-radius);
 }
 
@@ -305,14 +350,14 @@ body {
   .ant-select-selector {
   background-color: var(--admin-form-bg-color) !important;
   color: var(--admin-form-fg-color) !important;
-  border-color: var(--admin-form-border-color) !important;
+  border-color: var(--admin-form-control-border-color) !important;
   border-radius: var(--admin-form-radius);
 }
 
 .admin-form .admin-form__control .ant-select .ant-select-selector {
   background-color: var(--admin-form-bg-color) !important;
   color: var(--admin-form-fg-color) !important;
-  border-color: var(--admin-form-border-color) !important;
+  border-color: var(--admin-form-control-border-color) !important;
 }
 
 .admin-form__control .ant-input::placeholder,
@@ -357,9 +402,10 @@ body {
     .ant-select:not(.ant-select-disabled):hover .ant-select-selector,
     .ant-picker:hover,
     .ant-input-number:hover,
+    .ant-input-number-affix-wrapper:hover,
     .ant-mentions:hover
   ) {
-  border-color: color-mix(in oklch, var(--admin-form-border-color) 60%, var(--admin-form-primary-color));
+  border-color: var(--admin-form-control-hover-border-color);
 }
 
 .admin-form .admin-form__control .ant-select:not(.ant-select-disabled):hover
@@ -367,12 +413,9 @@ body {
 .admin-form .admin-form__control .ant-picker.ant-picker-outlined:hover,
 .admin-form .admin-form__control .ant-input:hover,
 .admin-form .admin-form__control .ant-input-affix-wrapper:hover,
-.admin-form .admin-form__control .ant-input-number:hover {
-  border-color: color-mix(
-    in oklch,
-    var(--admin-form-border-color) 60%,
-    var(--admin-form-primary-color)
-  );
+.admin-form .admin-form__control .ant-input-number:hover,
+.admin-form .admin-form__control .ant-input-number-affix-wrapper:hover {
+  border-color: var(--admin-form-control-hover-border-color);
 }
 
 .admin-form__control :is(
@@ -381,19 +424,21 @@ body {
     .ant-select-focused .ant-select-selector,
     .ant-picker-focused,
     .ant-input-number-focused,
+    .ant-input-number-affix-wrapper-focused,
     .ant-mentions-focused
   ) {
-  border-color: var(--admin-form-primary-color);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 15%, transparent);
+  border-color: var(--admin-form-control-focus-border-color);
+  box-shadow: 0 0 0 3px var(--admin-form-control-focus-ring-color);
 }
 
 .admin-form .admin-form__control .ant-select-focused .ant-select-selector,
 .admin-form .admin-form__control .ant-picker.ant-picker-focused,
 .admin-form .admin-form__control .ant-input:focus,
 .admin-form .admin-form__control .ant-input-affix-wrapper-focused,
-.admin-form .admin-form__control .ant-input-number-focused {
-  border-color: var(--admin-form-primary-color);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--admin-form-primary-color) 15%, transparent);
+.admin-form .admin-form__control .ant-input-number-focused,
+.admin-form .admin-form__control .ant-input-number-affix-wrapper-focused {
+  border-color: var(--admin-form-control-focus-border-color);
+  box-shadow: 0 0 0 3px var(--admin-form-control-focus-ring-color);
 }
 
 .admin-form__control :is(
@@ -424,14 +469,10 @@ body {
   height: 22px;
   line-height: 22px;
   padding: 0;
-  background: color-mix(
-    in oklch,
-    var(--admin-form-fg-color) 34%,
-    var(--admin-form-bg-color)
-  );
+  background: var(--admin-form-control-switch-track-color);
   border: 1px solid color-mix(
     in oklch,
-    var(--admin-form-border-color) 70%,
+    var(--admin-form-control-border-color) 70%,
     var(--admin-form-fg-color)
   );
 }
@@ -457,24 +498,20 @@ body {
 }
 
 .admin-form .admin-form__control .ant-switch.ant-switch-checked {
-  background: var(--admin-form-primary-color);
-  border-color: color-mix(in oklch, var(--admin-form-primary-color) 80%, transparent);
+  background: var(--admin-form-control-switch-checked-color);
+  border-color: color-mix(
+    in oklch,
+    var(--admin-form-control-switch-checked-color) 80%,
+    transparent
+  );
 }
 
 .admin-form .admin-form__control .ant-switch:not(.ant-switch-disabled):hover {
-  background: color-mix(
-    in oklch,
-    var(--admin-form-fg-color) 42%,
-    var(--admin-form-bg-color)
-  );
+  background: var(--admin-form-control-switch-track-hover-color);
 }
 
 .admin-form .admin-form__control .ant-switch.ant-switch-checked:not(.ant-switch-disabled):hover {
-  background: color-mix(
-    in oklch,
-    var(--admin-form-primary-color) 84%,
-    var(--admin-form-bg-color)
-  );
+  background: var(--admin-form-control-switch-checked-hover-color);
 }
 
 .admin-form-popup .ant-select-dropdown,
@@ -607,17 +644,73 @@ body {
 .admin-form__control[data-admin-status='error'],
 .admin-form__control[data-admin-invalid='true'],
 .admin-form__control--error {
-  --vxe-ui-input-border-color: var(--admin-form-danger-color);
-  --vxe-ui-font-primary-color: var(--admin-form-danger-color);
+  --admin-form-control-border-color: var(--admin-form-control-error-color);
+  --admin-form-control-hover-border-color: var(--admin-form-control-error-color);
+  --admin-form-control-focus-border-color: var(--admin-form-control-error-color);
+  --admin-form-control-focus-ring-color: color-mix(
+    in oklch,
+    var(--admin-form-control-error-color) 18%,
+    transparent
+  );
+  --admin-form-control-switch-track-color: color-mix(
+    in oklch,
+    var(--admin-form-control-error-color) 28%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-track-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-control-error-color) 34%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-color: color-mix(
+    in oklch,
+    var(--admin-form-control-error-color) 70%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-control-error-color) 78%,
+    var(--admin-form-bg-color)
+  );
+  --vxe-ui-input-border-color: var(--admin-form-control-error-color);
+  --vxe-ui-font-primary-color: var(--admin-form-control-error-color);
   --vxe-ui-switch-open-background-color: color-mix(
     in oklch,
-    var(--admin-form-danger-color) 70%,
+    var(--admin-form-control-error-color) 70%,
     var(--admin-form-bg-color)
   );
 }
 
 .admin-form__control[data-admin-status='warning'],
 .admin-form__control--warning {
+  --admin-form-control-border-color: var(--admin-form-warning-color);
+  --admin-form-control-hover-border-color: var(--admin-form-warning-color);
+  --admin-form-control-focus-border-color: var(--admin-form-warning-color);
+  --admin-form-control-focus-ring-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 16%,
+    transparent
+  );
+  --admin-form-control-switch-track-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 26%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-track-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 32%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 70%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 76%,
+    var(--admin-form-bg-color)
+  );
   --vxe-ui-input-border-color: var(--admin-form-warning-color);
   --vxe-ui-font-primary-color: var(--admin-form-warning-color);
   --vxe-ui-switch-open-background-color: color-mix(
@@ -629,6 +722,34 @@ body {
 
 .admin-form__control[data-admin-status='success'],
 .admin-form__control--success {
+  --admin-form-control-border-color: var(--admin-form-success-color);
+  --admin-form-control-hover-border-color: var(--admin-form-success-color);
+  --admin-form-control-focus-border-color: var(--admin-form-success-color);
+  --admin-form-control-focus-ring-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 16%,
+    transparent
+  );
+  --admin-form-control-switch-track-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 26%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-track-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 32%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 70%,
+    var(--admin-form-bg-color)
+  );
+  --admin-form-control-switch-checked-hover-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 76%,
+    var(--admin-form-bg-color)
+  );
   --vxe-ui-input-border-color: var(--admin-form-success-color);
   --vxe-ui-font-primary-color: var(--admin-form-success-color);
   --vxe-ui-switch-open-background-color: color-mix(
@@ -644,6 +765,7 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ),
 .admin-form__control[data-admin-invalid='true'] :is(
@@ -652,6 +774,7 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ),
 .admin-form__control--error :is(
@@ -660,9 +783,10 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ) {
-  border-color: var(--admin-form-danger-color);
+  border-color: var(--admin-form-control-error-color);
 }
 
 .admin-form__control[data-admin-status='warning'] :is(
@@ -671,6 +795,7 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ),
 .admin-form__control--warning :is(
@@ -679,6 +804,7 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ) {
   border-color: var(--admin-form-warning-color);
@@ -690,6 +816,7 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ),
 .admin-form__control--success :is(
@@ -698,6 +825,7 @@ body {
     .ant-select-selector,
     .ant-picker,
     .ant-input-number,
+    .ant-input-number-affix-wrapper,
     .ant-mentions
   ) {
   border-color: var(--admin-form-success-color);
@@ -708,7 +836,7 @@ body {
 .admin-form__control--error .vxe-number-input,
 .admin-form__control--error .vxe-password-input,
 .admin-form__control--error .vxe-textarea {
-  border-color: var(--admin-form-danger-color);
+  border-color: var(--admin-form-control-error-color);
 }
 
 .admin-form__control--warning .vxe-input,
@@ -729,7 +857,7 @@ body {
 
 .admin-form__control--error .vxe-checkbox .vxe-checkbox--icon,
 .admin-form__control--error .vxe-radio .vxe-radio--icon {
-  color: var(--admin-form-danger-color);
+  color: var(--admin-form-control-error-color);
 }
 
 .admin-form__control--warning .vxe-checkbox .vxe-checkbox--icon,
@@ -804,7 +932,7 @@ body {
 .admin-form__input[data-admin-invalid='true'],
 .admin-form__select[data-admin-invalid='true'],
 .admin-form__textarea[data-admin-invalid='true'] {
-  border-color: var(--admin-form-danger-color);
+  border-color: var(--admin-form-control-error-color);
 }
 
 .admin-form__input[data-admin-status='warning'],
@@ -825,10 +953,10 @@ body {
 .admin-form__input[data-admin-invalid='true']:focus,
 .admin-form__select[data-admin-invalid='true']:focus,
 .admin-form__textarea[data-admin-invalid='true']:focus {
-  border-color: var(--admin-form-danger-color);
+  border-color: var(--admin-form-control-error-color);
   box-shadow: 0 0 0 3px color-mix(
     in oklch,
-    var(--admin-form-danger-color) 18%,
+    var(--admin-form-control-error-color) 18%,
     transparent
   );
 }
@@ -900,7 +1028,7 @@ body {
 
 .admin-form__error {
   margin-top: 4px;
-  color: var(--admin-form-danger-color);
+  color: var(--admin-form-error-text-color);
   font-size: var(--admin-form-font-size-sm);
   line-height: 1.25;
 }
@@ -1030,7 +1158,7 @@ body {
 
 .admin-form__choice-input[data-admin-status='error'],
 .admin-form__choice-input[data-admin-invalid='true'] {
-  accent-color: var(--admin-form-danger-color);
+  accent-color: var(--admin-form-control-error-color);
 }
 
 .admin-form__choice-input[data-admin-status='warning'] {
@@ -1080,7 +1208,7 @@ body {
 
 .admin-form__switch[data-admin-status='error'] .admin-form__switch-track,
 .admin-form__switch[data-admin-invalid='true'] .admin-form__switch-track {
-  border-color: var(--admin-form-danger-color);
+  border-color: var(--admin-form-control-error-color);
 }
 
 .admin-form__switch[data-admin-status='warning'] .admin-form__switch-track {
@@ -1113,10 +1241,10 @@ body {
 
 .admin-form__switch[data-admin-status='error'] .admin-form__switch-input:checked + .admin-form__switch-track,
 .admin-form__switch[data-admin-invalid='true'] .admin-form__switch-input:checked + .admin-form__switch-track {
-  border-color: var(--admin-form-danger-color);
+  border-color: var(--admin-form-control-error-color);
   background: color-mix(
     in oklch,
-    var(--admin-form-danger-color) 70%,
+    var(--admin-form-control-error-color) 70%,
     var(--admin-form-bg-color)
   );
 }
@@ -1154,6 +1282,50 @@ body {
     in oklch,
     var(--admin-form-primary-color) 72%,
     var(--admin-form-border-color)
+  );
+}
+
+.admin-form__control[data-admin-status='error'] .vxe-switch .vxe-switch--button,
+.admin-form__control[data-admin-invalid='true'] .vxe-switch .vxe-switch--button,
+.admin-form__control--error .vxe-switch .vxe-switch--button {
+  border-color: var(--admin-form-control-error-color);
+}
+
+.admin-form__control[data-admin-status='error'] .vxe-switch.is--on .vxe-switch--button,
+.admin-form__control[data-admin-invalid='true'] .vxe-switch.is--on .vxe-switch--button,
+.admin-form__control--error .vxe-switch.is--on .vxe-switch--button {
+  background-color: color-mix(
+    in oklch,
+    var(--admin-form-control-error-color) 70%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form__control[data-admin-status='warning'] .vxe-switch .vxe-switch--button,
+.admin-form__control--warning .vxe-switch .vxe-switch--button {
+  border-color: var(--admin-form-warning-color);
+}
+
+.admin-form__control[data-admin-status='warning'] .vxe-switch.is--on .vxe-switch--button,
+.admin-form__control--warning .vxe-switch.is--on .vxe-switch--button {
+  background-color: color-mix(
+    in oklch,
+    var(--admin-form-warning-color) 70%,
+    var(--admin-form-bg-color)
+  );
+}
+
+.admin-form__control[data-admin-status='success'] .vxe-switch .vxe-switch--button,
+.admin-form__control--success .vxe-switch .vxe-switch--button {
+  border-color: var(--admin-form-success-color);
+}
+
+.admin-form__control[data-admin-status='success'] .vxe-switch.is--on .vxe-switch--button,
+.admin-form__control--success .vxe-switch.is--on .vxe-switch--button {
+  background-color: color-mix(
+    in oklch,
+    var(--admin-form-success-color) 70%,
+    var(--admin-form-bg-color)
   );
 }
 

@@ -107,6 +107,7 @@ export interface AdminFormCommonConfig {
   formItemClass?: (() => string) | string;
   hideLabel?: boolean;
   hideRequiredMark?: boolean;
+  requiredMarkFollowTheme?: boolean;
   labelAlign?: 'left' | 'right';
   labelClass?: string;
   labelWidth?: number;

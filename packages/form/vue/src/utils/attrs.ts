@@ -14,6 +14,7 @@ const BOOLEAN_ATTR_KEYS = new Set([
   'disabledOnInputListener',
   'hideLabel',
   'hideRequiredMark',
+  'requiredMarkFollowTheme',
   'maskClosable',
   'open',
   'queryMode',

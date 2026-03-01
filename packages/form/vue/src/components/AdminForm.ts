@@ -255,7 +255,9 @@ const AdminFormField = defineComponent({
           : toRaw(resolved.component as any);
       const hideLabel = fieldRuntime.hideLabel;
       const hideRequiredMark = fieldRuntime.hideRequiredMark;
-      const required = isFieldRequiredMark(field) && !hideRequiredMark;
+      const requiredMarkFollowTheme = fieldRuntime.requiredMarkFollowTheme;
+      const requiredByRule = isFieldRequiredMark(field);
+      const required = requiredByRule && !hideRequiredMark;
       const labelAlign = fieldRuntime.labelAlign;
       const labelWidth = fieldRuntime.labelWidth;
       const renderComponentSlots = resolveRenderComponentSlots(
@@ -271,6 +273,10 @@ const AdminFormField = defineComponent({
           class: [
             'admin-form__item',
             runtimeProps.layout === 'vertical' ? 'admin-form__item--vertical' : '',
+            requiredByRule ? 'admin-form__item--required' : '',
+            requiredByRule && requiredMarkFollowTheme
+              ? 'admin-form__item--required-follow-theme'
+              : '',
             field.hiddenByCollapse ? 'admin-form__item--hidden' : '',
             field.formItemClass || '',
           ],
@@ -288,7 +294,20 @@ const AdminFormField = defineComponent({
                       : { textAlign: labelAlign, width: `${labelWidth}px` },
                 },
                 [
-                  required ? h('span', { class: 'admin-form__required' }, '*') : null,
+                  required
+                    ? h(
+                        'span',
+                        {
+                          class: [
+                            'admin-form__required',
+                            requiredMarkFollowTheme
+                              ? 'admin-form__required--follow-theme'
+                              : '',
+                          ],
+                        },
+                        '*'
+                      )
+                    : null,
                   renderTextContent(field.label || field.fieldName),
                   field.help
                     ? h('span', { class: 'admin-form__help' }, renderTextContent(field.help))

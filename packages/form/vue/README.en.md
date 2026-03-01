@@ -93,6 +93,7 @@ Common `AdminFormCommonConfig` fields:
 - `labelWidth?: number`
 - `hideLabel?: boolean`
 - `hideRequiredMark?: boolean`
+- `requiredMarkFollowTheme?: boolean` (default `false`; when `true`, required `*`, required validation error text, and required-field error state colors all use theme danger color)
 
 ## `AdminSearchForm` (Search Preset)
 

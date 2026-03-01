@@ -256,7 +256,9 @@ const FormFieldItem = memo(function FormFieldItem({
   }
   const hideLabel = fieldRuntime.hideLabel;
   const hideRequiredMark = fieldRuntime.hideRequiredMark;
-  const required = isFieldRequiredMark(field) && !hideRequiredMark;
+  const requiredMarkFollowTheme = fieldRuntime.requiredMarkFollowTheme;
+  const requiredByRule = isFieldRequiredMark(field);
+  const required = requiredByRule && !hideRequiredMark;
   const labelAlign = fieldRuntime.labelAlign;
   const labelWidth = fieldRuntime.labelWidth;
   const labelStyle: CSSProperties | undefined =
@@ -270,6 +272,10 @@ const FormFieldItem = memo(function FormFieldItem({
       className={[
         'admin-form__item',
         runtimeProps.layout === 'vertical' ? 'admin-form__item--vertical' : '',
+        requiredByRule ? 'admin-form__item--required' : '',
+        requiredByRule && requiredMarkFollowTheme
+          ? 'admin-form__item--required-follow-theme'
+          : '',
         field.hiddenByCollapse ? 'admin-form__item--hidden' : '',
         field.formItemClass ?? '',
       ].join(' ')}
@@ -279,7 +285,20 @@ const FormFieldItem = memo(function FormFieldItem({
           className={['admin-form__label', field.labelClass ?? ''].join(' ')}
           style={labelStyle}
         >
-          {required ? <span className="admin-form__required">*</span> : null}
+          {required ? (
+            <span
+              className={[
+                'admin-form__required',
+                requiredMarkFollowTheme
+                  ? 'admin-form__required--follow-theme'
+                  : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              *
+            </span>
+          ) : null}
           {renderTextContent(field.label || field.fieldName)}
           {field.help ? <span className="admin-form__help">{renderTextContent(field.help)}</span> : null}
           {field.colon ? ':' : null}

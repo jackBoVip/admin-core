@@ -1301,6 +1301,7 @@ class AdminFormApiImpl implements AdminFormApi {
         formItemClass: this.props.formItemClass,
         hideLabel: this.props.hideLabel,
         hideRequiredMark: this.props.hideRequiredMark,
+        requiredMarkFollowTheme: this.props.requiredMarkFollowTheme,
         labelAlign: this.props.labelAlign,
         labelClass: this.props.labelClass,
         labelWidth: this.props.labelWidth,

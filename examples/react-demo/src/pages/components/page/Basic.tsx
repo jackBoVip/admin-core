@@ -12,8 +12,11 @@ interface SearchFormValues extends Record<string, unknown> {
   level?: '' | DemoRow['level'];
   maxAge?: string;
   minAge?: string;
+  requester?: string;
   role?: '' | DemoRow['role'];
+  scene?: 'daily-query' | 'ops-audit' | 'prod-change';
   status?: '' | 'disabled' | 'enabled';
+  tenantCode?: string;
 }
 
 interface MockQueryRequest {
@@ -59,6 +62,12 @@ const STATUS_OPTIONS: Array<{ label: string; value: '' | 'disabled' | 'enabled' 
   { label: '全部状态', value: '' },
   { label: '启用', value: 'enabled' },
   { label: '禁用', value: 'disabled' },
+];
+
+const SCENE_OPTIONS: Array<{ label: string; value: NonNullable<SearchFormValues['scene']> }> = [
+  { label: '生产变更', value: 'prod-change' },
+  { label: '日常查询', value: 'daily-query' },
+  { label: '运维审计', value: 'ops-audit' },
 ];
 
 function parseOptionalNumber(value: unknown) {
@@ -187,6 +196,37 @@ export default function PageBasic() {
           },
           fieldName: 'keyword',
           label: '关键词',
+        },
+        {
+          component: 'input',
+          componentProps: {
+            placeholder: '请输入租户编码',
+          },
+          defaultValue: 'tenant-demo',
+          fieldName: 'tenantCode',
+          label: '租户编码',
+          rules: 'required',
+        },
+        {
+          component: 'input',
+          componentProps: {
+            placeholder: '请输入操作人',
+          },
+          defaultValue: 'admin',
+          fieldName: 'requester',
+          label: '操作人',
+          rules: 'required',
+        },
+        {
+          component: 'select',
+          componentProps: {
+            options: SCENE_OPTIONS,
+            placeholder: '请选择业务场景',
+          },
+          defaultValue: 'prod-change',
+          fieldName: 'scene',
+          label: '业务场景',
+          rules: 'selectRequired',
         },
         {
           component: 'select',

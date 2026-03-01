@@ -156,6 +156,7 @@ import {
 - `labelWidth?: number`
 - `hideLabel?: boolean`
 - `hideRequiredMark?: boolean`
+- `requiredMarkFollowTheme?: boolean`（默认 `false`，`true` 时必填 `*`、必填校验错误文案与必填字段错误态颜色均跟随主题危险色）
 - `modelPropName?: string`
 - `disabled?: boolean`
 - `componentProps?: ComponentPropsInput`

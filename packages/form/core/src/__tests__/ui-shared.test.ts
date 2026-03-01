@@ -83,6 +83,42 @@ describe('ui shared utils', () => {
     expect(context.validateOnInput).toBe(true);
     expect(context.labelAlign).toBe('right');
     expect(context.labelWidth).toBe(120);
+    expect(context.requiredMarkFollowTheme).toBe(false);
+  });
+
+  it('should resolve requiredMarkFollowTheme from common config and field override', () => {
+    const fromCommon = resolveFieldRuntimeContext({
+      field: {
+        component: 'input',
+        fieldName: 'name',
+        runtime: { isDisabled: false, isIf: true, isRequired: true, isShow: true },
+      } as any,
+      frameworkDefaultModelPropName: 'value',
+      modelValue: '',
+      runtimeProps: {
+        commonConfig: {
+          requiredMarkFollowTheme: true,
+        },
+      },
+    });
+    expect(fromCommon.requiredMarkFollowTheme).toBe(true);
+
+    const fromField = resolveFieldRuntimeContext({
+      field: {
+        component: 'input',
+        fieldName: 'name',
+        requiredMarkFollowTheme: false,
+        runtime: { isDisabled: false, isIf: true, isRequired: true, isShow: true },
+      } as any,
+      frameworkDefaultModelPropName: 'value',
+      modelValue: '',
+      runtimeProps: {
+        commonConfig: {
+          requiredMarkFollowTheme: true,
+        },
+      },
+    });
+    expect(fromField.requiredMarkFollowTheme).toBe(false);
   });
 
   it('should default label alignment to right', () => {

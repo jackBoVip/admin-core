@@ -398,6 +398,7 @@ export interface ResolvedFieldRuntimeContext {
   fieldModelPropName: string;
   hideLabel: boolean;
   hideRequiredMark: boolean;
+  requiredMarkFollowTheme: boolean;
   labelAlign: 'left' | 'right';
   labelWidth: number;
   rawFieldProps: Record<string, any>;
@@ -448,6 +449,11 @@ export function resolveFieldRuntimeContext(input: {
   const hideLabel = input.field.hideLabel ?? commonConfig.hideLabel;
   const hideRequiredMark =
     input.field.hideRequiredMark ?? commonConfig.hideRequiredMark;
+  const requiredMarkFollowTheme = !!(
+    input.field.requiredMarkFollowTheme ??
+    commonConfig.requiredMarkFollowTheme ??
+    false
+  );
   const labelAlign =
     (input.field.labelAlign ?? commonConfig.labelAlign) === 'left'
       ? 'left'
@@ -461,6 +467,7 @@ export function resolveFieldRuntimeContext(input: {
     fieldModelPropName,
     hideLabel,
     hideRequiredMark,
+    requiredMarkFollowTheme,
     labelAlign,
     labelWidth,
     rawFieldProps,
