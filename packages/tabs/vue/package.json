@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/tabs-vue",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vue 3 tabs 适配包",
   "type": "module",
   "sideEffects": [

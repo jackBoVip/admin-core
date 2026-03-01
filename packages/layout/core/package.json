@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/layout",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "基础布局包核心，提供类型定义、配置、国际化和工具函数",
   "type": "module",
   "sideEffects": [

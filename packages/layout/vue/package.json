@@ -1,6 +1,6 @@
 {
   "name": "@admin-core/layout-vue",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vue 3 基础布局组件，开箱即用，高度集成偏好设置",
   "type": "module",
   "sideEffects": [
