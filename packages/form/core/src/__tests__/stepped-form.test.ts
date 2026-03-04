@@ -1,3 +1,6 @@
+/**
+ * 分步表单 schema 构建、校验与提交值清洗测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { createFormApi } from '../form-api';
 import {

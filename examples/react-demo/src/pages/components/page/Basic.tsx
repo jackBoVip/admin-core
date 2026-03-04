@@ -7,43 +7,113 @@ import { useMemo, useState } from 'react';
 
 import { BASIC_ROWS, sleep } from '../table/data';
 
+/**
+ * 查询表单值结构。
+ */
 interface SearchFormValues extends Record<string, unknown> {
+  /** 关键字。 */
   keyword?: string;
+  /** 等级筛选。 */
   level?: '' | DemoRow['level'];
+  /** 最大年龄。 */
   maxAge?: string;
+  /** 最小年龄。 */
   minAge?: string;
+  /** 操作人。 */
   requester?: string;
+  /** 角色筛选。 */
   role?: '' | DemoRow['role'];
+  /** 业务场景。 */
   scene?: 'daily-query' | 'ops-audit' | 'prod-change';
+  /** 启用状态。 */
   status?: '' | 'disabled' | 'enabled';
+  /** 租户编码。 */
   tenantCode?: string;
 }
 
+/**
+ * 模拟后端查询请求结构。
+ */
 interface MockQueryRequest {
+  /** 请求方法。 */
   method: 'POST';
+  /** 分页参数。 */
   page: {
+    /** 当前页码。 */
     currentPage: number;
+    /** 每页条数。 */
     pageSize: number;
   };
+  /** 查询条件。 */
   params: SearchFormValues;
+  /** 排序参数。 */
   sort: {
+    /** 排序字段。 */
     field?: string;
+    /** 排序信息。 */
     order?: 'asc' | 'desc';
   };
+  /** 接口路径。 */
   url: '/api/page/query';
 }
 
+/**
+ * 模拟后端查询响应结构。
+ *
+ * @template T 列表项类型。
+ */
 interface MockQueryResponse<T> {
+  /** 响应码。 */
   code: number;
+  /** 响应数据。 */
   data: {
+    /** 当前页列表。 */
     items: T[];
+    /** 总条数。 */
     total: number;
   };
+  /** 响应消息。 */
   message: string;
+  /** 回传请求快照。 */
   request: MockQueryRequest;
 }
 
-const ROLE_OPTIONS: Array<{ label: string; value: '' | DemoRow['role'] }> = [
+/**
+ * 通用下拉选项结构。
+ *
+ * @template T 选项值类型。
+ */
+interface SelectOption<T> {
+  /** 显示标签。 */
+  label: string;
+  /** 实际值。 */
+  value: T;
+}
+
+/**
+ * 模拟分页查询入参结构。
+ */
+interface MockPageQueryArg {
+  /** 分页参数。 */
+  page?: {
+    /** 当前页码。 */
+    currentPage?: number;
+    /** 每页条数。 */
+    pageSize?: number;
+  };
+  /** 排序参数。 */
+  sort?: {
+    /** 排序字段。 */
+    field?: string;
+    /** 排序方向。 */
+    order?: 'asc' | 'desc';
+  };
+}
+
+/**
+ * 角色筛选选项。
+ */
+const ROLE_OPTIONS: Array<SelectOption<'' | DemoRow['role']>> = [
   { label: '全部角色', value: '' },
   { label: 'User', value: 'User' },
   { label: 'Admin', value: 'Admin' },
@@ -51,25 +121,40 @@ const ROLE_OPTIONS: Array<{ label: string; value: '' | DemoRow['role'] }> = [
   { label: 'Guest', value: 'Guest' },
 ];
 
-const LEVEL_OPTIONS: Array<{ label: string; value: '' | NonNullable<DemoRow['level']> }> = [
+/**
+ * 等级筛选选项。
+ */
+const LEVEL_OPTIONS: Array<SelectOption<'' | NonNullable<DemoRow['level']>>> = [
   { label: '全部等级', value: '' },
   { label: '高', value: 'high' },
   { label: '中', value: 'medium' },
   { label: '低', value: 'low' },
 ];
 
-const STATUS_OPTIONS: Array<{ label: string; value: '' | 'disabled' | 'enabled' }> = [
+/**
+ * 状态筛选选项。
+ */
+const STATUS_OPTIONS: Array<SelectOption<'' | 'disabled' | 'enabled'>> = [
   { label: '全部状态', value: '' },
   { label: '启用', value: 'enabled' },
   { label: '禁用', value: 'disabled' },
 ];
 
-const SCENE_OPTIONS: Array<{ label: string; value: NonNullable<SearchFormValues['scene']> }> = [
+/**
+ * 业务场景选项。
+ */
+const SCENE_OPTIONS: Array<SelectOption<NonNullable<SearchFormValues['scene']>>> = [
   { label: '生产变更', value: 'prod-change' },
   { label: '日常查询', value: 'daily-query' },
   { label: '运维审计', value: 'ops-audit' },
 ];
 
+/**
+ * 将可选输入解析为数字。
+ *
+ * @param value 输入值。
+ * @returns 有效数字或 `null`。
+ */
 function parseOptionalNumber(value: unknown) {
   const text = String(value ?? '').trim();
   if (!text) {
@@ -79,6 +164,14 @@ function parseOptionalNumber(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * 按字段与方向排序行数据。
+ *
+ * @param rows 原始列表。
+ * @param field 排序字段。
+ * @param order 排序方向。
+ * @returns 排序后的新数组。
+ */
 function sortRowsByField(
   rows: DemoRow[],
   field?: string,
@@ -108,11 +201,15 @@ function sortRowsByField(
   return sorted;
 }
 
+/**
+ * 模拟后端分页与排序查询。
+ *
+ * @param requestArg 分页/排序请求参数。
+ * @param params 查询条件。
+ * @returns 模拟响应体。
+ */
 async function queryRowsByBackend(
-  requestArg: {
-    page?: { currentPage?: number; pageSize?: number };
-    sort?: { field?: string; order?: 'asc' | 'desc' };
-  } = {},
+  requestArg: MockPageQueryArg = {},
   params: SearchFormValues = {}
 ) {
   const currentPage = Number(requestArg.page?.currentPage ?? 1) || 1;
@@ -183,7 +280,14 @@ async function queryRowsByBackend(
   } satisfies MockQueryResponse<DemoRow>;
 }
 
+/**
+ * Page 组合页示例（查询表单 + 表格）。
+ */
 export default function PageBasic() {
+  /**
+   * 查询表单配置。
+   * @description 定义字段结构、默认值与必填规则。
+   */
   const formOptions = useMemo<AdminFormProps>(() => {
     return {
       collapsedRows: 1,
@@ -280,6 +384,10 @@ export default function PageBasic() {
     };
   }, []);
 
+  /**
+   * 表格配置。
+   * @description 定义列、远程代理、分页与排序策略。
+   */
   const tableOptions = useMemo<AdminTableReactProps<DemoRow, SearchFormValues>>(() => {
     return {
       gridOptions: {
@@ -298,8 +406,14 @@ export default function PageBasic() {
           ajax: {
             query: async (
               request: {
-                page?: { currentPage?: number; pageSize?: number };
-                sort?: { field?: string; order?: 'asc' | 'desc' };
+                /** 分页参数。 */
+page?: { /** 当前页码。 */
+currentPage?: number; /** 每页条数。 */
+pageSize?: number };
+                /** 排序参数。 */
+sort?: { /** 排序字段。 */
+field?: string; /** 排序信息。 */
+order?: 'asc' | 'desc' };
               },
               formValues: SearchFormValues
             ) => {
@@ -332,6 +446,9 @@ export default function PageBasic() {
     };
   }, []);
 
+  /**
+   * Page 组合页初始化配置。
+   */
   const pageOptions = useMemo(() => {
     return {
       formOptions,
@@ -341,7 +458,13 @@ export default function PageBasic() {
 
   const [PageQueryTable, pageApi] =
     useAdminPageQueryTable<DemoRow, SearchFormValues>(pageOptions);
+  /**
+   * 是否启用固定高度模式。
+   */
   const [fixedMode] = useState(true);
+  /**
+   * 是否显式传入表格高度。
+   */
   const [useTableHeight] = useState(false);
 
   console.log('[page-react] exposed api', pageApi.formApi, pageApi.tableApi);

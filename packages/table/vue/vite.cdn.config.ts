@@ -2,6 +2,9 @@ import { resolve } from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import { createCdnLibraryConfig } from '../../../internal/build-config/vite.js';
 
+/**
+ * table-vue CDN 库构建配置。
+ */
 export default createCdnLibraryConfig({
   entry: resolve(__dirname, 'src/index.ts'),
   name: 'AdminCoreTableVue',

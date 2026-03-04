@@ -4,6 +4,10 @@ import { Avatar, Button, Checkbox, Input, Select, Switch } from 'antd';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 自定义单元格示例页。
+ * @description 演示 slot 渲染与内置 Cell 渲染器的组合使用。
+ */
 export default function TableCustomCell() {
   const [TableView] = useAdminTable<DemoProductRow>(
     useMemo(

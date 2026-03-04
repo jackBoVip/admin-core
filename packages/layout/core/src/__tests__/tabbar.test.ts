@@ -1,3 +1,6 @@
+/**
+ * 标签栏滚动偏移与可见区定位计算测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   calculateTabbarScrollOffset,

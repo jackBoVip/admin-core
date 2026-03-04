@@ -1,7 +1,6 @@
 /**
- * 侧边栏菜单组件
- * @description 自动渲染菜单数据，支持多级嵌套
- * 折叠状态下支持悬停弹出子菜单（类似常见 admin 布局）
+ * 侧边栏菜单组件。
+ * @description 自动渲染菜单数据，支持多级嵌套；折叠状态下支持悬停弹出子菜单。
  */
 
 import { hasChildren, getMenuItemClassName, getMenuId, isMenuActive, LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
@@ -12,25 +11,57 @@ import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderLayoutIcon } from '../../utils';
 import { renderIcon } from '../../utils/icon-renderer';
 
+/**
+ * 侧边栏菜单项组件属性。
+ */
 interface MenuItemProps {
+  /** 当前菜单项。 */
   item: MenuItem;
+  /** 菜单层级。 */
   level: number;
+  /** 侧边栏是否折叠。 */
   collapsed: boolean;
+  /** 是否处于悬停展开态。 */
   expandOnHovering: boolean;
+  /** 当前展开菜单 key 集合。 */
   expandedKeys: Set<string>;
+  /** 当前激活菜单 key。 */
   activeKey: string;
+  /** 激活路径父级集合。 */
   activeParentSet: Set<string>;
+  /** 当前菜单是否激活。 */
   isActive: boolean;
+  /** 是否包含激活子项。 */
   hasActiveChild: boolean;
+  /** 切换指定菜单项展开状态。 */
   onToggleExpand: (key: string) => void;
+  /** 选中指定菜单项。 */
   onSelect: (key: string) => void;
+  /** 在折叠态悬停时显示子菜单弹层。 */
   onShowPopup: (item: MenuItem, event: React.MouseEvent) => void;
+  /** 隐藏子菜单弹层。 */
   onHidePopup: () => void;
+  /** 样式配置。 */
   style?: React.CSSProperties;
 }
 
 /**
- * 递归菜单项组件
+ * 折叠侧栏悬停弹层状态。
+ */
+interface SidebarPopupState {
+  /** 当前弹出菜单项。 */
+  item: MenuItem | null;
+  /** 是否可见。 */
+  visible: boolean;
+  /** 弹出菜单顶部坐标。 */
+  top: number;
+  /** 弹出菜单左侧坐标。 */
+  left: number;
+}
+
+/**
+ * 递归菜单项组件。
+ * @description 负责单项菜单渲染、展开收起与子菜单递归展示。
  */
 const MenuItemComponent = memo(function MenuItemComponent({
   item,
@@ -63,10 +94,13 @@ const MenuItemComponent = memo(function MenuItemComponent({
     return result;
   }, [item.children]);
 
+  /**
+   * 处理菜单项点击：有子菜单时切换展开，无子菜单时触发选中。
+   */
   const handleClick = useCallback(() => {
     if (hasChildrenItems) {
       if (collapsed && !expandOnHovering) {
-        // 折叠状态下，点击有子菜单的项不做任何操作（由悬停处理）
+        /* 折叠状态下，有子菜单的点击交由悬停弹层处理。 */
         return;
       }
       onToggleExpand(menuId);
@@ -75,6 +109,11 @@ const MenuItemComponent = memo(function MenuItemComponent({
     }
   }, [hasChildrenItems, menuId, onToggleExpand, onSelect, collapsed, expandOnHovering]);
 
+  /**
+   * 处理菜单项悬停，在折叠模式下触发弹出子菜单。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
     if (collapsed && !expandOnHovering && hasChildrenItems) {
       onShowPopup(item, e);
@@ -165,17 +204,29 @@ const MenuItemComponent = memo(function MenuItemComponent({
  * 弹出菜单组件
  */
 interface PopupMenuProps {
+  /** 当前弹出根菜单项。 */
   item: MenuItem;
+  /** 弹出菜单顶部坐标。 */
   top: number;
+  /** 弹出菜单左侧坐标。 */
   left: number;
+  /** 当前激活菜单 key。 */
   activeKey: string;
+  /** 激活路径父级集合。 */
   activeParentSet: Set<string>;
+  /** 当前主题。 */
   theme: string;
+  /** 选中指定菜单项。 */
   onSelect: (key: string) => void;
+  /** 鼠标进入弹层时触发。 */
   onMouseEnter: () => void;
+  /** 鼠标离开弹层时触发。 */
   onMouseLeave: () => void;
 }
 
+/**
+ * 侧边栏弹出菜单组件。
+ */
 const PopupMenu = memo(function PopupMenu({
   item,
   top,
@@ -196,6 +247,11 @@ const PopupMenu = memo(function PopupMenu({
   const popupResizeObserverRef = useRef<ResizeObserver | null>(null);
   const popupStyle = useMemo(() => ({ top: `${top}px`, left: `${left}px` }), [top, left]);
   const itemId = useMemo(() => getMenuId(item), [item]);
+  /**
+   * 基于当前激活路径构建弹出菜单初始展开键集合。
+   *
+   * @returns 默认展开键集合。
+   */
   const buildExpandedKeys = useCallback(() => {
     const keys = new Set<string>();
     if (!item.children?.length) return keys;
@@ -252,6 +308,11 @@ const PopupMenu = memo(function PopupMenu({
     return map;
   }, [item.children]);
 
+  /**
+   * 处理弹出菜单项悬停，自动展开包含子节点的项。
+   *
+   * @param menuItem 当前悬停菜单项。
+   */
   const handleItemHover = useCallback((menuItem: MenuItem) => {
     if (!hasChildren(menuItem)) return;
     const id = getMenuId(menuItem);
@@ -264,6 +325,11 @@ const PopupMenu = memo(function PopupMenu({
     });
   }, [menuItemMap]);
 
+  /**
+   * 切换弹出菜单中某个节点的展开状态。
+   *
+   * @param key 菜单键。
+   */
   const toggleExpand = useCallback((key: string) => {
     if (!menuItemMap.has(key)) return;
     setExpandedKeys(prev => {
@@ -287,6 +353,11 @@ const PopupMenu = memo(function PopupMenu({
     });
   }, [menuItemMap]);
 
+  /**
+   * 处理弹出菜单节点点击，按是否有子节点执行展开或选择。
+   *
+   * @param menuItem 被点击菜单项。
+   */
   const handleItemClick = useCallback((menuItem: MenuItem) => {
     if (hasChildren(menuItem)) {
       toggleExpand(getMenuId(menuItem));
@@ -295,6 +366,11 @@ const PopupMenu = memo(function PopupMenu({
     }
   }, [toggleExpand, onSelect]);
 
+  /**
+   * 处理弹出菜单 DOM 点击事件，并映射到具体菜单项。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handlePopupItemClick = useCallback((e: React.MouseEvent) => {
     const key = (e.currentTarget as HTMLElement).dataset.key;
     if (!key) return;
@@ -323,6 +399,11 @@ const PopupMenu = memo(function PopupMenu({
     [popupChildren, startIndex, endIndex, shouldVirtualize]
   );
 
+  /**
+   * 同步弹出菜单滚动位置到本地状态。
+   *
+   * @param e React 滚动事件对象。
+   */
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const nextTop = e.currentTarget.scrollTop;
     setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
@@ -378,6 +459,11 @@ const PopupMenu = memo(function PopupMenu({
     if (!shouldVirtualize) return;
     if (!popupRef.current) return;
     const el = popupRef.current;
+    /**
+     * 处理滚轮事件，接管默认滚动以兼容虚拟列表滚动容器。
+     *
+     * @param e 原生滚轮事件。
+     */
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return;
       e.preventDefault();
@@ -411,6 +497,9 @@ const PopupMenu = memo(function PopupMenu({
     const isExpanded = expandedKeys.has(menuId);
     const hasChildrenItems = hasChildren(menuItem);
 
+    /**
+     * 计算弹出菜单项类名，合并激活态与层级态样式。
+     */
     const itemClass = (() => {
       const classes = ['sidebar-menu__popup-item'];
       if (isActive) classes.push('sidebar-menu__popup-item--active');
@@ -499,7 +588,9 @@ const PopupMenu = memo(function PopupMenu({
 });
 
 /**
- * 侧边栏菜单组件
+ * 侧边栏菜单组件。
+ * @description 负责菜单展开态同步、折叠悬停弹层与虚拟滚动渲染。
+ * @returns 侧边栏菜单节点。
  */
 export function SidebarMenu() {
   const context = useLayoutContext();
@@ -508,21 +599,30 @@ export function SidebarMenu() {
   const { openKeys, activeKey, handleSelect, handleOpenChange } = useMenuState();
   const [layoutState, setLayoutState] = useLayoutState();
   
-  // 侧边栏主题（用于弹出菜单）
+  /**
+   * 侧边栏主题标识，供弹出菜单同步视觉样式。
+   */
   const sidebarTheme = computed.sidebarTheme || 'light';
 
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
     () => new Set(openKeys)
   );
 
-  // 使用 ref 来跟踪是否是由用户点击触发的 expandedKeys 变化
-  // 避免在外部同步（如路由变化）时触发 handleOpenChange
+  /**
+   * 记录待同步的展开键集合与内部更新状态。
+   * @description
+   * 用于区分“用户点击触发的内部展开变化”和“外部 openKeys 同步”。
+   * 防止在双向同步过程中重复触发 `handleOpenChange`。
+   */
   const pendingOpenChangeRef = useRef<string[] | null>(null);
   const isExpandedKeysInternalUpdateRef = useRef<boolean>(false);
 
-  // 同步 openKeys 到 expandedKeys（外部同步，不触发 handleOpenChange）
+  /**
+   * 同步外部 `openKeys` 到本地 `expandedKeys`。
+   * @description 内部点击触发的更新会被标记并在此处忽略，避免循环同步。
+   */
   useEffect(() => {
-    // 如果是内部更新触发的，不需要同步（避免循环）
+    /* 内部触发的同步在此跳过，防止出现状态回环。 */
     if (isExpandedKeysInternalUpdateRef.current) {
       isExpandedKeysInternalUpdateRef.current = false;
       return;
@@ -543,12 +643,15 @@ export function SidebarMenu() {
     });
   }, [openKeys]);
 
-  // 处理 pendingOpenChange，避免在渲染期间更新组件
+  /**
+   * 异步处理待提交的 `openKeys` 变更。
+   * @description 将展开状态变更放到 effect 中执行，避免渲染期直接更新。
+   */
   useEffect(() => {
     if (pendingOpenChangeRef.current !== null) {
       const keys = pendingOpenChangeRef.current;
       pendingOpenChangeRef.current = null;
-      // 标记这是内部更新，避免触发同步循环
+      /* 标记为内部更新，防止被“外部同步”逻辑再次消费。 */
       isExpandedKeysInternalUpdateRef.current = true;
       startTransition(() => {
         handleOpenChange(keys);
@@ -556,13 +659,10 @@ export function SidebarMenu() {
     }
   }, [expandedKeys, handleOpenChange]);
 
-  // 弹出菜单状态
-  const [popupState, setPopupState] = useState<{
-    item: MenuItem | null;
-    visible: boolean;
-    top: number;
-    left: number;
-  }>({
+  /**
+   * 折叠侧栏悬停弹出菜单状态。
+   */
+  const [popupState, setPopupState] = useState<SidebarPopupState>({
     item: null,
     visible: false,
     top: 0,
@@ -587,11 +687,24 @@ export function SidebarMenu() {
 
   const isMixedNav = computed.isMixedNav;
 
+  /**
+   * 统一规范菜单键值，空值转换为空字符串。
+   *
+   * @param value 原始键值。
+   * @returns 规范化键值。
+   */
   const normalizeKey = useCallback((value: unknown) => {
     if (value === null || value === undefined || value === '') return '';
     return String(value);
   }, []);
 
+  /**
+   * 判断菜单项是否与目标键匹配（key/path/id 任一匹配即视为命中）。
+   *
+   * @param menu 菜单项。
+   * @param key 目标键值。
+   * @returns 是否匹配。
+   */
   const menuMatchesKey = useCallback((menu: MenuItem, key: string) => {
     const target = normalizeKey(key);
     if (!target) return false;
@@ -605,6 +718,13 @@ export function SidebarMenu() {
     );
   }, [normalizeKey]);
 
+  /**
+   * 判断菜单树是否包含目标键。
+   *
+   * @param menu 根菜单项。
+   * @param key 目标键值。
+   * @returns 是否包含。
+   */
   const menuContainsKey = useCallback((menu: MenuItem, key: string) => {
     if (menuMatchesKey(menu, key)) return true;
     if (!menu.children?.length) return false;
@@ -622,6 +742,12 @@ export function SidebarMenu() {
     return false;
   }, [menuMatchesKey]);
 
+  /**
+   * 根据目标键在顶层菜单中定位所属根菜单。
+   *
+   * @param key 目标菜单键。
+   * @returns 命中的根菜单项，未命中返回 `null`。
+   */
   const findRootMenuByKey = useCallback((key: string) => {
     if (!key) return null;
     for (const item of allMenus) {
@@ -639,19 +765,28 @@ export function SidebarMenu() {
     return null;
   }, [isMixedNav, allMenus]);
 
-  // 使用独立的 state 存储 mixedNavRootKey，避免在渲染期间读取 layoutState
-  // 这样可以避免 "Cannot update a component while rendering a different component" 错误
+  /**
+   * 本地缓存混合导航根键。
+   * @description
+   * 避免渲染流程中直接依赖 `layoutState.mixedNavRootKey`，
+   * 从而规避 “Cannot update a component while rendering a different component” 警告。
+   */
   const [localMixedNavRootKey, setLocalMixedNavRootKey] = useState<string | null>(() => {
     if (!isMixedNav) return null;
-    // 初始化时从 layoutState 读取，但只在初始化时读取一次
+    /* 初始化阶段读取一次外部状态，后续通过同步 effect 维护。 */
     return layoutState.mixedNavRootKey || null;
   });
 
-  // 标记是否是由内部更新触发的 layoutState 变化，避免循环同步
+  /**
+   * 标记混合导航根键是否由内部逻辑触发更新。
+   * @description 用于在 `layoutState` 与本地状态同步时避免循环。
+   */
   const isInternalUpdateRef = useRef<boolean>(false);
 
-  // 同步 layoutState.mixedNavRootKey 的变化到本地 state
-  // 但忽略由内部更新触发的变化（避免循环）
+  /**
+   * 同步 `layoutState.mixedNavRootKey` 到本地状态。
+   * @description 内部更新触发的变更会被忽略，避免双向同步闭环。
+   */
   useEffect(() => {
     if (!isMixedNav) {
       if (!isInternalUpdateRef.current) {
@@ -660,21 +795,23 @@ export function SidebarMenu() {
       return;
     }
     
-    // 如果是内部更新触发的，不需要同步（因为我们已经更新了 localMixedNavRootKey）
+    /* 内部更新已经更新过本地值，这里直接跳过。 */
     if (isInternalUpdateRef.current) {
       isInternalUpdateRef.current = false;
       return;
     }
     
-    // 使用函数式更新，只在值真正变化时更新
+    /* 函数式更新仅在值变化时提交，减少不必要渲染。 */
     setLocalMixedNavRootKey((prev) => {
       const next = layoutState.mixedNavRootKey || null;
       return prev === next ? prev : next;
     });
   }, [isMixedNav, layoutState.mixedNavRootKey]);
 
-  // 基于 activeKey 和 localMixedNavRootKey 计算 rootMenu
-  // 注意：这里不直接读取 layoutState.mixedNavRootKey，而是使用 localMixedNavRootKey
+  /**
+   * 基于激活键和本地根键推导当前根菜单。
+   * @description 使用本地根键计算，避免渲染期与外部状态形成竞态。
+   */
   const derivedRootMenu = useMemo(() => {
     if (!isMixedNav) return null;
     const candidateKey = localMixedNavRootKey || activeKey;
@@ -684,13 +821,18 @@ export function SidebarMenu() {
 
   const rootMenu = derivedRootMenu ?? fallbackRootMenu;
 
-  // 使用 ref 存储上一次的 activeKey 和 rootKey，避免不必要的更新
+  /**
+   * 记录上一次激活键与根键，避免重复提交同值更新。
+   */
   const prevActiveKeyRef = useRef<string | null>(null);
   const prevRootKeyRef = useRef<string | null>(null);
 
-  // 基于 activeKey 的变化来更新 mixedNavRootKey，而不是依赖 rootMenu
-  // 这样可以避免循环依赖，因为 rootMenu 依赖于 localMixedNavRootKey
-  // 注意：这里只依赖 activeKey，不依赖 localMixedNavRootKey，避免循环
+  /**
+   * 监听 `activeKey` 推导并更新混合导航根键。
+   * @description
+   * 仅依赖 `activeKey` 触发更新，避免与 `rootMenu/localMixedNavRootKey`
+   * 形成循环依赖。
+   */
   useEffect(() => {
     if (!isMixedNav) {
       prevActiveKeyRef.current = null;
@@ -704,13 +846,13 @@ export function SidebarMenu() {
       return;
     }
     
-    // 如果 activeKey 没有改变，不需要更新
+    /* activeKey 未变化时不触发后续同步。 */
     if (prevActiveKeyRef.current === activeKey) return;
     
-    // 更新 activeKey ref
+    /* 记录最新 activeKey，作为下次比较基准。 */
     prevActiveKeyRef.current = activeKey;
     
-    // 基于 activeKey 计算 rootMenu（不依赖 localMixedNavRootKey，避免循环）
+    /* 基于 activeKey 直接推导根菜单，避免依赖本地根键形成闭环。 */
     const computedRootMenu = findRootMenuByKey(activeKey) ?? fallbackRootMenu;
     if (!computedRootMenu) {
       prevRootKeyRef.current = null;
@@ -723,29 +865,28 @@ export function SidebarMenu() {
       return;
     }
     
-    // 如果 rootKey 没有改变，不需要更新
+    /* rootKey 未变化时直接跳过。 */
     if (prevRootKeyRef.current === rootKey) return;
     
-    // 更新 ref
+    /* 写入最新 rootKey 快照。 */
     prevRootKeyRef.current = rootKey;
     
-    // 使用 requestAnimationFrame 确保在下一个渲染帧中更新，避免在渲染期间更新组件
+    /* 在下一帧提交状态，规避渲染期更新警告。 */
     requestAnimationFrame(() => {
-      // 标记这是内部更新，避免触发同步循环
+      /* 标记为内部更新，供同步 effect 跳过处理。 */
       isInternalUpdateRef.current = true;
       
-      // 先更新本地 state，避免在渲染期间读取 layoutState
+      /* 优先更新本地状态，降低外部状态读写冲突概率。 */
       setLocalMixedNavRootKey(rootKey);
       
-      // 使用函数式更新避免依赖 layoutState.mixedNavRootKey，防止循环更新
+      /* 函数式更新避免闭包依赖旧 layoutState，减少循环更新风险。 */
       setLayoutState((prev) => {
-        // 如果值已经相同，不更新
+        /* 同值直接复用旧对象，避免无意义渲染。 */
         if (prev.mixedNavRootKey === rootKey) return prev;
         return { ...prev, mixedNavRootKey: rootKey };
       });
       
-      // 在下一个 tick 重置标志，确保同步 useEffect 能正确处理
-      // 使用 setTimeout 确保在 React 的状态更新和 useEffect 执行之后重置
+      /* 下一事件循环重置标志，确保同步 effect 在稳定状态下运行。 */
       setTimeout(() => {
         isInternalUpdateRef.current = false;
       }, 0);
@@ -809,6 +950,9 @@ export function SidebarMenu() {
     if (!shouldVirtualize) return;
     const menuEl = menuRef.current;
     if (!menuEl) return;
+    /**
+     * 测量菜单项实际高度并同步到虚拟列表计算参数。
+     */
     const updateItemHeight = () => {
       const firstItem = menuEl.querySelector('.sidebar-menu__item') as HTMLElement | null;
       if (!firstItem) return;
@@ -859,6 +1003,12 @@ export function SidebarMenu() {
 
   const parentPathMap = useMemo(() => {
     const map = new Map<string, string | null>();
+    /**
+     * 深度优先遍历菜单树，构建“节点 -> 父节点”映射。
+     *
+     * @param items 当前层级菜单集合。
+     * @param parent 当前层级父键。
+     */
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
         const rawKey = menu.key ?? '';
@@ -893,6 +1043,11 @@ export function SidebarMenu() {
     return parentSet;
   }, [activeKey, parentPathMap]);
 
+  /**
+   * 切换侧边栏菜单节点展开状态，并异步同步 `openKeys`。
+   *
+   * @param key 菜单键。
+   */
   const toggleExpand = useCallback(
     (key: string) => {
       setExpandedKeys((prev) => {
@@ -912,8 +1067,10 @@ export function SidebarMenu() {
           }
           if (same) return prev;
         }
-        // 将需要更新的 keys 存储到 ref 中，由 useEffect 异步处理
-        // 这样可以避免在渲染期间更新组件
+        /*
+         * 将待同步展开键暂存至 ref，
+         * 再由 effect 异步触发 `handleOpenChange`，避免渲染期更新。
+         */
         const nextKeys = Array.from(next);
         pendingOpenChangeRef.current = nextKeys;
         return next;
@@ -922,6 +1079,9 @@ export function SidebarMenu() {
     []
   );
 
+  /**
+   * 更新侧边栏容器矩形信息，用于弹出菜单定位。
+   */
   const updateSidebarRect = useCallback(() => {
     if (typeof window === 'undefined') return;
     const sidebar = document.querySelector('.layout-sidebar') as HTMLElement | null;
@@ -935,6 +1095,9 @@ export function SidebarMenu() {
 
     updateSidebarRect();
     const scrollOptions: AddEventListenerOptions = { capture: true, passive: true };
+    /**
+     * 节流处理窗口尺寸/滚动事件，按帧同步侧边栏矩形信息。
+     */
     const handle = () => {
       if (sidebarRectFrameRef.current !== null) return;
       sidebarRectFrameRef.current = requestAnimationFrame(() => {
@@ -973,10 +1136,16 @@ export function SidebarMenu() {
     scrollContainerRef.current = container;
     if (!container) return;
 
+    /**
+     * 同步滚动容器的 `scrollTop`。
+     */
     const syncScroll = () => {
       const nextTop = container.scrollTop;
       setScrollTop((prev) => (prev === nextTop ? prev : nextTop));
     };
+    /**
+     * 同步滚动容器可视高度。
+     */
     const syncHeight = () => {
       const nextHeight = container.clientHeight;
       setViewportHeight((prev) => (prev === nextHeight ? prev : nextHeight));
@@ -1018,6 +1187,12 @@ export function SidebarMenu() {
     setScrollTop((prev) => (prev === 0 ? prev : 0));
   }, [shouldVirtualize]);
 
+  /**
+   * 显示折叠侧边栏弹出菜单，并根据触发项计算弹层位置。
+   *
+   * @param item 触发弹层的菜单项。
+   * @param event React 鼠标事件。
+   */
   const showPopupMenu = useCallback((item: MenuItem, event: React.MouseEvent) => {
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
@@ -1043,6 +1218,9 @@ export function SidebarMenu() {
     });
   }, []);
 
+  /**
+   * 延迟隐藏弹出菜单，避免鼠标在菜单与弹层间移动时闪烁。
+   */
   const hidePopupMenu = useCallback(() => {
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
@@ -1053,6 +1231,9 @@ export function SidebarMenu() {
     }, 100);
   }, []);
 
+  /**
+   * 取消已安排的弹出菜单隐藏任务。
+   */
   const cancelHidePopup = useCallback(() => {
     if (leaveTimerRef.current) {
       clearTimeout(leaveTimerRef.current);
@@ -1060,12 +1241,19 @@ export function SidebarMenu() {
     }
   }, []);
 
+  /**
+   * 处理弹出菜单选中，触发选中逻辑并关闭弹层。
+   *
+   * @param key 选中的菜单键。
+   */
   const handlePopupSelect = useCallback((key: string) => {
     handleSelect(key);
     setPopupState(prev => ({ ...prev, visible: false, item: null }));
   }, [handleSelect]);
 
-  // 清理定时器
+  /**
+   * 组件卸载时清理延时器与动画帧。
+   */
   useEffect(() => {
     return () => {
       if (leaveTimerRef.current) {

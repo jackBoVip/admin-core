@@ -5,6 +5,9 @@ import { useAdminTable } from '@admin-core/table-vue';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 行编辑表格配置。
+ */
 const gridOptions: VxeTableGridOptions<DemoProductRow> = {
   columns: [
     { title: '序号', type: 'seq', width: 60 },
@@ -38,16 +41,37 @@ const gridOptions: VxeTableGridOptions<DemoProductRow> = {
   showOverflow: true,
 };
 
+/**
+ * `useAdminTable` 返回的组件与 API。
+ */
 const [Grid, gridApi] = useAdminTable<DemoProductRow>({ gridOptions });
 
+/**
+ * 判断当前行是否处于编辑状态。
+ *
+ * @param row 行数据。
+ * @returns 是否处于编辑状态。
+ */
 function hasEditStatus(row: DemoProductRow) {
   return (gridApi.grid as any)?.isEditByRow?.(row);
 }
 
+/**
+ * 将指定行切换为编辑模式。
+ *
+ * @param row 行数据。
+ * @returns 无返回值。
+ */
 function editRowEvent(row: DemoProductRow) {
   (gridApi.grid as any)?.setEditRow?.(row);
 }
 
+/**
+ * 保存行编辑结果并模拟请求延时。
+ *
+ * @param row 行数据。
+ * @returns 无返回值。
+ */
 async function saveRowEvent(row: DemoProductRow) {
   await (gridApi.grid as any)?.clearEdit?.();
   gridApi.setLoading(true);
@@ -57,6 +81,11 @@ async function saveRowEvent(row: DemoProductRow) {
   }, 600);
 }
 
+/**
+ * 取消当前行编辑。
+ *
+ * @returns 无返回值。
+ */
 async function cancelRowEvent() {
   await (gridApi.grid as any)?.clearEdit?.();
 }

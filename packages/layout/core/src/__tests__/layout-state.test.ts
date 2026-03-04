@@ -1,3 +1,6 @@
+/**
+ * 布局通用状态解析与快捷动作分发测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildLayoutPreferencesSnapshot,

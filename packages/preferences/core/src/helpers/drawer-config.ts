@@ -18,12 +18,14 @@ import type { Preferences,
   FeatureBlockConfig } from '../types';
 
 /**
- * 标签页类型
+ * 抽屉标签页类型
+ * @description 定义偏好抽屉内可切换的一级页签标识。
  */
 export type DrawerTabType = 'appearance' | 'layout' | 'shortcutKeys' | 'general';
 
 /**
- * 标签页配置
+ * 抽屉标签页静态配置
+ * @description 用于描述标签页值和其对应的语言包键。
  */
 export interface DrawerTabConfig {
   /** 标签页类型 */
@@ -33,7 +35,26 @@ export interface DrawerTabConfig {
 }
 
 /**
- * 默认标签页配置
+ * 抽屉标签页视图数据。
+ */
+export interface DrawerTabView {
+  /** 显示标签。 */
+  label: string;
+  /** 标签页值。 */
+  value: DrawerTabType;
+}
+
+/**
+ * 语言包中用于标签页标题的结构。
+ */
+interface DrawerLocaleTitleEntry {
+  /** 标题文案。 */
+  title: string;
+}
+
+/**
+ * 默认抽屉标签页配置
+ * @description 按展示顺序定义抽屉可用页签。
  */
 export const DRAWER_TABS: DrawerTabConfig[] = [
   { value: 'appearance', labelKey: 'theme' },
@@ -44,16 +65,22 @@ export const DRAWER_TABS: DrawerTabConfig[] = [
 
 /**
  * 获取标签页配置（带翻译）
+ * @description 将静态标签页配置映射为当前语言下可直接渲染的显示模型。
+ * @param locale 当前语言包。
+ * @returns 抽屉标签页显示配置。
  */
-export function getDrawerTabs(locale: LocaleMessages): Array<{ label: string; value: DrawerTabType }> {
+export function getDrawerTabs(locale: LocaleMessages): DrawerTabView[] {
   return DRAWER_TABS.map((tab) => ({
     value: tab.value,
-    label: (locale[tab.labelKey] as { title: string }).title,
+    label: (locale[tab.labelKey] as DrawerLocaleTitleEntry).title,
   }));
 }
 
 /**
- * 根据当前语言获取语言包
+ * 根据偏好设置获取语言包
+ * @description 当偏好为空时默认返回中文语言包，避免初始化阶段出现空引用。
+ * @param preferences 偏好设置对象，可为空。
+ * @returns 对应语言环境下的语言包对象。
  */
 export function getLocaleByPreferences(preferences: Preferences | null): LocaleMessages {
   if (!preferences) return zhCN;
@@ -61,7 +88,12 @@ export function getLocaleByPreferences(preferences: Preferences | null): LocaleM
 }
 
 /**
- * 复制配置到剪贴板
+ * 复制偏好配置到剪贴板
+ * @description 在浏览器环境下将完整偏好配置序列化后写入剪贴板，并支持成功/失败回调。
+ * @param preferences 待复制的偏好配置对象。
+ * @param onSuccess 复制成功回调。
+ * @param onError 复制失败回调。
+ * @returns `true` 表示复制成功，`false` 表示复制失败。
  */
 export async function copyPreferencesConfig(
   preferences: Preferences,
@@ -69,7 +101,7 @@ export async function copyPreferencesConfig(
   onError?: (error: unknown) => void
 ): Promise<boolean> {
   try {
-    // SSR 环境检查
+    /* SSR 环境检查。 */
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
       logger.warn('Clipboard API not available');
       return false;
@@ -87,6 +119,7 @@ export async function copyPreferencesConfig(
 
 /**
  * 配置验证结果
+ * @description 表示配置导入前校验的执行结果与错误上下文。
  */
 export interface ConfigValidationResult {
   /** 是否有效 */
@@ -99,6 +132,7 @@ export interface ConfigValidationResult {
 
 /**
  * 必需的顶级属性列表
+ * @description 用于校验导入配置是否具备最小可用结构。
  */
 const REQUIRED_TOP_LEVEL_KEYS: (keyof Preferences)[] = [
   'app',
@@ -118,64 +152,66 @@ const REQUIRED_TOP_LEVEL_KEYS: (keyof Preferences)[] = [
 
 /**
  * 检查对象是否包含原型污染风险的键
- * @param obj - 待检查对象
- * @returns 是否安全
+ * @description 递归检查对象层级，拒绝出现 `__proto__`、`constructor`、`prototype` 等危险键。
+ * @param obj 待检查对象。
+ * @returns `true` 表示对象结构安全，`false` 表示存在原型污染风险。
  */
 function isPrototypeSafe(obj: unknown): boolean {
   if (!obj || typeof obj !== 'object') return true;
-  
+
   const dangerousKeys = ['__proto__', 'constructor', 'prototype'];
-  
+
   for (const key of Object.keys(obj as object)) {
     if (dangerousKeys.includes(key)) {
       return false;
     }
-    // 递归检查嵌套对象
+    /* 递归检查嵌套对象。 */
     const value = (obj as Record<string, unknown>)[key];
     if (value && typeof value === 'object' && !isPrototypeSafe(value)) {
       return false;
     }
   }
-  
+
   return true;
 }
 
 /**
- * 验证配置数据
- * @param data - 待验证的数据
- * @returns 验证结果
+ * 验证偏好配置数据
+ * @description 对导入配置执行结构合法性、关键字段完整性与核心枚举值有效性校验。
+ * @param data 待验证的原始数据。
+ * @returns 校验结果对象。
  */
 export function validatePreferencesConfig(data: unknown): ConfigValidationResult {
-  // 检查是否为对象
+  /* 检查是否为对象。 */
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     return { valid: false, error: 'INVALID_FORMAT' };
   }
 
-  // 检查原型污染风险
+  /* 检查原型污染风险。 */
   if (!isPrototypeSafe(data)) {
     return { valid: false, error: 'PROTOTYPE_POLLUTION_RISK' };
   }
 
   const config = data as Record<string, unknown>;
 
-  // 检查必需的顶级属性
+  /* 检查必需的顶级属性。 */
   for (const key of REQUIRED_TOP_LEVEL_KEYS) {
     if (!(key in config)) {
       return { valid: false, error: 'MISSING_REQUIRED_FIELD' };
     }
-    // 检查属性值是否为对象
+    /* 检查属性值是否为对象。 */
     if (!config[key] || typeof config[key] !== 'object') {
       return { valid: false, error: 'INVALID_FIELD_TYPE' };
     }
   }
 
-  // 检查 app.locale 是否有效
+  /* 检查 app.locale 是否有效。 */
   const app = config.app as Record<string, unknown>;
   if (app.locale && !['zh-CN', 'en-US'].includes(app.locale as string)) {
     return { valid: false, error: 'INVALID_LOCALE' };
   }
 
-  // 检查 theme.mode 是否有效
+  /* 检查 theme.mode 是否有效。 */
   const theme = config.theme as Record<string, unknown>;
   if (theme.mode && !['light', 'dark', 'auto'].includes(theme.mode as string)) {
     return { valid: false, error: 'INVALID_THEME_MODE' };
@@ -186,6 +222,7 @@ export function validatePreferencesConfig(data: unknown): ConfigValidationResult
 
 /**
  * 从剪贴板导入配置的结果
+ * @description 表示读取、解析与验证流程的最终状态及错误类型。
  */
 export interface ImportConfigResult {
   /** 是否成功 */
@@ -200,24 +237,25 @@ export interface ImportConfigResult {
 
 /**
  * 从剪贴板读取并验证配置
- * @returns 导入结果
+ * @description 读取文本后执行 JSON 解析和配置校验，统一返回可被 UI 消费的结果结构。
+ * @returns 导入结果。
  */
 export async function importPreferencesConfig(): Promise<ImportConfigResult> {
   try {
-    // SSR 环境检查
+    /* SSR 环境检查。 */
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
       return { success: false, errorType: 'CLIPBOARD_ACCESS_DENIED', errorDetail: 'Clipboard API not available' };
     }
-    
-    // 读取剪贴板
+
+    /* 读取剪贴板。 */
     const clipboardText = await navigator.clipboard.readText();
 
-    // 检查是否为空
+    /* 检查是否为空。 */
     if (!clipboardText || !clipboardText.trim()) {
       return { success: false, errorType: 'EMPTY_CLIPBOARD' };
     }
 
-    // 解析 JSON
+    /* 解析 JSON。 */
     let parsed: unknown;
     try {
       parsed = JSON.parse(clipboardText);
@@ -225,7 +263,7 @@ export async function importPreferencesConfig(): Promise<ImportConfigResult> {
       return { success: false, errorType: 'PARSE_ERROR' };
     }
 
-    // 验证配置
+    /* 验证配置。 */
     const validation = validatePreferencesConfig(parsed);
     if (!validation.valid) {
       return {
@@ -237,7 +275,7 @@ export async function importPreferencesConfig(): Promise<ImportConfigResult> {
 
     return { success: true, config: validation.config };
   } catch (error) {
-    // 剪贴板访问被拒绝
+    /* 剪贴板访问被拒绝。 */
     logger.error('Failed to import preferences config:', error);
     return {
       success: false,
@@ -285,6 +323,36 @@ export interface DrawerHeaderAction {
 }
 
 /**
+ * 头部操作按钮解析选项。
+ */
+export interface GetDrawerHeaderActionsOptions {
+  /** 是否有变更。 */
+  hasChanges?: boolean;
+  /** 是否已固定。 */
+  isPinned?: boolean;
+  /** 包含的操作类型（默认全部）。 */
+  include?: DrawerHeaderActionType[];
+  /** 排除的操作类型。 */
+  exclude?: DrawerHeaderActionType[];
+}
+
+/**
+ * 头部操作按钮渲染数据。
+ */
+export interface DrawerHeaderActionViewModel {
+  /** 操作类型。 */
+  type: DrawerHeaderActionType;
+  /** 图标 SVG 内容。 */
+  icon: string;
+  /** 提示文案。 */
+  tooltip: string;
+  /** 是否禁用。 */
+  disabled: boolean;
+  /** 是否显示提示指示点。 */
+  showIndicator: boolean;
+}
+
+/**
  * 默认头部操作配置
  */
 export const DRAWER_HEADER_ACTIONS: DrawerHeaderAction[] = [
@@ -296,13 +364,16 @@ export const DRAWER_HEADER_ACTIONS: DrawerHeaderAction[] = [
   {
     type: 'reset',
     icon: 'refresh',
-    showIndicator: true, // 有变更时显示红点
+    /* 有变更时显示红点。 */
+    showIndicator: true,
     tooltipKey: 'preferences.resetTip',
   },
   {
     type: 'pin',
-    icon: 'pinOff', // 默认：点击后取消固定
-    altIcon: 'pin', // 切换：点击后固定
+    /* 默认：点击后取消固定。 */
+    icon: 'pinOff',
+    /* 切换：点击后固定。 */
+    altIcon: 'pin',
     tooltipKey: 'preferences.disableSticky',
     altTooltipKey: 'preferences.enableSticky',
   },
@@ -315,29 +386,15 @@ export const DRAWER_HEADER_ACTIONS: DrawerHeaderAction[] = [
 
 /**
  * 获取头部操作按钮配置
- * @param locale - 语言包
- * @param options - 选项
- * @returns 带翻译的操作配置
+ * @description 结合变更状态、固定状态与包含/排除规则，生成可直接渲染的头部操作按钮数据。
+ * @param locale 当前语言包。
+ * @param options 操作按钮生成选项。
+ * @returns 带翻译文本、图标与禁用状态的操作列表。
  */
 export function getDrawerHeaderActions(
   locale: LocaleMessages,
-  options: {
-    /** 是否有变更 */
-    hasChanges?: boolean;
-    /** 是否已固定 */
-    isPinned?: boolean;
-    /** 包含的操作类型（默认全部） */
-    include?: DrawerHeaderActionType[];
-    /** 排除的操作类型 */
-    exclude?: DrawerHeaderActionType[];
-  } = {}
-): Array<{
-  type: DrawerHeaderActionType;
-  icon: string;
-  tooltip: string;
-  disabled: boolean;
-  showIndicator: boolean;
-}> {
+  options: GetDrawerHeaderActionsOptions = {}
+): DrawerHeaderActionViewModel[] {
   const { hasChanges = false, isPinned = false, include, exclude } = options;
 
   return DRAWER_HEADER_ACTIONS
@@ -347,25 +404,25 @@ export function getDrawerHeaderActions(
       return true;
     })
     .map((action) => {
-      // 获取图标（处理 pin/pinOff 切换）
+      /* 获取图标（处理 pin/pinOff 切换）。 */
       let iconName = action.icon;
       if (action.type === 'pin' && action.altIcon) {
         iconName = isPinned ? action.icon : action.altIcon;
       }
 
-      // 获取 tooltip（处理 pin/pinOff 切换）
+      /* 获取 tooltip（处理 pin/pinOff 切换）。 */
       let tooltipKey = action.tooltipKey;
       if (action.type === 'pin' && action.altTooltipKey) {
         tooltipKey = isPinned ? action.tooltipKey : action.altTooltipKey;
       }
 
-      // 解析 tooltip key（支持嵌套路径如 'preferences.resetTip'）
+      /* 解析 tooltip key（支持嵌套路径如 `preferences.resetTip`）。 */
       const tooltip = action.type === 'close' ? '' : resolveLocaleKey(locale, tooltipKey);
 
-      // 计算禁用状态
+      /* 计算禁用状态。 */
       const disabled = action.type === 'reset' && !hasChanges;
 
-      // 计算指示器显示
+      /* 计算指示器显示。 */
       const showIndicator = action.showIndicator === true && hasChanges;
 
       return {
@@ -380,9 +437,10 @@ export function getDrawerHeaderActions(
 
 /**
  * 解析语言包 key（支持嵌套路径）
- * @param locale - 语言包
- * @param key - 键路径（如 'preferences.resetTip'）
- * @returns 翻译文本
+ * @description 支持点路径访问嵌套语言字段；解析失败时回退返回原始 key。
+ * @param locale 当前语言包对象。
+ * @param key 键路径（如 `preferences.resetTip`）。
+ * @returns 解析后的翻译文本。
  */
 function resolveLocaleKey(locale: LocaleMessages, key: string): string {
   const keys = key.split('.');
@@ -392,18 +450,20 @@ function resolveLocaleKey(locale: LocaleMessages, key: string): string {
     if (result && typeof result === 'object' && k in result) {
       result = (result as Record<string, unknown>)[k];
     } else {
-      return key; // 找不到时返回原 key
+      /* 找不到时返回原 key。 */
+      return key;
     }
   }
 
   return typeof result === 'string' ? result : key;
 }
 
-// ========== UI 配置相关 ==========
+/* ========== UI 配置相关 ========== */
 
 
 /**
  * 默认 UI 配置（所有功能都显示且启用）
+ * @description 作为抽屉配置的全量兜底值，用户未配置时按此默认行为渲染。
  */
 export const DEFAULT_DRAWER_UI_CONFIG: PreferencesDrawerUIConfig = {
   headerActions: {
@@ -423,9 +483,10 @@ export const DEFAULT_DRAWER_UI_CONFIG: PreferencesDrawerUIConfig = {
 
 /**
  * 解析功能项配置
- * @param config - 用户配置（可能为 undefined）
- * @param defaultConfig - 默认配置
- * @returns 解析后的配置
+ * @description 将可能缺失的配置对象补齐为稳定的 `{ visible, disabled }` 结构。
+ * @param config 用户配置（可能为 `undefined`）。
+ * @param defaultConfig 默认配置。
+ * @returns 解析后的功能配置。
  */
 export function resolveFeatureConfig(
   config?: FeatureItemConfig,
@@ -439,9 +500,10 @@ export function resolveFeatureConfig(
 
 /**
  * 从嵌套路径获取功能项配置
- * @param uiConfig - UI 配置对象
- * @param path - 配置路径，如 'appearance.colorMode.items.colorGrayMode'
- * @returns 解析后的配置
+ * @description 根据点路径读取 UI 配置树，读取失败时回退为可见且启用。
+ * @param uiConfig UI 配置对象。
+ * @param path 配置路径，如 `appearance.colorMode.items.colorGrayMode`。
+ * @returns 解析后的功能配置。
  */
 export function getFeatureConfig(
   uiConfig: PreferencesDrawerUIConfig | undefined,
@@ -467,9 +529,10 @@ export function getFeatureConfig(
 
 /**
  * 检查 Tab 是否可见
- * @param uiConfig - UI 配置
- * @param tabName - Tab 名称
- * @returns 是否显示该 Tab
+ * @description 根据 UI 配置判断指定页签是否应展示。
+ * @param uiConfig UI 配置对象。
+ * @param tabName 页签名称。
+ * @returns 是否显示该页签。
  */
 export function isTabVisible(
   uiConfig: PreferencesDrawerUIConfig | undefined,
@@ -480,22 +543,24 @@ export function isTabVisible(
 
 /**
  * 获取可见的 Tab 列表
- * @param locale - 语言包
- * @param uiConfig - UI 配置
- * @returns 过滤后的 Tab 列表
+ * @description 在翻译后的页签列表基础上应用 UI 可见性过滤规则。
+ * @param locale 当前语言包。
+ * @param uiConfig UI 配置对象。
+ * @returns 过滤后的可见页签列表。
  */
 export function getVisibleDrawerTabs(
   locale: LocaleMessages,
   uiConfig?: PreferencesDrawerUIConfig
-): Array<{ label: string; value: DrawerTabType }> {
+): DrawerTabView[] {
   return getDrawerTabs(locale).filter(tab => isTabVisible(uiConfig, tab.value));
 }
 
 /**
  * 合并用户配置和默认配置
- * @param userConfig - 用户配置
- * @param defaultConfig - 默认配置
- * @returns 合并后的配置
+ * @description 对用户配置执行深度合并，确保未覆盖字段沿用默认值。
+ * @param userConfig 用户配置。
+ * @param defaultConfig 默认配置。
+ * @returns 合并后的抽屉 UI 配置。
  */
 export function mergeDrawerUIConfig(
   userConfig?: PreferencesDrawerUIConfig,
@@ -504,8 +569,8 @@ export function mergeDrawerUIConfig(
   if (!userConfig) {
     return defaultConfig;
   }
-  
-  // 深度合并配置
+
+  /* 深度合并配置。 */
   return deepMergeUIConfig(
     defaultConfig as unknown as Record<string, unknown>,
     userConfig as unknown as Record<string, unknown>
@@ -514,17 +579,21 @@ export function mergeDrawerUIConfig(
 
 /**
  * 深度合并 UI 配置（递归合并对象）
+ * @description 仅对对象字段递归合并；数组与基础类型按源值覆盖策略处理。
+ * @param target 目标配置对象（通常为默认配置）。
+ * @param source 源配置对象（通常为用户配置）。
+ * @returns 合并后的对象副本。
  */
 function deepMergeUIConfig(
   target: Record<string, unknown>,
   source: Record<string, unknown>
 ): Record<string, unknown> {
   const result: Record<string, unknown> = { ...target };
-  
+
   for (const key of Object.keys(source)) {
     const sourceValue = source[key];
     const targetValue = target[key];
-    
+
     if (
       sourceValue &&
       typeof sourceValue === 'object' &&
@@ -541,14 +610,14 @@ function deepMergeUIConfig(
       result[key] = sourceValue;
     }
   }
-  
+
   return result;
 }
 
-// ========== Tab 配置解析辅助函数 ==========
+/* ========== Tab 配置解析辅助函数 ========== */
 
 
-/** Tab UI 配置联合类型（用于 getFeatureItemConfig） */
+/** 抽屉页签配置联合类型（用于 `getFeatureItemConfig`）。 */
 export type UITabConfig = AppearanceTabConfig | LayoutTabConfig | GeneralTabConfig | ShortcutKeysTabConfig;
 
 /**
@@ -582,19 +651,19 @@ export function getFeatureItemConfig<T extends UITabConfig>(
 
   const block = tabConfig[blockKey] as FeatureBlockConfig | undefined;
   const blockConfig = resolveFeatureConfig(block);
-  
-  // 如果没有指定子项，直接返回区块配置
+
+  /* 如果没有指定子项，直接返回区块配置。 */
   if (!itemKey) {
     return blockConfig;
   }
-  
-  // 获取子项配置
+
+  /* 获取子项配置。 */
   const items = block?.items;
   const itemConfig = items?.[itemKey];
   const resolvedItem = resolveFeatureConfig(itemConfig);
-  
-  // 子项的 disabled 继承 Block 的 disabled（除非子项显式设置）
-  // 逻辑：Block disabled 或 子项 disabled -> 最终 disabled
+
+  /* 子项 disabled 继承 Block disabled（除非子项显式设置）。 */
+  /* 逻辑：Block disabled 或 子项 disabled -> 最终 disabled。 */
   return {
     visible: resolvedItem.visible,
     disabled: blockConfig.disabled || resolvedItem.disabled,
@@ -603,10 +672,10 @@ export function getFeatureItemConfig<T extends UITabConfig>(
 
 /**
  * 创建 Tab 配置解析器（工厂函数）
- * @description 为特定 Tab 创建配置解析函数，减少重复代码
- * 
- * @param tabConfig - Tab 配置对象
- * @returns 配置解析函数
+ * @description 为指定页签配置创建局部解析函数，减少组件中重复传参代码。
+ *
+ * @param tabConfig Tab 配置对象。
+ * @returns 可复用的配置解析函数。
  * 
  * @example
  * const getConfig = createTabConfigResolver(uiConfig);
@@ -616,6 +685,6 @@ export function getFeatureItemConfig<T extends UITabConfig>(
 export function createTabConfigResolver<T extends UITabConfig>(
   tabConfig: T | undefined
 ): (blockKey: keyof T, itemKey?: string) => ResolvedFeatureConfig {
-  return (blockKey: keyof T, itemKey?: string) => 
+  return (blockKey: keyof T, itemKey?: string) =>
     getFeatureItemConfig(tabConfig, blockKey, itemKey);
 }

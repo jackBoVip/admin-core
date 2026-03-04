@@ -1,6 +1,6 @@
 /**
- * 布局组件类型定义
- * @description 定义布局组件的 Props、插槽、事件等
+ * 布局核心类型定义集合。
+ * @description 覆盖菜单、路由、标签、面包屑、布局状态、事件和插槽等跨框架共享模型。
  */
 
 import type {
@@ -29,11 +29,11 @@ import type {
 } from '@admin-core/preferences';
 
 /**
- * 菜单项定义
- * @description 完整的菜单类型，包含路由、权限、缓存等配置
+ * 菜单项定义。
+ * @description 描述布局系统中菜单节点的完整能力，包含路由、权限、缓存、外链和展示配置。
  */
 export interface MenuItem {
-  // ========== 基础配置 ==========
+  /* ========== 基础配置 ========== */
   /** 唯一标识（通常与路由 name 一致） */
   key: string;
   /** 菜单名称（支持国际化 key） */
@@ -45,7 +45,7 @@ export interface MenuItem {
   /** 子菜单 */
   children?: MenuItem[];
 
-  // ========== 路由配置 ==========
+  /* ========== 路由配置 ========== */
   /** 路由路径 */
   path?: string;
   /** 路由重定向 */
@@ -57,7 +57,7 @@ export interface MenuItem {
   /** 路由查询参数 */
   query?: Record<string, string | number>;
 
-  // ========== 显示配置 ==========
+  /* ========== 显示配置 ========== */
   /** 是否在菜单中隐藏 */
   hidden?: boolean;
   /** 是否在面包屑中隐藏 */
@@ -67,7 +67,7 @@ export interface MenuItem {
   /** 是否禁用 */
   disabled?: boolean;
 
-  // ========== 徽标配置 ==========
+  /* ========== 徽标配置 ========== */
   /** 徽标数量 */
   badge?: number | string;
   /** 徽标类型 */
@@ -75,15 +75,15 @@ export interface MenuItem {
   /** 徽标是否显示为点 */
   badgeDot?: boolean;
 
-  // ========== 外链配置 ==========
+  /* ========== 外链配置 ========== */
   /** 外链地址（设置后点击会跳转到外链） */
   externalLink?: string;
   /** 是否新窗口打开（外链默认 true） */
   openInNewWindow?: boolean;
-  /** iframe 嵌入地址（在内容区内嵌 iframe） */
+  /** 内嵌页面地址（在内容区内嵌 iframe） */
   iframeSrc?: string;
 
-  // ========== 缓存配置 ==========
+  /* ========== 缓存配置 ========== */
   /** 缓存名称（用于 keep-alive，不设置则使用 key） */
   cacheName?: string;
   /** 是否缓存页面（默认跟随全局配置） */
@@ -91,13 +91,13 @@ export interface MenuItem {
   /** 最大缓存实例数 */
   maxKeepAliveCount?: number;
 
-  // ========== 标签栏配置 ==========
+  /* ========== 标签栏配置 ========== */
   /** 是否固定在标签栏（不可关闭） */
   affix?: boolean;
   /** 标签栏排序（越小越靠前） */
   affixOrder?: number;
 
-  // ========== 权限配置 ==========
+  /* ========== 权限配置 ========== */
   /** 需要的角色（满足其一即可） */
   roles?: string[];
   /** 需要的权限（满足其一即可） */
@@ -105,7 +105,7 @@ export interface MenuItem {
   /** 是否忽略权限检查 */
   ignoreAuth?: boolean;
 
-  // ========== 页面配置 ==========
+  /* ========== 页面配置 ========== */
   /** 页面标题（不设置则使用 name） */
   title?: string;
   /** 是否全屏显示（隐藏侧边栏、顶栏等） */
@@ -113,13 +113,14 @@ export interface MenuItem {
   /** 是否显示页脚 */
   showFooter?: boolean;
 
-  // ========== 元数据 ==========
+  /* ========== 元数据 ========== */
   /** 自定义元数据 */
   meta?: Record<string, unknown>;
 }
 
 /**
- * 路由元信息定义
+ * 路由元信息定义。
+ * @description 与路由记录 `meta` 对应，用于控制菜单、标签和面包屑等衍生行为。
  */
 export interface RouteMeta {
   /** 标题（用于菜单与面包屑） */
@@ -155,7 +156,8 @@ export interface RouteMeta {
 }
 
 /**
- * 路由记录（component 可为泛型）
+ * 路由记录定义（`component` 支持泛型）。
+ * @template TComponent 路由组件类型。
  */
 export interface RouteRecord<TComponent = unknown> {
   /** 路由名称（推荐唯一） */
@@ -173,20 +175,26 @@ export interface RouteRecord<TComponent = unknown> {
 }
 
 /**
- * component 为字符串路径的路由定义
+ * 组件字段为字符串路径时的路由记录类型。
+ * @description 常用于后端返回路由或 `import.meta.glob` 动态装配场景。
  */
 export type RouteRecordStringComponent<T = string> = RouteRecord<T>;
 
 /**
- * 路由模块类型（支持多种导出格式）
+ * 路由模块类型（支持多种导出格式）。
+ * @description 同时兼容默认导出对象、直接导出数组和函数导出。
  */
 export type RouteModule<T = RouteRecordStringComponent[]> =
-  | { default: T }
+  | {
+      /** 模块默认导出内容。 */
+      default: T;
+    }
   | T
   | (() => T | Promise<T>);
 
 /**
- * 路由生成选项
+ * 路由生成选项。
+ * @description 用于描述静态路由、动态菜单、模块扫描与组件映射之间的组装方式。
  */
 export interface GenerateRoutesOptions<TComponent = unknown> {
   /** 静态路由常量 */
@@ -217,7 +225,8 @@ export interface GenerateRoutesOptions<TComponent = unknown> {
 }
 
 /**
- * 路由访问结果
+ * 路由访问结果。
+ * @description 包含最终路由表与从路由派生的菜单树。
  */
 export interface RouteAccessResult<TComponent = unknown> {
   /** 路由列表 */
@@ -227,25 +236,42 @@ export interface RouteAccessResult<TComponent = unknown> {
 }
 
 /**
- * 路由导航函数类型
+ * 路由导航参数。
+ * @description 用于在统一导航函数中透传 replace/params/query 等导航选项。
+ */
+export interface RouterNavigateOptions {
+  /** 是否替换当前历史记录。 */
+  replace?: boolean;
+  /** 路径参数。 */
+  params?: Record<string, string | number>;
+  /** 查询参数。 */
+  query?: Record<string, string | number>;
+}
+
+/**
+ * 路由导航函数类型。
+ * @description 布局层通过该函数实现跨框架路由跳转。
  */
 export type RouterNavigateFunction = (
   path: string,
-  options?: {
-    replace?: boolean;
-    params?: Record<string, string | number>;
-    query?: Record<string, string | number>;
-  }
+  options?: RouterNavigateOptions
 ) => void | Promise<void>;
 
+/** 响应式路径引用结构。 */
+export type CurrentPathRef = {
+  /** 当前路径值。 */
+  value: string;
+};
+
 /**
- * 路由配置
+ * 路由配置。
+ * @description 统一封装导航函数、当前路径与路由模式信息。
  */
 export interface RouterConfig {
   /** 路由导航函数 */
   navigate: RouterNavigateFunction;
   /** 当前路径（支持响应式对象或普通字符串） */
-  currentPath: string | { value: string };
+  currentPath: CurrentPathRef | string;
   /** 路由位置对象（可选，用于 KeepAlive 等高级功能） */
   location?: unknown;
   /** 路由模式 */
@@ -253,7 +279,8 @@ export interface RouterConfig {
 }
 
 /**
- * 标签项定义
+ * 标签项定义。
+ * @description 用于标签栏渲染与标签管理（切换、关闭、缓存）逻辑。
  */
 export interface TabItem {
   /** 唯一标识 */
@@ -275,7 +302,8 @@ export interface TabItem {
 }
 
 /**
- * 面包屑项定义
+ * 面包屑项定义。
+ * @description 支持基础路径跳转与下拉子节点扩展。
  */
 export interface BreadcrumbItem {
   /** 唯一标识 */
@@ -293,7 +321,8 @@ export interface BreadcrumbItem {
 }
 
 /**
- * 用户信息定义
+ * 用户信息定义。
+ * @description 供顶栏用户区域与权限展示使用的用户基础信息模型。
  */
 export interface UserInfo {
   /** 用户 ID */
@@ -311,7 +340,8 @@ export interface UserInfo {
 }
 
 /**
- * 通知项定义
+ * 通知项定义。
+ * @description 用于通知中心、消息气泡和通知下拉面板的统一数据结构。
  */
 export interface NotificationItem {
   /** 唯一标识 */
@@ -333,7 +363,8 @@ export interface NotificationItem {
 }
 
 /**
- * 布局区域可见性配置
+ * 布局区域可见性配置。
+ * @description 控制各布局区域是否渲染。
  */
 export interface LayoutVisibility {
   /** 顶栏 */
@@ -348,12 +379,13 @@ export interface LayoutVisibility {
   breadcrumb?: boolean;
   /** 功能区 */
   panel?: boolean;
-  /** Logo */
+  /** 应用标识区域 */
   logo?: boolean;
 }
 
 /**
- * 布局区域禁用配置
+ * 布局区域禁用配置。
+ * @description 控制某些交互开关是否可操作，而不是直接隐藏区域。
  */
 export interface LayoutDisabled {
   /** 顶栏折叠按钮 */
@@ -369,7 +401,8 @@ export interface LayoutDisabled {
 }
 
 /**
- * 小部件配置（扩展 WidgetPreferences）
+ * 小部件配置（扩展 `WidgetPreferences`）。
+ * @description 在偏好系统基础上补充布局层特有的小部件开关。
  */
 export interface LayoutWidgetConfig extends Partial<WidgetPreferences> {
   /** 用户下拉菜单 */
@@ -381,7 +414,8 @@ export interface LayoutWidgetConfig extends Partial<WidgetPreferences> {
 }
 
 /**
- * 自动标签配置
+ * 自动标签配置。
+ * @description 控制是否基于菜单自动生成标签及其持久化策略。
  */
 export interface AutoTabConfig {
   /** 启用自动标签（从菜单生成） */
@@ -397,7 +431,8 @@ export interface AutoTabConfig {
 }
 
 /**
- * 自动面包屑配置
+ * 自动面包屑配置。
+ * @description 控制是否基于菜单自动生成面包屑与首页节点信息。
  */
 export interface AutoBreadcrumbConfig {
   /** 启用自动面包屑（从菜单生成） */
@@ -413,7 +448,8 @@ export interface AutoBreadcrumbConfig {
 }
 
 /**
- * 水印配置
+ * 水印配置。
+ * @description 定义水印文本、排版和渲染样式参数。
  */
 export interface WatermarkConfig {
   /** 启用水印 */
@@ -434,12 +470,13 @@ export interface WatermarkConfig {
   gap?: [number, number];
   /** 水印偏移 */
   offset?: [number, number];
-  /** z-index */
+  /** 层级索引 */
   zIndex?: number;
 }
 
 /**
- * 锁屏配置
+ * 锁屏配置。
+ * @description 定义锁屏状态、自动锁定策略和锁屏页展示内容。
  */
 export interface LockScreenConfig {
   /** 是否已锁定 */
@@ -459,7 +496,8 @@ export interface LockScreenConfig {
 }
 
 /**
- * 主题配置
+ * 主题配置。
+ * @description 作为布局层主题输入，支持模式、主色和视觉辅助模式配置。
  */
 export interface ThemeConfig {
   /** 主题模式 */
@@ -487,7 +525,8 @@ export interface ThemeConfig {
 }
 
 /**
- * 检查更新配置
+ * 检查更新配置。
+ * @description 控制更新轮询开关、频率与提示方式。
  */
 export interface CheckUpdatesConfig {
   /** 启用检查更新 */
@@ -499,10 +538,11 @@ export interface CheckUpdatesConfig {
 }
 
 /**
- * 基础布局 Props
+ * 基础布局 Props。
+ * @description 聚合应用配置、偏好配置、路由配置、事件配置和视图数据，是布局组件的核心入参模型。
  */
 export interface BasicLayoutProps {
-  // ========== 应用配置（AppPreferences 完整集成）==========
+  /* ========== 应用配置（AppPreferences 完整集成）========== */
   /** 应用名称 */
   appName?: string;
   /** 布局类型 */
@@ -534,23 +574,23 @@ export interface BasicLayoutProps {
   /** 启用 RefreshToken */
   enableRefreshToken?: boolean;
 
-  // ========== 主题配置（ThemePreferences 完整集成）==========
+  /* ========== 主题配置（ThemePreferences 完整集成）========== */
   /** 主题配置 */
   theme?: ThemeConfig;
 
-  // ========== 水印配置 ==========
+  /* ========== 水印配置 ========== */
   /** 水印配置 */
   watermark?: WatermarkConfig;
 
-  // ========== 锁屏配置（LockScreenPreferences 完整集成）==========
+  /* ========== 锁屏配置（LockScreenPreferences 完整集成）========== */
   /** 锁屏配置 */
   lockScreen?: LockScreenConfig;
 
-  // ========== 检查更新配置 ==========
+  /* ========== 检查更新配置 ========== */
   /** 检查更新配置 */
   checkUpdates?: CheckUpdatesConfig;
 
-  // ========== 顶栏配置（HeaderPreferences 完整集成）==========
+  /* ========== 顶栏配置（HeaderPreferences 完整集成）========== */
   /** 顶栏配置 */
   header?: Partial<HeaderPreferences>;
   /** 顶栏主题（覆盖 theme.mode） */
@@ -558,7 +598,7 @@ export interface BasicLayoutProps {
   /** 半深色顶栏（覆盖 theme.semiDarkHeader） */
   semiDarkHeader?: boolean;
 
-  // ========== 侧边栏配置（SidebarPreferences 完整集成）==========
+  /* ========== 侧边栏配置（SidebarPreferences 完整集成）========== */
   /** 侧边栏配置 */
   sidebar?: Partial<SidebarPreferences>;
   /** 侧边栏主题（覆盖 theme.mode） */
@@ -566,13 +606,13 @@ export interface BasicLayoutProps {
   /** 半深色侧边栏（覆盖 theme.semiDarkSidebar） */
   semiDarkSidebar?: boolean;
 
-  // ========== 标签栏配置（TabbarPreferences 完整集成）==========
+  /* ========== 标签栏配置（TabbarPreferences 完整集成）========== */
   /** 标签栏配置 */
   tabbar?: Partial<TabbarPreferences>;
   /** 自动标签配置（从菜单生成） */
   autoTab?: AutoTabConfig;
 
-  // ========== 内容区配置 ==========
+  /* ========== 内容区配置 ========== */
   /** 内容紧凑模式 */
   contentCompact?: ContentCompactType;
   /** 内容紧凑宽度 (px) */
@@ -588,53 +628,53 @@ export interface BasicLayoutProps {
   /** 内容右侧内边距 (px) */
   contentPaddingRight?: number;
 
-  // ========== 页脚配置（FooterPreferences 完整集成）==========
+  /* ========== 页脚配置（FooterPreferences 完整集成）========== */
   /** 页脚配置 */
   footer?: Partial<FooterPreferences>;
 
-  // ========== 面包屑配置（BreadcrumbPreferences 完整集成）==========
+  /* ========== 面包屑配置（BreadcrumbPreferences 完整集成）========== */
   /** 面包屑配置 */
   breadcrumb?: Partial<BreadcrumbPreferences>;
   /** 自动面包屑配置（从菜单生成） */
   autoBreadcrumb?: AutoBreadcrumbConfig;
 
-  // ========== 导航配置（NavigationPreferences 完整集成）==========
+  /* ========== 导航配置（NavigationPreferences 完整集成）========== */
   /** 导航配置 */
   navigation?: Partial<NavigationPreferences>;
 
-  // ========== 功能区配置（PanelPreferences 完整集成）==========
+  /* ========== 功能区配置（PanelPreferences 完整集成）========== */
   /** 功能区配置 */
   panel?: Partial<PanelPreferences>;
 
-  // ========== Logo 配置（LogoPreferences 完整集成）==========
-  /** Logo 配置 */
+  /* ========== 应用标识配置（LogoPreferences 完整集成）========== */
+  /** 应用标识配置 */
   logo?: Partial<LogoPreferences>;
 
-  // ========== 版权配置（CopyrightPreferences 完整集成）==========
+  /* ========== 版权配置（CopyrightPreferences 完整集成）========== */
   /** 版权配置 */
   copyright?: Partial<CopyrightPreferences>;
 
-  // ========== 过渡动画配置（TransitionPreferences 完整集成）==========
+  /* ========== 过渡动画配置（TransitionPreferences 完整集成）========== */
   /** 过渡动画配置 */
   transition?: Partial<TransitionPreferences>;
 
-  // ========== 快捷键配置（ShortcutKeyPreferences 完整集成）==========
+  /* ========== 快捷键配置（ShortcutKeyPreferences 完整集成）========== */
   /** 快捷键配置 */
   shortcutKeys?: Partial<ShortcutKeyPreferences>;
 
-  // ========== 小部件配置（WidgetPreferences 完整集成）==========
+  /* ========== 小部件配置（WidgetPreferences 完整集成）========== */
   /** 小部件配置 */
   widgets?: LayoutWidgetConfig;
   /** 偏好设置按钮位置 */
   preferencesButtonPosition?: PreferencesButtonPositionType;
 
-  // ========== 可见性控制 ==========
+  /* ========== 可见性控制 ========== */
   /** 区域可见性 */
   visibility?: LayoutVisibility;
   /** 区域禁用状态 */
   disabled?: LayoutDisabled;
 
-  // ========== 路由配置（内置路由处理）==========
+  /* ========== 路由配置（内置路由处理）========== */
   /**
    * 路由导航函数
    * @description 传入后，布局组件将自动处理菜单、标签、面包屑的路由跳转
@@ -647,7 +687,7 @@ export interface BasicLayoutProps {
    */
   router?: RouterConfig;
 
-  // ========== 数据 ==========
+  /* ========== 数据 ========== */
   /** 
    * 菜单数据
    * @description 完整的菜单配置，包含路由、权限、缓存等
@@ -673,7 +713,7 @@ export interface BasicLayoutProps {
   /** 未读通知数量 */
   unreadCount?: number;
 
-  // ========== 直接传入完整 Preferences 对象（可选）==========
+  /* ========== 直接传入完整 Preferences 对象（可选）========== */
   /** 
    * 直接传入完整的 Preferences 对象
    * @description 如果传入此属性，将自动映射到上述所有配置项
@@ -683,26 +723,50 @@ export interface BasicLayoutProps {
 }
 
 /**
- * 布局事件
+ * 布局事件回调集合。
+ * @description 提供菜单、标签、主题、通知、快捷操作等交互事件的统一监听入口。
  */
 export interface LayoutEvents {
-  /** 侧边栏折叠状态变化 */
+  /**
+   * 侧边栏折叠状态变化。
+   * @param collapsed 当前折叠状态。
+   */
   onSidebarCollapse?: (collapsed: boolean) => void;
-  /** 菜单选择 */
+  /**
+   * 菜单选择回调。
+   * @param item 选中的菜单项。
+   * @param key 菜单 key。
+   */
   onMenuSelect?: (item: MenuItem, key: string) => void;
-  /** 标签选择 */
+  /**
+   * 标签选择回调。
+   * @param item 选中的标签项。
+   * @param key 标签 key。
+   */
   onTabSelect?: (item: TabItem, key: string) => void;
-  /** 标签关闭 */
+  /**
+   * 标签关闭回调。
+   * @param item 被关闭标签项。
+   * @param key 标签 key。
+   */
   onTabClose?: (item: TabItem, key: string) => void;
   /** 标签全部关闭 */
   onTabCloseAll?: () => void;
   /** 标签关闭其他 */
   onTabCloseOther?: (exceptKey: string) => void;
-  /** 标签刷新 */
+  /**
+   * 标签刷新回调。
+   * @param item 目标标签项。
+   * @param key 标签 key。
+   */
   onTabRefresh?: (item: TabItem, key: string) => void;
   /** 标签栏最大化切换 */
   onTabMaximize?: (isMaximized: boolean) => void;
-  /** 面包屑点击 */
+  /**
+   * 面包屑点击回调。
+   * @param item 面包屑项。
+   * @param key 面包屑 key。
+   */
   onBreadcrumbClick?: (item: BreadcrumbItem, key: string) => void;
   /** 用户下拉菜单选择 */
   onUserMenuSelect?: (key: string) => void;
@@ -725,16 +789,22 @@ export interface LayoutEvents {
   /** 刷新按钮点击 */
   onRefresh?: () => void;
   /** 标签收藏变化（单次操作） */
-  onTabFavoriteChange?: (menu: MenuItem, favorited: boolean, keys: string[], menus: MenuItem[]) => void;
+  onTabFavoriteChange?: (
+    menu: MenuItem,
+    favorited: boolean,
+    keys: string[],
+    menus: MenuItem[]
+  ) => void;
   /** 收藏列表变化 */
   onFavoritesChange?: (menus: MenuItem[], keys: string[]) => void;
 }
 
 /**
- * 布局插槽名称
+ * 布局插槽名称。
+ * @description 定义布局组件在各区域对外暴露的插槽位标识。
  */
 export type LayoutSlotName =
-  // 顶栏插槽
+  /* 顶栏插槽 */
   | 'header'
   | 'header-left'
   | 'header-center'
@@ -743,7 +813,7 @@ export type LayoutSlotName =
   | 'header-menu'
   | 'header-actions'
   | 'header-extra'
-  // 侧边栏插槽
+  /* 侧边栏插槽 */
   | 'sidebar'
   | 'sidebar-logo'
   | 'sidebar-menu'
@@ -751,30 +821,30 @@ export type LayoutSlotName =
   | 'sidebar-extra'
   | 'sidebar-mixed-menu'
   | 'sidebar-mixed-extra'
-  // 标签栏插槽
+  /* 标签栏插槽 */
   | 'tabbar'
   | 'tabbar-left'
   | 'tabbar-right'
   | 'tabbar-extra'
-  // 内容区插槽
+  /* 内容区插槽 */
   | 'content'
   | 'content-header'
   | 'content-footer'
   | 'content-overlay'
-  // 页脚插槽
+  /* 页脚插槽 */
   | 'footer'
   | 'footer-left'
   | 'footer-center'
   | 'footer-right'
-  // 面包屑插槽
+  /* 面包屑插槽 */
   | 'breadcrumb'
   | 'breadcrumb-extra'
-  // 功能区插槽
+  /* 功能区插槽 */
   | 'panel'
   | 'panel-header'
   | 'panel-content'
   | 'panel-footer'
-  // 小部件插槽
+  /* 小部件插槽 */
   | 'widget-fullscreen'
   | 'widget-theme'
   | 'widget-locale'
@@ -784,12 +854,13 @@ export type LayoutSlotName =
   | 'widget-refresh'
   | 'widget-lock'
   | 'widget-timezone'
-  // 其他插槽
+  /* 其他插槽 */
   | 'extra'
   | 'preferences-button';
 
 /**
- * 布局状态（内部使用）
+ * 布局状态（内部使用）。
+ * @description 描述布局运行时状态，如折叠态、全屏态、缓存态和滚动态。
  */
 export interface LayoutState {
   /** 侧边栏折叠状态 */
@@ -816,14 +887,15 @@ export interface LayoutState {
   contentScrollTop: number;
   /** 内容刷新 key（用于强制刷新当前内容） */
   refreshKey: number;
-  /** keep-alive 包含的组件名称列表 */
+  /** 组件缓存包含列表（keep-alive includes） */
   keepAliveIncludes: string[];
-  /** keep-alive 排除的组件名称列表 */
+  /** 组件缓存排除列表（keep-alive excludes） */
   keepAliveExcludes: string[];
 }
 
 /**
- * 布局上下文
+ * 布局上下文。
+ * @description 汇总 props、state、events 与公共操作方法，供组件树内部共享使用。
  */
 export interface LayoutContext {
   /** 布局 Props */
@@ -834,16 +906,20 @@ export interface LayoutContext {
   events: LayoutEvents;
   /** 翻译函数 */
   t: (key: string, params?: Record<string, unknown>) => string;
-  /** 切换侧边栏折叠 */
+  /** 切换侧边栏折叠状态。 */
   toggleSidebarCollapse: () => void;
-  /** 切换功能区折叠 */
+  /** 切换功能区折叠状态。 */
   togglePanelCollapse: () => void;
-  /** 设置展开的菜单 */
+  /**
+   * 设置展开菜单 keys。
+   * @param keys 目标展开菜单 key 列表。
+   */
   setOpenMenuKeys: (keys: string[]) => void;
 }
 
 /**
- * 布局计算属性
+ * 布局计算属性。
+ * @description 基于配置和状态推导出的可渲染结构信息与尺寸信息。
  */
 export interface LayoutComputed {
   /** 当前布局类型（响应式） */
@@ -886,9 +962,13 @@ export interface LayoutComputed {
   headerTheme: 'light' | 'dark';
   /** 主内容区域样式 */
   mainStyle: {
+    /** 左侧外边距。 */
     marginLeft: string;
+    /** 右侧外边距。 */
     marginRight: string;
+    /** 顶部外边距。 */
     marginTop: string;
+    /** 宽度。 */
     width: string;
   };
 }

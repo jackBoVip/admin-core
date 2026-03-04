@@ -1,3 +1,6 @@
+/**
+ * shared-core 深合并工具行为测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { mergeWithArrayOverride } from '../deep';
 

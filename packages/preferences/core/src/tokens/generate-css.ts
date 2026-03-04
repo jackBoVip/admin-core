@@ -20,56 +20,74 @@ export function generateCSSVariables(): string {
     ':root {',
   ];
 
-  // 抽屉
+  /**
+   * 抽屉相关变量。
+   */
   lines.push('  /* 抽屉 */');
   lines.push(`  --admin-drawer-width: ${tokens.drawer.width}px;`);
   lines.push('');
 
-  // 布局图标
+  /**
+   * 布局图标尺寸变量。
+   */
   lines.push('  /* 布局图标 */');
   lines.push(`  --admin-layout-icon-width: ${tokens.layoutIcon.width}px;`);
   lines.push(`  --admin-layout-icon-height: ${tokens.layoutIcon.height}px;`);
   lines.push('');
 
-  // 图标尺寸
+  /**
+   * 通用图标尺寸变量。
+   */
   lines.push('  /* 图标尺寸 */');
   for (const [key, value] of Object.entries(tokens.iconSizes)) {
     lines.push(`  --admin-icon-size-${key}: ${value}px;`);
   }
   lines.push('');
 
-  // 字体大小
+  /**
+   * 字体大小变量。
+   */
   lines.push('  /* 字体大小 */');
   lines.push(`  --admin-font-size-min: ${tokens.fontSize.min}px;`);
   lines.push(`  --admin-font-size-max: ${tokens.fontSize.max}px;`);
   lines.push(`  --admin-font-size-default: ${tokens.fontSize.default}px;`);
   lines.push('');
 
-  // 圆角
+  /**
+   * 圆角变量。
+   */
   lines.push('  /* 圆角 */');
   lines.push(`  --admin-radius-default: ${tokens.radius.defaultPx}px;`);
   lines.push('');
 
-  // 边框
+  /**
+   * 边框变量。
+   */
   lines.push('  /* 边框 */');
   lines.push(`  --admin-border-width: ${tokens.border.width}px;`);
   lines.push(`  --admin-border-width-active: ${tokens.border.activeWidth}px;`);
   lines.push('');
 
-  // 过渡动画
+  /**
+   * 过渡动画变量。
+   */
   lines.push('  /* 过渡动画 */');
   for (const [key, value] of Object.entries(tokens.transition)) {
     lines.push(`  --admin-transition-${key}: ${value}ms;`);
   }
   lines.push('');
 
-  // 颜色
+  /**
+   * 颜色变量。
+   */
   lines.push('  /* 颜色 */');
   lines.push(`  --admin-color-primary: ${tokens.colors.primary};`);
   lines.push(`  --admin-color-preset-fallback: ${tokens.colors.presetFallback};`);
   lines.push('');
 
-  // Z-Index
+  /**
+   * 层级变量。
+   */
   lines.push('  /* Z-Index */');
   for (const [key, value] of Object.entries(tokens.zIndex)) {
     const kebabKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
@@ -130,4 +148,7 @@ export const cssVarNames = {
   },
 } as const;
 
+/**
+ * 默认导出 CSS 变量生成函数。
+ */
 export default generateCSSVariables;

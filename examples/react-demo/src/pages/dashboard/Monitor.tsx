@@ -1,3 +1,7 @@
+/**
+ * 监控示例页。
+ * @description 展示系统资源指标与服务健康状态。
+ */
 export default function DashboardMonitor() {
   return (
     <div className="page-container">

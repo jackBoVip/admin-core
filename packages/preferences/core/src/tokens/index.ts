@@ -20,7 +20,7 @@
  * ```
  */
 
-// 类型
+/** 设计令牌类型定义。 */
 export type {
   DesignTokens,
   DrawerTokens,
@@ -34,7 +34,7 @@ export type {
   ZIndexTokens,
 } from './design-tokens';
 
-// 默认值（只读）
+/** 设计令牌默认值（只读）。 */
 export {
   DEFAULT_DESIGN_TOKENS,
   DRAWER_TOKEN_DEFAULTS,
@@ -48,7 +48,7 @@ export {
   Z_INDEX_TOKEN_DEFAULTS,
 } from './design-tokens';
 
-// 配置 API
+/** 设计令牌配置 API。 */
 export {
   configureDesignTokens,
   getDesignTokens,
@@ -56,7 +56,7 @@ export {
   resetDesignTokens,
 } from './design-tokens';
 
-// 快捷访问（响应用户配置）
+/** 设计令牌快捷访问对象（响应配置变化）。 */
 export {
   designTokens,
   drawer,
@@ -70,5 +70,5 @@ export {
   zIndex,
 } from './design-tokens';
 
-// CSS 生成
+/** 样式变量生成工具函数。 */
 export { generateCSSVariables, cssVarNames } from './generate-css';

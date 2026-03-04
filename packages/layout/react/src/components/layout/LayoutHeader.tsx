@@ -1,6 +1,6 @@
 /**
- * 顶栏组件
- * @description 支持水平菜单显示
+ * 顶栏组件。
+ * @description 支持品牌区、水平菜单与多操作区组合展示，并可联动侧边栏折叠状态。
  */
 
 import { LAYOUT_ICONS, ANIMATION_CLASSES } from '@admin-core/layout';
@@ -10,16 +10,30 @@ import { useHeaderState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderLayoutIcon } from '../../utils';
 import { RefreshButton } from '../widgets';
 
+/**
+ * 顶栏组件插槽属性。
+ */
 export interface LayoutHeaderProps {
+  /** 应用标识区域内容。 */
   logo?: ReactNode;
+  /** 顶栏左侧扩展区域。 */
   left?: ReactNode;
+  /** 顶栏中间扩展区域。 */
   center?: ReactNode;
+  /** 顶部导航菜单区域。 */
   menu?: ReactNode;
+  /** 顶栏右侧扩展区域。 */
   right?: ReactNode;
+  /** 右侧操作按钮区域。 */
   actions?: ReactNode;
+  /** 额外区域（通常用于状态提示）。 */
   extra?: ReactNode;
 }
 
+/**
+ * 布局头部组件。
+ * @description 渲染品牌区、菜单区与操作区，并根据布局模式控制可见性。
+ */
 export const LayoutHeader = memo(function LayoutHeader({
   logo,
   left,
@@ -39,7 +53,9 @@ export const LayoutHeader = memo(function LayoutHeader({
   const theme = computed.headerTheme || 'light';
   const menuAlign = headerConfig.menuAlign || 'start';
 
-  // 是否在顶栏显示 Logo
+  /**
+   * 是否在顶栏显示 Logo。
+   */
   const showLogoInHeader =
     computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav;
 
@@ -47,15 +63,21 @@ export const LayoutHeader = memo(function LayoutHeader({
   const isHeaderFullWidth =
     computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav || isHeaderSidebarNav;
 
-  // 是否显示顶部菜单（顶部导航模式）
+  /**
+   * 是否显示顶部菜单（顶部导航模式）。
+   */
   const showHeaderMenu =
     (computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav) && !isHeaderSidebarNav;
 
-  // 是否允许显示折叠按钮的布局（仅 sidebar-nav）
+  /**
+   * 当前布局是否允许展示侧边栏折叠按钮。
+   */
   const isCollapseButtonAllowedLayout =
     computed.currentLayout === 'sidebar-nav';
 
-  // 是否显示侧边栏切换按钮（根据偏好设置开关控制）
+  /**
+   * 是否展示侧边栏切换按钮（受布局与偏好配置共同控制）。
+   */
   const showSidebarToggle =
     isCollapseButtonAllowedLayout &&
     computed.showSidebar && 
@@ -63,20 +85,29 @@ export const LayoutHeader = memo(function LayoutHeader({
     !computed.isSidebarMixedNav &&
     !computed.isHeaderMixedNav;
 
-  // 是否显示刷新按钮（左侧）
+  /**
+   * 是否显示左侧刷新按钮。
+   */
   const showRefresh = context.props.widgets?.refresh !== false;
 
-  // 折叠图标配置（根据状态显示不同图标）
+  /**
+   * 顶栏侧边栏切换图标名称。
+   */
   const headerToggleIconName = useMemo(
     () => (sidebarCollapsed ? 'sidebar-toggle-collapsed' : 'sidebar-toggle'),
     [sidebarCollapsed]
   );
+  /**
+   * 顶栏侧边栏切换图标样式类名。
+   */
   const headerToggleIconClass = useMemo(
     () => `${LAYOUT_ICONS.headerSidebarToggle.className} ${ANIMATION_CLASSES.iconRotate}`,
     []
   );
 
-  // 类名
+  /**
+   * 顶栏容器样式类名。
+   */
   const headerClassName = useMemo(() => {
     const classes = ['layout-header', `layout-header--${theme}`, `layout-header--${mode}`];
     if (hidden) classes.push('layout-header--hidden');
@@ -93,7 +124,9 @@ export const LayoutHeader = memo(function LayoutHeader({
   const sidebarOffset =
     computed.showSidebar && !context.props.isMobile && !isHeaderFullWidth ? computed.sidebarWidth : 0;
 
-  // 样式
+  /**
+   * 顶栏容器内联样式。
+   */
   const headerStyle = useMemo(() => {
     const style: CSSProperties = {
       height: `${height}px`,
@@ -113,7 +146,9 @@ export const LayoutHeader = memo(function LayoutHeader({
     return style;
   }, [height, isHeaderFixed, sidebarOffset]);
 
-  // 菜单容器类名
+  /**
+   * 顶栏菜单容器类名。
+   */
   const menuContainerClassName = useMemo(
     () => 'layout-header__menu flex-1 min-w-0 flex items-center overflow-hidden',
     []

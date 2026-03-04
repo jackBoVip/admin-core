@@ -1,3 +1,6 @@
+/**
+ * 布局路由状态解析与导航动作测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   applyQueryToPath,

@@ -1,3 +1,6 @@
+/**
+ * 表格行列策略解析、样式计算与点击触发测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   getColumnValueByPath,

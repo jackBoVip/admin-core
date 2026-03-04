@@ -4,9 +4,19 @@ import {
   createLayoutResponsiveStateController,
 } from '../utils';
 
+/**
+ * Resize 事件目标测试桩。
+ * @description 记录监听器并暴露 `emitResize`，用于驱动响应式运行时测试。
+ */
 class FakeResizeTarget {
   private readonly listeners = new Set<EventListenerOrEventListenerObject>();
 
+  /**
+   * 注册事件监听器，仅接收 `resize` 事件。
+   *
+   * @param type 事件类型。
+   * @param listener 事件监听器。
+   */
   addEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject
@@ -16,6 +26,12 @@ class FakeResizeTarget {
     }
   }
 
+  /**
+   * 注销事件监听器，仅处理 `resize` 事件。
+   *
+   * @param type 事件类型。
+   * @param listener 待移除的事件监听器。
+   */
   removeEventListener(
     type: string,
     listener: EventListenerOrEventListenerObject
@@ -25,6 +41,9 @@ class FakeResizeTarget {
     }
   }
 
+  /**
+   * 主动触发一次 `resize` 事件，驱动运行时更新流程。
+   */
   emitResize() {
     for (const listener of this.listeners) {
       if (typeof listener === 'function') {
@@ -35,6 +54,9 @@ class FakeResizeTarget {
     }
   }
 
+  /**
+   * 当前注册的 `resize` 监听器数量。
+   */
   get listenerCount() {
     return this.listeners.size;
   }

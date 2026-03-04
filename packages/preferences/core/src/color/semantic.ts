@@ -74,7 +74,10 @@ const SEMANTIC_CHROMA_ADJUST: Record<SemanticColorName, number> = {
 export function deriveSemanticColors(primaryColor: string): SemanticColors {
   const primary = parseToOklch(primaryColor);
 
-  // 默认蓝色主色
+  /**
+   * 默认语义色兜底。
+   * @description 当主色解析失败时返回一组固定可用的默认语义色。
+   */
   if (!primary) {
     return {
       primary: 'oklch(0.55 0.2 250)',
@@ -85,6 +88,11 @@ export function deriveSemanticColors(primaryColor: string): SemanticColors {
     };
   }
 
+  /**
+   * 按语义名称基于主色派生目标颜色。
+   * @param name 语义色名称。
+   * @returns 语义色字符串（OKLCH）。
+   */
   const createSemanticColor = (name: SemanticColorName): string => {
     const hueOffset = SEMANTIC_HUE_OFFSETS[name];
     const lightnessAdjust = SEMANTIC_LIGHTNESS_ADJUST[name];
@@ -110,7 +118,12 @@ export function deriveSemanticColors(primaryColor: string): SemanticColors {
  * 语义色缓存（避免重复计算）
  * @performance 缓存最近使用的主色及其派生色
  */
-let semanticColorCache: { primaryColor: string; colors: SemanticColors } | null = null;
+let semanticColorCache: {
+  /** 最近一次计算的主色。 */
+  primaryColor: string;
+  /** 主色对应的语义色结果。 */
+  colors: SemanticColors;
+} | null = null;
 
 /**
  * 获取单个语义色（优化版）
@@ -120,19 +133,26 @@ let semanticColorCache: { primaryColor: string; colors: SemanticColors } | null 
  * @returns 语义色
  */
 export function getSemanticColor(primaryColor: string, name: SemanticColorName): string {
-  // 如果缓存命中，直接返回
+  /**
+   * 缓存命中快速返回。
+   */
   if (semanticColorCache?.primaryColor === primaryColor) {
     return semanticColorCache.colors[name];
   }
 
-  // 如果只需要 primary，无需派生
+  /**
+   * 主色直返分支。
+   * @description 仅请求 `primary` 时无需派生全量语义色。
+   */
   if (name === 'primary') {
     const primary = parseToOklch(primaryColor);
     if (!primary) return 'oklch(0.55 0.2 250)';
     return createOklch(primary.l, primary.c, primary.h);
   }
 
-  // 派生所有颜色并缓存
+  /**
+   * 全量派生并写入缓存。
+   */
   const colors = deriveSemanticColors(primaryColor);
   semanticColorCache = { primaryColor, colors };
   return colors[name];

@@ -1,3 +1,7 @@
+/**
+ * React Ant Design 主题桥接 Hook。
+ * @description 将 admin 偏好设置与 CSS 变量映射为 antd `ConfigProvider` 可消费的主题配置。
+ */
 import {
   getActualThemeMode,
   getDefaultPreferencesStore,
@@ -5,32 +9,71 @@ import {
 } from '@admin-core/preferences';
 import { useEffect, useMemo, useState } from 'react';
 
+/**
+ * Ant Design CSS 变量配置。
+ */
 export interface AdminAntdCssVarConfig {
+  /** 键名。 */
   key?: string;
+  /** 样式变量前缀。 */
   prefix?: string;
 }
 
+/**
+ * Ant Design 主题算法配置。
+ */
 export interface AdminAntdThemeAlgorithms {
+  /** 深色模式算法。 */
   dark?: unknown;
+  /** 浅色模式算法。 */
   light?: unknown;
 }
 
+/**
+ * `ConfigProvider` 可消费的主题配置。
+ */
 export interface AdminAntdThemeConfig {
+  /** 主题算法。 */
   algorithm?: unknown;
+  /** 样式变量配置。 */
   cssVar?: AdminAntdCssVarConfig | boolean;
+  /** 组件级 token 覆盖。 */
   components?: Record<string, Record<string, number | string>>;
+  /** 全局 token。 */
   token?: Record<string, number | string>;
 }
 
+/**
+ * `useAdminAntdTheme` 可选配置。
+ */
 export interface UseAdminAntdThemeOptions {
+  /** 主题算法配置。 */
   algorithms?: AdminAntdThemeAlgorithms;
+  /** 样式变量配置。 */
   cssVar?: AdminAntdCssVarConfig | boolean;
+  /** 设计令牌覆盖项。 */
   tokenOverrides?: Record<string, number | string>;
 }
 
+/**
+ * 默认偏好设置存储实例。
+ */
 const preferencesStore = getDefaultPreferencesStore();
 
-function isDarkFromDom() {
+/**
+ * Ant Design 主题令牌值类型。
+ */
+type AntdTokenValue = number | string;
+
+/**
+ * Ant Design 主题令牌映射。
+ */
+type AntdTokenMap = Record<string, AntdTokenValue>;
+
+/**
+ * 从 DOM 上的类名和属性推断是否深色模式。
+ */
+function isDarkFromDom(): boolean {
   if (typeof document === 'undefined') {
     return false;
   }
@@ -44,7 +87,13 @@ function isDarkFromDom() {
   );
 }
 
-function readRootCssVar(name: string, fallback: string) {
+/**
+ * 读取根节点 CSS 变量。
+ * @param name CSS 变量名。
+ * @param fallback 读取失败时回退值。
+ * @returns 变量值或回退值。
+ */
+function readRootCssVar(name: string, fallback: string): string {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return fallback;
   }
@@ -54,9 +103,17 @@ function readRootCssVar(name: string, fallback: string) {
   return value || fallback;
 }
 
+/**
+ * 颜色解析辅助节点缓存。
+ * @description 复用隐藏节点做颜色合法性验证，避免重复创建 DOM。
+ */
 let colorResolver: HTMLSpanElement | null = null;
 
-function ensureColorResolver() {
+/**
+ * 获取颜色解析辅助节点，用于校验颜色值是否合法。
+ * @returns 用于颜色解析的隐藏节点；在非浏览器环境返回 `null`。
+ */
+function ensureColorResolver(): HTMLSpanElement | null {
   if (typeof document === 'undefined') {
     return null;
   }
@@ -71,7 +128,12 @@ function ensureColorResolver() {
   return colorResolver;
 }
 
-function clamp01(value: number) {
+/**
+ * 将数值限制在 `[0,1]` 区间。
+ * @param value 原始值。
+ * @returns 归一化后的值。
+ */
+function clamp01(value: number): number {
   if (!Number.isFinite(value)) {
     return 0;
   }
@@ -84,7 +146,12 @@ function clamp01(value: number) {
   return value;
 }
 
-function linearToSrgb(value: number) {
+/**
+ * 线性 RGB 转换为 sRGB。
+ * @param value 线性 RGB 通道值。
+ * @returns sRGB 通道值。
+ */
+function linearToSrgb(value: number): number {
   const v = clamp01(value);
   if (v <= 0.0031308) {
     return 12.92 * v;
@@ -92,7 +159,12 @@ function linearToSrgb(value: number) {
   return 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
 }
 
-function parseUnitValue(value: string) {
+/**
+ * 解析数值或百分比字符串。
+ * @param value 原始输入值。
+ * @returns 解析结果，失败返回 `null`。
+ */
+function parseUnitValue(value: string): null | number {
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
@@ -111,7 +183,12 @@ function parseUnitValue(value: string) {
   return numeric;
 }
 
-function oklchToRgb(input: string) {
+/**
+ * 将 `oklch(...)` 颜色转换为 `rgb/rgba`。
+ * @param input 原始颜色字符串。
+ * @returns 转换后的颜色字符串，无法解析时返回 `null`。
+ */
+function oklchToRgb(input: string): null | string {
   const match = input
     .trim()
     .match(/^oklch\(\s*([^\s/]+)\s+([^\s/]+)\s+([^\s/]+)(?:\s*\/\s*([^)]+))?\s*\)$/i);
@@ -158,11 +235,18 @@ function oklchToRgb(input: string) {
   return `rgba(${r}, ${g}, ${bOut}, ${alpha})`;
 }
 
+/**
+ * 归一化颜色值，确保可被浏览器和 Ant Design 正确识别。
+ * @param input 原始颜色值。
+ * @param fallback 第一层回退颜色。
+ * @param safeFallback 最终安全回退颜色。
+ * @returns 可用颜色值。
+ */
 function normalizeColorForAntd(
   input: string,
   fallback: string,
   safeFallback = '#1677ff'
-) {
+): string {
   const value = input.trim() || fallback || safeFallback;
   const normalizedValue = oklchToRgb(value) ?? value;
   const normalizedFallback = oklchToRgb(fallback) ?? fallback;
@@ -206,7 +290,12 @@ function normalizeColorForAntd(
   return normalizedResolved || normalizedSafeFallback;
 }
 
-function isRgbBlackColor(value: string) {
+/**
+ * 判断颜色字符串是否表示纯黑色。
+ * @param value 颜色字符串。
+ * @returns 是否为纯黑。
+ */
+function isRgbBlackColor(value: string): boolean {
   const input = value.trim().toLowerCase();
   if (!input) {
     return false;
@@ -246,7 +335,13 @@ function isRgbBlackColor(value: string) {
   return channels.every((channel) => channel === 0);
 }
 
-function parseRadiusToNumber(input: string, fallback = 8) {
+/**
+ * 解析圆角值为数值像素。
+ * @param input 圆角字符串。
+ * @param fallback 解析失败时回退值。
+ * @returns 圆角数值（像素）。
+ */
+function parseRadiusToNumber(input: string, fallback = 8): number {
   const value = input.trim();
   if (!value) {
     return fallback;
@@ -263,6 +358,11 @@ function parseRadiusToNumber(input: string, fallback = 8) {
   return Math.max(0, numeric);
 }
 
+/**
+ * 解析当前真实主题模式。
+ * @param preferences 偏好设置；为空时从 DOM 推断。
+ * @returns `light` 或 `dark`。
+ */
 function resolveActualMode(preferences: null | Preferences): 'dark' | 'light' {
   if (!preferences) {
     return isDarkFromDom() ? 'dark' : 'light';
@@ -270,25 +370,55 @@ function resolveActualMode(preferences: null | Preferences): 'dark' | 'light' {
   return getActualThemeMode(preferences.theme.mode);
 }
 
+/**
+ * 基于偏好设置和 CSS 变量生成 Ant Design token。
+ * @param preferences 偏好设置。
+ * @param mode 当前主题模式。
+ * @returns 主题 token。
+ */
 function resolveAntdTokens(
   preferences: null | Preferences,
   mode: 'dark' | 'light'
-) {
+): AntdTokenMap {
+  /**
+   * 主色安全回退值。
+   */
   const safePrimary = '#1677ff';
+  /**
+   * 偏好中心配置的主色。
+   */
   const primaryFromPreferences = preferences?.theme?.colorPrimary ?? '';
+  /**
+   * 背景色回退值（随主题模式变化）。
+   */
   const backgroundFallback = mode === 'dark' ? '#0f172a' : '#ffffff';
+  /**
+   * 前景色回退值（随主题模式变化）。
+   */
   const foregroundFallback = mode === 'dark' ? '#e2e8f0' : '#0f172a';
+  /**
+   * 边框色回退值（随主题模式变化）。
+   */
   const borderFallback = mode === 'dark' ? '#334155' : '#d9d9d9';
+  /**
+   * 从偏好主色规范化得到的候选主色。
+   */
   const normalizedFromPreferences = normalizeColorForAntd(
     primaryFromPreferences,
     safePrimary,
     safePrimary
   );
+  /**
+   * 从 CSS 变量解析得到的候选主色。
+   */
   const normalizedFromCssVar = normalizeColorForAntd(
     readRootCssVar('--primary', safePrimary),
     normalizedFromPreferences || safePrimary,
     safePrimary
   );
+  /**
+   * 当前解析出的主色（后续会做黑色兜底修正）。
+   */
   let resolvedPrimary =
     !normalizedFromCssVar || isRgbBlackColor(normalizedFromCssVar)
       ? normalizedFromPreferences
@@ -370,18 +500,35 @@ function resolveAntdTokens(
       '#f59e0b',
       '#f59e0b'
     ),
-  } satisfies Record<string, number | string>;
+  } satisfies AntdTokenMap;
 }
 
+/**
+ * 构建并订阅 Admin 主题到 Ant Design 主题配置。
+ * @param options 主题算法、变量与 token 覆盖配置。
+ * @returns Ant Design 主题配置对象。
+ */
 export function useAdminAntdTheme(
   options: UseAdminAntdThemeOptions = {}
 ): AdminAntdThemeConfig {
+  /**
+   * 内部主题版本号。
+   * @description 通过递增版本号触发 `useMemo` 重算主题配置。
+   */
   const [version, setVersion] = useState(0);
 
+  /**
+   * 订阅偏好与 DOM 主题变化。
+   * @description 通过 store 订阅与 `MutationObserver` 联动，触发版本号递增并重算主题配置。
+   */
   useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return undefined;
     }
+    /**
+     * 刷新主题版本号
+     * @description 递增内部版本计数，触发 `useMemo` 重新计算 Ant Design 主题配置。
+     */
     const update = () => {
       setVersion((prev) => prev + 1);
     };
@@ -409,21 +556,46 @@ export function useAdminAntdTheme(
     };
   }, []);
 
+  /**
+   * 计算并返回 Ant Design 主题配置。
+   * @description 结合当前偏好、真实主题模式和外部覆盖项生成稳定的 `ConfigProvider` 可用配置。
+   */
   return useMemo(() => {
     void version;
+    /**
+     * 当前偏好设置快照。
+     */
     const preferences = preferencesStore.getPreferences();
+    /**
+     * 当前实际主题模式。
+     */
     const actualMode = resolveActualMode(preferences);
+    /**
+     * 最终 token 集合（基础 token + 外部覆盖）。
+     */
     const token = {
       ...resolveAntdTokens(preferences, actualMode),
       ...(options.tokenOverrides ?? {}),
     };
+    /**
+     * 主色 token。
+     */
     const colorPrimary = String(token.colorPrimary ?? '#1677ff');
+    /**
+     * 主色悬停 token。
+     */
     const colorPrimaryHover = String(token.colorInfo ?? colorPrimary);
+    /**
+     * 当前模式对应的主题算法实现。
+     */
     const algorithm =
       actualMode === 'dark'
         ? options.algorithms?.dark
         : options.algorithms?.light;
 
+    /**
+     * 最终返回给 antd `ConfigProvider` 的主题配置。
+     */
     const themeConfig: AdminAntdThemeConfig = {
       cssVar: options.cssVar ?? { key: 'admin-core' },
       components: {

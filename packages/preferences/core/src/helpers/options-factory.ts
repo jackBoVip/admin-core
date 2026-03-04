@@ -35,7 +35,9 @@ import type {
  * 翻译后的选项类型
  */
 export interface TranslatedOption<T = string> {
+  /** 显示标签。 */
   label: string;
+  /** 值。 */
   value: T;
 }
 
@@ -43,7 +45,9 @@ export interface TranslatedOption<T = string> {
  * 语言选项类型
  */
 export interface LanguageOption {
+  /** 显示标签。 */
   label: string;
+  /** 值。 */
   value: SupportedLanguagesType;
 }
 
@@ -75,8 +79,8 @@ export interface TranslatedOptions {
 
 /**
  * 创建预翻译的选项
- * @param locale - 语言包
- * @returns 翻译后的选项对象
+ * @param locale 当前语言包。
+ * @returns 翻译后的选项对象。
  */
 export function createTranslatedOptions(locale: LocaleMessages): TranslatedOptions {
   return {
@@ -98,6 +102,7 @@ export function createTranslatedOptions(locale: LocaleMessages): TranslatedOptio
 
 /**
  * 获取语言选项（静态，不需要翻译）
+ * @returns 语言选项列表。
  */
 export function getLanguageOptions(): LanguageOption[] {
   return supportedLocales.map((l) => ({
@@ -108,6 +113,7 @@ export function getLanguageOptions(): LanguageOption[] {
 
 /**
  * 获取圆角选项（静态）
+ * @returns 圆角选项常量。
  */
 export function getRadiusOptions(): typeof RADIUS_OPTIONS {
   return RADIUS_OPTIONS;

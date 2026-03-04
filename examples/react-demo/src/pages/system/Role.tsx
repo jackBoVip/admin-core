@@ -1,3 +1,7 @@
+/**
+ * 角色管理示例页。
+ * @description 展示角色列表与权限管理入口布局。
+ */
 export default function SystemRole() {
   return (
     <div className="page-container">

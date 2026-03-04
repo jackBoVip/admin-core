@@ -5,15 +5,41 @@
 import { computed } from 'vue';
 import { useLayoutContext, useLayoutComputed } from '../../composables';
 
+/**
+ * 布局上下文
+ * @description 提供页脚配置、版权配置与插槽上下文。
+ */
 const context = useLayoutContext();
+/**
+ * 布局派生状态
+ * @description 提供页脚高度、主内容偏移与全内容模式标识。
+ */
 const layoutComputed = useLayoutComputed();
-// 配置
+/**
+ * 页脚配置
+ * @description 读取固定定位等页脚能力配置。
+ */
 const footerConfig = computed(() => context.props.footer || {});
+/**
+ * 版权配置
+ * @description 控制公司名称、备案号与年份等展示内容。
+ */
 const copyrightConfig = computed(() => context.props.copyright || {});
+/**
+ * 页脚是否可见
+ * @description 在全内容模式下隐藏页脚区域。
+ */
 const show = computed(() => !layoutComputed.value.isFullContent);
+/**
+ * 页脚是否固定
+ * @description 固定时脱离文档流并贴附底部。
+ */
 const isFixed = computed(() => !!footerConfig.value.fixed);
 
-// 类名
+/**
+ * 页脚类名集合
+ * @description 依据固定状态生成修饰类。
+ */
 const footerClass = computed(() => [
   'layout-footer',
   {
@@ -21,7 +47,10 @@ const footerClass = computed(() => [
   },
 ]);
 
-// 样式
+/**
+ * 页脚内联样式
+ * @description 统一计算高度、显隐位移及左右边距/定位。
+ */
 const footerStyle = computed(() => {
   const { footerHeight, mainStyle } = layoutComputed.value;
   const style: Record<string, string> = {

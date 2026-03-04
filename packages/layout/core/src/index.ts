@@ -3,20 +3,32 @@
  * 基础布局包核心
  */
 
-// 类型导出
+/**
+ * 导出布局核心类型定义。
+ */
 export * from './types';
 
-// 常量导出
+/**
+ * 导出布局核心常量。
+ */
 export * from './constants';
 
-// 工具函数导出
+/**
+ * 导出布局工具函数。
+ */
 export * from './utils';
 
-// 国际化导出
+/**
+ * 导出布局国际化能力。
+ */
 export * from './locales';
 
-// 样式导出
+/**
+ * 导出布局样式资源。
+ */
 export * from './styles';
 
-// 图标导出
+/**
+ * 导出布局图标资源。
+ */
 export * from './icons';

@@ -1,3 +1,6 @@
+/**
+ * 表单 UI 共享逻辑（动作区、字段状态与渲染辅助）测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   buildFormActionButtonClass,

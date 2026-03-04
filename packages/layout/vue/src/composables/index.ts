@@ -1,5 +1,6 @@
 /**
- * Vue Composables 导出
+ * Vue Composables 导出入口。
+ * @description 汇总布局上下文、布局状态与通用监听工具的组合式 API。
  */
 
 export * from './use-layout-context';

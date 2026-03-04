@@ -1,16 +1,17 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
+import { createStripJSDocCommentsPlugin } from '../../../internal/build-config/vite.js';
 
 /**
- * CDN 构建配置
- * 输出 IIFE 格式，用于 <script> 标签直接引入
+ * CDN 构建配置。
+ * @description 输出 IIFE 格式，支持通过 `<script>` 标签直接引入。
  */
 export default defineConfig(({ mode }) => {
   const isDev = mode === 'development';
 
   return {
-    plugins: [vue()],
+    plugins: [vue(), createStripJSDocCommentsPlugin()],
     build: {
       emptyOutDir: false, // 不清空 dist 目录
       lib: {
@@ -33,6 +34,9 @@ export default defineConfig(({ mode }) => {
       },
       sourcemap: true,
       minify: isDev ? false : 'esbuild',
+      esbuild: {
+        legalComments: 'none',
+      },
     },
   };
 });

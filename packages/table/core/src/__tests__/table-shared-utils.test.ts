@@ -1,3 +1,6 @@
+/**
+ * 表格共享工具函数集合测试（分页、列配置、选择态、导出等）。
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   applySelectionCheckFieldToRows,

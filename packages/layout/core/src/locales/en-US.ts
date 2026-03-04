@@ -1,12 +1,13 @@
 /**
- * Layout English Language Pack
+ * Layout 英文语言包。
+ * @description 提供 layout-core 在英文环境下的默认文案映射。
  */
 
 import type { LayoutLocale } from './zh-CN';
 
 const locale: LayoutLocale = {
   layout: {
-    // Common
+    /* Common */
     common: {
       collapse: 'Collapse',
       expand: 'Expand',
@@ -26,7 +27,7 @@ const locale: LayoutLocale = {
       loading: 'Loading...',
     },
 
-    // Header
+    /* Header */
     header: {
       title: 'Header',
       toggleSidebar: 'Toggle Sidebar',
@@ -41,7 +42,7 @@ const locale: LayoutLocale = {
       notifications: 'Notifications',
     },
 
-    // Sidebar
+    /* Sidebar */
     sidebar: {
       title: 'Sidebar',
       collapse: 'Collapse Sidebar',
@@ -50,7 +51,7 @@ const locale: LayoutLocale = {
       unpin: 'Unpin',
     },
 
-    // Tabbar
+    /* Tabbar */
     tabbar: {
       title: 'Tabs',
       close: 'Close Tab',
@@ -79,25 +80,25 @@ const locale: LayoutLocale = {
       },
     },
 
-    // Breadcrumb
+    /* Breadcrumb */
     breadcrumb: {
       title: 'Breadcrumb',
       home: 'Home',
     },
 
-    // Footer
+    /* Footer */
     footer: {
       title: 'Footer',
     },
 
-    // Panel
+    /* Panel */
     panel: {
       title: 'Panel',
       collapse: 'Collapse Panel',
       expand: 'Expand Panel',
     },
 
-    // Widgets
+    /* Widgets */
     widget: {
       fullscreen: {
         title: 'Fullscreen',
@@ -112,14 +113,14 @@ const locale: LayoutLocale = {
       },
     },
 
-    // Theme
+    /* Theme */
     theme: {
       light: 'Light Mode',
       dark: 'Dark Mode',
       auto: 'System',
     },
 
-    // Notification
+    /* Notification */
     notification: {
       title: 'Notifications',
       empty: 'No notifications',
@@ -133,7 +134,7 @@ const locale: LayoutLocale = {
       daysAgo: 'days ago',
     },
 
-    // Search
+    /* Search */
     search: {
       placeholder: 'Search menus, features...',
       noResults: 'No results found',
@@ -143,7 +144,7 @@ const locale: LayoutLocale = {
       close: 'Close',
     },
 
-    // User
+    /* User */
     user: {
       guest: 'Guest',
       profile: 'Profile',
@@ -152,7 +153,7 @@ const locale: LayoutLocale = {
       logout: 'Logout',
     },
 
-    // Widgets (Legacy)
+    /* Widgets (Legacy) */
     widgetLegacy: {
       locale: {
         title: 'Language',
@@ -207,7 +208,7 @@ const locale: LayoutLocale = {
       },
     },
 
-    // Menu
+    /* Menu */
     menu: {
       search: 'Search Menu',
       searchPlaceholder: 'Enter keywords to search menu...',
@@ -216,7 +217,7 @@ const locale: LayoutLocale = {
       collapse: 'Collapse All',
     },
 
-    // Content
+    /* Content */
     content: {
       loading: 'Page Loading...',
       error: 'Page Load Failed',
@@ -224,7 +225,7 @@ const locale: LayoutLocale = {
       empty: 'No Content',
     },
 
-    // Copyright
+    /* Copyright */
     copyright: {
       powered: 'Powered by',
       icp: 'ICP',
@@ -232,4 +233,7 @@ const locale: LayoutLocale = {
   },
 };
 
+/**
+ * 默认导出英文语言包。
+ */
 export default locale;

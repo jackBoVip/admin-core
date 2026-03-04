@@ -1,3 +1,6 @@
+/**
+ * 菜单控制器父子索引、展开策略与可见性逻辑测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   buildActiveParentSet,

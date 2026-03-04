@@ -6,11 +6,11 @@
 import { LAYOUT_UI_TOKENS } from '../constants';
 
 /**
- * 计算标签栏滚动偏移量
- * @param containerWidth - 容器宽度
- * @param offsetRatio - 偏移比例（默认使用 LAYOUT_UI_TOKENS.TABBAR_SCROLL_OFFSET_RATIO）
- * @param minOffset - 最小偏移量（默认使用 LAYOUT_UI_TOKENS.TABBAR_SCROLL_MIN_OFFSET）
- * @returns 滚动偏移量
+ * 计算标签栏滚动偏移量。
+ * @param containerWidth 容器宽度。
+ * @param offsetRatio 偏移比例（默认使用 `LAYOUT_UI_TOKENS.TABBAR_SCROLL_OFFSET_RATIO`）。
+ * @param minOffset 最小偏移量（默认使用 `LAYOUT_UI_TOKENS.TABBAR_SCROLL_MIN_OFFSET`）。
+ * @returns 滚动偏移量。
  */
 export function calculateTabbarScrollOffset(
   containerWidth: number,
@@ -19,48 +19,59 @@ export function calculateTabbarScrollOffset(
 ): number {
   const ratio = offsetRatio ?? LAYOUT_UI_TOKENS.TABBAR_SCROLL_OFFSET_RATIO;
   const min = minOffset ?? LAYOUT_UI_TOKENS.TABBAR_SCROLL_MIN_OFFSET;
-  
+
   return Math.max(containerWidth * ratio, min);
 }
 
-/**
- * 计算标签栏滚动位置
- * @param options - 滚动选项
- * @returns 滚动位置
- */
-export function calculateTabbarScrollPosition(options: {
+/** 标签栏滚动位置计算参数。 */
+export interface CalculateTabbarScrollPositionOptions {
+  /** 容器可视宽度。 */
   containerWidth: number;
+  /** 当前滚动位置。 */
   scrollLeft: number;
+  /** 目标元素左侧位置（相对滚动容器内容区）。 */
   targetLeft: number;
+  /** 目标元素宽度。 */
   targetWidth: number;
+  /** 滚动偏移比例。 */
   offsetRatio?: number;
+  /** 滚动最小偏移量。 */
   minOffset?: number;
-}): number {
+}
+
+/**
+ * 计算标签栏滚动位置。
+ * @param options 滚动参数。
+ * @returns 目标滚动位置。
+ */
+export function calculateTabbarScrollPosition(
+  options: CalculateTabbarScrollPositionOptions
+): number {
   const { containerWidth, scrollLeft, targetLeft, targetWidth } = options;
-  
-  // 计算目标元素的右边界
+
+  /* 计算目标元素的右边界。 */
   const targetRight = targetLeft + targetWidth;
-  
-  // 计算容器的可见区域
+
+  /* 计算容器的可见区域。 */
   const containerRight = scrollLeft + containerWidth;
-  
-  // 计算滚动偏移量
+
+  /* 计算滚动偏移量。 */
   const offset = calculateTabbarScrollOffset(
     containerWidth,
     options.offsetRatio,
     options.minOffset
   );
-  
+
   let newScrollLeft = scrollLeft;
-  
-  // 如果目标元素在左侧不可见
+
+  /* 如果目标元素在左侧不可见。 */
   if (targetLeft < scrollLeft) {
     newScrollLeft = targetLeft - offset;
   }
-  // 如果目标元素在右侧不可见
+  /* 如果目标元素在右侧不可见。 */
   else if (targetRight > containerRight) {
     newScrollLeft = targetRight - containerWidth + offset;
   }
-  
+
   return Math.max(0, newScrollLeft);
 }

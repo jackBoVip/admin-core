@@ -1,10 +1,14 @@
 /**
- * 偏好设置抽屉配置类型
- * @description 用于控制功能项的显示/禁用
+ * 偏好设置抽屉配置类型定义集合。
+ * @description 用于控制各页签、功能区块与控件项的显示/禁用状态。
  */
 
 /**
- * 功能项配置
+ * 功能项配置。
+ * @description
+ * 该结构用于最小粒度的界面能力开关：
+ * - `visible`: 控制是否渲染；
+ * - `disabled`: 控制渲染后是否可交互。
  */
 export interface FeatureItemConfig {
   /** 是否显示该功能项 */
@@ -14,7 +18,8 @@ export interface FeatureItemConfig {
 }
 
 /**
- * 功能区块配置（控制显示/禁用）
+ * 功能区块配置（控制显示/禁用）。
+ * @description 在区块维度上定义可见性/禁用状态，并可对子项进一步细化。
  */
 export interface FeatureBlockConfig extends FeatureItemConfig {
   /** 区块内的功能项配置 */
@@ -22,7 +27,8 @@ export interface FeatureBlockConfig extends FeatureItemConfig {
 }
 
 /**
- * 外观设置 Tab 配置
+ * 外观设置页签配置。
+ * @description 控制主题、圆角、字体与色彩模式相关配置项的可见性和交互状态。
  */
 export interface AppearanceTabConfig extends FeatureItemConfig {
   /** 主题模式区块 */
@@ -35,6 +41,7 @@ export interface AppearanceTabConfig extends FeatureItemConfig {
   fontSize?: FeatureBlockConfig;
   /** 颜色模式区块（跟随主题等） */
   colorMode?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 浅色背景跟随主题 */
       colorFollowPrimaryLight?: FeatureItemConfig;
@@ -53,7 +60,8 @@ export interface AppearanceTabConfig extends FeatureItemConfig {
 }
 
 /**
- * 布局设置 Tab 配置
+ * 布局设置页签配置。
+ * @description 控制布局结构（顶栏、侧边栏、标签栏、面包屑等）相关配置项。
  */
 export interface LayoutTabConfig extends FeatureItemConfig {
   /** 布局类型区块 */
@@ -62,6 +70,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   contentWidth?: FeatureBlockConfig;
   /** 侧边栏区块 */
   sidebar?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 折叠状态 */
       collapsed?: FeatureItemConfig;
@@ -73,6 +82,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   };
   /** 功能区区块 */
   panel?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用功能区 */
       enable?: FeatureItemConfig;
@@ -84,6 +94,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   };
   /** 顶栏区块 */
   header?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用顶栏 */
       enable?: FeatureItemConfig;
@@ -97,6 +108,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   };
   /** 标签栏区块 */
   tabbar?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用标签栏 */
       enable?: FeatureItemConfig;
@@ -124,6 +136,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   };
   /** 面包屑区块 */
   breadcrumb?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用面包屑 */
       enable?: FeatureItemConfig;
@@ -133,6 +146,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   };
   /** 页脚区块 */
   footer?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用页脚 */
       enable?: FeatureItemConfig;
@@ -142,6 +156,7 @@ export interface LayoutTabConfig extends FeatureItemConfig {
   };
   /** 小部件区块 */
   widget?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 全屏按钮 */
       fullscreen?: FeatureItemConfig;
@@ -156,7 +171,8 @@ export interface LayoutTabConfig extends FeatureItemConfig {
 }
 
 /**
- * 通用设置 Tab 配置
+ * 通用设置页签配置。
+ * @description 控制语言、动态标题、版权、锁屏、水印和页面过渡等通用配置项。
  */
 export interface GeneralTabConfig extends FeatureItemConfig {
   /** 语言区块 */
@@ -165,6 +181,7 @@ export interface GeneralTabConfig extends FeatureItemConfig {
   dynamicTitle?: FeatureBlockConfig;
   /** 版权区块 */
   copyright?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用版权 */
       enable?: FeatureItemConfig;
@@ -174,14 +191,15 @@ export interface GeneralTabConfig extends FeatureItemConfig {
       companySiteLink?: FeatureItemConfig;
       /** 版权年份 */
       date?: FeatureItemConfig;
-      /** ICP 备案号 */
+      /** 备案编号 */
       icp?: FeatureItemConfig;
-      /** ICP 链接 */
+      /** 备案信息链接 */
       icpLink?: FeatureItemConfig;
     };
   };
   /** 锁屏区块 */
   lockScreen?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 锁屏按钮 */
       enable?: FeatureItemConfig;
@@ -193,6 +211,7 @@ export interface GeneralTabConfig extends FeatureItemConfig {
   };
   /** 水印区块 */
   watermark?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用水印 */
       enable?: FeatureItemConfig;
@@ -208,6 +227,7 @@ export interface GeneralTabConfig extends FeatureItemConfig {
   };
   /** 页面动画区块 */
   transition?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用动画 */
       enable?: FeatureItemConfig;
@@ -220,11 +240,13 @@ export interface GeneralTabConfig extends FeatureItemConfig {
 }
 
 /**
- * 快捷键设置 Tab 配置
+ * 快捷键设置页签配置。
+ * @description 控制快捷键模块及其具体动作开关。
  */
 export interface ShortcutKeysTabConfig extends FeatureItemConfig {
   /** 快捷键区块 */
   shortcuts?: FeatureBlockConfig & {
+    /** 区块项配置。 */
     items?: {
       /** 启用快捷键 */
       enable?: FeatureItemConfig;
@@ -241,7 +263,8 @@ export interface ShortcutKeysTabConfig extends FeatureItemConfig {
 }
 
 /**
- * 顶部操作按钮配置
+ * 顶部操作按钮配置。
+ * @description 对应抽屉头部右侧的导入、重置、固定、关闭按钮。
  */
 export interface HeaderActionsConfig {
   /** 导入配置按钮 */
@@ -255,7 +278,8 @@ export interface HeaderActionsConfig {
 }
 
 /**
- * 底部操作按钮配置
+ * 底部操作按钮配置。
+ * @description 对应抽屉底部操作区，目前包含复制配置按钮。
  */
 export interface FooterActionsConfig {
   /** 复制配置按钮 */
@@ -263,7 +287,8 @@ export interface FooterActionsConfig {
 }
 
 /**
- * 偏好设置抽屉完整配置
+ * 偏好设置抽屉完整配置。
+ * @description 按页签与操作区分组的界面配置总结构。
  */
 export interface PreferencesDrawerUIConfig {
   /** 顶部操作按钮 */
@@ -281,7 +306,8 @@ export interface PreferencesDrawerUIConfig {
 }
 
 /**
- * 获取功能项配置的辅助函数返回值
+ * 功能项配置辅助解析返回值。
+ * @description 为最终解析后的可见性与禁用状态（已应用默认值）。
  */
 export interface ResolvedFeatureConfig {
   /** 是否显示 */

@@ -1,9 +1,13 @@
 /**
- * English Language Pack
+ * 英文语言包。
+ * @description 提供偏好设置系统英文文案键值映射。
  */
 
+/**
+ * 英文语言消息集合。
+ */
 export const enUS = {
-  // ========== Common ==========
+  /** 通用 */
   common: {
     confirm: 'Confirm',
     cancel: 'Cancel',
@@ -22,7 +26,7 @@ export const enUS = {
     back: 'Back',
   },
 
-  // ========== Preferences ==========
+  /** 偏好设置 */
   preferences: {
     title: 'Preferences',
     description: 'Customize preferences & Live preview',
@@ -44,7 +48,7 @@ export const enUS = {
     disableSticky: 'Unpin tab navigation bar',
   },
 
-  // ========== Theme ==========
+  /** 主题 */
   theme: {
     title: 'Theme',
     mode: 'Theme Mode',
@@ -59,7 +63,7 @@ export const enUS = {
     fontScaleLarge: 'Large',
     builtinTheme: 'Built-in Theme',
     other: 'Other',
-    // Built-in theme names
+    /** 内置主题名称 */
     presetDefault: 'Default',
     presetViolet: 'Violet',
     presetPink: 'Pink',
@@ -74,7 +78,7 @@ export const enUS = {
     presetNeutral: 'Neutral',
     presetSlate: 'Slate',
     presetGray: 'Gray',
-    // Color modes
+    /** 颜色模式 */
     colorMode: 'Color Mode',
     colorFollowPrimaryLight: 'Light Background Follow Theme',
     colorFollowPrimaryDark: 'Dark Background Follow Theme',
@@ -84,7 +88,7 @@ export const enUS = {
     colorWeakMode: 'Color Weak Mode',
   },
 
-  // ========== Layout ==========
+  /** 布局 */
   layout: {
     title: 'Layout',
     type: 'Layout Type',
@@ -107,7 +111,7 @@ export const enUS = {
     contentCompact: 'Compact',
   },
 
-  // ========== Panel ==========
+  /** 功能区 */
   panel: {
     title: 'Panel',
     enable: 'Enable Panel',
@@ -120,7 +124,7 @@ export const enUS = {
     collapsedWidth: 'Collapsed Width',
   },
 
-  // ========== Sidebar ==========
+  /** 侧边栏 */
   sidebar: {
     title: 'Sidebar',
     enable: 'Enable Sidebar',
@@ -133,7 +137,7 @@ export const enUS = {
     collapseWidth: 'Collapse Width',
   },
 
-  // ========== Header ==========
+  /** 顶栏 */
   header: {
     title: 'Header',
     enable: 'Enable Header',
@@ -151,7 +155,7 @@ export const enUS = {
     menuLauncherTip: 'Collapse header menu into a button, click to open menu panel',
   },
 
-  // ========== Tabbar ==========
+  /** 标签栏 */
   tabbar: {
     title: 'Tabs',
     enable: 'Enable Tabs',
@@ -175,7 +179,7 @@ export const enUS = {
     styleBrisk: 'Brisk Style',
   },
 
-  // ========== Breadcrumb ==========
+  /** 面包屑 */
   breadcrumb: {
     title: 'Breadcrumb',
     enable: 'Enable Breadcrumb',
@@ -187,7 +191,7 @@ export const enUS = {
     styleBackground: 'With Background',
   },
 
-  // ========== Navigation ==========
+  /** 导航 */
   navigation: {
     title: 'Navigation',
     accordion: 'Accordion Mode',
@@ -197,14 +201,14 @@ export const enUS = {
     stylePlain: 'Plain',
   },
 
-  // ========== Footer ==========
+  /** 页脚 */
   footer: {
     title: 'Footer',
     enable: 'Enable Footer',
     fixed: 'Fixed Footer',
   },
 
-  // ========== Copyright ==========
+  /** 版权 */
   copyright: {
     title: 'Copyright',
     enable: 'Enable Copyright',
@@ -215,7 +219,7 @@ export const enUS = {
     icpLink: 'ICP Site Link',
   },
 
-  // ========== Transition ==========
+  /** 过渡动画 */
   transition: {
     title: 'Animation',
     enable: 'Enable Page Animation',
@@ -236,7 +240,7 @@ export const enUS = {
     nameSlideRightDesc: 'Slide in from left to right',
   },
 
-  // ========== Widget ==========
+  /** 小部件 */
   widget: {
     title: 'Widgets',
     fullscreen: 'Fullscreen Button',
@@ -250,7 +254,7 @@ export const enUS = {
     timezone: 'Timezone',
   },
 
-  // ========== Shortcut Keys ==========
+  /** 快捷键 */
   shortcutKeys: {
     title: 'Shortcuts',
     enable: 'Enable Shortcuts',
@@ -260,7 +264,7 @@ export const enUS = {
     globalLockScreen: 'Lock Screen',
   },
 
-  // ========== Lock Screen ==========
+  /** 锁屏 */
   lockScreen: {
     title: 'Lock Screen',
     unlock: 'Unlock',
@@ -287,7 +291,7 @@ export const enUS = {
     minute: 'minute',
   },
 
-  // ========== General ==========
+  /** 通用设置 */
   general: {
     title: 'General',
     language: 'Language',
@@ -303,4 +307,7 @@ export const enUS = {
   },
 };
 
+/**
+ * 默认导出英文语言包。
+ */
 export default enUS;

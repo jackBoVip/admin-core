@@ -14,21 +14,37 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { usePreferences } from '../../hooks';
 import { Block } from './Block';
 
+/**
+ * 快捷键标签页组件属性。
+ */
 export interface ShortcutKeysTabProps {
   /** 当前语言包 */
   locale: LocaleMessages;
-  /** UI 配置（控制功能项显示/禁用） */
+  /** 界面配置（控制功能项显示/禁用） */
   uiConfig?: ShortcutKeysTabConfig;
 }
 
+/**
+ * 单个快捷键开关项属性。
+ */
 interface ShortcutItemProps {
+  /** 显示标签。 */
   label: string;
+  /** 快捷键组合展示。 */
   shortcutKeys?: string[];
+  /** 当前是否开启。 */
   checked: boolean;
+  /** 点击或键盘触发时的开关回调。 */
   onChange: () => void;
+  /** 是否禁用。 */
   disabled?: boolean;
 }
 
+/**
+ * 快捷键开关行组件。
+ * @param props 快捷键项参数。
+ * @returns 快捷键行节点。
+ */
 const ShortcutItem = memo<ShortcutItemProps>(function ShortcutItem({
   label,
   shortcutKeys,
@@ -36,10 +52,19 @@ const ShortcutItem = memo<ShortcutItemProps>(function ShortcutItem({
   onChange,
   disabled = false,
 }) {
+  /**
+   * 处理快捷键项点击
+   * @description 在可操作状态下触发开关切换回调。
+   */
   const handleClick = useCallback(() => {
     if (!disabled) onChange();
   }, [disabled, onChange]);
 
+  /**
+   * 处理快捷键项键盘交互
+   * @description 在可操作状态下，空格或回车触发开关切换。
+   * @param e React 键盘事件对象。
+   */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (disabled) return;
@@ -84,17 +109,35 @@ const ShortcutItem = memo<ShortcutItemProps>(function ShortcutItem({
   );
 });
 
+/**
+ * 快捷键设置标签页组件。
+ * @param props 组件参数。
+ * @returns 快捷键设置标签页节点。
+ */
 export const ShortcutKeysTab: React.FC<ShortcutKeysTabProps> = memo(({ locale, uiConfig }) => {
   const { preferences, setPreferences } = usePreferences();
 
-  // ========== UI 配置解析（使用 useMemo 缓存） ==========
+  /**
+   * UI 配置解析区。
+   * @description 解析快捷键分组及子项的显示与禁用状态。
+   */
+  /**
+   * 读取快捷键标签页功能配置
+   * @description 按分组与子项解析配置，返回可见/禁用状态。
+   * @param blockKey 配置分组键。
+   * @param itemKey 分组内功能项键。
+   * @returns 解析后的功能配置对象。
+   */
   const getConfig = useCallback(
     (blockKey: keyof ShortcutKeysTabConfig, itemKey?: string): ResolvedFeatureConfig =>
       getFeatureItemConfig(uiConfig, blockKey, itemKey),
     [uiConfig]
   );
 
-  // 缓存常用配置项
+  /**
+   * 快捷键标签页配置快照。
+   * @description 统一收拢主开关与各快捷键子项配置，便于渲染层直接读取。
+   */
   const configs = useMemo(() => ({
     shortcuts: getConfig('shortcuts'),
     enable: getConfig('shortcuts', 'enable'),
@@ -104,39 +147,73 @@ export const ShortcutKeysTab: React.FC<ShortcutKeysTabProps> = memo(({ locale, u
     globalLogout: getConfig('shortcuts', 'globalLogout'),
   }), [getConfig]);
 
-  // 检测是否为 Mac 系统
+  /**
+   * 当前是否为 macOS 运行环境。
+   * @description 用于决定快捷键展示时使用 `Command` 或 `Ctrl` 等差异文案。
+   */
   const isMac = useMemo(() => isMacOs(), []);
 
-  // 获取快捷键按键列表
+  /**
+   * 获取快捷键显示按键
+   * @description 根据操作系统返回对应快捷键组合文案。
+   * @param key 快捷键配置键名。
+   * @returns 按键字符串数组。
+   */
   const getKeys = useCallback(
     (key: string) => getShortcutKeys(key, isMac),
     [isMac]
   );
 
-  // ========== 稳定的回调函数（使用 ref 获取最新值，避免依赖变化导致重渲染） ==========
+  /**
+   * 偏好设置快照引用。
+   * @description 供稳定回调读取最新开关值，避免依赖膨胀导致回调重建。
+   */
   const preferencesRef = React.useRef(preferences);
   
-  // 在 useEffect 中更新 ref，避免在渲染期间产生副作用
+  /**
+   * 同步最新偏好设置到引用。
+   * @description 在副作用阶段更新，避免渲染阶段写 ref 产生副作用。
+   */
   React.useEffect(() => {
     preferencesRef.current = preferences;
   });
   
+  /**
+   * 切换快捷键总开关
+   * @description 开启或关闭整套快捷键能力。
+   */
   const handleToggleEnable = useCallback(() => {
     setPreferences({ shortcutKeys: { enable: !preferencesRef.current.shortcutKeys.enable } });
   }, [setPreferences]);
 
+  /**
+   * 切换“打开偏好设置”快捷键
+   * @description 控制该快捷键是否生效。
+   */
   const handleToggleGlobalPreferences = useCallback(() => {
     setPreferences({ shortcutKeys: { globalPreferences: !preferencesRef.current.shortcutKeys.globalPreferences } });
   }, [setPreferences]);
 
+  /**
+   * 切换“全局搜索”快捷键
+   * @description 控制该快捷键是否生效。
+   */
   const handleToggleGlobalSearch = useCallback(() => {
     setPreferences({ shortcutKeys: { globalSearch: !preferencesRef.current.shortcutKeys.globalSearch } });
   }, [setPreferences]);
 
+  /**
+   * 切换“锁屏”快捷键
+   * @description 控制该快捷键是否生效。
+   */
   const handleToggleGlobalLockScreen = useCallback(() => {
     setPreferences({ shortcutKeys: { globalLockScreen: !preferencesRef.current.shortcutKeys.globalLockScreen } });
   }, [setPreferences]);
 
+  /**
+   * 切换“退出登录”快捷键
+   * @description 控制该快捷键是否生效。
+   */
   const handleToggleGlobalLogout = useCallback(() => {
     setPreferences({ shortcutKeys: { globalLogout: !preferencesRef.current.shortcutKeys.globalLogout } });
   }, [setPreferences]);
@@ -208,4 +285,7 @@ export const ShortcutKeysTab: React.FC<ShortcutKeysTabProps> = memo(({ locale, u
 
 ShortcutKeysTab.displayName = 'ShortcutKeysTab';
 
+/**
+ * 默认导出快捷键设置 Tab 组件。
+ */
 export default ShortcutKeysTab;

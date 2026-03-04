@@ -70,12 +70,15 @@ import type {
 } from '../types';
 export { getActualThemeMode, generateThemeCSSVariables, generateThemeClasses, mapPreferencesToLayoutProps };
 
-// ============================================================
-// 1. 布局类型判断
-// ============================================================
+/* ============================================================ */
+/* 1. 布局类型判断 */
+/* ============================================================ */
 
 /**
- * 判断布局是否属于某个分类
+ * 判断布局是否属于指定分类。
+ * @param layout 当前布局类型。
+ * @param category 目标布局分类键。
+ * @returns 是否属于目标分类。
  */
 export function isLayoutInCategory(
   layout: LayoutType,
@@ -85,49 +88,65 @@ export function isLayoutInCategory(
 }
 
 /**
- * 判断是否为全屏内容布局
+ * 判断是否为全屏内容布局。
+ * @param layout 当前布局类型。
+ * @returns 是否为全屏内容布局。
  */
 export function isFullContentLayout(layout: LayoutType): boolean {
   return isSharedFullContentLayout(layout);
 }
 
 /**
- * 判断是否为侧边混合导航
+ * 判断是否为侧边混合导航布局。
+ * @param layout 当前布局类型。
+ * @returns 是否为 `sidebar-mixed-nav`。
  */
 export function isSidebarMixedNavLayout(layout: LayoutType): boolean {
   return layout === 'sidebar-mixed-nav';
 }
 
 /**
- * 判断是否为顶部导航
+ * 判断是否为顶部导航布局。
+ * @param layout 当前布局类型。
+ * @returns 是否为 `header-nav`。
  */
 export function isHeaderNavLayout(layout: LayoutType): boolean {
   return layout === 'header-nav';
 }
 
 /**
- * 判断是否为混合导航
+ * 判断是否为混合导航布局。
+ * @param layout 当前布局类型。
+ * @returns 是否为 `mixed-nav`。
  */
 export function isMixedNavLayout(layout: LayoutType): boolean {
   return layout === 'mixed-nav';
 }
 
 /**
- * 判断是否为顶部混合导航
+ * 判断是否为顶部混合导航布局。
+ * @param layout 当前布局类型。
+ * @returns 是否为 `header-mixed-nav`。
  */
 export function isHeaderMixedNavLayout(layout: LayoutType): boolean {
   return layout === 'header-mixed-nav';
 }
 
 /**
- * 解析真实布局类型（移动端统一回退为 sidebar-nav）
+ * 解析实际布局类型。
+ * @description 移动端统一回退为 `sidebar-nav`，避免不适配布局在小屏渲染异常。
+ * @param props 布局核心参数（布局类型与移动端标记）。
+ * @returns 实际用于计算的布局类型。
  */
 export function resolveLayoutType(props: Pick<BasicLayoutProps, 'layout' | 'isMobile'>): LayoutType {
   return (props.isMobile ? 'sidebar-nav' : (props.layout || 'sidebar-nav')) as LayoutType;
 }
 
 /**
- * 判断是否应该显示侧边栏
+ * 判断当前布局是否应显示侧边栏。
+ * @param layout 当前布局类型。
+ * @param _isMobile 保留参数（向后兼容，当前实现未使用）。
+ * @returns 是否应显示侧边栏。
  */
 export function shouldShowSidebar(layout: LayoutType, _isMobile?: boolean): boolean {
   if (isFullContentLayout(layout)) return false;
@@ -136,18 +155,23 @@ export function shouldShowSidebar(layout: LayoutType, _isMobile?: boolean): bool
 }
 
 /**
- * 判断是否应该显示顶栏
+ * 判断当前布局是否应显示顶栏。
+ * @param layout 当前布局类型。
+ * @returns 是否应显示顶栏。
  */
 export function shouldShowHeader(layout: LayoutType): boolean {
   return !isFullContentLayout(layout);
 }
 
-// ============================================================
-// 2. 布局尺寸计算
-// ============================================================
+/* ============================================================ */
+/* 2. 布局尺寸计算 */
+/* ============================================================ */
 
 /**
- * 计算侧边栏宽度
+ * 计算侧边栏实际占位宽度。
+ * @param props 布局配置。
+ * @param state 布局运行时状态。
+ * @returns 侧边栏占位宽度（像素）。
  */
 export function calculateSidebarWidth(
   props: BasicLayoutProps,
@@ -157,44 +181,44 @@ export function calculateSidebarWidth(
   const sidebar = { ...DEFAULT_SIDEBAR_CONFIG, ...props.sidebar };
   const isMobile = props.isMobile || false;
 
-  // 全屏内容或顶部导航模式无侧边栏
+  /* 全屏内容或顶部导航模式无侧边栏。 */
   if (isFullContentLayout(layout) || isHeaderNavLayout(layout)) {
     return 0;
   }
 
-  // 侧边栏隐藏
+  /* 侧边栏隐藏。 */
   if (sidebar.hidden) {
     return 0;
   }
 
-  // 移动端且折叠状态
+  /* 移动端且折叠状态。 */
   if (isMobile && state.sidebarCollapsed) {
     return 0;
   }
 
-  // 混合导航模式（图标列 + 子菜单面板）
-  // 侧边栏宽度 = 图标列宽度 + 子菜单面板宽度（固定模式且可见时占用空间）
+  /* 混合导航模式（图标列 + 子菜单面板）。 */
+  /* 侧边栏宽度 = 图标列宽度 + 子菜单面板宽度（固定模式且可见时占用空间）。 */
   if (isHeaderMixedNavLayout(layout) || isSidebarMixedNavLayout(layout)) {
     const isSidebarMixed = isSidebarMixedNavLayout(layout);
     if (!isSidebarMixed && state.sidebarCollapsed && !state.sidebarExpandOnHovering) {
       return sidebar.collapseWidth;
     }
-    // 图标列宽度
+    /* 图标列宽度。 */
     const mixedWidth = sidebar.mixedWidth || 70;
-    // 子菜单面板宽度
+    /* 子菜单面板宽度。 */
     const extraCollapsedWidth = sidebar.extraCollapsedWidth || 60;
     const extraExpandedWidth = sidebar.width || 180;
     
-    // 固定模式下（expandOnHover=false），子菜单面板占用空间
+    /* 固定模式下（`expandOnHover = false`），子菜单面板占用空间。 */
     if (!state.sidebarExpandOnHover && state.sidebarExtraVisible) {
       const extraWidth = state.sidebarExtraCollapsed ? extraCollapsedWidth : extraExpandedWidth;
       return mixedWidth + extraWidth;
     }
-    // 非固定模式下，只有图标列宽度
+    /* 非固定模式下，只有图标列宽度。 */
     return mixedWidth;
   }
 
-  // 普通折叠状态
+  /* 普通折叠状态。 */
   if (state.sidebarCollapsed && !state.sidebarExpandOnHovering) {
     return sidebar.collapseWidth;
   }
@@ -203,7 +227,10 @@ export function calculateSidebarWidth(
 }
 
 /**
- * 计算顶栏高度
+ * 计算顶栏实际高度。
+ * @param props 布局配置。
+ * @param state 布局运行时状态。
+ * @returns 顶栏高度（像素）。
  */
 export function calculateHeaderHeight(
   props: BasicLayoutProps,
@@ -228,7 +255,9 @@ export function calculateHeaderHeight(
 }
 
 /**
- * 计算标签栏高度
+ * 计算标签栏高度。
+ * @param props 布局配置。
+ * @returns 标签栏高度（像素）。
  */
 export function calculateTabbarHeight(props: BasicLayoutProps): number {
   const tabbar = { ...DEFAULT_TABBAR_CONFIG, ...props.tabbar };
@@ -241,7 +270,9 @@ export function calculateTabbarHeight(props: BasicLayoutProps): number {
 }
 
 /**
- * 计算页脚高度
+ * 计算页脚高度。
+ * @param props 布局配置。
+ * @returns 页脚高度（像素）。
  */
 export function calculateFooterHeight(props: BasicLayoutProps): number {
   const footer = { ...DEFAULT_FOOTER_CONFIG, ...props.footer };
@@ -254,7 +285,10 @@ export function calculateFooterHeight(props: BasicLayoutProps): number {
 }
 
 /**
- * 计算功能区宽度
+ * 计算功能区（面板）宽度。
+ * @param props 布局配置。
+ * @param state 布局运行时状态。
+ * @returns 功能区占位宽度（像素）。
  */
 export function calculatePanelWidth(
   props: BasicLayoutProps,
@@ -267,7 +301,7 @@ export function calculatePanelWidth(
   }
 
   if (state.panelCollapsed) {
-    // 业务要求：功能区折叠后完全收起，不保留可见宽度
+    /* 业务要求：功能区折叠后完全收起，不保留可见宽度。 */
     return 0;
   }
 
@@ -275,7 +309,10 @@ export function calculatePanelWidth(
 }
 
 /**
- * 计算布局属性
+ * 汇总计算布局派生属性。
+ * @param props 布局配置。
+ * @param state 布局运行时状态。
+ * @returns 用于渲染层消费的布局计算结果。
  */
 export function calculateLayoutComputed(
   props: BasicLayoutProps,
@@ -303,7 +340,7 @@ export function calculateLayoutComputed(
   const showBreadcrumb = breadcrumbEnabled && !breadcrumbDisabledLayout;
   const showPanel = (props.panel?.enable ?? false) && visibility.panel !== false;
 
-  // 计算主内容区域边距
+  /* 计算主内容区域边距。 */
   let marginLeftValue = 0;
   if (showSidebar) {
     marginLeftValue += sidebarWidth;
@@ -318,7 +355,7 @@ export function calculateLayoutComputed(
   const headerFixed = header.mode !== 'static';
   const marginTop = headerFixed ? `${headerHeight + (showTabbar ? tabbarHeight : 0)}px` : '0';
 
-  // 计算实际主题模式（处理 auto 模式）
+  /* 计算实际主题模式（处理 auto 模式）。 */
   const rawThemeMode = props.theme?.mode || 'light';
   const rawHeaderThemeMode = props.headerTheme ?? rawThemeMode;
   const rawSidebarThemeMode = props.sidebarTheme ?? rawThemeMode;
@@ -328,10 +365,10 @@ export function calculateLayoutComputed(
   const semiDarkSidebar = props.semiDarkSidebar ?? props.theme?.semiDarkSidebar ?? false;
   const semiDarkHeader = props.semiDarkHeader ?? props.theme?.semiDarkHeader ?? false;
   
-  // 侧边栏主题计算逻辑
-  // 优先级：semiDarkSidebar 设置 > 跟随全局主题
-  // 当 semiDarkSidebar 为 true 且全局为 light 时，侧边栏用 dark
-  // 当 semiDarkSidebar 为 false 时，侧边栏跟随全局主题
+  /* 侧边栏主题计算逻辑。 */
+  /* 优先级：`semiDarkSidebar` 设置 > 跟随全局主题。 */
+  /* 当 `semiDarkSidebar` 为 true 且全局为 light 时，侧边栏使用 dark。 */
+  /* 当 `semiDarkSidebar` 为 false 时，侧边栏跟随全局主题。 */
   let sidebarTheme: 'light' | 'dark';
   if (semiDarkSidebar && sidebarThemeMode === 'light') {
     sidebarTheme = 'dark';
@@ -339,8 +376,8 @@ export function calculateLayoutComputed(
     sidebarTheme = sidebarThemeMode;
   }
   
-  // 顶栏主题计算逻辑
-  // 优先级：semiDarkHeader 设置 > 跟随全局主题
+  /* 顶栏主题计算逻辑。 */
+  /* 优先级：`semiDarkHeader` 设置 > 跟随全局主题。 */
   let headerTheme: 'light' | 'dark';
   if (semiDarkHeader && headerThemeMode === 'light') {
     headerTheme = 'dark';
@@ -377,12 +414,15 @@ export function calculateLayoutComputed(
   };
 }
 
-// ============================================================
-// 3. CSS 变量生成
-// ============================================================
+/* ============================================================ */
+/* 3. CSS 变量生成 */
+/* ============================================================ */
 
 /**
- * 生成 CSS 变量对象
+ * 生成布局相关 CSS 变量映射。
+ * @param props 布局配置。
+ * @param state 布局运行时状态。
+ * @returns CSS 变量键值对对象。
  */
 export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState): Record<string, string> {
   const header = { ...DEFAULT_HEADER_CONFIG, ...props.header };
@@ -434,12 +474,15 @@ export function generateCSSVariables(props: BasicLayoutProps, state: LayoutState
 
   return { ...adminVars, ...layoutOnlyVars };
 }
-// ============================================================
-// 4. 配置合并工具
-// ============================================================
+/* ============================================================ */
+/* 4. 配置合并工具 */
+/* ============================================================ */
 
 /**
- * 合并配置（深度合并）
+ * 深度合并配置对象。
+ * @param defaults 默认配置对象。
+ * @param overrides 覆盖配置对象。
+ * @returns 合并后的新配置对象。
  */
 export function mergeConfig<T extends object>(
   defaults: T,
@@ -475,12 +518,14 @@ export function mergeConfig<T extends object>(
   return result;
 }
 
-// ============================================================
-// 6. 水印工具函数
-// ============================================================
+/* ============================================================ */
+/* 6. 水印工具函数 */
+/* ============================================================ */
 
 /**
- * 生成水印配置
+ * 生成水印容器样式对象。
+ * @param config 水印配置。
+ * @returns 可直接用于样式绑定的水印样式对象。
  */
 export function generateWatermarkStyle(config: WatermarkConfig = DEFAULT_WATERMARK_CONFIG): Record<string, string | number> {
   if (!config.enable) {
@@ -500,7 +545,9 @@ export function generateWatermarkStyle(config: WatermarkConfig = DEFAULT_WATERMA
 }
 
 /**
- * 生成水印内容
+ * 生成水印文本内容。
+ * @param config 水印配置。
+ * @returns 规范化后的水印展示文本。
  */
 export function generateWatermarkContent(config: WatermarkConfig = DEFAULT_WATERMARK_CONFIG): string {
   return formatWatermarkText({
@@ -509,12 +556,14 @@ export function generateWatermarkContent(config: WatermarkConfig = DEFAULT_WATER
   });
 }
 
-// ============================================================
-// 7. 锁屏工具函数
-// ============================================================
+/* ============================================================ */
+/* 7. 锁屏工具函数 */
+/* ============================================================ */
 
 /**
- * 检查是否应该显示锁屏
+ * 判断是否应展示锁屏层。
+ * @param config 锁屏配置。
+ * @returns 是否展示锁屏层。
  */
 export function shouldShowLockScreen(config: LockScreenConfig = DEFAULT_LOCK_SCREEN_CONFIG): boolean {
   return config.isLocked === true;
@@ -522,7 +571,9 @@ export function shouldShowLockScreen(config: LockScreenConfig = DEFAULT_LOCK_SCR
 
 /**
  * 创建自动锁屏定时器
- * @returns 清理函数
+ * @param config 锁屏配置。
+ * @param onLock 触发锁屏时的回调。
+ * @returns 用于销毁监听与定时器的清理函数。
  */
 export function createAutoLockTimer(
   config: LockScreenConfig,
@@ -536,19 +587,23 @@ export function createAutoLockTimer(
     getAutoLockTime: () => config.autoLockTime ?? 0,
     isLocked: () => config.isLocked === true,
     onLock,
-    // 保持原有事件列表与无节流行为
+    /* 保持原有事件列表与无节流行为。 */
     events: ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'],
     throttleMs: 0,
     target: typeof document !== 'undefined' ? document : undefined,
   });
 }
 
-// ============================================================
-// 8. 检查更新工具
-// ============================================================
+/* ============================================================ */
+/* 8. 检查更新工具 */
+/* ============================================================ */
 
 /**
- * 检查更新工具
+ * 创建检查更新定时器。
+ * @param config 检查更新配置。
+ * @param onUpdate 更新结果回调。
+ * @param checkFn 实际执行更新检查的异步函数。
+ * @returns 用于停止定时检查的清理函数。
  */
 export function createCheckUpdatesTimer(
   config: CheckUpdatesConfig,
@@ -559,9 +614,14 @@ export function createCheckUpdatesTimer(
     return () => {};
   }
 
-  const interval = config.interval * 60 * 1000; // 转换为毫秒
+  /* 转换为毫秒。 */
+  const interval = config.interval * 60 * 1000;
   let timer: ReturnType<typeof setInterval> | null = null;
 
+  /**
+   * 执行一次更新检查并回调结果。
+   * @returns 无返回值。
+   */
   const check = async () => {
     try {
       const hasUpdate = await checkFn();
@@ -571,13 +631,13 @@ export function createCheckUpdatesTimer(
     }
   };
 
-  // 启动定时器
+  /* 启动定时器。 */
   timer = setInterval(check, interval);
 
-  // 立即检查一次
+  /* 立即检查一次。 */
   check();
 
-  // 返回清理函数
+  /* 返回清理函数。 */
   return () => {
     if (timer) {
       clearInterval(timer);
@@ -585,26 +645,28 @@ export function createCheckUpdatesTimer(
   };
 }
 
-// ============================================================
-// 9. 配置解析
-// ============================================================
+/* ============================================================ */
+/* 9. 配置解析 */
+/* ============================================================ */
 
 /**
  * 获取完整的布局 Props（合并 preferences 和单独配置）
  * @description 优先级：单独配置项 > preferences 对象 > 默认值
+ * @param props 原始布局属性。
+ * @returns 合并并补齐默认值后的布局属性。
  */
 export function getResolvedLayoutProps(props: BasicLayoutProps): BasicLayoutProps {
-  // 如果传入了 preferences 对象，先映射
+  /* 如果传入了 `preferences` 对象，先映射。 */
   let baseProps: Partial<BasicLayoutProps> = {};
   if (props.preferences) {
     baseProps = mapPreferencesToLayoutProps(props.preferences);
   }
 
-  // 合并配置（单独配置优先）
+  /* 合并配置（单独配置优先）。 */
   return {
     ...baseProps,
     ...props,
-    // 深度合并对象类型的配置
+    /* 深度合并对象类型的配置。 */
     theme: mergeConfig(
       DEFAULT_THEME_CONFIG,
       mergeConfig(baseProps.theme || {}, props.theme || {})
@@ -645,7 +707,10 @@ export function getResolvedLayoutProps(props: BasicLayoutProps): BasicLayoutProp
 }
 
 /**
- * 生成所有 CSS 变量（布局 + 主题）
+ * 生成完整 CSS 变量集合（布局变量 + 主题变量）。
+ * @param props 布局配置。
+ * @param state 布局运行时状态。
+ * @returns 合并后的完整 CSS 变量映射。
  */
 export function generateAllCSSVariables(props: BasicLayoutProps, state: LayoutState): Record<string, string> {
   const layoutVars = generateCSSVariables(props, state);

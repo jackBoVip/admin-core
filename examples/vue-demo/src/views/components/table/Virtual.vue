@@ -5,13 +5,23 @@ import { onMounted } from 'vue';
 
 import { useAdminTable } from '@admin-core/table-vue';
 
+/**
+ * 虚拟滚动示例行数据结构。
+ */
 type RowType = {
+  /** 主键 ID。 */
   id: number;
+  /** 姓名。 */
   name: string;
+  /** 角色名称。 */
   role: string;
+  /** 性别。 */
   sex: string;
 };
 
+/**
+ * 虚拟滚动表格配置。
+ */
 const gridOptions: VxeTableGridOptions<RowType> = {
   columns: [
     { type: 'seq', width: 70 },
@@ -31,8 +41,17 @@ const gridOptions: VxeTableGridOptions<RowType> = {
   showOverflow: true,
 };
 
+/**
+ * `useAdminTable` 返回的组件与 API。
+ */
 const [Grid, gridApi] = useAdminTable<RowType>({ gridOptions });
 
+/**
+ * 按指定数量生成并写入表格数据。
+ *
+ * @param size 生成条数，默认 1000。
+ * @returns 无返回值。
+ */
 function loadList(size = 1000) {
   const list: RowType[] = [];
   for (let i = 0; i < size; i += 1) {

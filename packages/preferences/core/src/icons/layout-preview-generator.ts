@@ -9,21 +9,21 @@ import type { LayoutType } from '../types';
  * 预览图配置选项
  */
 export interface LayoutPreviewOptions {
-  // ========== 侧边栏 ==========
+  /* ========== 侧边栏 ========== */
   /** 是否显示侧边栏 */
   showSidebar?: boolean;
   /** 侧边栏是否折叠 */
   sidebarCollapsed?: boolean;
 
-  // ========== 顶栏 ==========
+  /* ========== 顶栏 ========== */
   /** 是否显示顶栏 */
   showHeader?: boolean;
 
-  // ========== 标签栏 ==========
+  /* ========== 标签栏 ========== */
   /** 是否显示标签栏 */
   showTabbar?: boolean;
 
-  // ========== 功能区 ==========
+  /* ========== 功能区 ========== */
   /** 是否显示左侧功能区 */
   showLeftPanel?: boolean;
   /** 左侧功能区是否折叠 */
@@ -33,7 +33,7 @@ export interface LayoutPreviewOptions {
   /** 右侧功能区是否折叠 */
   rightPanelCollapsed?: boolean;
 
-  // ========== 页脚 ==========
+  /* ========== 页脚 ========== */
   /** 是否显示页脚 */
   showFooter?: boolean;
 }
@@ -51,19 +51,19 @@ const PREVIEW_SIZE = {
  * 布局元素尺寸配置
  */
 const ELEMENT_SIZES = {
-  // 侧边栏
+  /* 侧边栏 */
   sidebarWidth: 18,
   sidebarCollapsedWidth: 10,
-  // 顶栏
+  /* 顶栏 */
   headerHeight: 10,
-  // 标签栏
+  /* 标签栏 */
   tabbarHeight: 6,
-  // 功能区
+  /* 功能区 */
   panelWidth: 12,
   panelCollapsedWidth: 6,
-  // 页脚
+  /* 页脚 */
   footerHeight: 6,
-  // 内边距
+  /* 内边距 */
   padding: 2,
   gap: 2,
 };
@@ -80,6 +80,18 @@ const COLORS = {
 };
 
 /**
+ * 生成矩形 SVG 元素时的附加参数。
+ */
+interface RectElementOptions {
+  /** 圆角半径。 */
+  rx?: number;
+  /** 透明度。 */
+  opacity?: number;
+  /** 调试注释文本。 */
+  comment?: string;
+}
+
+/**
  * 生成矩形 SVG 元素
  */
 function rect(
@@ -88,11 +100,7 @@ function rect(
   width: number,
   height: number,
   fill: string,
-  options?: {
-    rx?: number;
-    opacity?: number;
-    comment?: string;
-  }
+  options?: RectElementOptions
 ): string {
   const { rx = 0, opacity, comment } = options || {};
   const opacityAttr = opacity !== undefined ? ` fill-opacity="${opacity}"` : '';
@@ -191,7 +199,7 @@ export function generateLayoutPreview(
   const { width, height, borderRadius } = PREVIEW_SIZE;
   const elements: string[] = [];
 
-  // 背景
+  /* 背景。 */
   elements.push(
     rect(0, 0, width, height, COLORS.background, {
       rx: borderRadius,
@@ -199,7 +207,7 @@ export function generateLayoutPreview(
     })
   );
 
-  // 根据布局类型生成不同的结构
+  /* 根据布局类型生成不同的结构。 */
   switch (layout) {
     case 'sidebar-nav':
       elements.push(
@@ -269,7 +277,7 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
   let contentWidth = 76;
   let contentHeight = 46;
 
-  // 侧边栏
+  /* 侧边栏。 */
   if (showSidebar) {
     const sidebarW = sidebarCollapsed
       ? ELEMENT_SIZES.sidebarCollapsedWidth
@@ -279,18 +287,18 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
       rect(0, 0, sidebarW, 50, COLORS.primary, { rx: 3, comment: '侧边栏' })
     );
     
-    // Logo
+    /* Logo。 */
     const logoW = sidebarCollapsed ? 6 : 8;
     const logoX = sidebarCollapsed ? 2 : 5;
     elements.push(
       rect(logoX, 4, logoW, 4, COLORS.white, { rx: 1, opacity: 0.9 })
     );
     
-    // 菜单项
+    /* 菜单项。 */
     if (!sidebarCollapsed) {
       elements.push(menuItems(3, 14, 12, COLORS.white));
     } else {
-      // 折叠时显示图标
+      /* 折叠时显示图标。 */
       elements.push(panelIcons(1, 14, 8, COLORS.white));
     }
     
@@ -298,7 +306,7 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentWidth = 78 - sidebarW;
   }
 
-  // 左侧功能区
+  /* 左侧功能区。 */
   if (showLeftPanel) {
     const panelW = leftPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -313,7 +321,7 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 右侧功能区
+  /* 右侧功能区。 */
   if (showRightPanel) {
     const panelW = rightPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -328,19 +336,19 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 顶栏
+  /* 顶栏。 */
   if (showHeader) {
     elements.push(
       rect(contentX, 2, contentWidth, 8, COLORS.surface, { rx: 2, comment: '顶栏' })
     );
-    // 工具栏图标
+    /* 工具栏图标。 */
     elements.push(toolbarIcons(contentX + contentWidth - 4, 6, COLORS.muted));
     
     contentY = 12;
     contentHeight -= 10;
   }
 
-  // 标签栏
+  /* 标签栏。 */
   if (showTabbar) {
     elements.push(
       rect(contentX, contentY, contentWidth, ELEMENT_SIZES.tabbarHeight, COLORS.surface, {
@@ -348,7 +356,7 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
         comment: '标签栏',
       })
     );
-    // 标签项
+    /* 标签项。 */
     elements.push(rect(contentX + 2, contentY + 2, 16, 2, COLORS.muted, { rx: 1, opacity: 0.5 }));
     elements.push(rect(contentX + 20, contentY + 2, 12, 2, COLORS.muted, { rx: 1, opacity: 0.3 }));
     elements.push(rect(contentX + 34, contentY + 2, 12, 2, COLORS.muted, { rx: 1, opacity: 0.3 }));
@@ -357,7 +365,7 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.tabbarHeight + 2;
   }
 
-  // 页脚
+  /* 页脚。 */
   if (showFooter) {
     const footerY = 50 - ELEMENT_SIZES.footerHeight - 2;
     elements.push(
@@ -369,7 +377,7 @@ function generateSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.footerHeight + 2;
   }
 
-  // 内容区
+  /* 内容区。 */
   const remainingHeight = contentHeight;
   const row1Height = Math.floor(remainingHeight * 0.4);
   const row2Height = remainingHeight - row1Height - 2;
@@ -419,19 +427,19 @@ function generateHeaderNavLayout(options: LayoutPreviewOptions): string {
   let contentWidth = 76;
   let contentHeight = 46;
 
-  // 顶栏（主题色）
+  /* 顶栏（主题色）。 */
   if (showHeader) {
     elements.push(
       rect(0, 0, 80, 10, COLORS.primary, { rx: 3, comment: '顶栏' })
     );
-    // Logo
+    /* Logo。 */
     elements.push(rect(4, 2, 8, 6, COLORS.white, { rx: 1.5, opacity: 0.9 }));
-    // 菜单项
+    /* 菜单项。 */
     elements.push(rect(16, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.5 }));
     elements.push(rect(28, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.8 }));
     elements.push(rect(40, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.5 }));
     elements.push(rect(52, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.5 }));
-    // 工具栏
+    /* 工具栏。 */
     elements.push(circle(68, 5, 2, COLORS.white, 0.6));
     elements.push(circle(75, 5, 2, COLORS.white, 0.6));
     
@@ -439,7 +447,7 @@ function generateHeaderNavLayout(options: LayoutPreviewOptions): string {
     contentHeight = 36;
   }
 
-  // 左侧功能区
+  /* 左侧功能区。 */
   if (showLeftPanel) {
     const panelW = leftPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -454,7 +462,7 @@ function generateHeaderNavLayout(options: LayoutPreviewOptions): string {
     contentWidth = 78 - panelW;
   }
 
-  // 右侧功能区
+  /* 右侧功能区。 */
   if (showRightPanel) {
     const panelW = rightPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -469,7 +477,7 @@ function generateHeaderNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 标签栏
+  /* 标签栏。 */
   if (showTabbar) {
     elements.push(
       rect(contentX, contentY, contentWidth, ELEMENT_SIZES.tabbarHeight, COLORS.surface, {
@@ -484,7 +492,7 @@ function generateHeaderNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.tabbarHeight + 2;
   }
 
-  // 页脚
+  /* 页脚。 */
   if (showFooter) {
     const footerY = 50 - ELEMENT_SIZES.footerHeight - 2;
     elements.push(
@@ -496,7 +504,7 @@ function generateHeaderNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.footerHeight + 2;
   }
 
-  // 内容区
+  /* 内容区。 */
   const remainingHeight = contentHeight;
   const row1Height = Math.floor(remainingHeight * 0.45);
   const row2Height = remainingHeight - row1Height - 2;
@@ -548,20 +556,20 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
   let contentWidth = 76;
   let contentHeight = 46;
 
-  // 一级侧边栏（始终显示）
+  /* 一级侧边栏（始终显示）。 */
   if (showSidebar) {
     elements.push(
       rect(0, 0, 10, 50, COLORS.primary, { rx: 3, comment: '一级侧边栏' })
     );
-    // Logo
+    /* Logo。 */
     elements.push(rect(2, 3, 6, 6, COLORS.white, { rx: 1.5, opacity: 0.9 }));
-    // 图标菜单
+    /* 图标菜单。 */
     elements.push(rect(2, 13, 6, 4, COLORS.white, { rx: 1, opacity: 0.5 }));
     elements.push(rect(2, 20, 6, 4, COLORS.white, { rx: 1, opacity: 0.8 }));
     elements.push(rect(2, 27, 6, 4, COLORS.white, { rx: 1, opacity: 0.5 }));
     elements.push(rect(2, 34, 6, 4, COLORS.white, { rx: 1, opacity: 0.5 }));
 
-    // 二级侧边栏（可折叠）
+    /* 二级侧边栏（可折叠）。 */
     if (!sidebarCollapsed) {
       elements.push(
         rect(10, 0, 14, 50, COLORS.surface, { comment: '二级侧边栏' })
@@ -577,7 +585,7 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
     }
   }
 
-  // 左侧功能区（在二级侧边栏之后）
+  /* 左侧功能区（在二级侧边栏之后）。 */
   if (showLeftPanel) {
     const panelW = leftPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -592,7 +600,7 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 右侧功能区
+  /* 右侧功能区。 */
   if (showRightPanel) {
     const panelW = rightPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -607,7 +615,7 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 顶栏
+  /* 顶栏。 */
   if (showHeader) {
     elements.push(
       rect(contentX, 2, contentWidth, 8, COLORS.surface, { rx: 2, comment: '顶栏' })
@@ -618,7 +626,7 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
     contentHeight = 36;
   }
 
-  // 标签栏
+  /* 标签栏。 */
   if (showTabbar) {
     elements.push(
       rect(contentX, contentY, contentWidth, ELEMENT_SIZES.tabbarHeight, COLORS.surface, {
@@ -631,12 +639,12 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.tabbarHeight + 2;
   }
 
-  // 页脚
+  /* 页脚。 */
   if (showFooter) {
     contentHeight -= ELEMENT_SIZES.footerHeight + 2;
   }
 
-  // 内容区
+  /* 内容区。 */
   const remainingHeight = contentHeight;
   const row1Height = Math.floor(remainingHeight * 0.45);
   const row2Height = remainingHeight - row1Height - 2;
@@ -670,7 +678,7 @@ function generateSidebarMixedNavLayout(options: LayoutPreviewOptions): string {
  * 生成顶部通栏布局
  */
 function generateHeaderSidebarNavLayout(options: LayoutPreviewOptions): string {
-  // 复用 sidebar-nav 的逻辑，但顶栏在侧边栏上方
+  /* 复用 sidebar-nav 逻辑，但顶栏位于侧边栏上方。 */
   const {
     showSidebar = true,
     sidebarCollapsed = false,
@@ -689,23 +697,23 @@ function generateHeaderSidebarNavLayout(options: LayoutPreviewOptions): string {
   let contentWidth = 76;
   let contentHeight = 36;
 
-  // 顶栏（浅色通栏）
+  /* 顶栏（浅色通栏）。 */
   if (showHeader) {
     elements.push(
       rect(0, 0, 80, 10, COLORS.surface, { rx: 3, comment: '顶栏' })
     );
-    // Logo
+    /* Logo。 */
     elements.push(rect(4, 2, 8, 6, COLORS.primary, { rx: 1.5 }));
-    // 菜单项
+    /* 菜单项。 */
     elements.push(rect(16, 4, 8, 2, COLORS.muted, { rx: 1, opacity: 0.4 }));
     elements.push(rect(28, 4, 8, 2, COLORS.muted, { rx: 1, opacity: 0.6 }));
     elements.push(rect(40, 4, 8, 2, COLORS.muted, { rx: 1, opacity: 0.4 }));
-    // 工具栏
+    /* 工具栏。 */
     elements.push(circle(68, 5, 2, COLORS.muted, 0.4));
     elements.push(circle(75, 5, 2, COLORS.muted, 0.4));
   }
 
-  // 侧边栏
+  /* 侧边栏。 */
   if (showSidebar) {
     const sidebarW = sidebarCollapsed
       ? ELEMENT_SIZES.sidebarCollapsedWidth
@@ -725,7 +733,7 @@ function generateHeaderSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentWidth = 78 - sidebarW;
   }
 
-  // 左侧功能区（在侧边栏之后）
+  /* 左侧功能区（在侧边栏之后）。 */
   if (showLeftPanel) {
     const panelW = leftPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -740,7 +748,7 @@ function generateHeaderSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 右侧功能区
+  /* 右侧功能区。 */
   if (showRightPanel) {
     const panelW = rightPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -755,7 +763,7 @@ function generateHeaderSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 标签栏
+  /* 标签栏。 */
   if (showTabbar) {
     elements.push(
       rect(contentX, contentY, contentWidth, ELEMENT_SIZES.tabbarHeight, COLORS.surface, {
@@ -767,12 +775,12 @@ function generateHeaderSidebarNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.tabbarHeight + 2;
   }
 
-  // 页脚
+  /* 页脚。 */
   if (showFooter) {
     contentHeight -= ELEMENT_SIZES.footerHeight + 2;
   }
 
-  // 内容区
+  /* 内容区。 */
   const remainingHeight = contentHeight;
   const row1Height = Math.floor(remainingHeight * 0.45);
   const row2Height = remainingHeight - row1Height - 2;
@@ -821,23 +829,23 @@ function generateMixedNavLayout(options: LayoutPreviewOptions): string {
   let contentWidth = 76;
   let contentHeight = 36;
 
-  // 顶栏（主题色）
+  /* 顶栏（主题色）。 */
   if (showHeader) {
     elements.push(
       rect(0, 0, 80, 10, COLORS.primary, { rx: 3, comment: '顶栏' })
     );
-    // Logo
+    /* Logo。 */
     elements.push(rect(4, 2, 8, 6, COLORS.white, { rx: 1.5, opacity: 0.9 }));
-    // 一级菜单
+    /* 一级菜单。 */
     elements.push(rect(16, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.5 }));
     elements.push(rect(28, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.8 }));
     elements.push(rect(40, 4, 8, 2, COLORS.white, { rx: 1, opacity: 0.5 }));
-    // 工具栏
+    /* 工具栏。 */
     elements.push(circle(68, 5, 2, COLORS.white, 0.6));
     elements.push(circle(75, 5, 2, COLORS.white, 0.6));
   }
 
-  // 二级侧边栏（浅色）
+  /* 二级侧边栏（浅色）。 */
   if (showSidebar) {
     const sidebarW = sidebarCollapsed
       ? ELEMENT_SIZES.sidebarCollapsedWidth
@@ -860,7 +868,7 @@ function generateMixedNavLayout(options: LayoutPreviewOptions): string {
     contentWidth = 78 - sidebarW;
   }
 
-  // 左侧功能区（在侧边栏之后）
+  /* 左侧功能区（在侧边栏之后）。 */
   if (showLeftPanel) {
     const panelW = leftPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -875,7 +883,7 @@ function generateMixedNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 右侧功能区
+  /* 右侧功能区。 */
   if (showRightPanel) {
     const panelW = rightPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -890,7 +898,7 @@ function generateMixedNavLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 标签栏
+  /* 标签栏。 */
   if (showTabbar) {
     elements.push(
       rect(contentX, contentY, contentWidth, ELEMENT_SIZES.tabbarHeight, COLORS.surface, {
@@ -902,12 +910,12 @@ function generateMixedNavLayout(options: LayoutPreviewOptions): string {
     contentHeight -= ELEMENT_SIZES.tabbarHeight + 2;
   }
 
-  // 页脚
+  /* 页脚。 */
   if (showFooter) {
     contentHeight -= ELEMENT_SIZES.footerHeight + 2;
   }
 
-  // 内容区
+  /* 内容区。 */
   const remainingHeight = contentHeight;
   const row1Height = Math.floor(remainingHeight * 0.45);
   const row2Height = remainingHeight - row1Height - 2;
@@ -938,7 +946,7 @@ function generateMixedNavLayout(options: LayoutPreviewOptions): string {
  * 生成顶部混合导航布局
  */
 function generateHeaderMixedNavLayout(options: LayoutPreviewOptions): string {
-  // 与 header-sidebar-nav 类似
+  /* 与 `header-sidebar-nav` 类似。 */
   return generateHeaderSidebarNavLayout(options);
 }
 
@@ -957,7 +965,7 @@ function generateFullContentLayout(options: LayoutPreviewOptions): string {
   let contentX = 2;
   let contentWidth = 76;
 
-  // 左侧功能区
+  /* 左侧功能区。 */
   if (showLeftPanel) {
     const panelW = leftPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -972,7 +980,7 @@ function generateFullContentLayout(options: LayoutPreviewOptions): string {
     contentWidth = 78 - panelW;
   }
 
-  // 右侧功能区
+  /* 右侧功能区。 */
   if (showRightPanel) {
     const panelW = rightPanelCollapsed
       ? ELEMENT_SIZES.panelCollapsedWidth
@@ -987,12 +995,12 @@ function generateFullContentLayout(options: LayoutPreviewOptions): string {
     contentWidth -= panelW + 2;
   }
 
-  // 全屏内容区
+  /* 全屏内容区。 */
   elements.push(
     rect(contentX, 2, contentWidth, 46, COLORS.surface, { rx: 2, comment: '内容区' })
   );
   
-  // 内容占位
+  /* 内容占位。 */
   elements.push(rect(contentX + 4, 6, 30, 4, COLORS.muted, { rx: 1, opacity: 0.2 }));
   elements.push(rect(contentX + 4, 14, contentWidth - 8, 12, COLORS.background, { rx: 2, opacity: 0.5 }));
   elements.push(rect(contentX + 4, 30, (contentWidth - 10) / 2, 14, COLORS.background, { rx: 2, opacity: 0.5 }));
@@ -1020,37 +1028,54 @@ export const DEFAULT_PREVIEW_OPTIONS: LayoutPreviewOptions = {
  * 偏好设置对象（简化类型，避免循环依赖）
  */
 interface PreferencesLike {
+  /** 应用级配置。 */
   app?: {
+    /** 当前布局类型。 */
     layout?: LayoutType;
   };
+  /** 侧边栏配置。 */
   sidebar?: {
+    /** 是否启用。 */
     enable?: boolean;
+    /** 是否折叠。 */
     collapsed?: boolean;
   };
+  /** 顶栏配置。 */
   header?: {
+    /** 是否启用。 */
     enable?: boolean;
   };
+  /** 标签栏配置。 */
   tabbar?: {
+    /** 是否启用。 */
     enable?: boolean;
   };
+  /** 页脚配置。 */
   footer?: {
+    /** 是否启用。 */
     enable?: boolean;
   };
-  // 未来扩展：功能区配置
+  /* 未来扩展：功能区配置。 */
+  /** 左侧功能区配置。 */
   leftPanel?: {
+    /** 是否启用。 */
     enable?: boolean;
+    /** 是否折叠。 */
     collapsed?: boolean;
   };
+  /** 右侧功能区配置。 */
   rightPanel?: {
+    /** 是否启用。 */
     enable?: boolean;
+    /** 是否折叠。 */
     collapsed?: boolean;
   };
 }
 
 /**
  * 从偏好设置对象提取预览图配置
- * @param preferences - 偏好设置对象
- * @returns 预览图配置
+ * @param preferences 偏好设置对象。
+ * @returns 预览图配置。
  */
 export function extractPreviewOptions(
   preferences: PreferencesLike
@@ -1070,8 +1095,8 @@ export function extractPreviewOptions(
 
 /**
  * 根据偏好设置生成布局预览图
- * @param preferences - 偏好设置对象
- * @returns SVG 字符串
+ * @param preferences 偏好设置对象。
+ * @returns SVG 字符串。
  */
 export function generatePreviewFromPreferences(
   preferences: PreferencesLike
@@ -1083,10 +1108,10 @@ export function generatePreviewFromPreferences(
 
 /**
  * 生成带有特定选项覆盖的预览图
- * @param layout - 布局类型
- * @param preferences - 偏好设置对象
- * @param overrides - 覆盖选项
- * @returns SVG 字符串
+ * @param layout 布局类型。
+ * @param preferences 偏好设置对象。
+ * @param overrides 预览选项覆盖项。
+ * @returns SVG 字符串。
  */
 export function generatePreviewWithOverrides(
   layout: LayoutType,

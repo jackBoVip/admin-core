@@ -14,13 +14,37 @@ import { onMounted, onUnmounted, ref } from 'vue';
 
 import { BASIC_ROWS, type DemoRow } from './data';
 
+/**
+ * 当前主题主色变量快照。
+ */
 const primaryColor = ref('');
+/**
+ * Element Plus 开关示例状态。
+ */
 const demoSwitch = ref(true);
+/**
+ * Element Plus 复选框示例状态。
+ */
 const demoChecked = ref(true);
+/**
+ * Element Plus 下拉示例值。
+ */
 const demoLevel = ref<'high' | 'low' | 'medium'>('medium');
+/**
+ * Element Plus 输入框示例值。
+ */
 const demoName = ref('Element Plus');
+
+/**
+ * 文档根节点样式监听器。
+ */
 let observer: MutationObserver | null = null;
 
+/**
+ * 同步当前主题色快照。
+ *
+ * @returns 无返回值。
+ */
 function syncThemeSnapshot() {
   const styles = getComputedStyle(document.documentElement);
   primaryColor.value = styles.getPropertyValue('--primary').trim();
@@ -42,6 +66,9 @@ onUnmounted(() => {
   observer = null;
 });
 
+/**
+ * 表格配置（包含 Element Plus 插槽列）。
+ */
 const gridOptions: VxeTableGridOptions<DemoRow> = {
   columns: [
     { title: '序号', type: 'seq', width: 60 },
@@ -65,6 +92,9 @@ const gridOptions: VxeTableGridOptions<DemoRow> = {
   },
 };
 
+/**
+ * `useAdminTable` 返回的表格组件。
+ */
 const [Grid] = useAdminTable<DemoRow>({
   gridOptions,
 });

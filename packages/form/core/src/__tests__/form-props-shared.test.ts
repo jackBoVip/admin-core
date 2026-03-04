@@ -1,3 +1,6 @@
+/**
+ * 表单 props 合并、裁剪与同步跟踪工具测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   createFormPropsSyncTracker,

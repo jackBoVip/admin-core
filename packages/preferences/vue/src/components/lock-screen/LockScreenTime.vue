@@ -5,16 +5,45 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
-const props = defineProps<{
-  /** 当前语言 */
+/**
+ * 组件入参。
+ */
+export interface LockScreenTimeProps {
+  /** 当前语言。 */
   locale: string;
-}>();
+}
 
+/**
+ * 时间展示结构。
+ */
+interface LockScreenTimeInfo {
+  /** 24 小时制小时。 */
+  hour24: string;
+  /** 分钟。 */
+  minute: string;
+  /** 秒。 */
+  second: string;
+  /** 日期文案。 */
+  dateStr: string;
+  /** 星期文案。 */
+  weekdayStr: string;
+}
+
+const props = defineProps<LockScreenTimeProps>();
+
+/**
+ * 当前时间状态。
+ */
 const currentTime = ref(new Date());
-// 使用 ref 存储定时器，确保每个组件实例独立管理
+/**
+ * 定时器句柄。
+ * @description 使用 `ref` 保证每个组件实例独立管理。
+ */
 const timer = ref<ReturnType<typeof setInterval> | null>(null);
 
-// 缓存 DateTimeFormat 实例
+/**
+ * 日期与星期格式化器。
+ */
 const dateFormatter = computed(() => {
   return {
     date: new Intl.DateTimeFormat(props.locale, { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -22,7 +51,10 @@ const dateFormatter = computed(() => {
   };
 });
 
-const timeInfo = computed(() => {
+/**
+ * 当前时间展示结构。
+ */
+const timeInfo = computed<LockScreenTimeInfo>(() => {
   const time = currentTime.value;
   return {
     hour24: time.getHours().toString().padStart(2, '0'),
@@ -33,12 +65,20 @@ const timeInfo = computed(() => {
   };
 });
 
+/**
+ * 组件挂载初始化。
+ * @description 启动每秒刷新一次的计时器，驱动时间显示实时更新。
+ */
 onMounted(() => {
   timer.value = setInterval(() => {
     currentTime.value = new Date();
   }, 1000);
 });
 
+/**
+ * 组件卸载清理。
+ * @description 清理计时器，防止组件销毁后仍持续触发状态更新。
+ */
 onUnmounted(() => {
   if (timer.value) {
     clearInterval(timer.value);

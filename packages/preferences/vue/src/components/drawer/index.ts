@@ -1,18 +1,19 @@
 /**
- * 偏好设置抽屉组件
+ * Vue 偏好设置抽屉模块导出入口。
+ * @description 聚合抽屉主组件、页签组件与基础表单项组件，供外部按需引入。
  */
 
-// 主组件
+/** 主组件。 */
 export { default as PreferencesDrawer } from './PreferencesDrawer.vue';
 export { default as PreferencesTrigger } from './PreferencesTrigger.vue';
 
-// 标签页组件（可单独使用）
+/** 标签页组件（可单独使用）。 */
 export { default as AppearanceTab } from './AppearanceTab.vue';
 export { default as LayoutTab } from './LayoutTab.vue';
 export { default as ShortcutKeysTab } from './ShortcutKeysTab.vue';
 export { default as GeneralTab } from './GeneralTab.vue';
 
-// 基础组件
+/** 基础组件。 */
 export { default as Block } from './Block.vue';
 export { default as SwitchItem } from './SwitchItem.vue';
 export { default as SelectItem } from './SelectItem.vue';
@@ -20,7 +21,7 @@ export { default as SliderItem } from './SliderItem.vue';
 export { default as InputItem } from './InputItem.vue';
 export { default as NumberItem } from './NumberItem.vue';
 
-// 类型
+/** 抽屉组件类型导出。 */
 export type {
   PreferencesDrawerProps,
   PreferencesTriggerProps,

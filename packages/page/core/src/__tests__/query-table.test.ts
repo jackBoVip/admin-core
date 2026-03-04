@@ -82,12 +82,21 @@ describe('page query-table helpers', () => {
   });
 
   it('locks and unlocks scroll targets by snapshot state', () => {
+    /**
+     * 测试用滚动目标结构。
+     */
     type TestScrollTarget = {
+      /** 解锁时移除属性的桩函数。 */
       removeAttribute: ReturnType<typeof vi.fn>;
+      /** 当前滚动位置。 */
       scrollTop: number;
+      /** 锁定时设置属性的桩函数。 */
       setAttribute: ReturnType<typeof vi.fn>;
+      /** 可读写的滚动样式状态。 */
       style: {
+        /** 横向滚动样式。 */
         overflowX: string;
+        /** 纵向滚动样式。 */
         overflowY: string;
       };
     };
@@ -135,12 +144,21 @@ describe('page query-table helpers', () => {
   });
 
   it('reconciles scroll locks without re-locking same targets', () => {
+    /**
+     * 测试用滚动目标结构。
+     */
     type TestScrollTarget = {
+      /** 解锁时移除属性的桩函数。 */
       removeAttribute: ReturnType<typeof vi.fn>;
+      /** 当前滚动位置。 */
       scrollTop: number;
+      /** 锁定时设置属性的桩函数。 */
       setAttribute: ReturnType<typeof vi.fn>;
+      /** 可读写的滚动样式状态。 */
       style: {
+        /** 横向滚动样式。 */
         overflowX: string;
+        /** 纵向滚动样式。 */
         overflowY: string;
       };
     };
@@ -243,6 +261,11 @@ describe('page query-table helpers', () => {
     const cancelAnimationFrame = vi.fn((id: number) => {
       rafCallbacks.delete(id);
     });
+
+    /**
+     * 触发当前批次 RAF 回调。
+     * @returns 无返回值。
+     */
     const flushRaf = () => {
       const currentCallbacks = Array.from(rafCallbacks.entries());
       rafCallbacks.clear();

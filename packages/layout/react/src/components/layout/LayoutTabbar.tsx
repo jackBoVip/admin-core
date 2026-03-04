@@ -1,6 +1,6 @@
 /**
- * 标签栏组件
- * @description 支持拖拽排序、中键关闭、滚轮滚动、最大化、右键菜单等功能
+ * 标签栏组件。
+ * @description 支持拖拽排序、中键关闭、滚轮滚动、最大化与右键菜单等交互。
  */
 
 import {
@@ -19,15 +19,102 @@ import { useLayoutContext, useLayoutComputed } from '../../hooks';
 import { useTabsState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderLayoutIcon } from '../../utils';
 
+/**
+ * 标签栏右键菜单项类型别名。
+ */
 type TabbarMenuItem = ReturnType<typeof generateContextMenuItems>[number];
 
+/**
+ * 标签栏组件属性。
+ * @description 支持在左右两侧插入扩展内容，并覆盖默认标签渲染区。
+ */
 export interface LayoutTabbarProps {
+  /** 左侧插槽内容。 */
   left?: ReactNode;
+  /** 自定义标签区内容。 */
   tabs?: ReactNode;
+  /** 右侧插槽内容。 */
   right?: ReactNode;
+  /** 额外插槽内容。 */
   extra?: ReactNode;
 }
 
+/**
+ * 标签 FLIP 动画状态。
+ */
+interface TabFlipState {
+  /** 是否存在待执行 FLIP 动画。 */
+  pending: boolean;
+  /** 记录动画前的位置快照。 */
+  positions: Map<string, DOMRect>;
+}
+
+/**
+ * 标签 FLIP 位移动画项。
+ */
+interface TabFlipMovement {
+  /** 目标元素。 */
+  el: HTMLDivElement;
+  /** 横向位移。 */
+  dx: number;
+  /** 纵向位移。 */
+  dy: number;
+}
+
+/**
+ * 标签拖拽状态。
+ */
+interface TabbarDragState {
+  /** 当前是否处于拖拽中。 */
+  isDragging: boolean;
+  /** 拖拽起始索引。 */
+  dragIndex: number | null;
+  /** 当前目标放置索引。 */
+  dropIndex: number | null;
+}
+
+/**
+ * 标签栏右键菜单状态。
+ */
+interface TabbarContextMenuState {
+  /** 是否可见。 */
+  visible: boolean;
+  /** 菜单 X 坐标。 */
+  x: number;
+  /** 菜单 Y 坐标。 */
+  y: number;
+  /** 当前目标标签 key。 */
+  targetKey: string | null;
+}
+
+/**
+ * 更多菜单状态。
+ */
+interface TabbarMoreMenuState {
+  /** 是否可见。 */
+  visible: boolean;
+  /** 菜单 X 坐标。 */
+  x: number;
+  /** 菜单 Y 坐标。 */
+  y: number;
+}
+
+/**
+ * 菜单坐标。
+ */
+interface MenuPosition {
+  /** 菜单 X 坐标。 */
+  x: number;
+  /** 菜单 Y 坐标。 */
+  y: number;
+}
+
+/**
+ * 标签栏组件。
+ * @description 提供标签切换、关闭、右键菜单、拖拽排序与滚动交互能力。
+ * @param props 组件参数。
+ * @returns 标签栏节点。
+ */
 export const LayoutTabbar = memo(function LayoutTabbar({
   left,
   tabs: tabsSlot,
@@ -63,14 +150,19 @@ export const LayoutTabbar = memo(function LayoutTabbar({
   const panelRightOffset = computed.mainStyle.marginRight || '0';
   const portalTarget = typeof document === 'undefined' ? null : document.body;
 
-  // 标签列表容器引用
+  /**
+   * 标签滚动容器与节点引用集合。
+   */
   const tabsContainerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef(new Map<string, HTMLDivElement>());
-  const flipStateRef = useRef<{ pending: boolean; positions: Map<string, DOMRect> }>({
+  const flipStateRef = useRef<TabFlipState>({
     pending: false,
     positions: new Map(),
   });
 
+  /**
+   * 记录当前标签节点位置信息，用于后续 FLIP 动画计算。
+   */
   const recordTabPositions = useCallback(() => {
     const map = new Map<string, DOMRect>();
     tabRefs.current.forEach((el, key) => {
@@ -80,11 +172,14 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     flipStateRef.current.pending = true;
   }, []);
 
+  /**
+   * 执行标签位置 FLIP 动画，使拖拽排序过渡更平滑。
+   */
   const animateTabPositions = useCallback(() => {
     if (!flipStateRef.current.pending) return;
     const prevPositions = flipStateRef.current.positions;
     flipStateRef.current.pending = false;
-    const movements: Array<{ el: HTMLDivElement; dx: number; dy: number }> = [];
+    const movements: TabFlipMovement[] = [];
     tabRefs.current.forEach((el, key) => {
       const prevRect = prevPositions.get(key);
       if (!prevRect) return;
@@ -113,39 +208,34 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     });
   }, []);
 
-  // 拖拽状态
-  const [dragState, setDragState] = useState<{
-    isDragging: boolean;
-    dragIndex: number | null;
-    dropIndex: number | null;
-  }>({
+  /**
+   * 标签拖拽状态。
+   */
+  const [dragState, setDragState] = useState<TabbarDragState>({
     isDragging: false,
     dragIndex: null,
     dropIndex: null,
   });
 
-  // 最大化状态
+  /**
+   * 标签栏内容区是否处于最大化状态。
+   */
   const [isMaximized, setIsMaximized] = useState(false);
 
-  // 右键菜单状态
-  const [contextMenu, setContextMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    targetKey: string | null;
-  }>({
+  /**
+   * 标签右键菜单状态。
+   */
+  const [contextMenu, setContextMenu] = useState<TabbarContextMenuState>({
     visible: false,
     x: 0,
     y: 0,
     targetKey: null,
   });
 
-  // 更多菜单状态
-  const [moreMenu, setMoreMenu] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-  }>({
+  /**
+   * 标签“更多”下拉菜单状态。
+   */
+  const [moreMenu, setMoreMenu] = useState<TabbarMoreMenuState>({
     visible: false,
     x: 0,
     y: 0,
@@ -171,7 +261,9 @@ export const LayoutTabbar = memo(function LayoutTabbar({
   const [tabRenderCount, setTabRenderCount] = useState<number>(TAB_RENDER_CHUNK);
   const chromeCornerSize = LAYOUT_UI_TOKENS.TABBAR_CHROME_CORNER_SIZE;
 
-  // 类名
+  /**
+   * 标签栏容器样式类名集合。
+   */
   const tabbarClassName = useMemo(() => {
     const classes = ['layout-tabbar', `layout-tabbar--${styleType}`];
     if (computed.showSidebar && !context.props.isMobile) {
@@ -183,7 +275,9 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     return classes.join(' ');
   }, [styleType, computed.showSidebar, context.props.isMobile, sidebarCollapsed]);
 
-  // 样式
+  /**
+   * 标签栏容器样式。
+   */
   const tabbarStyle = useMemo(() => {
     const style: CSSProperties = {
       height: `${computed.tabbarHeight}px`,
@@ -214,7 +308,9 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     return style;
   }, [computed.tabbarHeight, computed.headerHeight, isHeaderFixed, leftOffset, panelRightOffset]);
 
-  // 渲染数量
+  /**
+   * 根据激活标签动态提升初始渲染数量，平衡性能与可见性。
+   */
   useEffect(() => {
     const activeIndex = tabIndexMap.get(activeKey ?? '') ?? -1;
     if (activeIndex >= 0) {
@@ -234,10 +330,15 @@ export const LayoutTabbar = memo(function LayoutTabbar({
 
   const visibleTabs = useMemo(() => tabs.slice(0, tabRenderCount), [tabs, tabRenderCount]);
 
-  // 滚动状态
+  /**
+   * 标签滚动按钮可用状态。
+   */
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
+  /**
+   * 更新标签滚动状态，计算左右滚动按钮是否可用。
+   */
   const updateScrollState = useCallback(() => {
     const container = tabsContainerRef.current;
     if (!container) {
@@ -278,6 +379,11 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     animateTabPositions();
   }, [tabs, animateTabPositions]);
 
+  /**
+   * 按方向滚动标签容器。
+   *
+   * @param direction 滚动方向，`-1` 为左滚，`1` 为右滚。
+   */
   const scrollTabsBy = useCallback((direction: number) => {
     const container = tabsContainerRef.current;
     if (!container) return;
@@ -286,14 +392,23 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     updateScrollStateThrottled();
   }, [updateScrollStateThrottled]);
 
+  /**
+   * 关闭标签右键菜单。
+   */
   const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false, targetKey: null }));
   }, []);
 
+  /**
+   * 关闭“更多”菜单。
+   */
   const closeMoreMenu = useCallback(() => {
     setMoreMenu((prev) => ({ ...prev, visible: false }));
   }, []);
 
+  /**
+   * 切换“更多”菜单显示，并基于锚点按钮计算弹层位置。
+   */
   const openMoreMenu = useCallback(() => {
     if (!moreMenuAnchorRef.current) return;
     const rect = moreMenuAnchorRef.current.getBoundingClientRect();
@@ -305,7 +420,14 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     setContextMenu((prev) => ({ ...prev, visible: false, targetKey: null }));
   }, [moreMenu.visible]);
 
-  const adjustMenuPosition = useCallback((menu: { x: number; y: number }, el: HTMLDivElement | null) => {
+  /**
+   * 将菜单位置限制在视口可见区域内，避免弹层超出窗口。
+   *
+   * @param menu 原始菜单坐标。
+   * @param el 菜单元素。
+   * @returns 调整后的菜单坐标。
+   */
+  const adjustMenuPosition = useCallback((menu: MenuPosition, el: HTMLDivElement | null) => {
     if (!el || typeof window === 'undefined') return menu;
     const margin = 8;
     const rect = el.getBoundingClientRect();
@@ -336,6 +458,9 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     }
   }, [moreMenu.visible, moreMenu.x, moreMenu.y, adjustMenuPosition]);
 
+  /**
+   * 切换内容最大化状态，并同步 `body` 标记与回调事件。
+   */
   const toggleMaximize = useCallback(() => {
     setIsMaximized((prev) => {
       const next = !prev;
@@ -351,6 +476,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     });
   }, [context.events]);
 
+  /**
+   * 处理标签菜单动作分发。
+   *
+   * @param action 菜单动作键。
+   * @param targetKey 目标标签键。
+   */
   const handleMenuAction = useCallback((action: ContextMenuAction | string, targetKey: string | null) => {
     if (!targetKey) return;
     switch (action) {
@@ -416,6 +547,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     toggleMaximize,
   ]);
 
+  /**
+   * 为指定标签生成右键菜单项列表。
+   *
+   * @param key 目标标签键。
+   * @returns 菜单项数组。
+   */
   const buildMenuItemsForTabKey = useCallback((key: string | null): TabbarMenuItem[] => {
     if (!key) return [];
     const tab = tabMap.get(key);
@@ -446,6 +583,13 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     tabbarConfig.showMaximize,
   ]);
 
+  /**
+   * 渲染右键/更多菜单项列表。
+   *
+   * @param items 菜单项数组。
+   * @param onItemClick 菜单项点击回调。
+   * @returns 菜单节点数组。
+   */
   const renderMenuItems = useCallback(
     (items: TabbarMenuItem[], onItemClick: (action: ContextMenuAction | string) => void) => (
       items.map((item) => (
@@ -476,6 +620,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     return buildMenuItemsForTabKey(key || null);
   }, [activeKey, tabs, buildMenuItemsForTabKey]);
 
+  /**
+   * 处理标签右键事件并打开上下文菜单。
+   *
+   * @param e React 鼠标事件对象。
+   * @param key 标签键。
+   */
   const onContextMenu = useCallback((e: React.MouseEvent, key: string) => {
     e.preventDefault();
     setContextMenu({
@@ -487,6 +637,11 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     setMoreMenu((prev) => ({ ...prev, visible: false }));
   }, []);
 
+  /**
+   * 处理标签点击切换。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handleTabClick = useCallback((e: React.MouseEvent) => {
     const key = (e.currentTarget as HTMLElement).dataset.key;
     if (key) {
@@ -494,6 +649,11 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     }
   }, [handleSelect]);
 
+  /**
+   * 处理标签右键事件入口。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handleTabContextMenu = useCallback((e: React.MouseEvent) => {
     const key = (e.currentTarget as HTMLElement).dataset.key;
     if (key) {
@@ -501,6 +661,11 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     }
   }, [onContextMenu]);
 
+  /**
+   * 处理标签关闭按钮点击。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handleTabCloseClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     const key = (e.currentTarget as HTMLElement).dataset.key;
@@ -509,6 +674,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     }
   }, [handleClose]);
 
+  /**
+   * 处理中键点击关闭标签行为。
+   *
+   * @param e React 鼠标事件对象。
+   * @param tab 目标标签。
+   */
   const handleMouseDown = useCallback((e: React.MouseEvent, tab: TabItem) => {
     if (e.button === 1 && tabbarConfig.middleClickToClose !== false) {
       e.preventDefault();
@@ -518,6 +689,11 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     }
   }, [tabbarConfig.middleClickToClose, handleClose]);
 
+  /**
+   * 处理标签栏滚轮横向滚动。
+   *
+   * @param e React 滚轮事件对象。
+   */
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (!tabbarConfig.wheelable) return;
     const container = tabsContainerRef.current;
@@ -529,6 +705,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     updateScrollStateThrottled();
   }, [tabbarConfig.wheelable, updateScrollStateThrottled]);
 
+  /**
+   * 处理拖拽开始事件并初始化拖拽状态。
+   *
+   * @param e React 拖拽事件对象。
+   * @param index 拖拽起始索引。
+   */
   const onDragStart = useCallback((e: React.DragEvent, index: number) => {
     if (!tabbarConfig.draggable) return;
     const tab = tabs[index];
@@ -545,6 +727,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     e.dataTransfer.setData('text/plain', String(index));
   }, [tabbarConfig.draggable, tabs]);
 
+  /**
+   * 处理拖拽悬停并按鼠标位置触发标签重排。
+   *
+   * @param e React 拖拽事件对象。
+   * @param index 当前悬停索引。
+   */
   const onDragOver = useCallback((e: React.DragEvent, index: number) => {
     if (!tabbarConfig.draggable || !dragState.isDragging) return;
     e.preventDefault();
@@ -568,6 +756,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     setDragState((prev) => ({ ...prev, dragIndex: index, dropIndex: index }));
   }, [tabbarConfig.draggable, dragState.isDragging, dragState.dragIndex, tabs, handleSort, recordTabPositions]);
 
+  /**
+   * 处理拖拽放下事件并提交最终排序。
+   *
+   * @param e React 拖拽事件对象。
+   * @param toIndex 目标索引。
+   */
   const onDrop = useCallback((e: React.DragEvent, toIndex: number) => {
     if (!tabbarConfig.draggable) return;
     e.preventDefault();
@@ -582,11 +776,19 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     setDragState({ isDragging: false, dragIndex: null, dropIndex: null });
   }, [tabbarConfig.draggable, dragState.dragIndex, tabs, handleSort, recordTabPositions]);
 
+  /**
+   * 处理拖拽结束，重置拖拽状态。
+   */
   const onDragEnd = useCallback(() => {
     setDragState({ isDragging: false, dragIndex: null, dropIndex: null });
   }, []);
 
   useEffect(() => {
+    /**
+     * 监听 `Escape` 快捷键，退出最大化状态。
+     *
+     * @param e 原生键盘事件。
+     */
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsMaximized(false);
@@ -603,6 +805,12 @@ export const LayoutTabbar = memo(function LayoutTabbar({
     };
   }, [isMaximized, context.events]);
 
+  /**
+   * 解析标签显示标题，优先读取 `meta.newTabTitle` 与 `meta.title`。
+   *
+   * @param tab 标签对象。
+   * @returns 本地化后的标题文本。
+   */
   const getTabTitle = useCallback((tab: TabItem) => {
     const meta = tab.meta as Record<string, unknown> | undefined;
     const title = (meta?.newTabTitle as string | undefined) || (meta?.title as string | undefined) || tab.name;

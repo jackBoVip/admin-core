@@ -3,11 +3,22 @@ import {
   type AdminTabReactItem,
 } from '@admin-core/tabs-react';
 
+/**
+ * Tabs 面板组件属性。
+ */
 interface TabPanelProps {
+  /** 文案行列表。 */
   lines: string[];
+  /** 标题文案。 */
   title: string;
 }
 
+/**
+ * Tabs 面板内容组件。
+ *
+ * @param options 面板标题与文案列表。
+ * @returns 面板渲染结果。
+ */
 function TabPanel({ lines, title }: TabPanelProps) {
   return (
     <div
@@ -31,7 +42,14 @@ function TabPanel({ lines, title }: TabPanelProps) {
   );
 }
 
+/**
+ * Tabs 示例页。
+ * @description 演示静态标签页配置与面板切换。
+ */
 export default function TabsDemo() {
+  /**
+   * Tabs 页签配置集合。
+   */
   const items: AdminTabReactItem[] = [
     {
       closable: false,
@@ -69,7 +87,6 @@ export default function TabsDemo() {
     <AdminTabs
       defaultActiveKey="overview"
       items={items}
-      
     />
   );
 }

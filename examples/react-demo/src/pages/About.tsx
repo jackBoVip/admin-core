@@ -1,3 +1,7 @@
+/**
+ * 关于页。
+ * @description 展示当前示例项目的基础信息与能力清单。
+ */
 export default function About() {
   return (
     <div className="page-container">

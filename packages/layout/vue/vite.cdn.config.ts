@@ -3,6 +3,9 @@ import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import { createCdnLibraryConfig } from '../../../internal/build-config/vite.js';
 
+/**
+ * layout-vue CDN 库构建配置。
+ */
 export default createCdnLibraryConfig({
   entry: resolve(__dirname, 'src/index.ts'),
   name: 'AdminCoreLayoutVue',

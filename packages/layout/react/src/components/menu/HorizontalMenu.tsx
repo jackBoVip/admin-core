@@ -1,6 +1,6 @@
 /**
- * 水平菜单组件
- * @description 封装 Menu 组件，用于顶栏水平导航
+ * 水平菜单组件。
+ * @description 封装 `Menu` 组件，用于顶栏水平导航场景。
  */
 import {
   getCachedMenuPathIndex,
@@ -12,21 +12,31 @@ import { useCallback, useMemo, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { Menu } from './Menu';
 
+/**
+ * 顶栏水平菜单参数。
+ * @description 约束水平菜单数据来源、视觉样式与选择回调。
+ */
 export interface HorizontalMenuProps {
-  /** 菜单数据 */
+  /** 菜单数据。 */
   menus?: MenuItem[];
-  /** 当前激活的菜单 key */
+  /** 当前激活的菜单 key。 */
   activeKey?: string;
-  /** 菜单对齐方式 */
+  /** 菜单对齐方式。 */
   align?: 'start' | 'center' | 'end';
-  /** 主题 */
+  /** 主题。 */
   theme?: 'light' | 'dark';
-  /** 选择回调 */
+  /** 选择菜单项时触发。 */
   onSelect?: (item: MenuItem, key: string) => void;
 }
 
 const EMPTY_MENUS: MenuItem[] = [];
 
+/**
+ * 顶部水平菜单组件。
+ * @description 渲染一级菜单并透传选择事件到布局导航层。
+ * @param props 组件参数。
+ * @returns 顶栏水平菜单节点。
+ */
 export const HorizontalMenu = memo(function HorizontalMenu({
   menus = EMPTY_MENUS,
   activeKey = '',
@@ -38,7 +48,12 @@ export const HorizontalMenu = memo(function HorizontalMenu({
 
   const menuIndex = useMemo(() => getCachedMenuPathIndex(menus), [menus]);
 
-  // 处理菜单选择
+  /**
+   * 处理水平菜单选择，联动外部回调、布局事件与路由跳转。
+   *
+   * @param path 选中菜单路径。
+   * @param _parentPaths 父级路径（当前组件未使用）。
+   */
   const handleSelect = useCallback((path: string, _parentPaths: string[]) => {
     const key = normalizeMenuKey(path);
     const item = resolveMenuByPathIndex(menuIndex, key);
@@ -46,7 +61,7 @@ export const HorizontalMenu = memo(function HorizontalMenu({
       onSelect?.(item, key);
       context.events?.onMenuSelect?.(item, key);
       
-      // 路由导航
+      /** 命中可导航菜单时触发路由跳转。 */
       if (context.props.router && item.path) {
         context.props.router.navigate(item.path, {
           params: item.params,
@@ -56,7 +71,9 @@ export const HorizontalMenu = memo(function HorizontalMenu({
     }
   }, [menuIndex, onSelect, context]);
 
-  // 容器类名
+  /**
+   * 顶栏菜单容器类名。
+   */
   const containerClassName = useMemo(
     () => `header-menu-container w-full min-w-0 header-menu-container--align-${align}`,
     [align]

@@ -1,3 +1,6 @@
+/**
+ * 布局功能态（主题、水印、动态标题、快捷键）测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   createLayoutDynamicTitleController,

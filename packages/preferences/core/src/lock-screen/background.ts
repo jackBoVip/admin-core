@@ -1,3 +1,10 @@
+/**
+ * 锁屏背景与解锁行为工具。
+ * @description
+ * 提供锁屏功能可用性判断、背景图决策、`body` 滚动锁定、
+ * 密码解锁流程以及键盘动作解析等框架无关逻辑。
+ */
+
 import { defaultLockScreenBg } from '../assets';
 import { logger } from '../utils/logger';
 import { verifyPasswordSync } from '../utils/password';
@@ -5,30 +12,38 @@ import type { LocaleMessages } from '../locales';
 import type { Preferences } from '../types';
 
 /**
- * 判断当前是否启用锁屏功能
+ * 判断当前配置是否启用锁屏入口。
+ * @param preferences 当前偏好配置对象。
+ * @returns 当 `widget.lockScreen === true` 时返回 `true`。
  */
 export function isLockScreenEnabled(preferences: Preferences): boolean {
   return preferences.widget.lockScreen === true;
 }
 
 /**
- * 是否已经设置了锁屏密码
+ * 判断是否已设置锁屏密码。
+ * @param preferences 当前偏好配置对象。
+ * @returns 只要 `lockScreen.password` 为非空字符串即返回 `true`。
  */
 export function hasLockScreenPassword(preferences: Preferences): boolean {
   return Boolean(preferences.lockScreen.password);
 }
 
 /**
- * 当前配置下是否可以触发锁屏
+ * 判断当前配置是否允许触发锁屏。
+ * @description 仅当锁屏入口开启且已设置密码时才允许锁屏。
+ * @param preferences 当前偏好配置对象。
+ * @returns 可锁屏返回 `true`，否则返回 `false`。
  */
 export function canLockScreen(preferences: Preferences): boolean {
   return isLockScreenEnabled(preferences) && hasLockScreenPassword(preferences);
 }
 
-// ============================================================
-// 背景图片决策
-// ============================================================
+/* ========== 背景图片决策逻辑 ========== */
 
+/**
+ * 锁屏背景计算入参。
+ */
 export interface LockScreenBackgroundOptions {
   /** 当前偏好设置，可选，未传时仅使用覆盖图和默认图 */
   preferences?: Preferences | null;
@@ -42,9 +57,8 @@ export interface LockScreenBackgroundOptions {
 }
 
 /**
- * 计算锁屏背景图片
- *
- * 优先级：
+ * 计算锁屏背景图片 URL。
+ * @description 取值优先级如下：
  * 1. 组件传入的 overrideImage：
  *    - 空字符串：禁用背景
  *    - 非空字符串：直接使用
@@ -52,48 +66,69 @@ export interface LockScreenBackgroundOptions {
  *    - 空字符串：使用内置默认图
  *    - 非空字符串：使用该 URL
  * 3. 兜底：使用内置默认图
+ * @param options 背景计算参数。
+ * @returns
+ * - 返回字符串：最终背景图 URL。
+ * - 返回 `undefined`：表示显式禁用背景图。
  */
 export function computeLockScreenBackground(
   options: LockScreenBackgroundOptions
 ): string | undefined {
   const { preferences, overrideImage } = options;
 
-  // 组件显式禁用背景
+  /**
+   * 组件显式禁用背景。
+   */
   if (overrideImage === '') {
     return undefined;
   }
 
-  // 组件传入了自定义背景，优先使用
+  /**
+   * 组件传入自定义背景时优先使用。
+   */
   if (overrideImage) {
     return overrideImage;
   }
 
   const prefBackground = preferences?.lockScreen?.backgroundImage;
   if (prefBackground === '') {
-    // 明确表示使用默认背景
+    /**
+     * 偏好显式指定使用默认背景。
+     */
     return defaultLockScreenBg;
   }
   if (prefBackground) {
     return prefBackground;
   }
 
-  // 兜底：使用默认背景
+  /**
+   * 兜底返回默认背景。
+   */
   return defaultLockScreenBg;
 }
 
-// ============================================================
-// Body 滚动锁定
-// ============================================================
+/* ========== Body 滚动锁定逻辑 ========== */
 
+/**
+ * body 滚动锁定前后的样式快照。
+ */
 export interface LockScreenBodyLockState {
+  /** 是否已经对 body 应用了锁定。 */
   applied: boolean;
+  /** 锁定前的 `body.style.overflow`。 */
   previousOverflow: string;
+  /** 锁定前的 `body.style.paddingRight`。 */
   previousPaddingRight: string;
 }
 
 /**
- * 锁定 body 滚动，并根据滚动条宽度补偿 paddingRight，避免布局抖动
- * 在 SSR 环境下安全降级为 no-op。
+ * 锁定 `body` 滚动并补偿滚动条宽度。
+ * @description
+ * 通过设置 `overflow: hidden` 禁止背景滚动，并在有滚动条时补偿
+ * `padding-right` 以避免页面内容横向跳动。SSR 环境下会安全降级为 no-op。
+ * @returns
+ * - 浏览器环境成功锁定时返回样式快照（用于恢复）。
+ * - 非浏览器或不可操作时返回 `null`。
  */
 export function lockBodyScrollForLockScreen(): LockScreenBodyLockState | null {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -122,7 +157,9 @@ export function lockBodyScrollForLockScreen(): LockScreenBodyLockState | null {
 }
 
 /**
- * 恢复 body 滚动状态
+ * 恢复 `body` 滚动状态。
+ * @param state 锁定阶段返回的样式快照；为空时直接跳过。
+ * @returns 无返回值。
  */
 export function restoreBodyScrollForLockScreen(
   state: LockScreenBodyLockState | null
@@ -137,10 +174,11 @@ export function restoreBodyScrollForLockScreen(
   body.style.paddingRight = state.previousPaddingRight;
 }
 
-// ============================================================
-// 解锁逻辑（密码校验 + 偏好更新 + flush）
-// ============================================================
+/* ========== 解锁流程逻辑（密码校验 + 偏好更新 + flush） ========== */
 
+/**
+ * 密码解锁流程入参。
+ */
 export interface UnlockWithPasswordOptions {
   /** 用户输入的密码 */
   password: string;
@@ -152,7 +190,13 @@ export interface UnlockWithPasswordOptions {
    * 更新偏好设置的回调
    * 只需支持部分更新：{ lockScreen: { isLocked: boolean } }
    */
-  setPreferences: (partial: { lockScreen: { isLocked: boolean } }) => void;
+  setPreferences: (partial: {
+    /** 仅更新锁屏域状态。 */
+    lockScreen: {
+      /** 是否处于锁定状态。 */
+      isLocked: boolean;
+    };
+  }) => void;
   /**
    * 刷新偏好设置持久化的回调（例如 getPreferencesManager().flush）
    * 可选，未传时仅更新内存状态
@@ -160,17 +204,26 @@ export interface UnlockWithPasswordOptions {
   flushPreferences?: () => void;
 }
 
+/**
+ * 密码解锁结果。
+ */
 export interface UnlockWithPasswordResult {
+  /** 是否解锁成功。 */
   success: boolean;
+  /** 失败时返回的提示文案。 */
   errorMessage?: string;
 }
 
 /**
- * 统一的锁屏解锁流程：
+ * 执行统一的锁屏密码解锁流程。
+ * @description
+ * 处理步骤：
  * - 校验空密码并返回对应文案
  * - 使用哈希验证密码
  * - 更新偏好设置 isLocked 状态
  * - 尝试 flush 持久化，错误仅记录日志，不抛出到 UI
+ * @param options 解锁流程参数。
+ * @returns 解锁是否成功及失败提示信息。
  */
 export function unlockWithPassword(
   options: UnlockWithPasswordOptions
@@ -192,7 +245,9 @@ export function unlockWithPassword(
     };
   }
 
-  // 更新锁屏状态
+  /**
+   * 更新锁屏状态。
+   */
   try {
     setPreferences({ lockScreen: { isLocked: false } });
   } catch (err) {
@@ -203,48 +258,69 @@ export function unlockWithPassword(
     };
   }
 
-  // 持久化 flush（如果提供）
+  /**
+   * 持久化刷新（可选）。
+   */
   if (flushPreferences) {
     try {
       flushPreferences();
     } catch (err) {
       logger.error('[LockScreenBehavior] Failed to flush preferences:', err);
-      // flush 失败不影响解锁本身
+      /**
+       * flush 失败不影响解锁结果。
+       */
     }
   }
 
   return { success: true };
 }
 
-// ============================================================
-// 键盘交互协议
-// ============================================================
+/* ========== 键盘交互协议 ========== */
 
+/**
+ * 锁屏键盘动作。
+ */
 export type LockScreenKeyAction =
+  /** 当前按键不触发任何行为。 */
   | { type: 'none' }
+  /** 关闭解锁表单。 */
   | { type: 'hideUnlockForm' }
+  /** 提交解锁请求。 */
   | { type: 'submit' }
+  /** 打开解锁表单。 */
   | { type: 'showUnlockForm' };
 
+/**
+ * 键盘动作解析上下文。
+ */
 export interface LockScreenKeyOptions {
   /** 当前解锁面板是否可见 */
   showUnlockForm: boolean;
 }
 
+/**
+ * 键盘事件最小兼容结构。
+ */
 export interface KeyboardEventLike {
+  /** 物理按键编码（原生 KeyboardEvent）。 */
   code?: string;
-  /** React SyntheticEvent 兼容 */
+  /** 组件事件系统兼容键值。 */
   key?: string;
+  /** 阻止默认行为的回调。 */
   preventDefault?: () => void;
 }
 
 /**
- * 将键盘事件解析为统一的锁屏行为动作：
+ * 将键盘事件解析为统一的锁屏行为动作。
+ * @description 行为规则：
  * - Escape：在解锁面板打开时关闭面板
  * - Enter / NumpadEnter：
  *   - 面板打开时：提交解锁
  *   - 面板关闭时：打开解锁面板
  * - Space：在面板关闭时打开解锁面板
+ * @param event 键盘事件兼容对象。
+ * @param options 键盘动作解析上下文。
+ * @returns 解析后的锁屏动作类型。
  */
 export function getLockScreenKeyAction(
   event: KeyboardEventLike,
@@ -277,4 +353,3 @@ export function getLockScreenKeyAction(
 
   return { type: 'none' };
 }
-

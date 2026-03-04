@@ -9,6 +9,10 @@ import RouteView from '../layouts/RouteView.vue';
 import { staticRoutes } from './static-routes';
 import { fetchMenuList } from './menu-api';
 
+/**
+ * Vue Router 实例。
+ * @description 路由会在 `setupRouteAccess` 中根据静态/模块/动态菜单结果进行扩展注册。
+ */
 const router = createRouter({
   history: createWebHistory(),
   routes: [],
@@ -23,12 +27,19 @@ const router = createRouter({
  * 3. 动态路由（fetchMenuList）- 后端 API 返回的路由
  *
  * 合并顺序：静态 -> 模块 -> 动态（后面的会覆盖前面的同名路由）
+ *
+ * @returns 返回布局所需的菜单数据对象。
  */
 export async function setupRouteAccess() {
-  // 自动扫描视图组件
+  /**
+   * 自动扫描页面组件映射。
+   * @description Key 为 `/src/views` 开头的虚拟路径，Value 为组件模块加载函数。
+   */
   const pageMap = import.meta.glob('/src/views/**/*.vue');
 
-  // 自动扫描路由模块（类似常见 admin 模板的 modules 路由扫描）
+  /**
+   * 自动扫描路由模块（类似常见 admin 模板的 modules 路由扫描）。
+   */
   const routeModules = import.meta.glob('./modules/**/*.ts', { eager: true }) as Record<
     string,
     RouteModule<RouteRecordStringComponent[]>

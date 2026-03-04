@@ -1,3 +1,7 @@
+/**
+ * Form Vue 原生组件映射。
+ * @description 提供无 UI 库依赖的基础表单组件实现，作为适配器兜底能力。
+ */
 import type { Component, PropType } from 'vue';
 
 import { defineComponent, h } from 'vue';
@@ -14,23 +18,52 @@ import {
   type SemanticFormComponentType,
 } from '@admin-core/form-core';
 
+/**
+ * 提取可透传给原生表单元素的属性。
+ * 会剔除状态 class 与内部状态属性键，避免重复注入。
+ *
+ * @param attrs 组件 attrs。
+ * @returns 透传后的属性对象。
+ */
 function getNativeForwardAttrs(attrs: Record<string, any>) {
   return omitRecordKeys(attrs, ['class', ...ADMIN_STATE_ATTR_KEYS]);
 }
 
+/**
+ * 原生单选/多选选项。
+ */
 interface NativeChoiceOption {
+  /** 显示标签。 */
   label: string;
+  /** 值。 */
   value: any;
 }
 
-function renderNativeChoiceGroup(options: {
+/**
+ * 渲染原生单选/多选组所需配置。
+ */
+interface RenderNativeChoiceGroupOptions {
+  /** 外层容器属性。 */
   attrs: Record<string, any>;
+  /** 是否禁用。 */
   disabled: boolean;
+  /** 输入控件类型。 */
   inputType: 'checkbox' | 'radio';
+  /** 判断某个选项是否选中的函数。 */
   isChecked: (value: any) => boolean;
+  /** 选项变更回调。 */
   onChange: (event: Event, option: NativeChoiceOption) => void;
+  /** 选项列表。 */
   options: NativeChoiceOption[];
-}) {
+}
+
+/**
+ * 渲染原生单选/多选组。
+ *
+ * @param options 渲染配置。
+ * @returns 渲染后的虚拟节点。
+ */
+function renderNativeChoiceGroup(options: RenderNativeChoiceGroupOptions) {
   const attrs = options.attrs;
 
   return h(
@@ -66,6 +99,9 @@ function renderNativeChoiceGroup(options: {
   );
 }
 
+/**
+ * 原生单行输入组件。
+ */
 const NativeInput = defineComponent({
   name: 'AdminNativeInput',
   props: {
@@ -84,6 +120,13 @@ const NativeInput = defineComponent({
     },
   },
   emits: ['update:modelValue', 'change', 'input'],
+  /**
+   * 原生输入框组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
     return () =>
       h('input', {
@@ -104,6 +147,9 @@ const NativeInput = defineComponent({
   },
 });
 
+/**
+ * 原生多行文本输入组件。
+ */
 const NativeTextarea = defineComponent({
   name: 'AdminNativeTextarea',
   props: {
@@ -118,6 +164,13 @@ const NativeTextarea = defineComponent({
     },
   },
   emits: ['update:modelValue', 'change', 'input'],
+  /**
+   * 原生文本域组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
     return () =>
       h('textarea', {
@@ -137,6 +190,9 @@ const NativeTextarea = defineComponent({
   },
 });
 
+/**
+ * 原生下拉选择组件。
+ */
 const NativeSelect = defineComponent({
   name: 'AdminNativeSelect',
   props: {
@@ -146,7 +202,7 @@ const NativeSelect = defineComponent({
       default: '',
     },
     options: {
-      type: Array as () => Array<{ label: string; value: any }>,
+      type: Array as PropType<NativeChoiceOption[]>,
       default: () => [],
     },
     placeholder: {
@@ -155,6 +211,13 @@ const NativeSelect = defineComponent({
     },
   },
   emits: ['update:modelValue', 'change'],
+  /**
+   * 原生下拉选择组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
     return () =>
       h(
@@ -198,6 +261,9 @@ const NativeSelect = defineComponent({
   },
 });
 
+/**
+ * 原生单个复选框组件。
+ */
 const NativeCheckbox = defineComponent({
   name: 'AdminNativeCheckbox',
   props: {
@@ -205,6 +271,13 @@ const NativeCheckbox = defineComponent({
     disabled: Boolean,
   },
   emits: ['update:checked', 'change'],
+  /**
+   * 原生复选框组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, slots, attrs }) {
     return () =>
       h(
@@ -237,6 +310,9 @@ const NativeCheckbox = defineComponent({
   },
 });
 
+/**
+ * 原生开关组件。
+ */
 const NativeSwitch = defineComponent({
   name: 'AdminNativeSwitch',
   props: {
@@ -244,6 +320,13 @@ const NativeSwitch = defineComponent({
     disabled: Boolean,
   },
   emits: ['update:checked', 'change'],
+  /**
+   * 原生开关组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, slots, attrs }) {
     return () =>
       h(
@@ -279,6 +362,9 @@ const NativeSwitch = defineComponent({
   },
 });
 
+/**
+ * 原生复选框组组件。
+ */
 const NativeCheckboxGroup = defineComponent({
   name: 'AdminNativeCheckboxGroup',
   props: {
@@ -288,11 +374,18 @@ const NativeCheckboxGroup = defineComponent({
       default: () => [],
     },
     options: {
-      type: Array as () => Array<{ label: string; value: any }>,
+      type: Array as PropType<NativeChoiceOption[]>,
       default: () => [],
     },
   },
   emits: ['update:modelValue', 'change'],
+  /**
+   * 原生复选框组组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
     return () =>
       renderNativeChoiceGroup({
@@ -314,6 +407,9 @@ const NativeCheckboxGroup = defineComponent({
   },
 });
 
+/**
+ * 原生单个单选框组件。
+ */
 const NativeRadio = defineComponent({
   name: 'AdminNativeRadio',
   props: {
@@ -325,6 +421,13 @@ const NativeRadio = defineComponent({
     },
   },
   emits: ['update:checked', 'change'],
+  /**
+   * 原生单选框组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, slots, attrs }) {
     return () =>
       h(
@@ -358,6 +461,9 @@ const NativeRadio = defineComponent({
   },
 });
 
+/**
+ * 原生单选框组组件。
+ */
 const NativeRadioGroup = defineComponent({
   name: 'AdminNativeRadioGroup',
   props: {
@@ -367,11 +473,18 @@ const NativeRadioGroup = defineComponent({
       default: '',
     },
     options: {
-      type: Array as () => Array<{ label: string; value: any }>,
+      type: Array as PropType<NativeChoiceOption[]>,
       default: () => [],
     },
   },
   emits: ['update:modelValue', 'change'],
+  /**
+   * 原生单选框组组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
     return () =>
       renderNativeChoiceGroup({
@@ -389,6 +502,9 @@ const NativeRadioGroup = defineComponent({
   },
 });
 
+/**
+ * 原生按钮组件。
+ */
 const NativeButton = defineComponent({
   name: 'AdminNativeButton',
   props: {
@@ -402,6 +518,13 @@ const NativeButton = defineComponent({
       default: 'default',
     },
   },
+  /**
+   * 原生按钮组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { slots, attrs }) {
     return () =>
       h(
@@ -421,6 +544,9 @@ const NativeButton = defineComponent({
   },
 });
 
+/**
+ * 原生日期/时间输入组件。
+ */
 const NativeDateInput = defineComponent({
   name: 'AdminNativeDateInput',
   props: {
@@ -435,6 +561,13 @@ const NativeDateInput = defineComponent({
     },
   },
   emits: ['update:modelValue', 'change'],
+  /**
+   * 原生日期时间输入组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
     return () =>
       h('input', {
@@ -453,6 +586,9 @@ const NativeDateInput = defineComponent({
   },
 });
 
+/**
+ * 原生区间输入组件。
+ */
 const NativeRange = defineComponent({
   name: 'AdminNativeRange',
   props: {
@@ -463,7 +599,22 @@ const NativeRange = defineComponent({
     },
   },
   emits: ['update:modelValue', 'change', 'input'],
+  /**
+   * 原生区间输入组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit, attrs }) {
+    /**
+     * 更新区间指定端点并派发事件。
+     *
+     * @param index 端点索引（`0` 起始端，`1` 结束端）。
+     * @param event 原生输入事件。
+     * @param eventName 需要派发的事件名称。
+     * @returns 无返回值。
+     */
     function updateAt(index: 0 | 1, event: Event, eventName: 'change' | 'input') {
       const next = updateDateRangeValue(
         ensureDateRangeValue(props.modelValue),
@@ -509,6 +660,9 @@ const NativeRange = defineComponent({
   },
 });
 
+/**
+ * 原生分区标题组件。
+ */
 const NativeSectionTitle = defineComponent({
   inheritAttrs: false,
   name: 'AdminNativeSectionTitle',
@@ -522,6 +676,13 @@ const NativeSectionTitle = defineComponent({
       default: '',
     },
   },
+  /**
+   * 原生分区标题组件组合逻辑。
+   *
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { attrs }) {
     return () =>
       h(
@@ -539,12 +700,23 @@ const NativeSectionTitle = defineComponent({
   },
 });
 
+/**
+ * Vue 原生适配组件映射表。
+ * @description 将语义组件类型映射到可渲染的 Vue 组件实现。
+ */
 export const nativeVueComponents: Partial<Record<SemanticFormComponentType, Component>> = {
   checkbox: NativeCheckbox,
   'checkbox-group': NativeCheckboxGroup,
   date: NativeDateInput,
   'date-range': defineComponent({
     name: 'AdminNativeDateRange',
+    /**
+     * 原生日期区间包装组件组合逻辑。
+     *
+     * @param _props 组件属性。
+     * @param context 组件上下文。
+     * @returns 渲染函数。
+     */
     setup(_, { attrs }) {
       return () => h(NativeRange, { ...attrs, type: 'date' });
     },
@@ -553,12 +725,26 @@ export const nativeVueComponents: Partial<Record<SemanticFormComponentType, Comp
   input: NativeInput,
   password: defineComponent({
     name: 'AdminNativePassword',
+    /**
+     * 原生密码输入包装组件组合逻辑。
+     *
+     * @param _props 组件属性。
+     * @param context 组件上下文。
+     * @returns 渲染函数。
+     */
     setup(_, { attrs }) {
       return () => h(NativeInput, { ...attrs, type: 'password' });
     },
   }),
   'primary-button': defineComponent({
     name: 'AdminNativePrimaryButton',
+    /**
+     * 原生主按钮包装组件组合逻辑。
+     *
+     * @param _props 组件属性。
+     * @param context 组件上下文。
+     * @returns 渲染函数。
+     */
     setup(_, { attrs, slots }) {
       return () =>
         h(
@@ -580,6 +766,13 @@ export const nativeVueComponents: Partial<Record<SemanticFormComponentType, Comp
   textarea: NativeTextarea,
   time: defineComponent({
     name: 'AdminNativeTimeInput',
+    /**
+     * 原生时间输入包装组件组合逻辑。
+     *
+     * @param _props 组件属性。
+     * @param context 组件上下文。
+     * @returns 渲染函数。
+     */
     setup(_, { attrs }) {
       return () => h(NativeDateInput, { ...attrs, type: 'time' });
     },

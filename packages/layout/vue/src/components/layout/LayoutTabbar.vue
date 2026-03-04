@@ -8,7 +8,15 @@ import { useLayoutContext, useLayoutComputed, useTabsState, useSidebarState } fr
 import LayoutIcon from '../common/LayoutIcon.vue';
 import { generateContextMenuItems, type ContextMenuAction, LAYOUT_UI_TOKENS, LAYOUT_STYLE_CONSTANTS, TABBAR_CHROME_SVG_PATHS, rafThrottle, calculateTabbarScrollOffset } from '@admin-core/layout';
 
+/**
+ * 布局上下文
+ * @description 提供标签栏配置、国际化方法与布局事件能力。
+ */
 const context = useLayoutContext();
+/**
+ * 布局派生状态
+ * @description 提供头部高度、标签栏高度与主区域偏移等计算值。
+ */
 const layoutComputed = useLayoutComputed();
 const {
   tabs,
@@ -29,15 +37,41 @@ const {
 } = useTabsState();
 const { collapsed: sidebarCollapsed } = useSidebarState();
 
-// 配置
+/**
+ * 标签栏配置
+ * @description 从布局上下文读取标签栏配置并做空对象兜底。
+ */
 const tabbarConfig = computed(() => context.props.tabbar || {});
+/**
+ * 标签栏样式类型
+ * @description 默认使用 `chrome` 视觉风格。
+ */
 const styleType = computed(() => tabbarConfig.value.styleType || 'chrome');
+/**
+ * 头部模式
+ * @description 用于判断标签栏采用固定定位还是文档流布局。
+ */
 const headerMode = computed(() => context.props.header?.mode || 'fixed');
+/**
+ * 头部是否固定
+ * @description 非 `static` 模式时视为固定头部。
+ */
 const isHeaderFixed = computed(() => headerMode.value !== 'static');
+/**
+ * 主区域左偏移
+ * @description 标签栏固定时用于对齐侧栏宽度偏移。
+ */
 const leftOffset = computed(() => layoutComputed.value.mainStyle.marginLeft || '0');
+/**
+ * 面板右偏移
+ * @description 标签栏固定时用于规避右侧面板占位。
+ */
 const panelRightOffset = computed(() => layoutComputed.value.mainStyle.marginRight || '0');
 
-// 拖拽相关状态
+/**
+ * 标签拖拽状态
+ * @description 记录拖拽中的源索引与目标索引。
+ */
 const dragState = ref<{
   isDragging: boolean;
   dragIndex: number | null;
@@ -48,14 +82,30 @@ const dragState = ref<{
   dropIndex: null,
 });
 
-// 最大化状态
+/**
+ * 标签栏最大化状态
+ * @description 控制当前内容区域是否处于最大化展示态。
+ */
 const isMaximized = ref(false);
 
-// 标签列表容器引用
+/**
+ * 标签滚动容器引用
+ * @description 用于滚动定位与左右滚动能力判断。
+ */
 const tabsContainerRef = ref<HTMLElement | null>(null);
 
-// 标签元素引用
+/**
+ * 标签节点引用映射
+ * @description 以标签 key 为索引缓存 DOM 节点，用于滚动与 FLIP 动画。
+ */
 const tabRefs = new Map<string, HTMLElement>();
+
+/**
+ * 绑定/解绑标签节点引用，用于滚动定位与 FLIP 动画计算。
+ *
+ * @param key 标签键。
+ * @returns Vue ref 回调。
+ */
 const setTabRef = (key: string) => (el: Element | ComponentPublicInstance | null) => {
   if (!el) {
     tabRefs.delete(key);
@@ -67,9 +117,20 @@ const setTabRef = (key: string) => (el: Element | ComponentPublicInstance | null
   }
 };
 
+/**
+ * FLIP 动画待执行标记
+ * @description 记录是否有待执行的位置过渡动画。
+ */
 const flipPending = ref(false);
+/**
+ * FLIP 旧位置信息缓存
+ * @description 记录排序前各标签矩形位置。
+ */
 const flipPositions = ref(new Map<string, DOMRect>());
 
+/**
+ * 记录当前标签节点位置，用于后续 FLIP 过渡动画。
+ */
 const recordTabPositions = () => {
   const map = new Map<string, DOMRect>();
   tabRefs.forEach((el, key) => {
@@ -79,6 +140,9 @@ const recordTabPositions = () => {
   flipPending.value = true;
 };
 
+/**
+ * 执行 FLIP 动画，使拖拽排序后的标签位置过渡更平滑。
+ */
 const animateTabPositions = () => {
   if (!flipPending.value) return;
   const prevPositions = flipPositions.value;
@@ -112,35 +176,91 @@ const animateTabPositions = () => {
   });
 };
 
-// 右键菜单
+/**
+ * 右键菜单显示状态
+ * @description 控制标签右键上下文菜单显隐。
+ */
 const contextMenuVisible = ref(false);
+/**
+ * 右键菜单位置
+ * @description 记录上下文菜单的屏幕坐标。
+ */
 const contextMenuPosition = ref({ x: 0, y: 0 });
+/**
+ * 右键菜单目标标签键
+ * @description 标记当前被右键操作的标签。
+ */
 const contextMenuTargetKey = ref<string | null>(null);
+/**
+ * 右键菜单节点引用
+ * @description 用于菜单弹层位置视口约束计算。
+ */
 const contextMenuRef = ref<HTMLElement | null>(null);
 
-// 更多菜单
+/**
+ * 更多菜单显示状态
+ * @description 控制“更多”下拉菜单显隐。
+ */
 const moreMenuVisible = ref(false);
+/**
+ * 更多菜单位置
+ * @description 记录“更多”菜单弹层坐标。
+ */
 const moreMenuPosition = ref({ x: 0, y: 0 });
+/**
+ * 更多菜单锚点节点引用
+ * @description 用于计算弹层初始位置。
+ */
 const moreMenuAnchorRef = ref<HTMLElement | null>(null);
+/**
+ * 更多菜单节点引用
+ * @description 用于视口边界内位置修正。
+ */
 const moreMenuRef = ref<HTMLElement | null>(null);
 
-// 悬停状态
+/**
+ * 当前悬停标签键
+ * @description 用于 hover 态按钮显隐与样式控制。
+ */
 const hoveredKey = ref<string | null>(null);
+/**
+ * 标签分批渲染批次大小
+ * @description 控制标签列表渐进渲染步长。
+ */
 const TAB_RENDER_CHUNK = LAYOUT_UI_TOKENS.TAB_RENDER_CHUNK;
+/**
+ * 当前已渲染标签数量
+ * @description 与分批渲染逻辑配合，避免初次渲染卡顿。
+ */
 const tabRenderCount = ref<number>(TAB_RENDER_CHUNK);
+/**
+ * Chrome 风格角标尺寸
+ * @description 用于渲染标签角装饰时的尺寸常量。
+ */
 const chromeCornerSize = LAYOUT_UI_TOKENS.TABBAR_CHROME_CORNER_SIZE;
+/**
+ * 标签索引映射
+ * @description 提供 `key -> index` 快速查询。
+ */
 const tabIndexMap = computed(() => {
   const map = new Map<string, number>();
   tabs.value.forEach((tab, index) => map.set(tab.key, index));
   return map;
 });
+/**
+ * 标签实体映射
+ * @description 提供 `key -> tab` 快速查询。
+ */
 const tabMap = computed(() => {
   const map = new Map<string, (typeof tabs.value)[0]>();
   tabs.value.forEach((tab) => map.set(tab.key, tab));
   return map;
 });
 
-// 类名
+/**
+ * 标签栏根类名集合
+ * @description 根据样式类型、侧栏状态与移动端状态生成。
+ */
 const tabbarClass = computed(() => [
   'layout-tabbar',
   `layout-tabbar--${styleType.value}`,
@@ -150,10 +270,21 @@ const tabbarClass = computed(() => [
   },
 ]);
 
+/**
+ * 可见标签集合
+ * @description 按渲染计数截取当前应渲染的标签项。
+ */
 const visibleTabs = computed(() => tabs.value.slice(0, tabRenderCount.value));
+/**
+ * 是否显示左右滚动按钮
+ * @description 当任一方向可滚动时显示滚动控制按钮。
+ */
 const showScrollButtons = computed(() => canScrollLeft.value || canScrollRight.value);
 
-// 样式
+/**
+ * 标签栏样式对象
+ * @description 按头部模式与左右偏移生成定位与尺寸样式。
+ */
 const tabbarStyle = computed(() => {
   const style: Record<string, string> = {
     height: `${layoutComputed.value.tabbarHeight}px`,
@@ -205,9 +336,20 @@ watchEffect((onCleanup) => {
   onCleanup(() => cancelAnimationFrame(frame));
 });
 
-// 滚动状态
+/**
+ * 是否可向左滚动
+ * @description 由滚动容器当前位置实时计算。
+ */
 const canScrollLeft = ref(false);
+/**
+ * 是否可向右滚动
+ * @description 由滚动容器剩余可滚动距离计算。
+ */
 const canScrollRight = ref(false);
+
+/**
+ * 同步标签栏左右滚动可用状态。
+ */
 const updateScrollState = () => {
   const container = tabsContainerRef.value;
   if (!container) {
@@ -219,8 +361,17 @@ const updateScrollState = () => {
   canScrollLeft.value = scrollLeft > 0;
   canScrollRight.value = scrollLeft + clientWidth < scrollWidth - 1;
 };
+/**
+ * 滚动状态更新节流函数
+ * @description 对滚动状态计算做 `raf` 节流，降低频繁回流开销。
+ */
 const updateScrollStateThrottled = rafThrottle(updateScrollState);
 
+/**
+ * 按方向滚动标签栏。
+ *
+ * @param direction 方向，`1` 为向右，`-1` 为向左。
+ */
 const scrollTabsBy = (direction: number) => {
   const container = tabsContainerRef.value;
   if (!container) return;
@@ -251,30 +402,52 @@ onUnmounted(() => {
   updateScrollStateThrottled.cancel?.();
 });
 
-// 处理标签点击
+/**
+ * 处理标签点击并切换激活项。
+ *
+ * @param key 标签键。
+ */
 const onTabClick = (key: string) => {
   handleSelect(key);
 };
 
+/**
+ * 处理标签鼠标移入，更新悬停态。
+ *
+ * @param key 标签键。
+ */
 const onTabMouseEnter = (key: string) => {
   if (hoveredKey.value !== key) {
     hoveredKey.value = key;
   }
 };
 
+/**
+ * 处理标签鼠标移出，清除悬停态。
+ */
 const onTabMouseLeave = () => {
   if (hoveredKey.value !== null) {
     hoveredKey.value = null;
   }
 };
 
-// 处理标签关闭
+/**
+ * 处理标签关闭按钮点击。
+ *
+ * @param e 原始事件。
+ * @param key 标签键。
+ */
 const onTabClose = (e: Event, key: string) => {
   e.stopPropagation();
   handleClose(key);
 };
 
-// 处理右键菜单
+/**
+ * 打开标签右键菜单。
+ *
+ * @param e 鼠标事件。
+ * @param key 目标标签键。
+ */
 const onContextMenu = (e: MouseEvent, key: string) => {
   e.preventDefault();
   contextMenuTargetKey.value = key;
@@ -283,16 +456,24 @@ const onContextMenu = (e: MouseEvent, key: string) => {
   moreMenuVisible.value = false;
 };
 
-// 关闭右键菜单
+/**
+ * 关闭右键菜单并清空目标标签。
+ */
 const closeContextMenu = () => {
   contextMenuVisible.value = false;
   contextMenuTargetKey.value = null;
 };
 
+/**
+ * 关闭“更多”菜单。
+ */
 const closeMoreMenu = () => {
   moreMenuVisible.value = false;
 };
 
+/**
+ * 打开/关闭“更多”菜单并计算弹层锚点位置。
+ */
 const openMoreMenu = () => {
   if (!moreMenuAnchorRef.value) return;
   const rect = moreMenuAnchorRef.value.getBoundingClientRect();
@@ -304,6 +485,13 @@ const openMoreMenu = () => {
   contextMenuVisible.value = false;
 };
 
+/**
+ * 将菜单弹层位置限制在视口范围内。
+ *
+ * @param position 原始位置。
+ * @param el 菜单容器元素。
+ * @returns 修正后的位置。
+ */
 const clampMenuPosition = (position: { x: number; y: number }, el: HTMLElement | null) => {
   if (!el || typeof window === 'undefined') return position;
   const margin = 8;
@@ -337,6 +525,12 @@ watch(
   }
 );
 
+/**
+ * 执行标签上下文菜单动作。
+ *
+ * @param action 菜单动作标识。
+ * @param targetKey 目标标签键。
+ */
 const handleMenuAction = (action: ContextMenuAction | string, targetKey: string | null) => {
   if (!targetKey) return;
   switch (action) {
@@ -386,6 +580,10 @@ const handleMenuAction = (action: ContextMenuAction | string, targetKey: string 
   }
 };
 
+/**
+ * 标签右键菜单项集合
+ * @description 基于目标标签、激活键和配置动态生成可用操作。
+ */
 const contextMenuItems = computed(() => {
   const key = contextMenuTargetKey.value;
   if (!key) return [];
@@ -407,6 +605,10 @@ const contextMenuItems = computed(() => {
   });
 });
 
+/**
+ * “更多”菜单项集合
+ * @description 基于当前激活标签生成通用操作菜单。
+ */
 const moreMenuItems = computed(() => {
   const key = activeKey.value || tabs.value[0]?.key || '';
   if (!key) return [];
@@ -428,13 +630,27 @@ const moreMenuItems = computed(() => {
   });
 });
 
+/**
+ * 获取标签展示标题并执行国际化转换。
+ *
+ * @param tab 标签对象。
+ * @returns 标签显示文案。
+ */
 const getTabTitle = (tab: typeof tabs.value[0]) => {
   const meta = tab.meta as Record<string, unknown> | undefined;
   const title = (meta?.newTabTitle as string | undefined) || (meta?.title as string | undefined) || tab.name;
   return context.t(title);
 };
 
-// ==================== 拖拽排序功能 ====================
+/**
+ * 拖拽排序功能区。
+ */
+/**
+ * 处理标签拖拽开始事件。
+ *
+ * @param e 拖拽事件。
+ * @param index 被拖拽标签索引。
+ */
 const onDragStart = (e: DragEvent, index: number) => {
   if (!tabbarConfig.value.draggable) return;
   const tab = tabs.value[index];
@@ -453,6 +669,12 @@ const onDragStart = (e: DragEvent, index: number) => {
   }
 };
 
+/**
+ * 处理拖拽经过事件并在达到阈值时执行排序。
+ *
+ * @param e 拖拽事件。
+ * @param index 当前经过标签索引。
+ */
 const onDragOver = (e: DragEvent, index: number) => {
   if (!tabbarConfig.value.draggable || !dragState.value.isDragging) return;
   e.preventDefault();
@@ -475,10 +697,19 @@ const onDragOver = (e: DragEvent, index: number) => {
   dragState.value.dragIndex = index;
 };
 
+/**
+ * 处理拖拽离开事件。
+ */
 const onDragLeave = () => {
   dragState.value.dropIndex = null;
 };
 
+/**
+ * 处理拖拽释放并提交最终排序结果。
+ *
+ * @param e 拖拽事件。
+ * @param toIndex 释放目标索引。
+ */
 const onDrop = (e: DragEvent, toIndex: number) => {
   if (!tabbarConfig.value.draggable) return;
   e.preventDefault();
@@ -497,6 +728,9 @@ const onDrop = (e: DragEvent, toIndex: number) => {
   };
 };
 
+/**
+ * 处理拖拽结束并重置状态。
+ */
 const onDragEnd = () => {
   dragState.value = {
     isDragging: false,
@@ -505,7 +739,15 @@ const onDragEnd = () => {
   };
 };
 
-// ==================== 中键关闭功能 ====================
+/**
+ * 中键关闭功能区。
+ */
+/**
+ * 处理中键点击关闭标签。
+ *
+ * @param e 鼠标事件。
+ * @param tab 当前标签。
+ */
 const onMouseDown = (e: MouseEvent, tab: typeof tabs.value[0]) => {
   if (e.button === 1 && tabbarConfig.value.middleClickToClose !== false) {
     e.preventDefault();
@@ -515,7 +757,14 @@ const onMouseDown = (e: MouseEvent, tab: typeof tabs.value[0]) => {
   }
 };
 
-// ==================== 滚轮滚动 ====================
+/**
+ * 滚轮滚动功能区。
+ */
+/**
+ * 处理标签栏滚轮滚动。
+ *
+ * @param e 滚轮事件。
+ */
 const onWheel = (e: WheelEvent) => {
   if (!tabbarConfig.value.wheelable) return;
   const container = tabsContainerRef.value;
@@ -527,7 +776,12 @@ const onWheel = (e: WheelEvent) => {
   updateScrollStateThrottled();
 };
 
-// ==================== 最大化功能 ====================
+/**
+ * 最大化功能区。
+ */
+/**
+ * 切换内容区域最大化状态，并同步 body 样式标记。
+ */
 const toggleMaximize = () => {
   isMaximized.value = !isMaximized.value;
   context.events?.onTabMaximize?.(isMaximized.value);
@@ -540,12 +794,22 @@ const toggleMaximize = () => {
   }
 };
 
+/**
+ * 处理全局快捷键，支持 `Escape` 退出最大化。
+ *
+ * @param e 键盘事件。
+ */
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     toggleMaximize();
   }
 };
 
+/**
+ * 同步全局 `keydown` 监听状态。
+ *
+ * @param enabled 是否启用监听。
+ */
 const syncKeydownListener = (enabled: boolean) => {
   document.removeEventListener('keydown', handleKeyDown);
   if (enabled) {

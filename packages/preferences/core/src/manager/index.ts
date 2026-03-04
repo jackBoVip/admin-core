@@ -3,14 +3,18 @@
  * @description 偏好设置管理器及相关功能
  */
 
-// 核心管理器
+/**
+ * 核心管理器导出。
+ */
 export {
   PreferencesManager,
   createPreferencesManager,
   type PreferencesListener,
 } from './preferences-manager';
 
-// CSS 更新
+/**
+ * CSS 更新能力导出。
+ */
 export {
   getActualThemeMode,
   updateAllCSSVariables,
@@ -21,7 +25,9 @@ export {
   clearCSSUpdaterCache,
 } from './css-updater';
 
-// 生命周期管理
+/**
+ * 生命周期管理导出。
+ */
 export {
   ManagerLifecycle,
   createManagerLifecycle,

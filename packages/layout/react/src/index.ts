@@ -2,9 +2,9 @@
  * @admin-core/layout-react
  * React 基础布局组件包
  * @description 开箱即用的管理后台布局，高度集成偏好设置
- * 
+ *
  * 内置 @admin-core/preferences-react，无需单独引入
- * 
+ *
  * @example
  * ```tsx
  * import { 
@@ -30,14 +30,18 @@
  * ```
  */
 
-// 样式
+/**
+ * 样式副作用入口。
+ * @description 引入布局组件与偏好抽屉所需的基础样式变量与结构样式。
+ */
 import './styles/index.css';
 
-// ============================================================
-// 内置 @admin-core/preferences-react（用户无需单独引入）
-// ============================================================
+/**
+ * 内置 `@admin-core/preferences-react` 能力导出。
+ * @description 用户使用 layout-react 时可直接获得偏好设置全套 API，无需额外安装。
+ */
 export {
-  // Hooks
+  /** 组合式能力与状态钩子。 */
   destroyPreferences,
   getPreferencesManager,
   initPreferences,
@@ -50,7 +54,7 @@ export {
   type AdminAntdThemeAlgorithms,
   type AdminAntdThemeConfig,
   type UseAdminAntdThemeOptions,
-  // Components
+  /** 组件。 */
   Icon,
   AdminIcon,
   LayoutIcon,
@@ -80,7 +84,7 @@ export {
   type PreferencesSwitchItemProps,
   type PreferencesSelectItemProps,
   type PreferencesSliderItemProps,
-  // Core Types
+  /** 核心类型。 */
   type AppPreferences,
   type BreadcrumbPreferences,
   type BuiltinThemePreset,
@@ -104,7 +108,7 @@ export {
   type ThemePreferences,
   type TransitionPreferences,
   type WidgetPreferences,
-  // Drawer UI Config Types
+  /** 抽屉 UI 配置类型。 */
   type FeatureItemConfig,
   type FeatureBlockConfig,
   type AppearanceTabConfig,
@@ -114,16 +118,16 @@ export {
   type HeaderActionsConfig,
   type FooterActionsConfig,
   type PreferencesDrawerUIConfig,
-  // Core Constants
+  /** 核心常量。 */
   BUILT_IN_THEME_PRESETS,
   COLOR_PRESETS,
   DEFAULT_PREFERENCES,
   LAYOUT_OPTIONS,
   PAGE_TRANSITION_OPTIONS,
   TABS_STYLE_OPTIONS,
-  // Assets
+  /** 资源。 */
   defaultLockScreenBg,
-  // Locales
+  /** 国际化资源。 */
   enUS as preferencesEnUS,
   getLocaleLabel,
   getLocaleMessages,
@@ -131,22 +135,28 @@ export {
   zhCN as preferencesZhCN,
 } from '@admin-core/preferences-react';
 
-// ============================================================
-// 布局组件和 Hooks
-// ============================================================
-
-// 组件导出
-// 明确选择组件 MenuItem，避免与共享类型同名导出冲突
+/**
+ * 布局组件导出。
+ * @description 显式导出 `MenuItem` 以避免与共享类型同名冲突。
+ */
 export { MenuItem } from './components';
 export * from './components';
 
-// Hooks 导出
+/**
+ * React Hooks 导出。
+ * @description 包含布局上下文、布局状态切片与业务增强 Hook。
+ */
 export * from './hooks';
 
-// 工具函数导出
+/**
+ * React 工具函数与路由辅助导出。
+ * @description 包含图标渲染、路由访问控制与路径辅助工具。
+ */
 export * from './utils';
-// Router helpers
 export * from './router/route-access';
 
-// 从共享导出包重新导出核心类型和工具
+/**
+ * 重新导出 layout-shared 核心类型与工具能力。
+ * @description 便于应用侧只依赖 `@admin-core/layout-react` 即可获取核心共享能力。
+ */
 export * from '@admin-core/layout-shared';

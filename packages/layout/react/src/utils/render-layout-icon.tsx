@@ -1,5 +1,6 @@
 /**
- * Layout UI 图标渲染工具
+ * Layout UI 图标渲染工具。
+ * @description 根据 core 图标定义渲染 React SVG 节点，并处理尺寸与样式合并。
  */
 import {
   getLayoutUiIconDefinition,
@@ -10,8 +11,20 @@ import {
 } from '@admin-core/layout';
 import React from 'react';
 
+/**
+ * 布局图标尺寸参数类型。
+ * 支持预设尺寸键或自定义类名。
+ */
 export type LayoutIconSize = Parameters<typeof resolveLayoutIconSize>[0];
 
+/**
+ * 根据图标定义渲染 SVG 节点。
+ *
+ * @param def 图标定义对象。
+ * @param className 需要附加到 `<svg>` 的类名。
+ * @param name 图标名称，用于 data 属性标记。
+ * @returns 渲染后的 SVG 元素。
+ */
 function renderSvg(def: IconDefinition, className: string, name?: string) {
   const fill = def.fill ? 'currentColor' : 'none';
   const stroke = def.fill ? 'none' : 'currentColor';
@@ -43,6 +56,15 @@ function renderSvg(def: IconDefinition, className: string, name?: string) {
   );
 }
 
+/**
+ * 渲染布局系统图标。
+ *
+ * @param name 图标名称。
+ * @param size 图标尺寸（预设尺寸或类名）。
+ * @param className 额外类名。
+ * @param style 额外内联样式。
+ * @returns 图标节点；未找到图标定义时返回 `null`。
+ */
 export function renderLayoutIcon(
   name: LayoutUiIconName,
   size: LayoutIconSize | string = 'md',

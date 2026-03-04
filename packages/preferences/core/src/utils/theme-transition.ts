@@ -1,30 +1,52 @@
 /**
- * 主题切换过渡动画
- * @description 使用 View Transitions API 实现扩散/收缩效果
+ * 主题切换过渡动画工具。
+ * @description 基于 View Transitions API 实现主题切换的扩散/收缩视觉效果。
  */
 
 import { hasDocument, isBrowser } from './platform';
 
+/**
+ * 主题模式类型。
+ */
 type ThemeMode = 'light' | 'dark';
 
+/**
+ * View Transitions API 返回对象（最小子集）。
+ */
 type ViewTransition = {
+  /** 过渡可开始动画时 resolve。 */
   ready: Promise<void>;
+  /** 过渡整体完成时 resolve。 */
   finished: Promise<void>;
 };
 
+/** 指针坐标判定为“过期”的阈值（毫秒）。 */
 const POINTER_IDLE_THRESHOLD = 2000;
 
+/** 最近一次指针事件快照。 */
 const pointerState = {
   x: 0,
   y: 0,
   time: 0,
 };
 
+/** 是否已完成指针追踪初始化。 */
 let trackingInitialized = false;
 
 /**
- * 初始化指针位置追踪
- * @description 用于获取主题切换动画的起点
+ * 主题切换动画起点坐标。
+ */
+interface ThemeTransitionOriginPoint {
+  /** 动画起点 X 坐标。 */
+  x: number;
+  /** 动画起点 Y 坐标。 */
+  y: number;
+}
+
+/**
+ * 初始化指针位置追踪。
+ * @description 记录最近一次 `pointerdown` 坐标，用于主题过渡动画起点计算。
+ * @returns 无返回值。
  */
 export function initThemeTransitionTracking(): void {
   if (!isBrowser || trackingInitialized) return;
@@ -41,7 +63,13 @@ export function initThemeTransitionTracking(): void {
   );
 }
 
-function getTransitionOrigin(): { x: number; y: number } {
+/**
+ * 获取主题切换动画起点。
+ * 优先使用最近一次指针位置，超时后回退到视口中心。
+ *
+ * @returns 动画起点坐标。
+ */
+function getTransitionOrigin(): ThemeTransitionOriginPoint {
   if (!hasDocument) return { x: 0, y: 0 };
 
   const now = Date.now();
@@ -56,9 +84,10 @@ function getTransitionOrigin(): { x: number; y: number } {
 }
 
 /**
- * 执行主题切换过渡
- * @param nextMode - 目标主题模式
- * @param apply - 应用主题变更的回调
+ * 执行主题切换过渡。
+ * @param nextMode 目标主题模式。
+ * @param apply 应用主题变更的回调。
+ * @returns 无返回值。
  */
 export function runThemeTransition(nextMode: ThemeMode, apply: () => void): void {
   if (!hasDocument) {
@@ -68,6 +97,7 @@ export function runThemeTransition(nextMode: ThemeMode, apply: () => void): void
 
   const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const documentWithTransition = document as Document & {
+    /** 启动文档视图过渡。 */
     startViewTransition?: (callback: () => void) => ViewTransition;
   };
 
@@ -107,6 +137,9 @@ export function runThemeTransition(nextMode: ThemeMode, apply: () => void): void
       );
     })
     .catch(() => {
-      // ignore transition errors
+      /**
+       * 忽略过渡动画异常。
+       * @description 主题切换主流程已完成，动画失败不应阻断业务逻辑。
+       */
     });
 }

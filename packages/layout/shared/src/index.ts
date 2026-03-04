@@ -1,5 +1,9 @@
+/**
+ * layout-shared 导出入口。
+ * @description 汇总 layout-core 的类型、常量、工具函数与国际化能力。
+ */
 export {
-  // 类型
+  /** 类型 */
   type BasicLayoutProps,
   type LayoutEvents,
   type LayoutSlotName,
@@ -22,7 +26,7 @@ export {
   type CheckUpdatesConfig,
   type RouterConfig,
   type RouterNavigateFunction,
-  // 常量
+  /** 常量 */
   DEFAULT_LAYOUT_CONFIG,
   DEFAULT_HEADER_CONFIG,
   DEFAULT_SIDEBAR_CONFIG,
@@ -51,7 +55,7 @@ export {
   ANIMATION_DURATION,
   HEADER_TRIGGER_DISTANCE,
   BREAKPOINTS,
-  // 工具函数
+  /** 工具函数 */
   isLayoutInCategory,
   isFullContentLayout,
   isSidebarMixedNavLayout,
@@ -74,12 +78,12 @@ export {
   filterHiddenMenus,
   clearMenuCaches,
   mergeConfig,
-  // 自动标签/面包屑
+  /** 自动标签/面包屑 */
   TabManager,
   generateBreadcrumbsFromMenus,
   findMenuByPath,
   getMenuPathByPath,
-  // Preferences 深度集成工具函数
+  /** 偏好系统深度集成工具函数 */
   mapPreferencesToLayoutProps,
   generateThemeCSSVariables,
   generateThemeClasses,
@@ -90,7 +94,7 @@ export {
   createCheckUpdatesTimer,
   getResolvedLayoutProps,
   generateAllCSSVariables,
-  // 国际化
+  /** 国际化 */
   createI18n,
   builtinLocales,
   zhCN,
@@ -98,13 +102,13 @@ export {
   type LayoutLocale,
   type SupportedLocale,
   type I18nInstance,
-  // 样式
+  /** 样式 */
   layoutThemeTokens,
   tailwindThemeCSS,
   layoutBaseCSS,
   layoutUtilitiesCSS,
   layoutFullCSS,
-  // 路由辅助类型
+  /** 路由辅助类型 */
   type RouteModule,
   type RouteRecordStringComponent,
 } from '@admin-core/layout';

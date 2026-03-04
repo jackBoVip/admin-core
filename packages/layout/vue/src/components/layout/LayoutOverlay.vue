@@ -5,13 +5,26 @@
 import { computed } from 'vue';
 import { useLayoutContext, useSidebarState } from '../../composables';
 
+/**
+ * 布局上下文
+ * @description 提供移动端状态与侧栏折叠切换能力。
+ */
 const context = useLayoutContext();
+/**
+ * 侧栏折叠状态
+ * @description 与移动端标识共同决定遮罩显隐。
+ */
 const { collapsed } = useSidebarState();
 
-// 是否显示遮罩
+/**
+ * 遮罩是否显示
+ * @description 仅在移动端且侧栏处于展开态时展示。
+ */
 const visible = computed(() => context.props.isMobile && !collapsed.value);
 
-// 点击遮罩关闭侧边栏
+/**
+ * 处理遮罩点击，触发侧边栏收起。
+ */
 const handleClick = () => {
   context.toggleSidebarCollapse();
 };

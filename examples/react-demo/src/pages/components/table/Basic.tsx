@@ -5,6 +5,10 @@ import { Checkbox, Input, Select, Switch } from 'antd';
 import { AdapterThemePreview, resolveTablePopupContainer } from './AdapterThemePreview';
 import { BASIC_ROWS, type DemoRow } from './data';
 
+/**
+ * 基础表格示例页。
+ * @description 演示工具栏、分页工具、策略渲染与多种插槽。
+ */
 export default function TableBasic() {
   const [TableView, tableApi] = useAdminTable<DemoRow>(
     useMemo(
@@ -36,7 +40,9 @@ export default function TableBasic() {
             tools: [
               {
                 code: 'view',
-                onClick: ({ code, row }: { code?: string; row?: DemoRow }) => {
+                onClick: ({ code, row }: { /** 工具按钮编码。 */
+code?: string; /** 当前行数据。 */
+row?: DemoRow }) => {
                   console.log('operation tool click:', code, row?.name);
                 },
                 title: '查看',
@@ -44,7 +50,9 @@ export default function TableBasic() {
               },
               {
                 code: 'edit',
-                onClick: ({ code, row }: { code?: string; row?: DemoRow }) => {
+                onClick: ({ code, row }: { /** 工具按钮编码。 */
+code?: string; /** 当前行数据。 */
+row?: DemoRow }) => {
                   console.log('operation tool click:', code, row?.name);
                 },
                 title: '编辑',
@@ -52,7 +60,9 @@ export default function TableBasic() {
               },
               {
                 code: 'delete',
-                onClick: ({ code, row }: { code?: string; row?: DemoRow }) => {
+                onClick: ({ code, row }: { /** 工具按钮编码。 */
+code?: string; /** 当前行数据。 */
+row?: DemoRow }) => {
                   console.log('operation tool click:', code, row?.name);
                 },
                 
@@ -82,13 +92,15 @@ export default function TableBasic() {
                 {
                   code: 'pager-left-icon',
                   icon: 'vxe-table-icon-repeat',
-                  onClick: ({ code }: { code?: string }) => {
+                  onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                     console.log('pager left tool click:', code);
                   },
                 },
                 {
                   code: 'pager-left-text',
-                  onClick: ({ code }: { code?: string }) => {
+                  onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                     console.log('pager left tool click:', code);
                   },
                   title: '左侧按钮',
@@ -101,13 +113,15 @@ export default function TableBasic() {
                 {
                   code: 'pager-icon-only',
                   icon: 'vxe-table-icon-repeat',
-                  onClick: ({ code }: { code?: string }) => {
+                  onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                     console.log('pager right tool click:', code);
                   },
                 },
                 {
                   code: 'pager-auto-text',
-                  onClick: ({ code }: { code?: string }) => {
+                  onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                     console.log('pager right tool click:', code);
                   },
                   title: '分页自动按钮',
@@ -116,7 +130,8 @@ export default function TableBasic() {
                 {
                   code: 'pager-icon-text',
                   icon: 'vxe-table-icon-custom-column',
-                  onClick: ({ code }: { code?: string }) => {
+                  onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                     console.log('pager right tool click:', code);
                   },
                   title: '分页图标按钮',
@@ -228,14 +243,16 @@ export default function TableBasic() {
             tools: [
               {
                 code: 'icon-only',
-                onClick: ({ code }: { code?: string }) => {
+                onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                   console.log('toolbar tool click:', code);
                 },
                 icon: 'vxe-table-icon-repeat',
               },
               {
                 code: 'icon-text',
-                onClick: ({ code }: { code?: string }) => {
+                onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                   console.log('toolbar tool click:', code);
                 },
                 icon: 'vxe-table-icon-custom-column',
@@ -243,7 +260,8 @@ export default function TableBasic() {
               },
               {
                 code: 'text-only',
-                onClick: ({ code }: { code?: string }) => {
+                onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                   console.log('toolbar tool click:', code);
                 },
                 title: '自动构建',
@@ -251,7 +269,8 @@ export default function TableBasic() {
               },
               {
                 code: 'clear',
-                onClick: ({ code }: { code?: string }) => {
+                onClick: ({ code }: { /** 工具按钮编码。 */
+code?: string }) => {
                   console.log('toolbar tool click:', code);
                 },
                 title: '清空',
@@ -266,6 +285,11 @@ export default function TableBasic() {
     )
   );
 
+  /**
+   * 模拟表格加载态切换。
+   *
+   * @returns 无返回值。
+   */
   const triggerLoading = async () => {
     tableApi.setLoading(true);
     await new Promise((resolve) => {
@@ -282,7 +306,8 @@ export default function TableBasic() {
       <div className="card">
         <TableView
           slots={{
-            enabledSwitch: ({ row }: { row: DemoRow }) => (
+            enabledSwitch: ({ row }: { /** 当前行数据。 */
+row: DemoRow }) => (
               <Switch
                 defaultChecked={!!row.enabled}
                 size="small"
@@ -291,7 +316,8 @@ export default function TableBasic() {
                 }}
               />
             ),
-            selectedCheckbox: ({ row }: { row: DemoRow }) => (
+            selectedCheckbox: ({ row }: { /** 当前行数据。 */
+row: DemoRow }) => (
               <Checkbox
                 defaultChecked={!!row.selected}
                 onChange={(event) => {
@@ -299,7 +325,8 @@ export default function TableBasic() {
                 }}
               />
             ),
-            levelSelect: ({ row }: { row: DemoRow }) => (
+            levelSelect: ({ row }: { /** 当前行数据。 */
+row: DemoRow }) => (
               <Select
                 options={[
                   { label: '高', value: 'high' },
@@ -315,7 +342,8 @@ export default function TableBasic() {
                 }}
               />
             ),
-            nicknameInput: ({ row }: { row: DemoRow }) => (
+            nicknameInput: ({ row }: { /** 当前行数据。 */
+row: DemoRow }) => (
               <Input
                 defaultValue={row.nickname}
                 size="small"

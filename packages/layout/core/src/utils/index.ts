@@ -2,6 +2,9 @@
  * 工具函数导出
  */
 
+/**
+ * 菜单与基础布局计算工具。
+ */
 export * from './array';
 export * from './layout';
 export * from './menu';
@@ -20,6 +23,9 @@ export * from './theme';
 export * from './tabs';
 export * from './shortcut-keys';
 export * from './title';
+/**
+ * 布局上下文与状态组合工具。
+ */
 export * from './layout-context';
 export * from './layout-state';
 export * from './layout-preferences-state';

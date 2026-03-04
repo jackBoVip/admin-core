@@ -9,6 +9,16 @@ import { generateColorScaleVariables } from './scales';
 import { deriveSemanticColors, type SemanticColors } from './semantic';
 
 /**
+ * 语义色与 CSS 变量前缀映射项。
+ */
+interface SemanticColorNameEntry {
+  /** 语义色键名。 */
+  key: keyof SemanticColors;
+  /** 对应 CSS 变量名前缀。 */
+  cssName: string;
+}
+
+/**
  * 生成完整的颜色 CSS 变量
  * @description 从主色生成所有语义色及其色阶
  * @param primaryColor - 主色
@@ -18,8 +28,8 @@ export function generateColorVariables(primaryColor: string): Record<string, str
   const semanticColors = deriveSemanticColors(primaryColor);
   const variables: Record<string, string> = {};
 
-  // 定义语义色名称映射
-  const colorNames: Array<{ key: keyof SemanticColors; cssName: string }> = [
+  /* 定义语义色名称映射。 */
+  const colorNames: SemanticColorNameEntry[] = [
     { key: 'primary', cssName: 'primary' },
     { key: 'success', cssName: 'success' },
     { key: 'warning', cssName: 'warning' },
@@ -27,15 +37,15 @@ export function generateColorVariables(primaryColor: string): Record<string, str
     { key: 'info', cssName: 'info' },
   ];
 
-  // 为每个语义色生成色阶
+  /* 为每个语义色生成色阶。 */
   colorNames.forEach(({ key, cssName }) => {
     const color = semanticColors[key];
 
-    // 生成色阶变量
+    /* 生成色阶变量。 */
     const scaleVars = generateColorScaleVariables(color, cssName);
     Object.assign(variables, scaleVars);
 
-    // 生成前景色（文字颜色）
+    /* 生成前景色（文字颜色）。 */
     variables[`--${cssName}-foreground`] = getContrastColor(color);
   });
 
@@ -48,16 +58,17 @@ export function generateColorVariables(primaryColor: string): Record<string, str
  * @returns 暗色模式中性色变量
  */
 export function generateDarkNeutralColors(primaryColor?: string): Record<string, string> {
-  // 默认色相（蓝灰色）
+  /* 默认色相（蓝灰色）。 */
   let hue = 250;
   let chroma = 0.02;
 
-  // 如果提供了主色，使用主色的色相
+  /* 如果提供了主色，使用主色的色相。 */
   if (primaryColor) {
     const parsed = parseToOklch(primaryColor);
     if (parsed) {
       hue = parsed.h;
-      chroma = Math.min(parsed.c * 0.15, 0.04); // 使用较低的饱和度
+      /* 使用较低的饱和度。 */
+      chroma = Math.min(parsed.c * 0.15, 0.04);
     }
   }
 
@@ -72,13 +83,13 @@ export function generateDarkNeutralColors(primaryColor?: string): Record<string,
     '--input': createOklch(0.25, chroma, hue),
     '--card': createOklch(0.16, chroma, hue),
     '--card-foreground': 'oklch(0.98 0 0)',
-    // 侧边栏颜色（深色模式）- 跟随主题色
+    /* 侧边栏颜色（深色模式）- 跟随主题色。 */
     '--sidebar-dark': createOklch(0.12, chroma, hue),
     '--sidebar-dark-foreground': 'oklch(0.98 0 0)',
     '--sidebar-dark-muted': createOklch(0.7, chroma, hue),
     '--sidebar-dark-border': createOklch(0.2, chroma, hue),
     '--sidebar-dark-hover': createOklch(0.18, chroma, hue),
-    // 侧边栏子菜单区域背景
+    /* 侧边栏子菜单区域背景。 */
     '--sidebar-extra': createOklch(0.15, chroma, hue),
   };
 }
@@ -89,16 +100,17 @@ export function generateDarkNeutralColors(primaryColor?: string): Record<string,
  * @returns 亮色模式中性色变量
  */
 export function generateLightNeutralColors(primaryColor?: string): Record<string, string> {
-  // 默认色相（蓝灰色）
+  /* 默认色相（蓝灰色）。 */
   let hue = 250;
   let chroma = 0.01;
 
-  // 如果提供了主色，使用主色的色相
+  /* 如果提供了主色，使用主色的色相。 */
   if (primaryColor) {
     const parsed = parseToOklch(primaryColor);
     if (parsed) {
       hue = parsed.h;
-      chroma = Math.min(parsed.c * 0.1, 0.03); // 使用较低的饱和度
+      /* 使用较低的饱和度。 */
+      chroma = Math.min(parsed.c * 0.1, 0.03);
     }
   }
 
@@ -115,7 +127,7 @@ export function generateLightNeutralColors(primaryColor?: string): Record<string
     '--card-foreground': createOklch(0.1, chroma * 2, hue),
   };
 
-  // 侧边栏浅色变量（随背景跟随主题色开关切换，保证关闭时回退默认值）
+  /* 侧边栏浅色变量（随背景跟随主题色开关切换，保证关闭时回退默认值）。 */
   const follow = Boolean(primaryColor);
   Object.assign(variables, {
     '--sidebar-light': follow ? createOklch(0.99, chroma * 0.4, hue) : 'oklch(1 0 0)',
@@ -165,7 +177,7 @@ export function generateThemeColorVariables(
   options: ThemeColorOptions | string,
   isDark?: boolean
 ): Record<string, string> {
-  // 兼容旧的调用方式
+  /* 兼容旧的调用方式。 */
   let primaryColor: string;
   let dark: boolean;
   let colorFollowPrimary = false;
@@ -183,18 +195,18 @@ export function generateThemeColorVariables(
     colorFollowPrimaryDark = options.colorFollowPrimaryDark ?? colorFollowPrimary;
   }
 
-  // 语义色变量
+  /* 语义色变量。 */
   const colorVars = generateColorVariables(primaryColor);
 
-  // 中性色变量（如果开启背景跟随主题，传入主色）
+  /* 中性色变量（如果开启背景跟随主题，传入主色）。 */
   const neutralVars = dark
     ? generateDarkNeutralColors(colorFollowPrimary ? primaryColor : undefined)
     : generateLightNeutralColors(colorFollowPrimary ? primaryColor : undefined);
 
-  // 顶栏颜色变量：同时生成 light/dark 两套，使顶栏在主题切换时能正确切换背景
+  /* 顶栏颜色变量：同时生成 light/dark 两套，使顶栏在主题切换时能正确切换背景。 */
   const headerVars = generateHeaderVariablesBoth(primaryColor, colorFollowPrimaryLight, colorFollowPrimaryDark);
 
-  // 其他变量
+  /* 其他变量。 */
   const otherVars: Record<string, string> = {
     '--ring': colorVars['--primary'] || primaryColor,
   };

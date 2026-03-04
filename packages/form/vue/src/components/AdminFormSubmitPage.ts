@@ -1,3 +1,7 @@
+/**
+ * Form Vue 分步提交页组件实现。
+ * @description 提供弹层式分步表单提交流程，包括步骤切换、提交与重置策略。
+ */
 import type { DefineComponent, PropType, VNode } from 'vue';
 
 import type {
@@ -49,6 +53,10 @@ import { useLocaleVersion } from '../composables/useLocaleVersion';
 
 import { AdminForm } from './AdminForm';
 
+/**
+ * 表单提交页组件。
+ * @description 将多步骤表单与提交行为组合为页面级容器，提供步骤导航与校验提交流程。
+ */
 export const AdminFormSubmitPage = defineComponent({
   name: 'AdminFormSubmitPage',
   inheritAttrs: false,
@@ -70,6 +78,12 @@ export const AdminFormSubmitPage = defineComponent({
       type: Object as PropType<BuildSteppedFormSchemaResult | undefined>,
     },
   },
+  /**
+   * 提交页组合逻辑。
+   * @param rawProps 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(rawProps, { attrs, expose }) {
     const localeVersion = useLocaleVersion();
     const localeMessages = computed(() => {
@@ -105,6 +119,13 @@ export const AdminFormSubmitPage = defineComponent({
 
     const submitHandler = computed(() => resolveSubmitPageSubmitHandler(allProps.value));
 
+    /**
+     * 切换当前步骤并同步步骤字段值。
+     *
+     * @param nextStep 目标步骤索引。
+     * @param currentSteps 当前步骤数组。
+     * @returns 无返回值。
+     */
     async function applyStepChange(nextStep: number, currentSteps: ResolvedAdminFormStepSchema[]) {
       const safeNextStep = clampStepIndex(nextStep, currentSteps.length || 1);
       if (safeNextStep === activeStep.value) {
@@ -118,6 +139,11 @@ export const AdminFormSubmitPage = defineComponent({
       allProps.value.onStepChange?.(payload);
     }
 
+    /**
+     * 处理提交页关闭动作并根据配置执行重置。
+     *
+     * @returns 无返回值。
+     */
     async function handleClose() {
       allProps.value.onCancel?.();
       allProps.value.onOpenChange?.(false);
@@ -128,6 +154,11 @@ export const AdminFormSubmitPage = defineComponent({
       await api.resetForm();
     }
 
+    /**
+     * 处理“上一步”动作。
+     *
+     * @returns 无返回值。
+     */
     async function handlePrev() {
       await submitPagePrevStep({
         activeStep: activeStep.value,
@@ -136,6 +167,11 @@ export const AdminFormSubmitPage = defineComponent({
       });
     }
 
+    /**
+     * 处理“下一步/提交”动作。
+     *
+     * @returns 无返回值。
+     */
     async function handleNext() {
       const result = await submitPageNextStep({
         activeStep: activeStep.value,

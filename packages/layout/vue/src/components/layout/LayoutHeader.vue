@@ -9,40 +9,91 @@ import { LAYOUT_ICONS, ANIMATION_CLASSES } from '@admin-core/layout';
 import LayoutIcon from '../common/LayoutIcon.vue';
 import { RefreshButton } from '../widgets';
 
+/**
+ * 布局上下文
+ * @description 提供头部配置、小部件开关与国际化方法。
+ */
 const context = useLayoutContext();
+/**
+ * 布局派生状态
+ * @description 汇总当前布局类型、头部主题、侧栏可见性等计算结果。
+ */
 const layoutComputed = useLayoutComputed();
+/**
+ * 头部运行时状态
+ * @description 提供显隐、尺寸与定位模式。
+ */
 const { hidden, height, mode } = useHeaderState();
+/**
+ * 侧栏运行时状态
+ * @description 提供折叠状态与切换方法，供顶栏按钮联动。
+ */
 const { collapsed: sidebarCollapsed, toggle: toggleSidebar } = useSidebarState();
 
-// 配置
+/**
+ * 顶栏配置
+ * @description 读取 `header` 相关开关与布局参数。
+ */
 const headerConfig = computed(() => context.props.header || {});
+/**
+ * Logo 配置
+ * @description 读取头部 logo 资源与展示开关。
+ */
 const logoConfig = computed(() => context.props.logo || {});
+/**
+ * 顶栏主题
+ * @description 根据布局派生状态选择明暗主题。
+ */
 const theme = computed(() => layoutComputed.value.headerTheme || 'light');
+/**
+ * 菜单对齐方式
+ * @description 决定顶部菜单容器的横向对齐策略。
+ */
 const menuAlign = computed(() => headerConfig.value.menuAlign || 'start');
+/**
+ * 是否固定顶栏
+ * @description `mode !== static` 时采用 fixed 定位。
+ */
 const isHeaderFixed = computed(() => mode.value !== 'static');
 
-// 折叠图标配置（根据状态显示不同图标）
+/**
+ * 侧栏切换图标名称
+ * @description 根据侧栏折叠状态在展开/收起图标间切换。
+ */
 const headerToggleIconName = computed(() =>
   sidebarCollapsed.value ? 'sidebar-toggle-collapsed' : 'sidebar-toggle'
 );
+/**
+ * 侧栏切换图标类名
+ * @description 组合图标基础类与旋转动画类。
+ */
 const headerToggleIconClass = computed(
   () => `${LAYOUT_ICONS.headerSidebarToggle.className} ${ANIMATION_CLASSES.iconRotate}`
 );
 
-// 是否在顶栏显示 Logo
+/**
+ * 是否在顶栏展示 Logo
+ * @description 顶部导航、混合导航模式下在头部展示品牌区。
+ */
 const showLogoInHeader = computed(() => {
   return layoutComputed.value.isHeaderNav || 
          layoutComputed.value.isMixedNav || 
          layoutComputed.value.isHeaderMixedNav;
 });
 
-// 是否允许显示折叠按钮的布局（仅 sidebar-nav）
+/**
+ * 是否允许显示侧栏切换按钮
+ * @description 仅基础侧栏布局允许在头部展示该按钮。
+ */
 const isCollapseButtonAllowedLayout = computed(() => {
   const layout = layoutComputed.value.currentLayout;
   return layout === 'sidebar-nav';
 });
 
-// 是否显示侧边栏切换按钮（根据偏好设置开关控制）
+/**
+ * 是否显示侧栏切换按钮
+ * @description 综合布局模式、侧栏可见性与小部件配置判断。
+ */
 const showSidebarToggle = computed(() => {
   return isCollapseButtonAllowedLayout.value &&
          layoutComputed.value.showSidebar && 
@@ -51,19 +102,32 @@ const showSidebarToggle = computed(() => {
          !layoutComputed.value.isHeaderMixedNav;
 });
 
-// 是否显示刷新按钮（左侧）
+/**
+ * 是否显示刷新按钮
+ * @description 读取小部件配置，默认开启。
+ */
 const showRefresh = computed(() => context.props.widgets?.refresh !== false);
 
+/**
+ * 是否 `header-sidebar-nav` 布局
+ * @description 该布局使用头部 + 侧栏联动，但不展示顶部菜单条。
+ */
 const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');
 
-// 是否显示顶部菜单（顶部导航模式）
+/**
+ * 是否显示顶部菜单
+ * @description 顶部/混合导航模式显示菜单，`header-sidebar-nav` 例外。
+ */
 const showHeaderMenu = computed(() => {
   return (layoutComputed.value.isHeaderNav ||
          layoutComputed.value.isMixedNav ||
          layoutComputed.value.isHeaderMixedNav) && !isHeaderSidebarNav.value;
 });
 
-// 类名
+/**
+ * 顶栏类名集合
+ * @description 基于主题、定位模式、侧栏状态生成语义类名。
+ */
 const headerClass = computed(() => [
   'layout-header',
   `layout-header--${theme.value}`,
@@ -78,9 +142,12 @@ const headerClass = computed(() => [
   },
 ]);
 
-// 样式
+/**
+ * 顶栏内联样式
+ * @description 根据是否固定与侧栏偏移动态计算定位与宽度。
+ */
 const headerStyle = computed(() => {
-  // 顶部导航模式下，顶栏占满全宽
+  /** 顶部导航模式下，顶栏占满全宽。 */
   const isFullWidth = layoutComputed.value.isHeaderNav || 
                       layoutComputed.value.isMixedNav || 
                       layoutComputed.value.isHeaderMixedNav ||
@@ -109,7 +176,10 @@ const headerStyle = computed(() => {
   return style;
 });
 
-// 菜单容器样式
+/**
+ * 顶部菜单容器类名
+ * @description 包含基础布局类与菜单对齐修饰类。
+ */
 const menuContainerClass = computed(() => [
   'layout-header__menu flex-1 min-w-0 flex items-center overflow-hidden',
   `header-menu--align-${menuAlign.value}`,

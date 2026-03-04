@@ -4,16 +4,40 @@ import {
   createLayoutFullscreenStateController,
 } from '../utils';
 
+/**
+ * 模拟全屏文档测试参数。
+ */
+interface FakeFullscreenDocumentOptions {
+  /** 是否模拟 `requestFullscreen` 失败。 */
+  failRequest?: boolean;
+}
+
+/**
+ * 全屏 API 测试替身。
+ * @description 提供 `documentElement.requestFullscreen` 与 `fullscreenchange` 监听能力。
+ */
 class FakeFullscreenDocument {
   fullscreenElement: Element | null = null;
   private readonly listeners = new Set<EventListenerOrEventListenerObject>();
   private readonly failRequest: boolean;
 
-  constructor(options?: { failRequest?: boolean }) {
+  /**
+   * 创建测试文档实例。
+   * @param options 测试参数。
+   */
+  constructor(options?: FakeFullscreenDocumentOptions) {
     this.failRequest = options?.failRequest === true;
   }
 
+  /**
+   * 模拟 `document.documentElement`，提供全屏请求能力。
+   */
   readonly documentElement = {
+    /**
+     * 模拟浏览器进入全屏流程并触发 `fullscreenchange`。
+     *
+     * @returns 无返回值。
+     */
     requestFullscreen: async () => {
       if (this.failRequest) {
         throw new Error('request failed');
@@ -23,23 +47,43 @@ class FakeFullscreenDocument {
     },
   };
 
+  /**
+   * 模拟浏览器退出全屏流程并触发 `fullscreenchange`。
+   *
+   * @returns 无返回值。
+   */
   exitFullscreen = async () => {
     this.fullscreenElement = null;
     this.emitChange();
   };
 
+  /**
+   * 注册全屏状态变更监听器。
+   *
+   * @param type 事件类型。
+   * @param listener 事件监听器。
+   */
   addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     if (type === 'fullscreenchange') {
       this.listeners.add(listener);
     }
   }
 
+  /**
+   * 注销全屏状态变更监听器。
+   *
+   * @param type 事件类型。
+   * @param listener 待移除的事件监听器。
+   */
   removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     if (type === 'fullscreenchange') {
       this.listeners.delete(listener);
     }
   }
 
+  /**
+   * 广播一次 `fullscreenchange` 事件。
+   */
   private emitChange() {
     for (const listener of this.listeners) {
       if (typeof listener === 'function') {
@@ -50,6 +94,9 @@ class FakeFullscreenDocument {
     }
   }
 
+  /**
+   * 当前注册的全屏事件监听器数量。
+   */
   get listenerCount() {
     return this.listeners.size;
   }

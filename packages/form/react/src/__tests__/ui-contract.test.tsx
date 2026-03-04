@@ -11,6 +11,12 @@ import { useState } from 'react';
 
 const mountedRenderers = new Set<ReactTestRenderer>();
 
+/**
+ * 挂载表单组件并记录渲染器，便于用例结束后统一卸载。
+ *
+ * @param element 待挂载的 React 元素。
+ * @returns 挂载后的测试渲染器实例。
+ */
 async function mountForm(element: ReactElement) {
   let renderer: ReactTestRenderer | null = null;
   await act(async () => {
@@ -120,6 +126,12 @@ describe('react ui contract', () => {
 
   it('should not pass vue update event props to react components', async () => {
     let receivedProps: Record<string, any> | null = null;
+
+    /**
+     * 输入组件探针，用于捕获透传属性。
+     * @param props 组件属性。
+     * @returns 输入框节点。
+     */
     const ProbeInput = (props: Record<string, any>) => {
       receivedProps = props;
       return <input value={props.value ?? ''} onChange={props.onChange} />;
@@ -151,6 +163,12 @@ describe('react ui contract', () => {
 
   it('should strip vue model props for switch components in react', async () => {
     let receivedProps: Record<string, any> | null = null;
+
+    /**
+     * 开关组件探针，用于捕获透传属性。
+     * @param props 组件属性。
+     * @returns 复选框节点。
+     */
     const ProbeSwitch = (props: Record<string, any>) => {
       receivedProps = props;
       return <input type="checkbox" checked={!!props.checked} onChange={props.onChange} />;
@@ -273,6 +291,12 @@ describe('react ui contract', () => {
 
   it('should support modelPropName override and renderComponentContent props', async () => {
     let receivedProps: Record<string, any> | null = null;
+
+    /**
+     * 自定义 modelProp 组件探针。
+     * @param props 组件属性。
+     * @returns 输入框节点。
+     */
     const ProbeInput = (props: Record<string, any>) => {
       receivedProps = props;
       return <input value={props.modelValue ?? ''} onChange={props.onChange} />;
@@ -313,6 +337,12 @@ describe('react ui contract', () => {
 
   it('should inject popup container defaults for antd popup components', async () => {
     let receivedProps: Record<string, any> | null = null;
+
+    /**
+     * 下拉组件探针，用于校验弹层相关默认属性。
+     * @param props 组件属性。
+     * @returns 占位节点。
+     */
     const ProbeSelect = (props: Record<string, any>) => {
       receivedProps = props;
       return <div />;
@@ -399,6 +429,9 @@ describe('react ui contract', () => {
     await act(async () => {
       resetButton?.props.onClick({
         defaultPrevented: false,
+        /**
+         * 事件桩：阻止默认行为（空实现）。
+         */
         preventDefault() {},
       });
     });
@@ -428,9 +461,21 @@ describe('react ui contract', () => {
 
   it('should avoid rerendering unrelated field component on value change', async () => {
     let fieldBRenders = 0;
+
+    /**
+     * 字段 A 组件。
+     * @param props 组件属性。
+     * @returns 输入框节点。
+     */
     const FieldA = (props: Record<string, any>) => (
       <input value={props.modelValue ?? props.value ?? ''} onChange={props.onChange} />
     );
+
+    /**
+     * 字段 B 组件（用于统计渲染次数）。
+     * @param props 组件属性。
+     * @returns 输入框节点。
+     */
     const FieldB = (props: Record<string, any>) => {
       fieldBRenders += 1;
       return <input value={props.modelValue ?? props.value ?? ''} onChange={props.onChange} />;
@@ -529,6 +574,9 @@ describe('react ui contract', () => {
     await act(async () => {
       collapseButton.props.onClick?.({
         defaultPrevented: false,
+        /**
+         * 事件桩：阻止默认行为（空实现）。
+         */
         preventDefault() {},
       });
     });
@@ -597,6 +645,11 @@ describe('react ui contract', () => {
   it('AdminSearchForm should update default submit text after locale switched at runtime', async () => {
     const schema = [{ fieldName: 'name', component: 'input' as const }];
     const renderer = await mountForm(<AdminSearchForm schema={schema} />);
+
+    /**
+     * 获取主提交按钮节点。
+     * @returns 主按钮节点。
+     */
     const primaryButton = () =>
       renderer.root
         .findAllByType('button')
@@ -619,6 +672,11 @@ describe('react ui contract', () => {
       { fieldName: 'c', component: 'input' as const },
       { fieldName: 'd', component: 'input' as const },
     ];
+
+    /**
+     * 受控值宿主组件。
+     * @returns `AdminSearchForm` 测试节点。
+     */
     function Host() {
       const [values, setValues] = useState<Record<string, any>>({
         a: '',
@@ -638,6 +696,9 @@ describe('react ui contract', () => {
     await act(async () => {
       collapseButton.props.onClick?.({
         defaultPrevented: false,
+        /**
+         * 事件桩：阻止默认行为（空实现）。
+         */
         preventDefault() {},
       });
     });

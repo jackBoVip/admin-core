@@ -1,3 +1,6 @@
+/**
+ * 表格基础辅助函数（运行时状态、移动端判定、主题变量）测试。
+ */
 import {
   cleanupTableRuntimeApis,
   createTableSearchFormActionHandlers,

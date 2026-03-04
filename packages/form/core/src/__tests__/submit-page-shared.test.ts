@@ -20,7 +20,16 @@ import {
 
 describe('submit-page-shared helpers', () => {
   it('should resolve submit handler with onSubmit first', () => {
+    /**
+     * onSubmit 测试桩。
+     * @returns 空返回值。
+     */
     const onSubmit = () => undefined;
+
+    /**
+     * handleSubmit 测试桩。
+     * @returns 空返回值。
+     */
     const handleSubmit = () => undefined;
     expect(resolveSubmitPageSubmitHandler({ onSubmit, handleSubmit })).toBe(onSubmit);
     expect(resolveSubmitPageSubmitHandler({ handleSubmit })).toBe(handleSubmit);
@@ -146,6 +155,11 @@ describe('submit-page-shared helpers', () => {
       activeStep: 0,
       api,
       applyStepChange: async () => undefined,
+      /**
+       * 抽屉开关回调测试桩。
+       *
+       * @param nextOpen 下一次开关状态。
+       */
       onOpenChange(nextOpen) {
         open = nextOpen;
       },
@@ -221,9 +235,20 @@ describe('submit-page-shared helpers', () => {
       onStepChange: () => {
         changed += 1;
       },
+      /**
+       * 同步抽屉开关状态。
+       *
+       * @param value 下一次开关状态。
+       */
       setOpen(value) {
         open = value;
       },
+      /**
+       * 更新当前步骤并回写隐藏步骤字段。
+       *
+       * @param step 目标步骤索引。
+       * @returns 实际设置后的步骤索引。
+       */
       async setStep(step) {
         activeStep = step;
         await api.setFieldValue(built.stepFieldName, step, false);
@@ -261,12 +286,28 @@ describe('submit-page-shared helpers', () => {
       getStepFieldName: () => built.stepFieldName,
       getSteps: () => built.steps,
       getSubmitHandler: () => undefined,
+      /**
+       * 监听控制器开关事件。
+       *
+       * @param nextOpen 下一次开关状态。
+       */
       onOpenChange(nextOpen) {
         openEvents.push(nextOpen);
       },
+      /**
+       * 同步开关状态到测试变量。
+       *
+       * @param nextOpen 下一次开关状态。
+       */
       setOpen(nextOpen) {
         open = nextOpen;
       },
+      /**
+       * 回传步骤索引，模拟外部步骤切换实现。
+       *
+       * @param step 目标步骤索引。
+       * @returns 步骤索引。
+       */
       async setStep(step) {
         return step;
       },
@@ -304,7 +345,16 @@ describe('submit-page-shared helpers', () => {
       onSubmitted: () => {
         submittedHookCalled += 1;
       },
+      /**
+       * 无状态开关回调占位实现。
+       */
       setOpen() {},
+      /**
+       * 回传步骤索引，模拟步骤切换成功。
+       *
+       * @param step 目标步骤索引。
+       * @returns 步骤索引。
+       */
       async setStep(step) {
         return step;
       },

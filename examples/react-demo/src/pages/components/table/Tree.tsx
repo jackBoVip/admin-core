@@ -3,6 +3,10 @@ import { useMemo } from 'react';
 
 import { TREE_ROWS, type DemoTreeRow } from './data';
 
+/**
+ * 树形表示例页。
+ * @description 演示扁平数据转换为树结构后的展示效果。
+ */
 export default function TableTree() {
   const [TableView] = useAdminTable<DemoTreeRow>(
     useMemo(

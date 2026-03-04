@@ -1,3 +1,6 @@
+/**
+ * 受控值桥接器的外部同步与回传抑制测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { createControlledValuesBridge } from '../utils/controlled-values';
 

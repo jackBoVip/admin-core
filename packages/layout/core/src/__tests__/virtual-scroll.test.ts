@@ -1,3 +1,6 @@
+/**
+ * 虚拟滚动范围计算与触发条件测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { calculateVirtualRange, shouldVirtualize } from '../utils/virtual-scroll';
 

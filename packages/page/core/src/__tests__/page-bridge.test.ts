@@ -1,3 +1,6 @@
+/**
+ * Page 查询表单与表格桥接配置归一化测试。
+ */
 import { normalizePageFormTableBridgeOptions } from '../index';
 
 describe('page form-table bridge', () => {

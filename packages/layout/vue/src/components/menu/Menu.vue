@@ -26,6 +26,9 @@ import {
   getMenuRootClassName,
 } from '@admin-core/layout';
 
+/**
+ * 菜单组件属性。
+ */
 interface Props {
   /** 菜单数据 */
   menus?: MenuItem[];
@@ -47,6 +50,10 @@ interface Props {
   moreLabel?: string;
 }
 
+/**
+ * 菜单组件入参
+ * @description 定义菜单数据、模式、折叠态与默认激活展开配置。
+ */
 const props = withDefaults(defineProps<Props>(), {
   menus: () => [],
   mode: 'horizontal',
@@ -59,24 +66,49 @@ const props = withDefaults(defineProps<Props>(), {
   moreLabel: 'More',
 });
 
+/**
+ * 菜单组件事件
+ * @description 对外抛出选择、展开与收起事件。
+ */
 const emit = defineEmits<{
   select: [path: string, parentPaths: string[]];
   open: [path: string, parentPaths: string[]];
   close: [path: string, parentPaths: string[]];
 }>();
 
-// 状态
+/**
+ * 当前激活菜单路径
+ * @description 保存当前选中菜单键路径。
+ */
 const activePath = ref(normalizeMenuKey(props.defaultActive));
+/**
+ * 当前展开菜单键集合（数组）
+ * @description 保存所有展开菜单键，便于顺序化输出。
+ */
 const openedMenus = ref<string[]>(
   props.defaultOpeneds && !props.collapse
     ? props.defaultOpeneds.map((key) => normalizeMenuKey(key)).filter(Boolean)
     : []
 );
+/**
+ * 展开菜单键集合（Set）
+ * @description 为高频 `has` 判断提供 O(1) 查询能力。
+ */
 const openedMenuSet = computed(() => new Set(openedMenus.value));
+/**
+ * 菜单父路径映射
+ * @description 建立菜单节点到父节点的路径索引。
+ */
 const parentPathMap = computed(() => buildMenuParentPathMap(props.menus));
+/**
+ * 激活父链集合
+ * @description 根据当前激活路径回溯得到激活链父节点集合。
+ */
 const activeParentSet = computed(() => buildActiveParentSet(activePath.value, parentPathMap.value));
 
-// 监听 defaultActive 变化
+/**
+ * 监听 `defaultActive` 变化并同步内部激活路径。
+ */
 watch(() => props.defaultActive, (val) => {
   const nextActive = normalizeMenuKey(val);
   if (activePath.value !== nextActive) {
@@ -84,15 +116,25 @@ watch(() => props.defaultActive, (val) => {
   }
 });
 
-// 折叠时关闭所有菜单
+/**
+ * 监听折叠状态变化，折叠时自动收起菜单。
+ */
 watch(() => props.collapse, (val) => {
   openedMenus.value = computeOpenedMenusOnCollapseChange(openedMenus.value, val);
 });
 
-// 是否为弹出模式
+/**
+ * 是否处于弹出菜单模式
+ * @description 垂直折叠菜单场景下启用弹层交互模式。
+ */
 const isMenuPopup = computed(() => computeIsMenuPopup(props.mode, props.collapse));
 
-// 打开菜单
+/**
+ * 打开指定菜单，并根据手风琴模式维护展开集合。
+ *
+ * @param path 目标菜单路径。
+ * @param parentPaths 父级路径链。
+ */
 const openMenu = (path: string, parentPaths: string[] = []) => {
   const next = computeOpenedMenusOnOpen(openedMenus.value, path, {
     accordion: props.accordion,
@@ -107,7 +149,12 @@ const openMenu = (path: string, parentPaths: string[] = []) => {
   }
 };
 
-// 关闭菜单
+/**
+ * 关闭指定菜单。
+ *
+ * @param path 目标菜单路径。
+ * @param parentPaths 父级路径链。
+ */
 const closeMenu = (path: string, parentPaths: string[] = []) => {
   const target = normalizeMenuKey(path);
   if (!target) return;
@@ -117,20 +164,28 @@ const closeMenu = (path: string, parentPaths: string[] = []) => {
   emit('close', target, parentPaths.map((p) => normalizeMenuKey(p)).filter(Boolean));
 };
 
-// 关闭所有菜单
+/**
+ * 关闭全部已展开菜单。
+ */
 const closeAllMenus = () => {
   if (openedMenus.value.length > 0) {
     openedMenus.value = [];
   }
 };
 
-// 处理菜单项点击
+/**
+ * 处理菜单项点击，更新激活项并在弹出模式下收起展开菜单。
+ *
+ * @param data 菜单点击上下文。
+ */
 const handleMenuItemClick = (data: MenuItemClicked) => {
   const path = normalizeMenuKey(data.path);
   const parentPaths = data.parentPaths.map((p) => normalizeMenuKey(p)).filter(Boolean);
   if (!path) return;
   
-  // 弹出模式下点击菜单项关闭所有菜单
+  /**
+   * 弹出模式下点击菜单项时关闭全部展开菜单。
+   */
   if (isMenuPopup.value) {
     if (openedMenus.value.length > 0) {
       openedMenus.value = [];
@@ -143,7 +198,9 @@ const handleMenuItemClick = (data: MenuItemClicked) => {
   emit('select', path, parentPaths);
 };
 
-// 创建上下文
+/**
+ * 创建菜单上下文，向后代节点注入菜单状态与交互能力。
+ */
 createMenuContext({
   props: {
     get mode() { return props.mode; },
@@ -163,20 +220,71 @@ createMenuContext({
   get isMenuPopup() { return isMenuPopup.value; },
 });
 
-// 溢出处理（仅水平模式）
+/**
+ * 菜单根节点引用
+ * @description 用于横向溢出测量与纵向虚拟滚动绑定。
+ */
 const menuRef = ref<HTMLElement | null>(null);
+/**
+ * 横向菜单溢出切分索引
+ * @description `-1` 表示无需“更多”菜单。
+ */
 const sliceIndex = ref(-1);
+/**
+ * 横向溢出测量动画帧句柄
+ * @description 用于合并同帧重复测量请求。
+ */
 const resizeRaf = ref<number | null>(null);
+/**
+ * 菜单分批渲染批次大小
+ * @description 控制纵向非虚拟模式下的渐进渲染数量。
+ */
 const RENDER_CHUNK = LAYOUT_UI_TOKENS.MENU_RENDER_CHUNK;
+/**
+ * 当前渲染菜单数量
+ * @description 用于纵向菜单渐进渲染。
+ */
 const renderCount = ref<number>(RENDER_CHUNK);
+/**
+ * 纵向菜单滚动容器引用
+ * @description 指向最近的滚动容器节点。
+ */
 const scrollContainer = ref<HTMLElement | null>(null);
+/**
+ * 纵向菜单滚动位置
+ * @description 驱动虚拟列表范围计算。
+ */
 const scrollTop = ref(0);
+/**
+ * 纵向菜单视口高度
+ * @description 由滚动容器测量同步。
+ */
 const viewportHeight = ref(0);
+/**
+ * 菜单项高度
+ * @description 虚拟列表与 padding 占位计算的项高基准。
+ */
 const itemHeight = ref(40);
+/**
+ * 虚拟列表 overscan
+ * @description 在可视区上下额外渲染项数量。
+ */
 const VIRTUAL_OVERSCAN = LAYOUT_UI_TOKENS.VIRTUAL_OVERSCAN;
+/**
+ * 滚动容器尺寸观察器
+ * @description 监听容器尺寸变化刷新虚拟参数。
+ */
 const scrollResizeObserver = ref<ResizeObserver | null>(null);
+/**
+ * 菜单项尺寸观察器
+ * @description 监听菜单项高度变化刷新项高。
+ */
 const itemResizeObserver = ref<ResizeObserver | null>(null);
 
+/**
+ * 基础可见菜单集合
+ * @description 按模式与溢出切分索引计算基础可见菜单。
+ */
 const baseVisibleMenus = computed(() => {
   return computeBaseVisibleMenus({
     menus: props.menus,
@@ -186,6 +294,10 @@ const baseVisibleMenus = computed(() => {
   });
 });
 
+/**
+ * 是否启用虚拟列表
+ * @description 在垂直折叠场景且满足尺寸条件时启用。
+ */
 const canVirtualize = computed(() =>
   shouldVirtualize({
     enabled: props.mode === 'vertical' && props.collapse,
@@ -194,6 +306,10 @@ const canVirtualize = computed(() =>
     totalItems: props.menus.length,
   })
 );
+/**
+ * 虚拟渲染区间
+ * @description 根据滚动位置计算当前起止索引。
+ */
 const virtualRange = computed(() =>
   calculateVirtualRange({
     scrollTop: scrollTop.value,
@@ -203,10 +319,22 @@ const virtualRange = computed(() =>
     overscan: VIRTUAL_OVERSCAN,
   })
 );
+/**
+ * 虚拟区间菜单切片
+ * @description 返回当前应渲染的菜单子集。
+ */
 const virtualMenus = computed(() =>
   props.menus.slice(virtualRange.value.startIndex, virtualRange.value.endIndex)
 );
+/**
+ * 最终渲染菜单集合
+ * @description 根据虚拟化开关选择虚拟或基础集合。
+ */
 const renderMenus = computed(() => (canVirtualize.value ? virtualMenus.value : baseVisibleMenus.value));
+/**
+ * 菜单列表样式
+ * @description 虚拟化时注入上下 padding 占位。
+ */
 const listStyle = computed(() => {
   if (!canVirtualize.value) return undefined;
   return {
@@ -232,6 +360,10 @@ watch(
   }
 );
 
+/**
+ * 横向溢出菜单集合
+ * @description 计算需要折叠到“更多”菜单中的项。
+ */
 const overflowMenus = computed(() =>
   computeOverflowMenus({
     menus: props.menus,
@@ -240,9 +372,18 @@ const overflowMenus = computed(() =>
   })
 );
 
+/**
+ * 是否存在横向溢出项
+ * @description 用于控制“更多”菜单是否显示。
+ */
 const hasOverflow = computed(() => overflowMenus.value.length > 0);
 
-// 计算菜单项宽度
+/**
+ * 计算菜单项占位宽度（含左右外边距）。
+ *
+ * @param item 菜单项元素。
+ * @returns 占位宽度。
+ */
 const calcMenuItemWidth = (item: HTMLElement): number => {
   const style = getComputedStyle(item);
   const marginLeft = parseFloat(style.marginLeft) || 0;
@@ -250,14 +391,28 @@ const calcMenuItemWidth = (item: HTMLElement): number => {
   return item.offsetWidth + marginLeft + marginRight;
 };
 
+/**
+ * 获取菜单稳定键值。
+ *
+ * @param item 菜单项。
+ * @returns 稳定键值。
+ */
 const getMenuKey = (item: MenuItem) => {
   const raw = item.key ?? item.path ?? item.name ?? '';
   return raw === '' ? '' : String(raw);
 };
 
+/**
+ * 菜单项宽度缓存
+ * @description 避免重复读取 DOM 宽度导致抖动。
+ */
 const menuWidthCache = new Map<string, number>();
 
-// 计算切片索引（避免更多按钮闪烁）
+/**
+ * 计算横向菜单溢出分割索引。
+ *
+ * @returns 无需溢出时返回 `-1`，否则返回分割索引。
+ */
 const calcSliceIndex = (): number => {
   if (!menuRef.value) return -1;
 
@@ -278,7 +433,9 @@ const calcSliceIndex = (): number => {
   const paddingRight = parseFloat(containerStyle.paddingRight) || 0;
   const availableWidth = widthTarget.clientWidth - paddingLeft - paddingRight;
 
-  // 更新已渲染项的宽度缓存
+  /**
+   * 更新已渲染菜单项宽度缓存。
+   */
   for (const item of items) {
     const key = item.getAttribute?.('data-key');
     if (!key) continue;
@@ -299,7 +456,9 @@ const calcSliceIndex = (): number => {
     totalWidth += width ?? 0;
   }
 
-  // 全部可显示，无需溢出
+  /**
+   * 全量可显示时不需要“更多”溢出菜单。
+   */
   if (totalWidth <= availableWidth) return -1;
 
   const moreEl = container.querySelector(':scope > .menu__sub-menu--more, :scope > .menu__sub-menu[data-more="true"]') as HTMLElement | null;
@@ -322,6 +481,9 @@ const calcSliceIndex = (): number => {
   return lastVisibleIndex === orderedKeys.length ? -1 : lastVisibleIndex;
 };
 
+/**
+ * 处理菜单容器尺寸变化并更新横向溢出状态。
+ */
 const handleResize = () => {
   if (resizeRaf.value !== null) return;
   resizeRaf.value = requestAnimationFrame(() => {
@@ -339,6 +501,10 @@ const handleResize = () => {
   });
 };
 
+/**
+ * 横向菜单尺寸观察器
+ * @description 监听菜单容器宽度变化并刷新切片索引。
+ */
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
@@ -360,7 +526,9 @@ onUnmounted(() => {
   }
 });
 
-// 监听模式变化
+/**
+ * 监听菜单模式变化并按模式启停横向溢出观测。
+ */
 watchEffect(() => {
   if (props.mode === 'horizontal' && menuRef.value) {
     if (!resizeObserver) {
@@ -389,6 +557,9 @@ watchEffect((onCleanup) => {
       scrollTop.value = nextTop;
     }
   });
+  /**
+   * 同步菜单项高度，用于虚拟列表区间计算。
+   */
   const updateItemHeight = () => {
     const computedStyle = getComputedStyle(menuEl);
     const heightValue = parseFloat(computedStyle.getPropertyValue('--menu-item-height'));
@@ -475,14 +646,19 @@ watchEffect((onCleanup) => {
   onCleanup(() => cancelAnimationFrame(frame));
 });
 
-// 监听菜单变化
+/**
+ * 监听菜单数据变化并在横向模式下重算溢出切片。
+ */
 watch(() => props.menus, () => {
   if (props.mode === 'horizontal') {
     nextTick(handleResize);
   }
 }, { deep: true });
 
-// 菜单类名
+/**
+ * 菜单根类名
+ * @description 根据模式、主题、折叠与圆角配置生成。
+ */
 const menuClass = computed(() =>
   getMenuRootClassName({
     mode: props.mode,

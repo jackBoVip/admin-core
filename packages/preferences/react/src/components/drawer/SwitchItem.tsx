@@ -1,10 +1,13 @@
 /**
- * 开关设置项组件
- * @description 与 Vue 版本保持一致的 API 设计
+ * 开关设置项组件模块。
+ * @description 提供可键盘操作的布尔开关控件，并保持与 Vue 版本一致的 API 语义。
  */
 import { memo, useCallback, useId } from 'react';
 import type { SwitchItemBaseProps } from '@admin-core/preferences';
 
+/**
+ * 开关设置项参数。
+ */
 export interface SwitchItemProps extends SwitchItemBaseProps {
   /** 是否选中 */
   checked: boolean;
@@ -13,8 +16,8 @@ export interface SwitchItemProps extends SwitchItemBaseProps {
 }
 
 /**
- * 开关组件 - 使用 memo 优化重渲染
- * @description 增强无障碍性，支持键盘操作
+ * 开关设置项组件。
+ * @description 使用 `memo` 降低无关重渲染，并内建点击与键盘双通道交互。
  */
 export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
   label,
@@ -24,18 +27,33 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
   disabled = false,
   tip,
 }) {
+  /**
+   * 开关无障碍关联 ID。
+   */
   const switchId = useId();
 
+  /**
+   * 处理开关点击
+   * @description 在可操作状态下翻转开关值并通知外层。
+   */
   const handleClick = useCallback(() => {
     if (!disabled) {
       onChange(!checked);
     }
   }, [disabled, checked, onChange]);
 
+  /**
+   * 处理开关键盘事件
+   * @description 在可操作状态下，空格或回车触发开关切换。
+   * @param e React 键盘事件对象。
+   */
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (disabled) return;
-      // 空格或回车触发切换
+      /**
+       * 键盘触发条件。
+       * @description 仅空格与回车键可触发开关切换。
+       */
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         onChange(!checked);
@@ -72,4 +90,7 @@ export const SwitchItem = memo<SwitchItemProps>(function SwitchItem({
   );
 });
 
+/**
+ * 默认导出开关配置项组件。
+ */
 export default SwitchItem;

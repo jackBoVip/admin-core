@@ -1,3 +1,6 @@
+/**
+ * Table API 初始化、状态更新与生命周期行为测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import { createTableApi } from '../table-api';
 

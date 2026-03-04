@@ -4,16 +4,32 @@ import {
   createLayoutHeaderStateController,
 } from '../utils';
 
+/**
+ * 测试用事件目标。
+ * @description 以最小实现模拟 DOM 事件监听与派发行为。
+ */
 class FakeEventTarget {
   private readonly listeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
   scrollY = 0;
 
+  /**
+   * 注册事件监听器。
+   * @param type 事件类型。
+   * @param listener 事件监听器。
+   * @returns 无返回值。
+   */
   addEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     const set = this.listeners.get(type) ?? new Set<EventListenerOrEventListenerObject>();
     set.add(listener);
     this.listeners.set(type, set);
   }
 
+  /**
+   * 移除事件监听器。
+   * @param type 事件类型。
+   * @param listener 事件监听器。
+   * @returns 无返回值。
+   */
   removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     const set = this.listeners.get(type);
     if (!set) return;
@@ -23,6 +39,12 @@ class FakeEventTarget {
     }
   }
 
+  /**
+   * 触发指定类型事件。
+   * @param type 事件类型。
+   * @param event 事件对象。
+   * @returns 无返回值。
+   */
   emit(type: string, event: Event | Record<string, unknown> = {}) {
     const set = this.listeners.get(type);
     if (!set) return;
@@ -35,15 +57,28 @@ class FakeEventTarget {
     }
   }
 
+  /**
+   * 统计某类事件监听数量。
+   * @param type 事件类型。
+   * @returns 监听器数量。
+   */
   count(type: string) {
     return this.listeners.get(type)?.size ?? 0;
   }
 }
 
+/**
+ * 测试用滚动容器目标。
+ * @description 在通用事件目标基础上补充 `scrollTop` 字段。
+ */
 class FakeScrollTarget extends FakeEventTarget {
   scrollTop = 0;
 }
 
+/**
+ * 创建可控的 `requestAnimationFrame` 测试桩。
+ * @returns 提供注册、取消与批量执行能力的 RAF 控制器。
+ */
 function createRafController() {
   let id = 0;
   const callbacks = new Map<number, FrameRequestCallback>();
@@ -199,7 +234,7 @@ describe('layout-header-runtime-state helpers', () => {
       },
     });
 
-    // Inject runtime dependencies through global-like behavior by reusing runtime factory defaults.
+    /* Reuse runtime factory defaults to inject runtime dependencies in test. */
     const runtime = createLayoutHeaderAutoHideRuntime({
       eventTarget: target,
       requestFrame: raf.requestFrame,

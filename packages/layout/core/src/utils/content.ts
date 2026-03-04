@@ -1,20 +1,22 @@
 /**
- * 内容区工具函数
+ * 内容区工具函数。
  * @module utils/content
- * @description 提取 Vue 和 React 共享的内容区样式计算逻辑
+ * @description 提取 Vue 与 React 共享的内容区、面板区样式计算逻辑。
  */
 
 /**
- * CSS 样式属性类型
+ * CSS 样式属性类型。
+ * @description 用于描述布局样式计算函数输出的基础样式对象结构。
  */
 export type CSSProperties = Record<string, string | number | undefined>;
 
-// ============================================================
-// 1. 内容区样式计算
-// ============================================================
+/* ============================================================ */
+/* 1. 内容区样式计算 */
+/* ============================================================ */
 
 /**
- * 内容区配置
+ * 内容区配置。
+ * @description 定义内容容器的紧凑模式与内边距参数。
  */
 export interface ContentConfig {
   /** 是否紧凑模式 */
@@ -34,7 +36,8 @@ export interface ContentConfig {
 }
 
 /**
- * 内容区布局状态
+ * 内容区布局状态。
+ * @description 描述侧边栏、面板与移动端等会影响内容布局的运行时状态。
  */
 export interface ContentLayoutState {
   /** 侧边栏是否折叠 */
@@ -50,7 +53,8 @@ export interface ContentLayoutState {
 }
 
 /**
- * 内容区尺寸
+ * 内容区尺寸。
+ * @description 定义内容区外层计算所需的关键布局尺寸参数。
  */
 export interface ContentDimensions {
   /** 侧边栏宽度 */
@@ -66,7 +70,10 @@ export interface ContentDimensions {
 }
 
 /**
- * 计算内容区类名
+ * 计算内容区类名。
+ * @param config 内容区配置。
+ * @param state 内容区布局状态。
+ * @returns 内容区根节点类名字符串。
  */
 export function computeContentClassName(
   config: ContentConfig,
@@ -99,7 +106,10 @@ export function computeContentClassName(
 }
 
 /**
- * 计算内容区外层样式
+ * 计算内容区外层样式。
+ * @param dimensions 内容区关键尺寸参数。
+ * @param state 内容区布局状态。
+ * @returns 内容区外层样式对象。
  */
 export function computeContentWrapperStyle(
   dimensions: ContentDimensions,
@@ -107,23 +117,23 @@ export function computeContentWrapperStyle(
 ): CSSProperties {
   const { sidebarWidth, headerHeight, tabbarHeight, footerHeight, panelWidth } = dimensions;
   const { showPanel, panelPosition, panelCollapsed, isMobile } = state;
-  
+
   const style: CSSProperties = {};
-  
-  // 左侧边距（侧边栏）
+
+  /* 左侧边距（侧边栏）。 */
   if (!isMobile) {
     style.marginLeft = `${sidebarWidth}px`;
   }
-  
-  // 顶部边距（顶栏 + 标签栏）
+
+  /* 顶部边距（顶栏 + 标签栏）。 */
   style.marginTop = `${headerHeight + tabbarHeight}px`;
-  
-  // 底部边距（页脚）
+
+  /* 底部边距（页脚）。 */
   if (footerHeight > 0) {
     style.marginBottom = `${footerHeight}px`;
   }
-  
-  // 面板边距
+
+  /* 面板边距。 */
   if (showPanel && !panelCollapsed) {
     if (panelPosition === 'left') {
       style.marginLeft = `${(parseInt(String(style.marginLeft)) || 0) + panelWidth}px`;
@@ -136,7 +146,9 @@ export function computeContentWrapperStyle(
 }
 
 /**
- * 计算内容容器样式
+ * 计算内容容器样式。
+ * @param config 内容区配置。
+ * @returns 内容容器样式对象。
  */
 export function computeContentContainerStyle(
   config: ContentConfig
@@ -164,12 +176,13 @@ export function computeContentContainerStyle(
   return style;
 }
 
-// ============================================================
-// 2. 面板样式计算
-// ============================================================
+/* ============================================================ */
+/* 2. 面板样式计算 */
+/* ============================================================ */
 
 /**
- * 面板配置
+ * 面板配置。
+ * @description 定义内容区侧栏面板的启用、位置与宽度参数。
  */
 export interface PanelConfig {
   /** 是否启用 */
@@ -185,7 +198,10 @@ export interface PanelConfig {
 }
 
 /**
- * 计算面板类名
+ * 计算面板类名。
+ * @param config 面板配置。
+ * @param collapsed 面板是否折叠。
+ * @returns 面板根节点类名字符串。
  */
 export function computePanelClassName(
   config: PanelConfig,
@@ -203,7 +219,10 @@ export function computePanelClassName(
 }
 
 /**
- * 计算面板样式
+ * 计算面板样式。
+ * @param config 面板配置。
+ * @param collapsed 面板是否折叠。
+ * @returns 面板样式对象。
  */
 export function computePanelStyle(
   config: PanelConfig,
@@ -218,9 +237,9 @@ export function computePanelStyle(
   };
 }
 
-// ============================================================
-// 3. 页脚样式计算
-// ============================================================
+/* ============================================================ */
+/* 3. 页脚样式计算 */
+/* ============================================================ */
 
 /**
  * 页脚配置
@@ -236,6 +255,10 @@ export interface FooterConfig {
 
 /**
  * 计算页脚类名
+ * @param config 页脚配置。
+ * @param showSidebar 是否展示侧边栏。
+ * @param sidebarCollapsed 侧边栏是否处于折叠态。
+ * @returns 页脚根节点类名字符串。
  */
 export function computeFooterClassName(
   config: FooterConfig,
@@ -261,6 +284,9 @@ export function computeFooterClassName(
 
 /**
  * 计算页脚样式
+ * @param config 页脚配置。
+ * @param sidebarWidth 侧边栏宽度。
+ * @returns 页脚样式对象。
  */
 export function computeFooterStyle(
   config: FooterConfig,
@@ -279,9 +305,9 @@ export function computeFooterStyle(
   return style;
 }
 
-// ============================================================
-// 4. 版权信息渲染
-// ============================================================
+/* ============================================================ */
+/* 4. 版权信息渲染 */
+/* ============================================================ */
 
 /**
  * 版权配置
@@ -301,6 +327,8 @@ export interface CopyrightConfig {
 
 /**
  * 生成版权文本
+ * @param config 版权配置。
+ * @returns 版权文本字符串。
  */
 export function generateCopyrightText(config: CopyrightConfig): string {
   const currentYear = new Date().getFullYear();

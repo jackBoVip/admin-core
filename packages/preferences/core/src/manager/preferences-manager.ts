@@ -1,6 +1,6 @@
 /**
- * 偏好设置管理器
- * @description 框架无关的偏好设置核心逻辑
+ * 偏好设置管理器。
+ * @description 提供框架无关的偏好状态维护、持久化与订阅通知能力。
  */
 
 import { DEFAULT_PREFERENCES, getDefaultPreferences } from '../config/defaults';
@@ -27,7 +27,8 @@ import type {
 } from '../types';
 
 /**
- * 偏好设置变更监听器
+ * 偏好设置变更监听器。
+ * @description 在偏好更新后接收最新快照与变更键列表。
  */
 export type PreferencesListener = (
   preferences: Preferences,
@@ -35,12 +36,13 @@ export type PreferencesListener = (
 ) => void;
 
 /**
- * 偏好设置存储键名
+ * 偏好设置存储键名。
+ * @description 用于持久化差异配置的固定键名后缀。
  */
 const PREFERENCES_STORAGE_KEY = 'preferences';
 
 /**
- * 偏好设置管理器
+ * 偏好设置管理器。
  * @description
  * 设计原则：
  * 1. 框架无关：不依赖 Vue/React 的响应式系统
@@ -50,6 +52,10 @@ const PREFERENCES_STORAGE_KEY = 'preferences';
 /** 默认存储防抖时间（毫秒） */
 const STORAGE_DEBOUNCE_MS = 300;
 
+/**
+ * PreferencesManager 类定义。
+ * @description 封装偏好初始化、更新、持久化、监听与重置全流程。
+ */
 export class PreferencesManager {
   /** 当前偏好设置状态 */
   private state: Preferences;
@@ -87,28 +93,32 @@ export class PreferencesManager {
   /** 是否正在执行 flush（防止重复调用） */
   private isFlushing = false;
 
+  /**
+   * 创建偏好设置管理器。
+   * @param options 初始化选项。
+   */
   constructor(options: PreferencesInitOptions = { namespace: 'admin-core' }) {
     this.namespace = options.namespace;
     this.options = options;
 
-    // 创建存储管理器
+    /* 创建存储管理器。 */
     this.storage = options.storage ?? createStorageManager({
       prefix: this.namespace,
     });
 
-    // 加载初始状态
+    /* 加载初始状态。 */
     const storedPrefs = this.loadFromStorage();
     const defaultPrefs = getDefaultPreferences();
 
-    // 合并配置优先级：存储 > 覆盖 > 默认
+    /* 合并配置优先级：存储 > 覆盖 > 默认。 */
     this.state = deepMerge(
       defaultPrefs,
       options.overrides ?? {},
       storedPrefs ?? {}
     );
 
-    // 🔧 关键修复 1：如果 isLocked 是 true 但没有密码，自动解锁
-    // 这可以防止页面刷新后因为存储中的错误状态而自动锁屏
+    /* 关键修复：如果 `isLocked = true` 但未设置密码，自动解锁。 */
+    /* 这可避免刷新后因异常存储状态而进入错误锁屏。 */
     if (this.state.lockScreen.isLocked && !this.state.lockScreen.password) {
       console.warn('[PreferencesManager] Auto-unlocking: isLocked=true but no password set');
       logger.warn('[PreferencesManager] Auto-unlocking: isLocked=true but no password set', {
@@ -120,7 +130,7 @@ export class PreferencesManager {
       this.state.lockScreen.isLocked = false;
     }
 
-    // 保存初始状态
+    /* 保存初始状态。 */
     this.initialState = deepClone(this.state);
 
   }
@@ -128,25 +138,26 @@ export class PreferencesManager {
   /**
    * 初始化管理器
    * @description 应用初始设置、监听系统主题变化
+   * @returns 无返回值
    */
   init(): void {
     if (this.initialized) return;
 
-    // 设置 DOM 选择器（用于深色侧边栏/顶栏功能）
+    /* 设置 DOM 选择器（用于深色侧边栏/顶栏功能）。 */
     if (this.options.selectors) {
       setDOMSelectors(this.options.selectors);
     }
 
-    // 应用 CSS 变量
+    /* 应用 CSS 变量。 */
     this.applyPreferences();
 
-    // 监听系统主题变化
+    /* 监听系统主题变化。 */
     this.watchSystemTheme();
 
-    // 初始化主题切换动画位置追踪
+    /* 初始化主题切换动画位置追踪。 */
     initThemeTransitionTracking();
 
-    // 页面卸载时强制保存，避免防抖未落盘导致刷新后状态回退
+    /* 页面卸载时强制保存，避免防抖未落盘导致刷新后状态回退。 */
     if (isBrowser) {
       this.pageHideHandler = () => {
         if (this.saveDebounceTimer) {
@@ -163,14 +174,15 @@ export class PreferencesManager {
 
   /**
    * 销毁管理器
+   * @returns 无返回值
    */
   destroy(): void {
-    // 移除媒体查询监听
+    /* 移除媒体查询监听。 */
     if (this.mediaQueryListener) {
       this.mediaQueryListener.removeEventListener('change', this.handleSystemThemeChange);
     }
 
-    // 清除防抖定时器
+    /* 清除防抖定时器。 */
     if (this.saveDebounceTimer) {
       clearTimeout(this.saveDebounceTimer);
       this.saveDebounceTimer = null;
@@ -182,10 +194,10 @@ export class PreferencesManager {
       this.pageHideHandler = undefined;
     }
 
-    // 清空监听器
+    /* 清空监听器。 */
     this.listeners.clear();
 
-    // 清除缓存
+    /* 清除缓存。 */
     this.cachedDiff = null;
 
     this.initialized = false;
@@ -202,6 +214,7 @@ export class PreferencesManager {
   /**
    * 获取当前存储中的偏好设置快照
    * @description 用于在运行时校验内存状态与持久化状态是否一致
+   * @returns 持久化存储中的偏好设置差异；不存在时返回 `null`
    */
   getStoredPreferences(): DeepPartial<Preferences> | null {
     return this.loadFromStorage();
@@ -220,13 +233,14 @@ export class PreferencesManager {
    * 更新偏好设置
    * @param updates - 要更新的设置（支持深度部分更新）
    * @param persist - 是否持久化（默认 true）
+   * @returns 无返回值
    */
   setPreferences(updates: DeepPartial<Preferences>, persist = true): void {
     const prevState = this.state;
     const prevActualTheme = getActualThemeMode(prevState.theme.mode);
 
     if (updates.lockScreen) {
-      // 早期检查：如果锁屏状态和密码都没有变化，提前返回
+      /* 早期检查：锁屏状态与密码均未变化时提前返回。 */
       if (
         updates.lockScreen.isLocked !== undefined &&
         updates.lockScreen.isLocked === prevState.lockScreen.isLocked &&
@@ -237,20 +251,20 @@ export class PreferencesManager {
       }
     }
 
-    // 深度合并更新（safeMerge 不修改原对象）
+    /* 深度合并更新（`safeMerge` 不修改原对象）。 */
     this.state = safeMerge(this.state, updates);
 
-    // 检查是否有变化
+    /* 检查是否有变化。 */
     if (!hasChanges(prevState, this.state)) return;
 
-    // 清除缓存的差异（状态已变化）
+    /* 清除缓存差异（状态已变化）。 */
     this.cachedDiff = null;
 
     const nextActualTheme = getActualThemeMode(this.state.theme.mode);
     const { keys: changedKeys } = diffWithKeys(prevState, this.state);
 
-    // 应用 CSS 变量并通知监听器
-    // 主题切换时，将两者放入同一过渡回调，避免布局局部先更新、扩散动画后触发的时序错位。
+    /* 应用 CSS 变量并通知监听器。 */
+    /* 主题切换时放入同一过渡回调，避免局部更新与扩散动画时序错位。 */
     if (prevActualTheme !== nextActualTheme) {
       runThemeTransition(nextActualTheme, () => {
         this.applyPreferences();
@@ -261,7 +275,7 @@ export class PreferencesManager {
       this.notifyListeners(changedKeys);
     }
 
-    // 持久化（使用防抖，避免频繁写入）
+    /* 持久化（使用防抖，避免频繁写入）。 */
     if (persist) {
       this.debouncedSaveToStorage();
     }
@@ -270,9 +284,10 @@ export class PreferencesManager {
   /**
    * 立即持久化当前偏好设置
    * @description 用于锁屏等需要立即落盘的场景
+   * @returns 无返回值
    */
   flush(): void {
-    // 防止重复调用
+    /* 防止重复调用。 */
     if (this.isFlushing) {
       return;
     }
@@ -309,23 +324,27 @@ export class PreferencesManager {
   /**
    * 重置偏好设置
    * @param toDefault - 是否重置为默认值（否则重置为初始值）
+   * @returns 无返回值
    */
   reset(toDefault = true): void {
     const newState = toDefault ? getDefaultPreferences() : deepClone(this.initialState);
 
-    // 保留语言设置
+    /* 保留语言设置。 */
     newState.app.locale = this.state.app.locale;
 
     this.state = newState;
-    this.cachedDiff = null; // 清除差异缓存
+    /* 清除差异缓存。 */
+    this.cachedDiff = null;
     this.applyPreferences();
-    this.saveToStorage(); // 重置时立即保存
+    /* 重置时立即保存。 */
+    this.saveToStorage();
     this.notifyListeners(['*']);
   }
 
   /**
    * 重置某个分类的设置
    * @param key - 分类键名
+   * @returns 无返回值
    */
   resetCategory<K extends PreferencesKeys>(key: K): void {
     this.set(key, DEFAULT_PREFERENCES[key] as DeepPartial<Preferences[K]>);
@@ -337,7 +356,7 @@ export class PreferencesManager {
    * @returns 取消监听函数
    */
   subscribe(listener: PreferencesListener): () => void {
-    // 检查监听器数量限制
+    /* 检查监听器数量限制。 */
     if (this.listeners.size >= PreferencesManager.MAX_LISTENERS) {
       logger.warn(
         `[PreferencesManager] Max listeners (${PreferencesManager.MAX_LISTENERS}) reached. ` +
@@ -358,6 +377,7 @@ export class PreferencesManager {
 
   /**
    * 切换主题模式
+   * @returns 无返回值
    */
   toggleThemeMode(): void {
     const currentMode = this.getActualThemeMode();
@@ -366,6 +386,7 @@ export class PreferencesManager {
 
   /**
    * 切换侧边栏折叠状态
+   * @returns 无返回值
    */
   toggleSidebarCollapsed(): void {
     this.set('sidebar', { collapsed: !this.state.sidebar.collapsed });
@@ -383,11 +404,12 @@ export class PreferencesManager {
    * 导入配置
    * @param config - JSON 字符串或对象
    * @param skipValidation - 是否跳过完整验证（默认 false）
+   * @returns 无返回值
    * @throws 配置格式错误时抛出异常
    */
   importConfig(config: string | DeepPartial<Preferences>, skipValidation = false): void {
     let parsed: DeepPartial<Preferences>;
-    
+
     if (typeof config === 'string') {
       try {
         parsed = JSON.parse(config);
@@ -399,12 +421,12 @@ export class PreferencesManager {
       parsed = config;
     }
 
-    // 基本类型验证
+    /* 基本类型验证。 */
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new Error('[PreferencesManager] Invalid config: must be an object');
     }
 
-    // 完整配置验证（可选）
+    /* 完整配置验证（可选）。 */
     if (!skipValidation) {
       const fullConfig = deepMerge(getDefaultPreferences(), parsed);
       const validation = validatePreferencesConfig(fullConfig);
@@ -427,10 +449,11 @@ export class PreferencesManager {
     return this.cachedDiff;
   }
 
-  // ========== 私有方法 ==========
+  /* ========== 私有方法 ========== */
 
   /**
    * 从存储加载偏好设置
+   * @returns 存储中的偏好设置差异；不存在时返回 `null`
    */
   private loadFromStorage(): DeepPartial<Preferences> | null {
     return this.storage.getItem<DeepPartial<Preferences>>(PREFERENCES_STORAGE_KEY);
@@ -438,109 +461,88 @@ export class PreferencesManager {
 
   /**
    * 保存偏好设置到存储（立即执行）
+   * @returns 无返回值
    */
   private saveToStorage(): void {
-    // 只保存与默认值不同的部分
-    // 使用缓存的 diff（若缓存为空则即时计算）
+    /* 仅保存与默认值不同的部分，优先复用缓存 diff。 */
     const diffPrefs = (this.getDiff() as DeepPartial<Preferences> | null) ?? {};
-    
-    // 检查 localStorage 中是否已经存在 lockScreen 设置
-    // 如果存在，说明用户之前操作过锁屏，需要持久化 isLocked 状态
+
+    /* 检查存储中是否已有 lockScreen，用于决定是否保留锁屏状态。 */
     const storedPrefs = this.loadFromStorage();
     const hasStoredLockScreen = storedPrefs?.lockScreen !== undefined;
     const storedIsLocked = storedPrefs?.lockScreen?.isLocked;
-    
-    // 如果用户设置了密码，或者存在已存储的 lockScreen 设置，或者当前 isLocked 为 true，或者 diff 中有 lockScreen 相关设置
-    // 都需要保存 isLocked 状态，确保刷新后状态正确
+
+    /* 以下条件任一成立都需要持久化 lockScreen 状态，确保刷新后状态一致。 */
     const hasPassword = this.state.lockScreen.password !== '';
-    // 关键修复：如果存储中的 isLocked 状态与当前状态不同，也需要保存（确保解锁状态能覆盖锁屏状态）
-    // 或者如果存储中存在 lockScreen 设置（无论 isLocked 值是什么），都需要保存当前状态
+    /* 关键修复：存储锁定态与当前不一致时必须落盘，保证解锁可覆盖旧锁屏。 */
     const lockStateChanged = storedIsLocked !== undefined && storedIsLocked !== this.state.lockScreen.isLocked;
-    // 检查 lockScreen 相关字段是否有实际变化
+    /* 检查 lockScreen 相关字段是否有实际变化。 */
     const passwordChanged = storedPrefs?.lockScreen?.password !== this.state.lockScreen.password;
-    // 如果存储中存在 lockScreen 设置，必须保存当前状态（包括解锁状态），确保状态同步
-    // 关键：如果存储中有 lockScreen 设置，无论当前状态如何，都必须保存，确保状态同步
-    // 这样可以确保解锁状态（isLocked: false）能正确覆盖之前的锁屏状态（isLocked: true）
-    // 特别注意：即使 isLocked 与默认值相同（false），只要存储中有 lockScreen 设置，也必须保存，确保状态同步
-    // 🔧 关键修复：简化判断逻辑，确保解锁状态能正确保存
-    // 如果存储中有 lockScreen 设置，或者用户设置了密码，或者锁屏状态改变了，都必须保存
-    // 这样可以确保解锁状态（isLocked: false）能正确覆盖锁屏状态（isLocked: true）
+    /* 存储存在 lockScreen、设置了密码、状态变更或 diff 含 lockScreen 时，都要保存。 */
     const shouldSaveLockScreen = hasPassword || hasStoredLockScreen || this.state.lockScreen.isLocked || !!diffPrefs.lockScreen || lockStateChanged || passwordChanged;
-    
-    // 仅保存与默认值的差异作为持久化结果（避免旧存储覆盖当前状态）
-    // 这样当某项恢复为默认值时，会从存储中移除，确保刷新后正确回退
+
+    /* 仅保存差异，避免旧存储覆盖当前状态；恢复默认时可从存储自然移除。 */
     const finalPrefs: DeepPartial<Preferences> = {};
-    
-    // 先处理 lockScreen，避免被 diff 覆盖
+
+    /* 先处理 lockScreen，避免后续 merge 覆盖。 */
     if (shouldSaveLockScreen) {
-      // 初始化 lockScreen 对象
+      /* 初始化 lockScreen 对象。 */
       if (!finalPrefs.lockScreen) {
         finalPrefs.lockScreen = {};
       }
-      
-      // 如果存储中已有 lockScreen 设置，保留其他字段（如 password、backgroundImage、autoLockTime）
+
+      /* 如果存储已有 lockScreen，保留其他字段（排除 isLocked）。 */
       if (storedPrefs?.lockScreen) {
         const { isLocked: _storedIsLocked, ...storedLockScreenWithoutIsLocked } = storedPrefs.lockScreen;
-        // 先合并存储中的其他字段（排除 isLocked）
+        /* 先合并存储中的其他字段（排除 isLocked）。 */
         finalPrefs.lockScreen = { ...storedLockScreenWithoutIsLocked, ...finalPrefs.lockScreen };
       }
-      
-      // 合并 diffPrefs.lockScreen 中的其他字段（如 backgroundImage、autoLockTime），但排除 isLocked
-      // 因为 isLocked 需要根据当前状态显式设置
+
+      /* 合并 diffPrefs.lockScreen 的非 isLocked 字段。 */
       if (diffPrefs.lockScreen) {
         const { isLocked: _diffIsLocked, ...diffLockScreenWithoutIsLocked } = diffPrefs.lockScreen;
-        // 合并 diff 中的其他字段（排除 isLocked）
+        /* 合并 diff 中的其他字段（排除 isLocked）。 */
         finalPrefs.lockScreen = { ...finalPrefs.lockScreen, ...diffLockScreenWithoutIsLocked };
       }
-      
-      // 始终保存当前的 isLocked 状态（无论 true 还是 false）
-      // 这是关键：即使 isLocked 与默认值相同，只要用户设置了密码或之前操作过锁屏，就需要保存
-      // 必须显式保存 isLocked，确保解锁状态能正确持久化
-      // 必须在最后设置，确保覆盖任何其他值
+
+      /* 始终显式保存当前 isLocked（无论 true/false），确保解锁状态可持久化。 */
       finalPrefs.lockScreen.isLocked = this.state.lockScreen.isLocked;
-      
-      // 确保 password 也被保存
-      // 如果当前有密码，保存它
-      // 如果当前密码为空字符串但存储中有密码，也需要显式保存空字符串来覆盖旧值
+
+      /* 如果当前有密码，或存储中曾有密码，则同步保存 password。 */
       const storedPassword = storedPrefs?.lockScreen?.password;
       if (this.state.lockScreen.password || storedPassword) {
         finalPrefs.lockScreen.password = this.state.lockScreen.password;
       }
     } else if (diffPrefs.lockScreen) {
-      // 如果 shouldSaveLockScreen 为 false，但 diffPrefs 中有 lockScreen（比如只有 backgroundImage 或 autoLockTime）
-      // 我们需要合并这些字段，但不设置 isLocked（因为它与默认值相同且存储中也没有）
+      /* 不保存 isLocked 时，仍合并 lockScreen 里其它差异字段。 */
       if (!finalPrefs.lockScreen) {
         finalPrefs.lockScreen = {};
       }
       const { isLocked: _diffIsLocked, ...diffLockScreenWithoutIsLocked } = diffPrefs.lockScreen;
-      // 只合并非 isLocked 字段
+      /* 只合并非 isLocked 字段。 */
       if (Object.keys(diffLockScreenWithoutIsLocked).length > 0) {
         finalPrefs.lockScreen = { ...finalPrefs.lockScreen, ...diffLockScreenWithoutIsLocked };
       }
     }
-    
-    // 合并 diff 中的其他设置到 finalPrefs（diff 优先，因为它反映当前状态）
-    // 但排除 lockScreen，因为我们已经单独处理了
-    // 在合并前保存 lockScreen，防止被覆盖
+
+    /* 合并 lockScreen 外的差异项；合并前暂存 lockScreen 防止被覆盖。 */
     const savedLockScreen = finalPrefs.lockScreen;
     if (Object.keys(diffPrefs).length > 0) {
       const { lockScreen: _diffLockScreen, ...diffPrefsWithoutLockScreen } = diffPrefs;
       Object.assign(finalPrefs, diffPrefsWithoutLockScreen);
-      // 🔧 关键修复：恢复 lockScreen，确保不被覆盖
+      /* 关键修复：恢复 lockScreen，确保不被覆盖。 */
       if (savedLockScreen) {
         finalPrefs.lockScreen = savedLockScreen;
       }
     }
-    
-    // 🔧 关键修复：在保存前再次显式设置 isLocked，确保即使被覆盖也能正确保存
-    // 这是最后一道防线，确保解锁状态能正确持久化
-    // 🔧 关键修复：如果 shouldSaveLockScreen 为 true，确保 lockScreen 对象存在
+
+    /* 关键修复：保存前再次兜底设置 lockScreen，确保 isLocked/ password 一致。 */
     if (shouldSaveLockScreen) {
-      // 🔧 关键修复：强制创建 lockScreen 对象，确保它存在
+      /* 强制创建 lockScreen 对象，确保字段写入安全。 */
       if (!finalPrefs.lockScreen) {
         finalPrefs.lockScreen = {};
       }
-      // 🔧 关键修复：确保 lockScreen 是一个对象，不是 null 或 undefined
+      /* 确保 lockScreen 为对象，不是 null/undefined。 */
       if (typeof finalPrefs.lockScreen !== 'object' || finalPrefs.lockScreen === null) {
         console.warn('[PreferencesManager] lockScreen is not an object, recreating:', {
           type: typeof finalPrefs.lockScreen,
@@ -549,13 +551,13 @@ export class PreferencesManager {
         finalPrefs.lockScreen = {};
       }
       finalPrefs.lockScreen.isLocked = this.state.lockScreen.isLocked;
-      // 🔧 关键修复：确保 password 也被保存（如果存在）
+      /* 若当前有密码，则同步保存 password。 */
       if (this.state.lockScreen.password) {
         finalPrefs.lockScreen.password = this.state.lockScreen.password;
       }
     }
-    
-    // 🔧 关键修复：在保存前最后一次检查，确保 lockScreen 存在
+
+    /* 保存前最后一次检查 lockScreen，防止异常数据结构导致状态丢失。 */
     if (shouldSaveLockScreen) {
       if (!finalPrefs.lockScreen || typeof finalPrefs.lockScreen !== 'object' || finalPrefs.lockScreen === null) {
         console.error('[PreferencesManager] CRITICAL: lockScreen is missing before save, recreating:', {
@@ -569,28 +571,29 @@ export class PreferencesManager {
           password: this.state.lockScreen.password,
         };
       }
-      // 🔧 关键修复：最后一次确保 isLocked 和 password 正确设置
+      /* 最后一次确保 isLocked 与 password 设置正确。 */
       finalPrefs.lockScreen.isLocked = this.state.lockScreen.isLocked;
       if (this.state.lockScreen.password) {
         finalPrefs.lockScreen.password = this.state.lockScreen.password;
       }
     }
-    
+
     this.storage.setItem(PREFERENCES_STORAGE_KEY, finalPrefs);
   }
 
   /**
    * 防抖保存到存储
+   * @returns 无返回值
    */
   private debouncedSaveToStorage(): void {
-    // 清除之前的定时器
+    /* 清除之前的定时器。 */
     if (this.saveDebounceTimer) {
       clearTimeout(this.saveDebounceTimer);
     }
 
-    // 设置新的定时器，保存 timerId 用于验证回调上下文
+    /* 设置新的定时器，并保存 `timerId` 校验回调上下文。 */
     const timerId = setTimeout(() => {
-      // 验证定时器仍然有效（防止 destroy 后执行）
+      /* 验证定时器仍然有效（防止 destroy 后执行）。 */
       if (this.saveDebounceTimer === timerId) {
         this.saveToStorage();
         this.saveDebounceTimer = null;
@@ -601,6 +604,7 @@ export class PreferencesManager {
 
   /**
    * 应用偏好设置（更新 CSS 变量等）
+   * @returns 无返回值
    */
   private applyPreferences(): void {
     updateAllCSSVariables(this.state);
@@ -609,11 +613,12 @@ export class PreferencesManager {
   /**
    * 监听系统主题变化
    * @description 避免重复添加监听器
+   * @returns 无返回值
    */
   private watchSystemTheme(): void {
     if (!isBrowser || !window.matchMedia) return;
 
-    // 如果已有监听器，先移除旧的（避免重复添加）
+    /* 如果已有监听器，先移除旧的（避免重复添加）。 */
     if (this.mediaQueryListener) {
       this.mediaQueryListener.removeEventListener('change', this.handleSystemThemeChange);
     }
@@ -624,6 +629,7 @@ export class PreferencesManager {
 
   /**
    * 处理系统主题变化
+   * @returns 无返回值
    */
   private handleSystemThemeChange = (): void => {
     if (this.state.theme.mode === 'auto') {
@@ -634,13 +640,15 @@ export class PreferencesManager {
 
   /**
    * 通知所有监听器（带错误处理）
+   * @param changedKeys - 本次更新涉及的配置路径列表
+   * @returns 无返回值
    */
   private notifyListeners(changedKeys: string[]): void {
     this.listeners.forEach((listener) => {
       try {
         listener(this.state, changedKeys);
       } catch (error) {
-        // 捕获监听器错误，避免中断其他监听器
+        /* 捕获监听器错误，避免中断其他监听器。 */
         logger.error('[PreferencesManager] Listener error:', error);
       }
     });

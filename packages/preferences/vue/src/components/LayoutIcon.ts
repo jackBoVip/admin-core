@@ -1,6 +1,6 @@
 /**
- * Vue 布局图标组件
- * @description 显示布局预览图标
+ * Vue 布局图标组件。
+ * @description 根据布局类型渲染预览图标，并支持选中态样式反馈。
  */
 
 import {
@@ -14,7 +14,8 @@ import {
 import { defineComponent, h, computed, type PropType, type ExtractPropTypes } from 'vue';
 
 /**
- * LayoutIcon 组件 Props 定义
+ * 布局图标组件 Props 定义。
+ * @description 约束布局类型、尺寸与选中态等输入参数。
  */
 export const layoutIconProps = {
   /** 布局类型 */
@@ -45,24 +46,44 @@ export const layoutIconProps = {
 };
 
 /**
- * LayoutIcon 组件 Props 类型
+ * 布局图标组件 Props 类型。
+ * @description 基于 `layoutIconProps` 推导得到的标准化类型。
  */
 export type LayoutIconProps = ExtractPropTypes<typeof layoutIconProps>;
 
 /**
- * 布局图标组件
+ * 布局图标组件。
+ * @description 渲染可点击的布局预览图标，并在点击时抛出布局类型。
  */
 export const LayoutIcon = defineComponent({
   name: 'AdminLayoutIcon',
   props: layoutIconProps,
   emits: ['click'],
+  /**
+   * 布局图标渲染逻辑。
+   * @param props 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(props, { emit }) {
+    /**
+     * 当前布局对应的 SVG 内容。
+     * @description 从核心布局图标工厂读取，随 `layout` 变化更新。
+     */
     const svgContent = computed(() => getLayoutIcon(props.layout));
 
+    /**
+     * 规范化后的宽度值。
+     * @description 数字输入自动补齐 `px` 单位，字符串保持原值。
+     */
     const widthValue = computed(() =>
       typeof props.width === 'number' ? `${props.width}px` : props.width
     );
 
+    /**
+     * 规范化后的高度值。
+     * @description 数字输入自动补齐 `px` 单位，字符串保持原值。
+     */
     const heightValue = computed(() =>
       typeof props.height === 'number' ? `${props.height}px` : props.height
     );
@@ -96,4 +117,7 @@ export const LayoutIcon = defineComponent({
   },
 });
 
+/**
+ * 默认导出布局预览图标组件。
+ */
 export default LayoutIcon;

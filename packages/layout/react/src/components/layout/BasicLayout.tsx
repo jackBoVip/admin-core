@@ -1,8 +1,6 @@
 /**
- * 基础布局组件
- * @description 开箱即用的管理后台布局，用户只需传入数据即可使用
- * 内置偏好设置功能，无需用户单独配置
- * 自动响应偏好设置变化（布局类型、主题等）
+ * 基础布局组件。
+ * @description 开箱即用的管理后台布局容器，内置偏好设置能力并自动响应主题/布局等偏好变化。
  */
 
 import {
@@ -40,119 +38,239 @@ import { LayoutSidebar } from './LayoutSidebar';
 import { LayoutTabbar } from './LayoutTabbar';
 import type { SupportedLocale, BasicLayoutProps, LayoutEvents, RouterConfig, MenuItem, TabItem, NotificationItem, BreadcrumbItem  } from '@admin-core/layout';
 
-// 自动初始化偏好设置（如果尚未初始化）
+/** 开发环境标识。 */
 const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+/** 空菜单常量。 */
 const EMPTY_MENUS: MenuItem[] = [];
+/** 空菜单索引缓存。 */
 const EMPTY_MENU_INDEX = getCachedMenuPathIndex(EMPTY_MENUS);
 
 /**
- * 布局插槽 Props
+ * 悬浮偏好按钮坐标。
+ */
+interface FloatingPosition {
+  /** 横向坐标。 */
+  x: number;
+  /** 纵向坐标。 */
+  y: number;
+}
+
+/**
+ * 悬浮偏好按钮贴边方向。
+ */
+type FloatingEdge = 'left' | 'right' | 'top' | 'bottom';
+
+/**
+ * 悬浮按钮拖拽中的位置快照。
+ */
+interface FloatingDragSnapshot {
+  /** 拖拽起点 x。 */
+  startX: number;
+  /** 拖拽起点 y。 */
+  startY: number;
+  /** 拖拽开始时原始 x。 */
+  originX: number;
+  /** 拖拽开始时原始 y。 */
+  originY: number;
+}
+
+/**
+ * 悬浮按钮持久化存储结构。
+ */
+interface StoredFloatingPosition {
+  /** 存储的 x 坐标。 */
+  x?: number;
+  /** 存储的 y 坐标。 */
+  y?: number;
+  /** 存储的贴边方向。 */
+  edge?: FloatingEdge | null;
+}
+
+/**
+ * 浏览器 UA Data 兼容结构。
+ */
+interface NavigatorWithUserAgentData extends Navigator {
+  /** 浏览器 UA 数据。 */
+  userAgentData?: {
+    /** 平台标识。 */
+    platform?: string;
+  };
+}
+
+/**
+ * 布局插槽 Props。
+ * @description 定义布局各区域可替换内容，便于业务按需覆盖默认实现。
  */
 export interface LayoutSlots {
-  // 顶栏插槽
+  /** 顶栏插槽。 */
+  /** 顶栏 Logo 区域。 */
   headerLogo?: ReactNode;
+  /** 顶栏左侧区域。 */
   headerLeft?: ReactNode;
+  /** 顶栏中间区域。 */
   headerCenter?: ReactNode;
+  /** 顶栏菜单区域。 */
   headerMenu?: ReactNode;
+  /** 顶栏右侧区域。 */
   headerRight?: ReactNode;
+  /** 顶栏操作区。 */
   headerActions?: ReactNode;
+  /** 顶栏用户区。 */
   headerUser?: ReactNode;
+  /** 用户下拉菜单区。 */
   userDropdownMenu?: ReactNode;
+  /** 顶栏扩展区。 */
   headerExtra?: ReactNode;
-  // 侧边栏插槽
+  /** 侧边栏插槽。 */
+  /** 侧边栏 Logo 区域。 */
   sidebarLogo?: ReactNode;
+  /** 侧边栏菜单区域。 */
   sidebarMenu?: ReactNode;
+  /** 混合导航侧边菜单区域。 */
   sidebarMixedMenu?: ReactNode;
+  /** 侧边栏扩展区。 */
   sidebarExtra?: ReactNode;
+  /** 侧边栏底部区域。 */
   sidebarFooter?: ReactNode;
-  // 标签栏插槽
+  /** 标签栏插槽。 */
+  /** 标签栏左侧区域。 */
   tabbarLeft?: ReactNode;
+  /** 标签栏中间主区域。 */
   tabbarSlot?: ReactNode;
+  /** 标签栏右侧区域。 */
   tabbarRight?: ReactNode;
+  /** 标签栏扩展区。 */
   tabbarExtra?: ReactNode;
-  // 内容区插槽
+  /** 内容区插槽。 */
+  /** 内容区头部。 */
   contentHeader?: ReactNode;
+  /** 面包屑插槽。 */
   breadcrumbSlot?: ReactNode;
+  /** 内容主体。 */
   content?: ReactNode;
+  /** 内容区底部。 */
   contentFooter?: ReactNode;
+  /** 内容区覆盖层。 */
   contentOverlay?: ReactNode;
-  // 页脚插槽
+  /** 页脚插槽。 */
+  /** 页脚左侧。 */
   footerLeft?: ReactNode;
+  /** 页脚中间。 */
   footerCenter?: ReactNode;
+  /** 页脚右侧。 */
   footerRight?: ReactNode;
-  // 功能区插槽
+  /** 功能区插槽。 */
+  /** 面板头部。 */
   panelHeader?: ReactNode;
+  /** 面板主体。 */
   panelSlot?: ReactNode;
+  /** 面板底部。 */
   panelFooter?: ReactNode;
-  // 其他插槽
+  /** 其他插槽。 */
+  /** 布局扩展区域。 */
   extra?: ReactNode;
+  /** 偏好设置按钮插槽。 */
   preferencesButton?: ReactNode;
 }
 
 /**
- * BasicLayout Props
+ * BasicLayout 组件 Props。
+ * @description 在 core 布局属性基础上扩展 React 插槽、样式与事件回调参数。
  */
 export interface BasicLayoutComponentProps extends BasicLayoutProps, LayoutSlots {
-  /** 当前语言 */
+  /** 当前语言。 */
   locale?: SupportedLocale;
-  /** 自定义国际化消息 */
+  /** 自定义国际化消息。 */
   customMessages?: Record<string, Record<string, unknown>>;
-  /** 子节点 */
+  /** 子节点。 */
   children?: ReactNode;
-  /** 自定义类名 */
+  /** 自定义类名。 */
   className?: string;
-  /** 自定义样式 */
+  /** 自定义样式。 */
   style?: CSSProperties;
-  /** 路由配置（用于内置路由处理） */
+  /** 路由配置（用于内置路由处理）。 */
   router?: RouterConfig;
-  /** 是否显示偏好设置按钮 */
+  /** 是否显示偏好设置按钮。 */
   showPreferencesButton?: boolean;
-  /** 偏好设置按钮位置 */
+  /** 偏好设置按钮位置。 */
   preferencesButtonPosition?: 'header' | 'fixed' | 'auto';
-  /** 偏好设置 UI 配置（控制显示/禁用） */
+  /** 偏好设置 UI 配置（控制显示/禁用）。 */
   preferencesUIConfig?: PreferencesDrawerUIConfig;
-  /** 自定义偏好设置按钮图标 */
+  /** 自定义偏好设置按钮图标。 */
   preferencesButtonIcon?: ReactNode;
-  // 事件
+  /** 侧边栏折叠状态变化时触发。 */
   onSidebarCollapse?: (collapsed: boolean) => void;
+  /** 选择菜单项时触发。 */
   onMenuSelect?: (item: MenuItem, key: string) => void;
+  /** 切换标签页时触发。 */
   onTabSelect?: (item: TabItem, key: string) => void;
+  /** 关闭单个标签页时触发。 */
   onTabClose?: (item: TabItem, key: string) => void;
+  /** 关闭全部标签页时触发。 */
   onTabCloseAll?: () => void;
+  /** 关闭其他标签页时触发。 */
   onTabCloseOther?: (exceptKey: string) => void;
+  /** 刷新标签页时触发。 */
   onTabRefresh?: (item: TabItem, key: string) => void;
+  /** 标签栏最大化状态变化时触发。 */
   onTabMaximize?: (isMaximized: boolean) => void;
+  /** 点击面包屑项时触发。 */
   onBreadcrumbClick?: (item: BreadcrumbItem, key: string) => void;
+  /** 用户下拉菜单项点击时触发。 */
   onUserMenuSelect?: (key: string) => void;
+  /** 点击通知项时触发。 */
   onNotificationClick?: (item: NotificationItem) => void;
+  /** 全屏状态变化时触发。 */
   onFullscreenToggle?: (isFullscreen: boolean) => void;
+  /** 主题切换时触发。 */
   onThemeToggle?: (theme: string) => void;
+  /** 语言切换时触发。 */
   onLocaleChange?: (locale: string) => void;
+  /** 触发锁屏动作时触发。 */
   onLockScreen?: () => void;
+  /** 触发退出登录动作时触发。 */
   onLogout?: () => void;
+  /** 侧边功能面板折叠状态变化时触发。 */
   onPanelCollapse?: (collapsed: boolean) => void;
+  /** 执行全局搜索时触发。 */
   onGlobalSearch?: (keyword: string) => void;
+  /** 触发页面刷新时触发。 */
   onRefresh?: () => void;
+  /** 偏好设置面板打开时触发。 */
   onPreferencesOpen?: () => void;
+  /** 偏好设置面板关闭时触发。 */
   onPreferencesClose?: () => void;
+  /** 标签收藏状态变化时触发。 */
   onTabFavoriteChange?: (menu: MenuItem, favorited: boolean, keys: string[], menus: MenuItem[]) => void;
+  /** 收藏菜单集合变化时触发。 */
   onFavoritesChange?: (menus: MenuItem[], keys: string[]) => void;
 }
 
-/** 默认设置图标 */
+/**
+ * 默认设置图标。
+ * @description 未传自定义图标时用于偏好设置入口。
+ */
 const SettingsIcon = () => renderLayoutIcon('settings', 'sm');
 
+/** 偏好设置锁屏桥接组件参数。 */
 interface PreferencesLockBridgeProps {
+  /** 当锁屏能力可用时回调，返回 `lock` 触发函数。 */
   onReady?: (lock: () => void) => void;
 }
 
+/**
+ * 偏好设置锁屏桥接组件。
+ * @description 将 preferences 的 `lock` 能力回传给布局层。
+ */
 const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: PreferencesLockBridgeProps) {
   const { lock } = usePreferencesContext();
   const onReadyRef = useRef(onReady);
   const lockRef = useRef(lock);
   const hasCalledRef = useRef(false);
 
-  // 保持最新引用
+  /**
+   * 同步最新 `onReady` 引用，避免闭包陈旧。
+   */
   useEffect(() => {
     onReadyRef.current = onReady;
   }, [onReady]);
@@ -162,12 +280,16 @@ const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: P
   }, [lock]);
 
   useEffect(() => {
-    // 防止重复调用（React StrictMode 会导致组件挂载两次）
+    /**
+     * 防止重复触发（StrictMode 下挂载阶段可能执行两次）。
+     */
     if (hasCalledRef.current) {
       return;
     }
 
-    // 延迟到当前渲染提交后调用，避免渲染期状态更新告警
+    /**
+     * 延迟到提交后回调，避免渲染期更新告警。
+     */
     if (onReadyRef.current) {
       hasCalledRef.current = true;
       let cancelled = false;
@@ -191,7 +313,8 @@ const PreferencesLockBridge = memo(function PreferencesLockBridge({ onReady }: P
 });
 
 /**
- * 内部布局组件
+ * 内部布局组件。
+ * @description 组合头部、侧边栏、标签栏、内容区与偏好面板，并完成布局事件绑定。
  */
 function LayoutInner({
   children,
@@ -203,7 +326,7 @@ function LayoutInner({
   preferencesUIConfig,
   onPreferencesOpen,
   onPreferencesClose,
-  // 插槽
+  /** 插槽。 */
   headerLogo,
   headerLeft,
   headerCenter,
@@ -247,18 +370,13 @@ function LayoutInner({
     preferencesButtonPosition ?? contextProps.preferencesButtonPosition ?? 'auto';
   const preferencesTitle = context.t('layout.widgetLegacy.preferences.title');
 
-  // 偏好设置抽屉状态
+  /** 偏好设置抽屉状态。 */
   const [showPreferencesDrawer, setShowPreferencesDrawer] = useState(false);
   const [menuLauncherOpen, setMenuLauncherOpen] = useState(false);
-  const [floatingPosition, setFloatingPosition] = useState<{ x: number; y: number } | null>(null);
-  const [floatingEdge, setFloatingEdge] = useState<'left' | 'right' | 'top' | 'bottom' | null>(null);
+  const [floatingPosition, setFloatingPosition] = useState<FloatingPosition | null>(null);
+  const [floatingEdge, setFloatingEdge] = useState<FloatingEdge | null>(null);
   const [floatingDragging, setFloatingDragging] = useState(false);
-  const floatingDragRef = useRef<{
-    startX: number;
-    startY: number;
-    originX: number;
-    originY: number;
-  } | null>(null);
+  const floatingDragRef = useRef<FloatingDragSnapshot | null>(null);
   const floatingMovedRef = useRef(false);
   const floatingButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -285,8 +403,21 @@ function LayoutInner({
     showPreferencesButton && resolvedPreferencesButtonPosition === 'fixed' && !computed.isFullContent;
   const floatingStorageKey = 'admin-core:pref-fab-position';
 
+  /**
+   * 将数值限制在给定区间内。
+   *
+   * @param value 原始值。
+   * @param min 最小边界。
+   * @param max 最大边界。
+   * @returns 夹紧后的结果值。
+   */
   const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+  /**
+   * 计算悬浮偏好按钮在当前视口中的可拖拽边界。
+   *
+   * @returns 包含四个边界值的范围对象。
+   */
   const getFloatingBounds = useCallback(() => {
     if (typeof window === 'undefined') {
       return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
@@ -303,8 +434,14 @@ function LayoutInner({
     };
   }, [floatingButtonRef]);
 
+  /**
+   * 将悬浮按钮吸附到离当前位置最近的视口边缘。
+   *
+   * @param pos 待吸附的位置。
+   * @returns 吸附后的坐标与边缘方向。
+   */
   const snapFloatingPosition = useCallback(
-    (pos: { x: number; y: number }) => {
+    (pos: FloatingPosition) => {
       const bounds = getFloatingBounds();
       const x = clamp(pos.x, bounds.minX, bounds.maxX);
       const y = clamp(pos.y, bounds.minY, bounds.maxY);
@@ -315,7 +452,7 @@ function LayoutInner({
         { edge: 'bottom', value: bounds.maxY - y },
       ];
       distances.sort((a, b) => a.value - b.value);
-      const nearest = distances[0]?.edge as 'left' | 'right' | 'top' | 'bottom' | undefined;
+      const nearest = distances[0]?.edge as FloatingEdge | undefined;
       if (nearest === 'left') return { x: bounds.minX, y, edge: 'left' as const };
       if (nearest === 'right') return { x: bounds.maxX, y, edge: 'right' as const };
       if (nearest === 'top') return { x, y: bounds.minY, edge: 'top' as const };
@@ -330,7 +467,7 @@ function LayoutInner({
     try {
       const stored = window.localStorage.getItem(floatingStorageKey);
       if (stored) {
-        const parsed = JSON.parse(stored) as { x?: number; y?: number; edge?: typeof floatingEdge };
+        const parsed = JSON.parse(stored) as StoredFloatingPosition;
         if (typeof parsed.x === 'number' && typeof parsed.y === 'number') {
           const bounds = getFloatingBounds();
           setFloatingPosition({
@@ -365,7 +502,7 @@ function LayoutInner({
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
-      // 清理 rafThrottle 的 pending 状态
+      /** 清理 `rafThrottle` 的待执行任务。 */
       handleResize.cancel?.();
     };
   }, [showFloatingPreferencesButton, getFloatingBounds]);
@@ -381,6 +518,11 @@ function LayoutInner({
     } catch {}
   }, [showFloatingPreferencesButton, floatingPosition, floatingEdge]);
 
+  /**
+   * 处理悬浮偏好按钮按下事件，开启拖拽并绑定全局移动/抬起监听。
+   *
+   * @param event React 指针事件对象。
+   */
   const handleFloatingPointerDown = useCallback(
     (event: React.PointerEvent<HTMLButtonElement>) => {
       if (!showFloatingPreferencesButton) return;
@@ -401,6 +543,11 @@ function LayoutInner({
         originY,
       };
 
+      /**
+       * 处理拖拽移动，实时更新悬浮按钮位置。
+       *
+       * @param moveEvent 原生指针移动事件。
+       */
       const handleMove = (moveEvent: PointerEvent) => {
         if (!floatingDragRef.current) return;
         const { startX, startY, originX: baseX, originY: baseY } = floatingDragRef.current;
@@ -416,6 +563,9 @@ function LayoutInner({
         });
       };
 
+      /**
+       * 处理拖拽结束，执行贴边吸附并清理监听器。
+       */
       const handleUp = () => {
         floatingDragRef.current = null;
         setFloatingPosition((prev) => {
@@ -442,25 +592,34 @@ function LayoutInner({
     ]
   );
 
-  // 移动端自动折叠侧边栏
+  /**
+   * 移动端下自动折叠侧边栏。
+   */
   useEffect(() => {
     if (isMobile && !state.sidebarCollapsed) {
       setState((prev) => ({ ...prev, sidebarCollapsed: true }));
     }
   }, [isMobile, state.sidebarCollapsed, setState]);
 
-  // 打开偏好设置
+  /**
+   * 打开偏好设置抽屉并触发外部打开回调。
+   */
   const openPreferences = useCallback(() => {
     setShowPreferencesDrawer(true);
     onPreferencesOpen?.();
   }, [onPreferencesOpen]);
 
-  // 关闭偏好设置
+  /**
+   * 关闭偏好设置抽屉并触发外部关闭回调。
+   */
   const closePreferences = useCallback(() => {
     setShowPreferencesDrawer(false);
     onPreferencesClose?.();
   }, [onPreferencesClose]);
 
+  /**
+   * 处理悬浮按钮点击，过滤拖拽结束后的误触点击。
+   */
   const handleFloatingClick = useCallback(() => {
     if (floatingMovedRef.current) {
       floatingMovedRef.current = false;
@@ -477,26 +636,36 @@ function LayoutInner({
     } as CSSProperties;
   }, [floatingPosition]);
 
+  /**
+   * 关闭顶部菜单启动器弹层。
+   */
   const closeMenuLauncher = useCallback(() => {
     setMenuLauncherOpen(false);
   }, []);
 
+  /**
+   * 切换顶部菜单启动器弹层开关状态。
+   */
   const toggleMenuLauncher = useCallback(() => {
     setMenuLauncherOpen((prev) => !prev);
   }, []);
 
-  // ============================================================
-  // 水平菜单相关逻辑
-  // ============================================================
+  /**
+   * 水平菜单相关逻辑区。
+   */
   
   const isHeaderSidebarNav = computed.currentLayout === 'header-sidebar-nav';
 
-  // 是否显示顶部导航菜单
+  /**
+   * 是否显示顶部导航菜单。
+   */
   const showHeaderMenu = useMemo(() => {
     return (computed.isHeaderNav || computed.isMixedNav || computed.isHeaderMixedNav) && !isHeaderSidebarNav;
   }, [computed.isHeaderNav, computed.isMixedNav, computed.isHeaderMixedNav, isHeaderSidebarNav]);
 
-  // 顶部导航菜单数据
+  /**
+   * 顶部导航菜单数据。
+   */
   const headerMenus = useMemo(() => {
     if (!showHeaderMenu) return EMPTY_MENUS;
     return getCachedHeaderMenus(menus, {
@@ -521,7 +690,9 @@ function LayoutInner({
     [needHeaderMenuIndex, menus]
   );
 
-  // 顶部导航菜单激活 key
+  /**
+   * 顶部导航菜单激活键。
+   */
   const headerActiveKey = useMemo(
     () =>
       resolveHeaderActiveKey({
@@ -544,12 +715,18 @@ function LayoutInner({
     ]
   );
 
+  /**
+   * 处理顶部菜单选择，混合导航模式下同步根菜单状态。
+   *
+   * @param item 当前选中的菜单项。
+   * @param key 选中项键值。
+   */
   const handleHeaderMenuSelect = useCallback(
     (item: MenuItem, key: string) => {
       if (!computed.isMixedNav && !computed.isHeaderMixedNav) return;
       const nextKey = item.key ?? item.path ?? key;
       if (!nextKey) return;
-      // 使用 startTransition 避免在渲染期间更新组件
+      /** 使用 `startTransition` 避免渲染路径阻塞。 */
       startTransition(() => {
       setState((prev) => {
         if (prev.mixedNavRootKey === String(nextKey)) return prev;
@@ -560,10 +737,10 @@ function LayoutInner({
     [computed.isMixedNav, computed.isHeaderMixedNav, setState]
   );
 
-  // 菜单对齐方式
+  /** 顶部菜单对齐方式。 */
   const headerMenuAlign = contextProps.header?.menuAlign || 'start';
-  
-  // 菜单主题（转换 auto 为 light）
+
+  /** 顶部菜单主题（将 `auto` 归一为 `light`）。 */
   const headerMenuTheme = (computed.headerTheme === 'dark' ? 'dark' : 'light') as 'light' | 'dark';
 
   useEffect(() => {
@@ -578,7 +755,7 @@ function LayoutInner({
     previousPathRef.current = currentPath;
     if (previousPath === currentPath) return;
     if (!menuLauncherOpen) return;
-    // 仅在路由变化后自动关闭，避免点击打开后立即关闭
+    /** 仅在路由变化后自动关闭，避免打开后立即关闭。 */
     startTransition(() => {
       setMenuLauncherOpen(false);
     });
@@ -586,6 +763,11 @@ function LayoutInner({
 
   useEffect(() => {
     if (!menuLauncherOpen) return;
+    /**
+     * 监听 `Escape` 快捷键以关闭菜单启动器。
+     *
+     * @param event 键盘事件对象。
+     */
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMenuLauncherOpen(false);
@@ -595,6 +777,11 @@ function LayoutInner({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [menuLauncherOpen]);
 
+  /**
+   * 处理菜单启动器项点击，执行导航并维护混合导航根菜单键。
+   *
+   * @param item 被点击的菜单项。
+   */
   const handleLauncherItemClick = useCallback((item: MenuItem) => {
     if (item.disabled) return;
     handleMenuItemClick(item);
@@ -609,7 +796,7 @@ function LayoutInner({
         [];
       const rootKey = chain.length > 0 ? chain[0] : rawKey;
       if (rootKey) {
-        // 使用 startTransition 避免在渲染期间更新组件
+        /** 使用 `startTransition` 避免渲染路径阻塞。 */
         startTransition(() => {
         setState((prev) => {
           if (prev.mixedNavRootKey === String(rootKey)) return prev;
@@ -621,6 +808,13 @@ function LayoutInner({
     setMenuLauncherOpen(false);
   }, [handleMenuItemClick, context.events, computed.isMixedNav, computed.isHeaderMixedNav, headerMenuIndex, setState]);
 
+  /**
+   * 递归渲染菜单启动器树形节点。
+   *
+   * @param items 当前层级菜单列表。
+   * @param depth 当前递归深度。
+   * @returns 菜单列表节点。
+   */
   const renderLauncherItems = useCallback(function renderLauncherItems(items: MenuItem[], depth: number) {
     if (!items.length) return null;
     const listClass = depth > 0 ? 'layout-header__launcher-sublist' : 'layout-header__launcher-list';
@@ -656,7 +850,9 @@ function LayoutInner({
     );
   }, [handleLauncherItemClick, headerActiveKey]);
 
-  // 根元素类名
+  /**
+   * 计算布局根节点类名，用于驱动不同布局与状态样式。
+   */
   const rootClassName = (() => {
     const classes = ['layout-container', `layout-${computed.currentLayout}`];
     if (isMobile) classes.push('layout-mobile');
@@ -667,7 +863,9 @@ function LayoutInner({
     return classes.join(' ');
   })();
 
-  // 合并样式
+  /**
+   * 根节点合并样式（CSS 变量优先注入）。
+   */
   const rootStyle: CSSProperties = {
     ...cssVars,
     ...style,
@@ -865,7 +1063,10 @@ function LayoutInner({
 }
 
 /**
- * 基础布局组件
+ * 基础布局组件。
+ * @description 对外主入口组件，负责桥接偏好设置系统并渲染完整布局骨架。
+ * @param props 布局组件参数。
+ * @returns 基础布局节点。
  */
 export function BasicLayout(props: BasicLayoutComponentProps) {
   const preferencesManager = useMemo(() => {
@@ -884,7 +1085,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     return null;
   }, []);
 
-  // 从偏好设置获取配置
+  /**
+   * 从偏好设置系统映射布局初始配置。
+   */
   const [preferencesProps, setPreferencesProps] = useState<Partial<BasicLayoutProps>>(() => {
     if (preferencesManager) {
       const prefs = preferencesManager.getPreferences();
@@ -893,7 +1096,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     return {};
   });
 
-  // 订阅偏好设置变化
+  /**
+   * 订阅偏好设置变化并同步布局配置映射。
+   */
   useEffect(() => {
     if (!preferencesManager) return;
 
@@ -906,15 +1111,22 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   }, [preferencesManager]);
 
   const [preferencesLock, setPreferencesLock] = useState<(() => void) | null>(null);
+  /**
+   * 接收偏好模块暴露的锁屏能力并缓存到本地状态。
+   *
+   * @param lock 锁屏执行函数。
+   */
   const handlePreferencesLockReady = useCallback((lock: () => void) => {
     setPreferencesLock(() => lock);
   }, []);
 
-  // 标记平台类型（用于滚动条样式兼容）
+  /**
+   * 标记平台类型（用于滚动条样式兼容）。
+   */
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const platform =
-      (navigator as Navigator & { userAgentData?: { platform?: string } })?.userAgentData?.platform ||
+      (navigator as NavigatorWithUserAgentData)?.userAgentData?.platform ||
       navigator.platform ||
       '';
     const isMac = platform.toLowerCase().includes('mac');
@@ -926,7 +1138,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
   const {
     locale: localeProp,
     customMessages,
-    // Props
+    /** 布局配置入参。 */
     layout: layoutProp,
     isMobile: isMobileProp,
     zIndex,
@@ -965,7 +1177,7 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     userInfo,
     notifications,
     unreadCount,
-    // 事件
+    /** 事件回调入参。 */
     onSidebarCollapse,
     onMenuSelect,
     onTabSelect,
@@ -989,11 +1201,15 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onFavoritesChange,
   } = props;
 
-  // 合并配置（preferences 为底，用户 props 优先）
+  /**
+   * 合并基础布局配置（preferences 为底，用户 props 优先）。
+   */
   const mergedLayout = layoutProp !== undefined ? layoutProp : preferencesProps.layout;
   const mergedLocale = localeProp ?? preferencesProps.locale ?? 'zh-CN';
-  
-  // 区域配置（header, sidebar, footer 等）- 较少变化
+
+  /**
+   * 区域配置（header/sidebar/footer 等），变化频率较低。
+   */
   const regionConfig = useMemo(() => ({
     header: header ? { ...preferencesProps.header, ...header } : preferencesProps.header,
     headerTheme: headerTheme ?? preferencesProps.headerTheme,
@@ -1005,7 +1221,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     logo: logo ? { ...preferencesProps.logo, ...logo } : preferencesProps.logo,
   }), [preferencesProps, header, headerTheme, sidebar, sidebarTheme, tabbar, footer, panelConfig, logo]);
   
-  // 内容配置 - 较少变化
+  /**
+   * 内容区配置，变化频率较低。
+   */
   const contentConfig = useMemo(() => ({
     contentCompact: contentCompact ?? preferencesProps.contentCompact,
     contentCompactWidth: contentCompactWidth ?? preferencesProps.contentCompactWidth,
@@ -1016,7 +1234,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     contentPaddingRight: contentPaddingRight ?? preferencesProps.contentPaddingRight,
   }), [preferencesProps, contentCompact, contentCompactWidth, contentPadding, contentPaddingTop, contentPaddingBottom, contentPaddingLeft, contentPaddingRight]);
   
-  // 构建完整布局配置
+  /**
+   * 构建最终布局配置对象。
+   */
   const layoutProps: BasicLayoutProps = useMemo(() => ({
     ...preferencesProps,
     layout: mergedLayout,
@@ -1081,6 +1301,9 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     return value;
   }, [layoutProps.lockScreen?.backgroundImage]);
 
+  /**
+   * 触发锁屏动作，优先走偏好系统提供的锁屏能力。
+   */
   const handleLockScreen = useCallback(() => {
     if (preferencesLock) {
       preferencesLock();
@@ -1089,10 +1312,12 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onLockScreen?.();
   }, [preferencesLock, onLockScreen]);
 
-  // 构建事件对象（同步偏好设置）
+  /**
+   * 构建布局事件对象，并在必要时回写偏好设置。
+   */
   const events: LayoutEvents = useMemo(() => ({
     onSidebarCollapse: (collapsed: boolean) => {
-      // 同步更新偏好设置
+      /** 同步更新偏好设置。 */
       preferencesManager?.setPreferences({ sidebar: { collapsed } });
       onSidebarCollapse?.(collapsed);
     },
@@ -1108,19 +1333,19 @@ export function BasicLayout(props: BasicLayoutComponentProps) {
     onNotificationClick,
     onFullscreenToggle,
     onThemeToggle: (theme: string) => {
-      // 同步更新偏好设置
+      /** 同步更新偏好设置。 */
       preferencesManager?.setPreferences({ theme: { mode: theme as 'light' | 'dark' } });
       onThemeToggle?.(theme);
     },
     onLocaleChange: (locale: string) => {
-      // 同步更新偏好设置
+      /** 同步更新偏好设置。 */
       preferencesManager?.setPreferences({ app: { locale: locale as 'zh-CN' | 'en-US' } });
       onLocaleChange?.(locale);
     },
     onLockScreen: handleLockScreen,
     onLogout,
     onPanelCollapse: (collapsed: boolean) => {
-      // 同步更新偏好设置
+      /** 同步更新偏好设置。 */
       preferencesManager?.setPreferences({ panel: { collapsed } });
       onPanelCollapse?.(collapsed);
     },

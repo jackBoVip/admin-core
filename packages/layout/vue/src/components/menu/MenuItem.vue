@@ -8,6 +8,9 @@ import { useMenuContext, useSubMenuContext } from './use-menu-context';
 import { calculateMenuItemPadding, type MenuItem } from '@admin-core/layout';
 import MenuIcon from '../common/MenuIcon.vue';
 
+/**
+ * 菜单叶子项组件属性。
+ */
 interface Props {
   /** 菜单项数据 */
   item: MenuItem;
@@ -15,29 +18,53 @@ interface Props {
   level: number;
 }
 
+/**
+ * 菜单项组件入参
+ * @description 提供叶子菜单项数据与层级信息。
+ */
 const props = defineProps<Props>();
 
+/**
+ * 菜单上下文
+ * @description 提供激活路径与点击派发能力。
+ */
 const menuContext = useMenuContext();
+/**
+ * 父级子菜单上下文
+ * @description 用于回溯完整父级路径链。
+ */
 const parentSubMenu = useSubMenuContext();
 
+/**
+ * 当前菜单项路径键
+ * @description 对 key/path 做标准化字符串处理。
+ */
 const path = computed(() => {
   const raw = props.item.key ?? props.item.path ?? '';
   return raw === '' ? '' : String(raw);
 });
 
-// 是否激活
+/**
+ * 当前菜单项是否激活
+ * @description 与菜单上下文激活路径比较得出。
+ */
 const active = computed(() => {
   const activePath = menuContext.activePath.value === '' ? '' : String(menuContext.activePath.value);
   return path.value !== '' && path.value === activePath;
 });
 
-// 图标（激活时使用 activeIcon）
+/**
+ * 当前展示图标
+ * @description 激活态优先使用 `activeIcon`，否则使用默认图标。
+ */
 const menuIcon = computed(() => {
   const item = props.item as MenuItem & { activeIcon?: string };
   return active.value ? (item.activeIcon || item.icon) : item.icon;
 });
 
-// 点击处理
+/**
+ * 处理叶子菜单点击，并携带父级路径链派发给菜单上下文。
+ */
 function handleClick() {
   if (props.item.disabled) return;
 
@@ -54,7 +81,10 @@ function handleClick() {
   });
 }
 
-// 类名
+/**
+ * 菜单项类名
+ * @description 按激活态、禁用态与层级生成样式类集合。
+ */
 const itemClass = computed(() => [
   'menu__item',
   {
@@ -64,7 +94,10 @@ const itemClass = computed(() => [
   },
 ]);
 
-// 缩进样式（垂直模式）
+/**
+ * 缩进样式
+ * @description 垂直非折叠菜单下按层级计算左侧缩进。
+ */
 const indentStyle = computed(() => {
   if (menuContext.props.mode === 'vertical' && !menuContext.props.collapse) {
     return {

@@ -1,3 +1,6 @@
+/**
+ * Form 语言包切换、注册与订阅机制测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   enUS,

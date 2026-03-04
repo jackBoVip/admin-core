@@ -293,7 +293,8 @@ export const DEFAULT_LAYOUT_STATE: LayoutState = {
   sidebarExpandOnHovering: false,
   sidebarExtraVisible: false,
   sidebarExtraCollapsed: false,
-  sidebarExpandOnHover: false, // 默认固定子菜单面板（非悬停展开）
+  /* 默认固定子菜单面板（非悬停展开）。 */
+  sidebarExpandOnHover: false,
   headerHidden: false,
   panelCollapsed: false,
   isFullscreen: false,
@@ -309,7 +310,7 @@ export const DEFAULT_LAYOUT_STATE: LayoutState = {
  * 完整默认布局配置
  */
 export const DEFAULT_LAYOUT_CONFIG: BasicLayoutProps = {
-  // ========== 应用配置（AppPreferences 完整集成）==========
+  /* ========== 应用配置（AppPreferences 完整集成）========== */
   appName: '',
   layout: 'sidebar-nav',
   isMobile: false,
@@ -325,51 +326,51 @@ export const DEFAULT_LAYOUT_CONFIG: BasicLayoutProps = {
   enablePreferences: true,
   enableStickyPreferencesNav: true,
   enableRefreshToken: false,
-  // ========== 主题配置（ThemePreferences 完整集成）==========
+  /* ========== 主题配置（ThemePreferences 完整集成）========== */
   theme: DEFAULT_THEME_CONFIG,
-  // ========== 水印配置 ==========
+  /* ========== 水印配置 ========== */
   watermark: DEFAULT_WATERMARK_CONFIG,
-  // ========== 锁屏配置（LockScreenPreferences 完整集成）==========
+  /* ========== 锁屏配置（LockScreenPreferences 完整集成）========== */
   lockScreen: DEFAULT_LOCK_SCREEN_CONFIG,
-  // ========== 检查更新配置 ==========
+  /* ========== 检查更新配置 ========== */
   checkUpdates: DEFAULT_CHECK_UPDATES_CONFIG,
-  // ========== 顶栏配置（HeaderPreferences 完整集成）==========
+  /* ========== 顶栏配置（HeaderPreferences 完整集成）========== */
   header: DEFAULT_HEADER_CONFIG,
-  // headerTheme 和 sidebarTheme 不设置默认值，由 calculateLayoutComputed 根据全局主题和 semiDark 设置动态计算
+  /* headerTheme 和 sidebarTheme 不设默认值，由 calculateLayoutComputed 动态计算。 */
   semiDarkHeader: false,
-  // ========== 侧边栏配置（SidebarPreferences 完整集成）==========
+  /* ========== 侧边栏配置（SidebarPreferences 完整集成）========== */
   sidebar: DEFAULT_SIDEBAR_CONFIG,
   semiDarkSidebar: false,
-  // ========== 标签栏配置（TabbarPreferences 完整集成）==========
+  /* ========== 标签栏配置（TabbarPreferences 完整集成）========== */
   tabbar: DEFAULT_TABBAR_CONFIG,
-  // ========== 自动标签/面包屑配置（默认启用）==========
+  /* ========== 自动标签/面包屑配置（默认启用）========== */
   autoTab: DEFAULT_AUTO_TAB_CONFIG,
   autoBreadcrumb: DEFAULT_AUTO_BREADCRUMB_CONFIG,
-  // ========== 内容区配置 ==========
+  /* ========== 内容区配置 ========== */
   ...DEFAULT_CONTENT_CONFIG,
-  // ========== 页脚配置（FooterPreferences 完整集成）==========
+  /* ========== 页脚配置（FooterPreferences 完整集成）========== */
   footer: DEFAULT_FOOTER_CONFIG,
-  // ========== 面包屑配置（BreadcrumbPreferences 完整集成）==========
+  /* ========== 面包屑配置（BreadcrumbPreferences 完整集成）========== */
   breadcrumb: DEFAULT_BREADCRUMB_CONFIG,
-  // ========== 导航配置（NavigationPreferences 完整集成）==========
+  /* ========== 导航配置（NavigationPreferences 完整集成）========== */
   navigation: DEFAULT_NAVIGATION_CONFIG,
-  // ========== 功能区配置（PanelPreferences 完整集成）==========
+  /* ========== 功能区配置（PanelPreferences 完整集成）========== */
   panel: DEFAULT_PANEL_CONFIG,
-  // ========== Logo 配置（LogoPreferences 完整集成）==========
+  /* ========== Logo 配置（LogoPreferences 完整集成）========== */
   logo: DEFAULT_LOGO_CONFIG,
-  // ========== 版权配置（CopyrightPreferences 完整集成）==========
+  /* ========== 版权配置（CopyrightPreferences 完整集成）========== */
   copyright: DEFAULT_COPYRIGHT_CONFIG,
-  // ========== 过渡动画配置（TransitionPreferences 完整集成）==========
+  /* ========== 过渡动画配置（TransitionPreferences 完整集成）========== */
   transition: DEFAULT_TRANSITION_CONFIG,
-  // ========== 快捷键配置（ShortcutKeyPreferences 完整集成）==========
+  /* ========== 快捷键配置（ShortcutKeyPreferences 完整集成）========== */
   shortcutKeys: DEFAULT_SHORTCUT_KEYS_CONFIG,
-  // ========== 小部件配置（WidgetPreferences 完整集成）==========
+  /* ========== 小部件配置（WidgetPreferences 完整集成）========== */
   widgets: DEFAULT_WIDGET_CONFIG,
   preferencesButtonPosition: 'auto',
-  // ========== 可见性/禁用配置 ==========
+  /* ========== 可见性/禁用配置 ========== */
   visibility: DEFAULT_VISIBILITY_CONFIG,
   disabled: DEFAULT_DISABLED_CONFIG,
-  // ========== 数据 ==========
+  /* ========== 数据 ========== */
   menus: [],
   tabs: [],
   breadcrumbs: [],
@@ -379,14 +380,16 @@ export const DEFAULT_LAYOUT_CONFIG: BasicLayoutProps = {
 
 /**
  * 布局类型分类
+ * @description 复用 shared-core 布局分类映射，供布局模式判定逻辑使用。
  */
 export const LAYOUT_CATEGORIES = SHARED_LAYOUT_CATEGORIES;
 
 /**
- * CSS 变量名映射
+ * CSS 变量名映射。
+ * @description 统一定义布局运行态需要写入的 CSS 自定义属性键名。
  */
 export const CSS_VAR_NAMES = {
-  // 尺寸
+  /* 尺寸 */
   headerHeight: '--admin-header-height',
   sidebarWidth: '--admin-sidebar-width',
   sidebarCollapseWidth: '--admin-sidebar-collapsed-width',
@@ -403,7 +406,7 @@ export const CSS_VAR_NAMES = {
   contentPaddingLeft: '--admin-content-padding-left',
   contentPaddingRight: '--admin-content-padding-right',
   contentCompactWidth: '--layout-content-compact-width',
-  // z-index
+  /* z-index */
   zIndex: '--layout-z-index',
   zIndexHeader: '--layout-z-index-header',
   zIndexSidebar: '--layout-z-index-sidebar',
@@ -413,7 +416,8 @@ export const CSS_VAR_NAMES = {
 } as const;
 
 /**
- * 动画持续时间（毫秒）
+ * 动画持续时间（毫秒）。
+ * @description 提供快/中/慢三档动画时长默认值。
  */
 export const ANIMATION_DURATION = {
   fast: 150,
@@ -435,7 +439,8 @@ export const POPUP_MENU_DELAY = {
 } as const;
 
 /**
- * 响应式断点
+ * 响应式断点。
+ * @description 定义布局在不同屏宽下的断点阈值。
  */
 export const BREAKPOINTS = {
   sm: 640,
@@ -453,6 +458,6 @@ export const TIMING = {
   throttle: 100,
   /** 防抖延迟（用于用户输入、搜索等） */
   debounce: 300,
-  /** SSR 默认窗口宽度 */
+  /** 服务端渲染场景默认窗口宽度 */
   defaultWindowWidth: 1024,
 } as const;

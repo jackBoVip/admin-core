@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { deepClone, mergeWithArrayOverride } from '../utils/deep';
 
+/**
+ * Dayjs-like 测试桩类型。
+ * @description 用于验证深拷贝逻辑对“非普通对象引用”保持不变。
+ */
 class MockDayjsLike {
+  /**
+   * 创建 Dayjs-like 测试对象。
+   *
+   * @param value 原始时间值。
+   */
   constructor(public readonly value: string) {}
 }
 

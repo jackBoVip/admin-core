@@ -1,15 +1,16 @@
 /**
- * Tailwind CSS v4 样式系统
- * @description 提供布局相关的 CSS 变量、主题令牌和工具类
+ * Tailwind CSS v4 样式系统。
+ * @description 提供布局相关 CSS 变量、主题令牌与工具类扩展字符串。
  */
 
 import { CSS_VAR_NAMES } from '../constants';
 
 /**
- * 布局 CSS 变量定义（用于 Tailwind CSS v4 @theme）
+ * 布局 CSS 变量定义（用于 Tailwind CSS v4 `@theme`）。
+ * @description 声明布局尺寸与层级变量的默认回退值。
  */
 export const layoutThemeTokens = {
-  // 尺寸变量
+  /* 尺寸变量 */
   '--admin-header-height': '48px',
   '--admin-sidebar-width': '210px',
   '--admin-sidebar-collapsed-width': '60px',
@@ -25,7 +26,7 @@ export const layoutThemeTokens = {
   '--admin-content-padding-right': '16px',
   '--layout-content-compact-width': '1200px',
 
-  // z-index
+  /* z-index */
   '--layout-z-index': '200',
   '--layout-z-index-header': '210',
   '--layout-z-index-sidebar': '220',
@@ -36,8 +37,8 @@ export const layoutThemeTokens = {
 } as const;
 
 /**
- * Tailwind CSS v4 @theme 配置字符串
- * @description 可直接用于 CSS 文件的 @theme 块
+ * Tailwind CSS v4 `@theme` 配置字符串。
+ * @description 可直接注入 CSS 文件中的 `@theme` 块。
  */
 export const tailwindThemeCSS = `
 @theme {
@@ -72,7 +73,8 @@ export const tailwindThemeCSS = `
 `;
 
 /**
- * 布局基础样式 CSS
+ * 布局基础样式 CSS。
+ * @description 提供容器、侧栏、顶栏、内容区、页脚与面板的基础样式规则。
  */
 export const layoutBaseCSS = `
 /* 主题切换过渡（View Transitions） */
@@ -333,7 +335,8 @@ export const layoutBaseCSS = `
 `;
 
 /**
- * Tailwind CSS v4 工具类扩展
+ * Tailwind CSS v4 工具类扩展。
+ * @description 提供布局尺寸、层级、过渡与内边距工具类。
  */
 export const layoutUtilitiesCSS = `
 /* 布局工具类 */
@@ -448,7 +451,8 @@ export const layoutUtilitiesCSS = `
 `;
 
 /**
- * 完整的布局样式 CSS
+ * 完整的布局样式 CSS。
+ * @description 聚合 `@theme`、基础样式与工具类扩展内容。
  */
 export const layoutFullCSS = `
 ${tailwindThemeCSS}
@@ -457,6 +461,7 @@ ${layoutUtilitiesCSS}
 `;
 
 /**
- * 导出 CSS 变量名常量
+ * 导出 CSS 变量名常量。
+ * @description 透传布局变量名映射，供外部样式同步使用。
  */
 export { CSS_VAR_NAMES };

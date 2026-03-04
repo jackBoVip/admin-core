@@ -26,6 +26,10 @@ describe('createReactRouteAccess', () => {
   });
 
   it('should keep plain function component as direct element', async () => {
+    /**
+     * 普通函数组件测试桩。
+     * @returns 空节点。
+     */
     const PlainPage = () => null;
 
     const result = await createReactRouteAccess({

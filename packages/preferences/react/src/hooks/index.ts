@@ -1,5 +1,6 @@
 /**
- * React Hooks 模块
+ * React Hooks 模块导出。
+ * @description 汇总偏好系统在 React 端的业务 Hook 与工具 Hook。
  */
 
 export {
@@ -21,7 +22,7 @@ export {
   type UseAdminAntdThemeOptions,
 } from './use-antd-theme';
 
-// 内部使用（被 PreferencesProvider 使用）
+/** 内部使用（被 `PreferencesProvider` 使用） */
 export {
   useShortcutKeys,
   type UseShortcutKeysOptions,
@@ -29,7 +30,7 @@ export {
 
 export { useLockScreen } from './use-lock-screen';
 
-// 工具 Hooks（内部/外部可用）
+/** 工具 Hooks（内部/外部可用） */
 export {
   useDebouncedValue,
   type UseDebouncedValueOptions,

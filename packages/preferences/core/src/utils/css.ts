@@ -1,25 +1,28 @@
 /**
- * CSS 工具函数
+ * 样式变量工具函数。
+ * @description 提供 CSS 变量与类名的读写封装，并内置缓存优化与 SSR 兜底。
  */
 
 /**
- * 检查是否在浏览器环境
+ * 是否运行在浏览器环境。
  */
 const isBrowser = typeof document !== 'undefined';
 
 /**
- * 获取默认元素（SSR 安全）
+ * 获取默认样式作用元素（SSR 安全）。
+ * @returns 浏览器环境返回根元素，非浏览器环境返回 `null`。
  */
 function getDefaultElement(): HTMLElement | null {
   return isBrowser ? document.documentElement : null;
 }
 
 /**
- * 设置单个 CSS 变量
- * @param name - 变量名（含 --）
- * @param value - 变量值
- * @param element - 目标元素（默认 :root）
- * @param priority - 优先级（'important' 或空）
+ * 设置单个样式变量。
+ * @param name 变量名（含 `--` 前缀）。
+ * @param value 变量值。
+ * @param element 目标元素，默认 `:root`。
+ * @param priority 优先级（`important` 或空字符串）。
+ * @returns 无返回值。
  */
 export function setCSSVariable(
   name: string,
@@ -33,10 +36,10 @@ export function setCSSVariable(
 }
 
 /**
- * 获取 CSS 变量值
- * @param name - 变量名（含 --）
- * @param element - 目标元素（默认 :root）
- * @returns 变量值
+ * 获取样式变量值。
+ * @param name 变量名（含 `--` 前缀）。
+ * @param element 目标元素，默认 `:root`。
+ * @returns 变量值。
  */
 export function getCSSVariable(
   name: string,
@@ -48,9 +51,10 @@ export function getCSSVariable(
 }
 
 /**
- * 移除 CSS 变量
- * @param name - 变量名（含 --）
- * @param element - 目标元素（默认 :root）
+ * 移除样式变量。
+ * @param name 变量名（含 `--` 前缀）。
+ * @param element 目标元素，默认 `:root`。
+ * @returns 无返回值。
  */
 export function removeCSSVariable(
   name: string,
@@ -61,31 +65,33 @@ export function removeCSSVariable(
   el.style.removeProperty(name);
 }
 
-/** CSS 变量缓存最大大小（避免内存无限增长） */
+/** 样式变量缓存最大大小（避免内存无限增长）。 */
 const CSS_CACHE_MAX_SIZE = 500;
 
-/** 上次设置的 CSS 变量缓存（避免重复设置相同值） */
+/** 上次设置的样式变量缓存（避免重复设置相同值）。 */
 const lastCSSVariables = new Map<string, string>();
 
-/** 需要强制更新的 CSS 变量名（确保变更立即生效） */
+/** 需要强制更新的样式变量名（确保变更立即生效）。 */
 const FORCE_UPDATE_VARS = new Set(['--radius', '--font-scale', '--font-size-base', '--menu-font-size']);
 
 /**
- * 维护缓存大小限制
- * @description 当缓存超过最大大小时，移除最早添加的条目
+ * 维护缓存大小限制。
+ * @description 当缓存超过上限时，按插入顺序移除最早的 1/4 条目。
+ * @returns 无返回值。
  */
 function maintainCacheSize(): void {
   if (lastCSSVariables.size > CSS_CACHE_MAX_SIZE) {
-    // 移除最早的 1/4 条目
-    const keysToDelete = Array.from(lastCSSVariables.keys()).slice(0, CSS_CACHE_MAX_SIZE / 4);
-    keysToDelete.forEach(key => lastCSSVariables.delete(key));
+    /* 移除最早的 1/4 条目。 */
+      const keysToDelete = Array.from(lastCSSVariables.keys()).slice(0, CSS_CACHE_MAX_SIZE / 4);
+      keysToDelete.forEach((key) => lastCSSVariables.delete(key));
   }
 }
 
 /**
- * 批量设置 CSS 变量（带变化检查优化）
- * @param variables - CSS 变量对象
- * @param element - 目标元素（默认 :root）
+ * 批量设置样式变量（带变化检查优化）。
+ * @param variables CSS 变量对象。
+ * @param element 目标元素，默认 `:root`。
+ * @returns 无返回值。
  */
 export function updateCSSVariables(
   variables: Record<string, string>,
@@ -93,39 +99,41 @@ export function updateCSSVariables(
 ): void {
   const el = element ?? getDefaultElement();
   if (!el) return;
-  
+
   Object.entries(variables).forEach(([name, value]) => {
-    // 对于强制更新的变量，跳过缓存检查，直接设置
+    /* 对于强制更新的变量，跳过缓存检查并直接设置。 */
     if (FORCE_UPDATE_VARS.has(name)) {
       setCSSVariable(name, value, el);
       lastCSSVariables.set(name, value);
       return;
     }
-    
-    // 检查是否与上次设置的值相同
+
+    /* 检查是否与上次设置的值相同。 */
     const lastValue = lastCSSVariables.get(name);
     if (lastValue !== value) {
       setCSSVariable(name, value, el);
       lastCSSVariables.set(name, value);
     }
   });
-  
-  // 维护缓存大小限制
+
+  /* 维护缓存大小限制。 */
   maintainCacheSize();
 }
 
 /**
- * 清除 CSS 变量缓存
- * @description 在需要强制刷新所有变量时调用
+ * 清除样式变量缓存。
+ * @description 在需要强制刷新所有变量时调用。
+ * @returns 无返回值。
  */
 export function clearCSSVariablesCache(): void {
   lastCSSVariables.clear();
 }
 
 /**
- * 批量移除 CSS 变量
- * @param names - 变量名数组
- * @param element - 目标元素（默认 :root）
+ * 批量移除样式变量。
+ * @param names 变量名数组。
+ * @param element 目标元素，默认 `:root`。
+ * @returns 无返回值。
  */
 export function removeCSSVariables(
   names: string[],
@@ -137,10 +145,10 @@ export function removeCSSVariables(
 }
 
 /**
- * 获取所有 CSS 变量（以指定前缀开头）
- * @param prefix - 前缀（如 '--admin-'）
- * @param element - 目标元素（默认 :root）
- * @returns CSS 变量对象
+ * 获取所有匹配前缀的 CSS 变量。
+ * @param prefix 前缀（如 `--admin-`）。
+ * @param element 目标元素，默认 `:root`。
+ * @returns CSS 变量键值对对象。
  */
 export function getAllCSSVariables(
   prefix: string,
@@ -148,11 +156,11 @@ export function getAllCSSVariables(
 ): Record<string, string> {
   const el = element ?? getDefaultElement();
   if (!el) return {};
-  
+
   const styles = getComputedStyle(el);
   const variables: Record<string, string> = {};
 
-  // 获取所有 CSS 属性名
+  /* 获取所有 CSS 属性名。 */
   for (let i = 0; i < styles.length; i++) {
     const name = styles[i];
     if (name.startsWith(prefix)) {
@@ -164,9 +172,10 @@ export function getAllCSSVariables(
 }
 
 /**
- * 添加 CSS 类名
- * @param className - 类名
- * @param element - 目标元素（默认 document.documentElement）
+ * 添加 CSS 类名。
+ * @param className 类名。
+ * @param element 目标元素，默认 `document.documentElement`。
+ * @returns 无返回值。
  */
 export function addClass(
   className: string,
@@ -178,9 +187,10 @@ export function addClass(
 }
 
 /**
- * 移除 CSS 类名
- * @param className - 类名
- * @param element - 目标元素（默认 document.documentElement）
+ * 移除 CSS 类名。
+ * @param className 类名。
+ * @param element 目标元素，默认 `document.documentElement`。
+ * @returns 无返回值。
  */
 export function removeClass(
   className: string,
@@ -192,11 +202,11 @@ export function removeClass(
 }
 
 /**
- * 切换 CSS 类名
- * @param className - 类名
- * @param force - 强制添加/移除
- * @param element - 目标元素（默认 document.documentElement）
- * @returns 操作后是否包含该类名
+ * 切换 CSS 类名。
+ * @param className 类名。
+ * @param force 强制添加/移除。
+ * @param element 目标元素，默认 `document.documentElement`。
+ * @returns 操作后是否包含该类名。
  */
 export function toggleClass(
   className: string,
@@ -209,10 +219,10 @@ export function toggleClass(
 }
 
 /**
- * 检查是否包含 CSS 类名
- * @param className - 类名
- * @param element - 目标元素（默认 document.documentElement）
- * @returns 是否包含
+ * 检查是否包含 CSS 类名。
+ * @param className 类名。
+ * @param element 目标元素，默认 `document.documentElement`。
+ * @returns 是否包含。
  */
 export function hasClass(
   className: string,

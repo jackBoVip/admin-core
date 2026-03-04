@@ -1,3 +1,6 @@
+/**
+ * 布局 UI 状态快照与事件控制器测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   createLayoutPreferencesPanelStateController,

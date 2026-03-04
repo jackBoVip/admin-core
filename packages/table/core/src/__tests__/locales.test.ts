@@ -1,3 +1,6 @@
+/**
+ * table-core 语言切换与订阅通知测试。
+ */
 import { describe, expect, it } from 'vitest';
 
 import {

@@ -16,7 +16,7 @@ import {
 
 describe('设计令牌', () => {
   beforeEach(() => {
-    // 每个测试前重置令牌
+    /* 每个测试前重置令牌。 */
     resetDesignTokens();
   });
 

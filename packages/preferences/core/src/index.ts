@@ -24,13 +24,15 @@
  * ```
  */
 
-// ========== 管理器 ==========
+/**
+ * 管理器导出。
+ */
 export {
-  // 核心管理器
+  /** 核心管理器。 */
   createPreferencesManager,
   PreferencesManager,
   type PreferencesListener,
-  // CSS 更新
+  /** 样式变量更新能力。 */
   getActualThemeMode,
   updateAllCSSVariables,
   updateLayoutCSSVariables,
@@ -38,19 +40,21 @@ export {
   updateThemeCSSVariables,
   setDOMSelectors,
   clearCSSUpdaterCache,
-  // 生命周期管理
+  /** 生命周期管理。 */
   ManagerLifecycle,
   createManagerLifecycle,
   getDefaultLifecycle,
   resetDefaultLifecycle,
 } from './manager';
 
-// ========== 业务操作 ==========
+/**
+ * 业务操作导出。
+ */
 export {
   createPreferencesActions,
   createThemeActions,
   createLayoutActions,
-  // Action 工厂（缓存管理）
+  /** 操作工厂（含缓存管理）。 */
   createActionFactory,
   getGlobalActionFactory,
   resetGlobalActionFactory,
@@ -60,14 +64,18 @@ export {
   type ActionFactory,
 } from './actions';
 
-// ========== Store ==========
+/**
+ * Store 导出。
+ */
 export {
   getDefaultPreferencesStore,
   resetDefaultPreferencesStore,
   type PreferencesStore,
 } from './store';
 
-// ========== 控制器 (Headless) ==========
+/**
+ * Headless 控制器导出。
+ */
 export {
   SliderController,
   createSliderController,
@@ -83,16 +91,18 @@ export {
   type CopyButtonState,
 } from './controllers/copy-button';
 
-// ========== 辅助工具 ==========
+/**
+ * 辅助工具导出。
+ */
 export {
-  // 选项工厂
+  /** 选项工厂。 */
   createTranslatedOptions,
   getLanguageOptions,
   getRadiusOptions,
   type TranslatedOption,
   type TranslatedOptions,
   type LanguageOption,
-  // 抽屉配置
+  /** 抽屉配置。 */
   DRAWER_TABS,
   DRAWER_DEFAULT_PROPS,
   DRAWER_HEADER_ACTIONS,
@@ -117,7 +127,7 @@ export {
   type ConfigValidationResult,
   type ImportConfigResult,
   type UITabConfig,
-  // 图标工具
+  /** 图标工具。 */
   ICON_SIZE_MAP,
   LAYOUT_ICON_SIZE,
   getIconSize,
@@ -126,7 +136,7 @@ export {
   getLayoutIconStyle,
   getLayoutIconContainerStyle,
   type ExtendedIconSize,
-  // 字体缩放
+  /** 字体缩放。 */
   FONT_SCALE_CONFIG,
   FONT_SCALE_PRESETS,
   FONT_SCALE_CSS_VAR,
@@ -139,9 +149,9 @@ export {
   clampFontScale,
   roundToStep,
   type FontScaleConfig,
-  // 布局偏好映射
+  /** 布局偏好映射。 */
   mapPreferencesToLayoutProps,
-  // 布局设置页辅助
+  /** 布局设置页辅助。 */
   getLayoutTabConfigs,
   getLayoutTabOptions,
   createLayoutPreviewCache,
@@ -149,12 +159,12 @@ export {
   createLayoutTabUpdater,
   type LayoutTabConfigs,
   type LayoutTabUpdater,
-  // 主题工具
+  /** 主题工具。 */
   clearThemeModeCache,
   generateThemeCSSVariables,
   generateThemeClasses,
   type ThemeRuntimeConfig,
-  // 锁屏辅助
+  /** 锁屏辅助。 */
   isLockScreenEnabled,
   hasLockScreenPassword,
   canLockScreen,
@@ -172,19 +182,21 @@ export {
   type KeyboardEventLike,
 } from './helpers';
 
-// ========== 配置 ==========
+/**
+ * 配置导出。
+ */
 export {
-  // 默认偏好设置
+  /** 默认偏好设置。 */
   DEFAULT_PREFERENCES,
   DEFAULT_PRIMARY_COLOR,
   getDefaultPreferences,
   clearDefaultPreferencesCache,
-  // 快捷键配置
+  /** 快捷键配置。 */
   SHORTCUT_KEY_BINDINGS,
   getShortcutKeys,
   getShortcutKeyDisplay,
   type ShortcutKeyBinding,
-  // 设计令牌 - 类型
+  /** 设计令牌类型。 */
   type DesignTokens,
   type DrawerTokens,
   type LayoutIconTokens,
@@ -195,7 +207,7 @@ export {
   type TransitionTokens,
   type ColorTokens,
   type ZIndexTokens,
-  // 设计令牌 - 默认值
+  /** 设计令牌默认值。 */
   DEFAULT_DESIGN_TOKENS,
   DRAWER_TOKEN_DEFAULTS,
   LAYOUT_ICON_TOKEN_DEFAULTS,
@@ -206,12 +218,12 @@ export {
   TRANSITION_TOKEN_DEFAULTS,
   COLOR_TOKEN_DEFAULTS,
   Z_INDEX_TOKEN_DEFAULTS,
-  // 设计令牌 - 配置 API
+  /** 设计令牌配置 API。 */
   configureDesignTokens,
   getDesignTokens,
   getDefaultDesignTokens,
   resetDesignTokens,
-  // 设计令牌 - 快捷访问
+  /** 设计令牌快捷访问。 */
   designTokens,
   drawer as drawerTokens,
   layoutIcon as layoutIconTokens,
@@ -222,10 +234,10 @@ export {
   transition as transitionTokens,
   colors as colorsTokens,
   zIndex as zIndexTokens,
-  // CSS 生成
+  /** 样式变量生成工具。 */
   generateCSSVariables,
   cssVarNames,
-  // Tab 内容配置（Vue/React 共享）
+  /** 页签内容配置（Vue/React 共享）。 */
   GENERAL_TAB_CONFIG,
   SHORTCUT_KEYS_TAB_CONFIG,
   LAYOUT_TAB_CONFIG,
@@ -239,14 +251,16 @@ export {
   type TabConfig,
 } from './config';
 
-// ========== 类型定义 ==========
+/**
+ * 偏好设置类型定义导出。
+ */
 export type {
-  // 主题类型
+  /** 主题类型。 */
   BuiltinThemePreset,
   BuiltinThemeType,
   PageTransitionType,
   ThemeModeType,
-  // 布局类型
+  /** 布局类型。 */
   AccessModeType,
   AuthPageLayoutType,
   BreadcrumbStyleType,
@@ -260,7 +274,7 @@ export type {
   SupportedLanguagesType,
   TabsStyleType,
   TimezoneOption,
-  // 偏好设置接口
+  /** 偏好设置接口。 */
   AppPreferences,
   BreadcrumbPreferences,
   CopyrightPreferences,
@@ -279,7 +293,7 @@ export type {
   ThemePreferences,
   TransitionPreferences,
   WidgetPreferences,
-  // 工具类型
+  /** 工具类型。 */
   DeepPartial,
   DeepReadonly,
   I18nAdapter,
@@ -290,7 +304,7 @@ export type {
   StorageErrorType,
   PreferencesInitOptions,
   DOMSelectors,
-  // 组件 Props 类型（Vue/React 共享）
+  /** 组件 Props 类型（Vue/React 共享）。 */
   DrawerComponentProps,
   TriggerComponentProps,
   BlockComponentProps,
@@ -309,7 +323,7 @@ export type {
   SelectItemBaseProps,
   SliderItemBaseProps,
   InputItemBaseProps,
-  // 抽屉 UI 配置类型
+  /** 抽屉 UI 配置类型。 */
   FeatureItemConfig,
   FeatureBlockConfig,
   AppearanceTabConfig,
@@ -322,14 +336,16 @@ export type {
   ResolvedFeatureConfig,
 } from './types';
 
-// ========== 常量配置 ==========
+/**
+ * 常量配置导出。
+ */
 export {
-  // 主题
+  /** 主题常量。 */
   BUILT_IN_THEME_PRESETS,
   COLOR_PRESETS,
   getBuiltinTheme,
   getThemePrimaryColor,
-  // 布局
+  /** 布局常量。 */
   BREADCRUMB_STYLE_OPTIONS,
   CONTENT_COMPACT_OPTIONS,
   DEFAULT_LAYOUT_SIZES,
@@ -339,21 +355,21 @@ export {
   LAYOUT_OPTIONS,
   NAVIGATION_STYLE_OPTIONS,
   TABS_STYLE_OPTIONS,
-  // 动画
+  /** 动画常量。 */
   ANIMATION_DURATION,
   ANIMATION_EASING,
   getAnimationDuration,
   getAnimationDurationCss,
   PAGE_TRANSITION_OPTIONS,
   type AnimationDurationType,
-  // CSS 变量
+  /** 样式变量常量。 */
   CSS_VAR_ANIMATION,
   CSS_VAR_LAYOUT,
   CSS_VAR_THEME,
   CSS_VAR_Z_INDEX,
   CSS_VARIABLES,
   DEFAULT_Z_INDEX,
-  // UI 常量
+  /** 界面常量。 */
   DEFAULT_RADIUS,
   FONT_SIZE_DEFAULT,
   FONT_SIZE_MAX,
@@ -361,7 +377,7 @@ export {
   FONT_SIZE_STEP,
   RADIUS_OPTIONS,
   type RadiusOption,
-  // 组件交互常量
+  /** 组件交互常量。 */
   SLIDER_DEBOUNCE_MS,
   INPUT_DEBOUNCE_MS,
   INPUT_MAX_LENGTH,
@@ -369,16 +385,18 @@ export {
   CLEAR_PASSWORD_RESET_DELAY_MS,
   FOCUS_DELAY_MS,
   CLOSE_ANIMATION_DELAY_MS,
-  // 消息常量
+  /** 消息常量。 */
   ERROR_MESSAGES,
   LOG_PREFIX,
   SUCCESS_MESSAGES,
   WARN_MESSAGES,
 } from './constants';
 
-// ========== 颜色系统 ==========
+/**
+ * 颜色系统导出。
+ */
 export {
-  // OKLCH 工具
+  /** 颜色空间工具（OKLCH）。 */
   adjustChroma,
   adjustLightness,
   createOklch,
@@ -388,19 +406,19 @@ export {
   parseToOklch,
   rotateHue,
   type OklchColor,
-  // 色阶生成
+  /** 色阶生成。 */
   COLOR_SHADES,
   generateColorScale,
   generateColorScaleVariables,
   type ColorShade,
-  // 语义色派生
+  /** 语义色派生。 */
   clearSemanticColorCache,
   deriveSemanticColors,
   getSemanticColor,
   SEMANTIC_HUE_OFFSETS,
   type SemanticColorName,
   type SemanticColors,
-  // 对比度计算
+  /** 对比度计算。 */
   generateContrastColors,
   getAccessibleForeground,
   getContrastColor,
@@ -408,7 +426,7 @@ export {
   getRelativeLuminance,
   meetsWCAG,
   type WCAGLevel,
-  // 颜色变量生成
+  /** 颜色变量生成。 */
   generateColorVariables,
   generateDarkNeutralColors,
   generateLightNeutralColors,
@@ -416,27 +434,29 @@ export {
   type ThemeColorOptions,
 } from './color';
 
-// ========== 工具函数 ==========
+/**
+ * 工具函数导出。
+ */
 export {
-  // 缓存管理
+  /** 缓存管理。 */
   createStorageManager,
   StorageManager,
   type StorageManagerOptions,
-  // 深度合并
+  /** 深度合并。 */
   deepClone,
   deepMerge,
   safeMerge,
-  // 对象差异
+  /** 对象差异。 */
   diff,
   diffWithKeys,
   extractChangedKeys,
   getChangedKeys,
   hasChanges,
   type DiffResult,
-  // 防抖工具
+  /** 防抖工具。 */
   createDebouncedCallback,
   type DebouncedCallback,
-  // 平台检测
+  /** 平台检测。 */
   formatShortcut,
   getModifierKeyText,
   getPlatform,
@@ -449,7 +469,7 @@ export {
   isMobile,
   isTouchDevice,
   isWindows,
-  // CSS 工具
+  /** 样式工具。 */
   addClass,
   clearCSSVariablesCache,
   getAllCSSVariables,
@@ -461,19 +481,19 @@ export {
   setCSSVariable,
   toggleClass,
   updateCSSVariables,
-  // 通用工具
+  /** 通用工具。 */
   get,
   isEmpty,
   isEqual,
   isObject,
   debounce,
   throttle,
-  // 数值工具
+  /** 数值工具。 */
   clamp,
   parseNumber,
   formatNumber,
   isInRange,
-  // 布局判断工具
+  /** 布局判断工具。 */
   LAYOUT_CATEGORIES,
   isHeaderMenuLayout,
   isSidebarMenuLayout,
@@ -482,22 +502,22 @@ export {
   hasSidebar,
   hasHeaderMenu,
   getNavigationPosition,
-  // 日志工具
+  /** 日志工具。 */
   logger,
   type LogLevel,
-  // 锁屏管理
+  /** 锁屏管理。 */
   createAutoLockTimer,
   createLockScreenManager,
   type AutoLockTimerOptions,
   type LockScreenManagerOptions,
-  // 快捷键管理
+  /** 快捷键管理。 */
   createShortcutManager,
   matchShortcutKey,
   type ShortcutKeyAction,
   type ShortcutKeyCallbacks,
   type ShortcutManagerOptions,
   type UseShortcutKeysResult,
-  // 水印工具
+  /** 水印工具。 */
   buildWatermarkCacheKey,
   createWatermarkGenerator,
   formatWatermarkText,
@@ -507,7 +527,7 @@ export {
   type WatermarkGeneratorOptions,
   type WatermarkTextConfig,
   setupPreferenceTooltip,
-  // 密码工具
+  /** 密码工具。 */
   PASSWORD_MIN_LENGTH,
   hashPassword,
   hashPasswordSync,
@@ -515,26 +535,30 @@ export {
   verifyPasswordSync,
 } from './utils';
 
-// ========== 样式 ==========
+/**
+ * 样式预设导出。
+ */
 export { adminCorePreset, tailwindPreset } from './styles';
 
-// ========== 图标 ==========
+/**
+ * 图标导出。
+ */
 export {
-  // 布局图标（静态）
+  /** 布局图标（静态）。 */
   getLayoutIcon,
   layoutIcons,
-  // 内容宽度图标
+  /** 内容宽度图标。 */
   getContentWidthIcon,
   contentWidthIcons,
   type ContentWidthType,
-  // 布局预览图生成器（动态）
+  /** 布局预览图生成器（动态）。 */
   generateLayoutPreview,
   generatePreviewFromPreferences,
   generatePreviewWithOverrides,
   extractPreviewOptions,
   DEFAULT_PREVIEW_OPTIONS,
   type LayoutPreviewOptions,
-  // 通用图标
+  /** 通用图标。 */
   getIcon,
   hasIcon,
   icons,
@@ -543,7 +567,9 @@ export {
   type IconSize,
 } from './icons';
 
-// ========== 国际化 ==========
+/**
+ * 国际化导出。
+ */
 export {
   enUS,
   getLocaleLabel,
@@ -559,5 +585,7 @@ export {
   type LocaleMessages,
 } from './locales';
 
-// ========== 资源文件 ==========
+/**
+ * 资源文件导出。
+ */
 export { defaultLockScreenBg } from './assets';

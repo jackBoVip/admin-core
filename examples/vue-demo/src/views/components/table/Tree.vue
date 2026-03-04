@@ -5,6 +5,9 @@ import { useAdminTable } from '@admin-core/table-vue';
 
 import { TREE_ROWS, type DemoTreeRow } from './data';
 
+/**
+ * 树形表格配置。
+ */
 const gridOptions: VxeTableGridOptions<DemoTreeRow> = {
   columns: [
     { type: 'seq', width: 70 },
@@ -24,14 +27,27 @@ const gridOptions: VxeTableGridOptions<DemoTreeRow> = {
   },
 };
 
+/**
+ * `useAdminTable` 返回的组件与 API。
+ */
 const [Grid, gridApi] = useAdminTable<DemoTreeRow>({
   gridOptions,
 });
 
+/**
+ * 展开全部树节点。
+ *
+ * @returns 无返回值。
+ */
 function expandAll() {
   (gridApi.grid as any)?.setAllTreeExpand?.(true);
 }
 
+/**
+ * 折叠全部树节点。
+ *
+ * @returns 无返回值。
+ */
 function collapseAll() {
   (gridApi.grid as any)?.setAllTreeExpand?.(false);
 }

@@ -1,34 +1,53 @@
 /**
- * useEventListener Composable
- * @description 统一管理事件监听器，自动在组件卸载时移除
+ * 事件监听组合式工具。
+ * @description 统一管理事件监听器，并在组件卸载时自动清理。
  */
 
 import { onUnmounted, ref, watch, type Ref } from 'vue';
 
+/**
+ * 可绑定事件的目标类型。
+ */
 type EventTarget = Window | Document | HTMLElement | null | undefined;
+/**
+ * 事件处理函数类型。
+ */
 type EventHandler<E extends Event> = (event: E) => void;
 
+/**
+ * 已注册事件监听器快照。
+ */
 interface EventListenerInfo {
+  /** 监听目标。 */
   target: EventTarget;
+  /** 类型。 */
   type: string;
+  /** 实际绑定的处理函数。 */
   handler: EventListener;
+  /** 配置项。 */
   options?: AddEventListenerOptions;
 }
 
 /**
- * 事件监听器管理器
- * 在组件卸载时自动移除所有事件监听器
+ * 创建事件监听器管理器，并在组件卸载时统一清理。
+ *
+ * @returns 事件注册与移除方法集合。
  */
 export function useEventListener() {
+  /**
+   * 当前组合式函数托管的监听器集合。
+   * @description 记录每个监听器的目标、事件名、处理函数与配置。
+   */
   const listeners = ref<EventListenerInfo[]>([]);
 
   /**
-   * 添加事件监听器
-   * @param target - 事件目标（window, document, 或 HTMLElement）
-   * @param type - 事件类型
-   * @param handler - 事件处理函数
-   * @param options - 事件选项
-   * @returns 移除监听器的函数
+   * 添加事件监听器并返回反注册函数。
+   *
+   * @param target 事件目标（`window`、`document` 或元素节点）。
+   * @param type 事件类型。
+   * @param handler 事件处理函数。
+   * @param options 监听选项。
+   * @returns 对应监听器的移除函数。
    */
   function on<E extends Event>(
     target: EventTarget,
@@ -51,12 +70,14 @@ export function useEventListener() {
     };
     listeners.value.push(info);
 
-    // 返回移除函数
+    /** 返回当前监听器对应的移除函数。 */
     return () => off(info);
   }
 
   /**
-   * 移除指定的事件监听器
+   * 移除指定的事件监听器。
+   *
+   * @param info 监听器快照信息。
    */
   function off(info: EventListenerInfo): void {
     if (info.target) {
@@ -69,7 +90,7 @@ export function useEventListener() {
   }
 
   /**
-   * 移除所有事件监听器
+   * 移除当前组合式函数管理的全部事件监听器。
    */
   function offAll(): void {
     listeners.value.forEach((info) => {
@@ -80,7 +101,9 @@ export function useEventListener() {
     listeners.value = [];
   }
 
-  // 组件卸载时自动清理
+  /**
+   * 组件卸载时自动清理全部事件监听器。
+   */
   onUnmounted(() => {
     offAll();
   });
@@ -93,9 +116,11 @@ export function useEventListener() {
 }
 
 /**
- * 监听窗口 resize 事件
- * @param handler - 事件处理函数
- * @param options - 事件选项
+ * 监听窗口 `resize` 事件。
+ *
+ * @param handler 事件处理函数。
+ * @param options 监听选项。
+ * @returns 取消监听函数。
  */
 export function useWindowResize(
   handler: EventHandler<UIEvent>,
@@ -106,9 +131,11 @@ export function useWindowResize(
 }
 
 /**
- * 监听窗口 scroll 事件
- * @param handler - 事件处理函数
- * @param options - 事件选项
+ * 监听窗口 `scroll` 事件。
+ *
+ * @param handler 事件处理函数。
+ * @param options 监听选项。
+ * @returns 取消监听函数。
  */
 export function useWindowScroll(
   handler: EventHandler<Event>,
@@ -119,9 +146,11 @@ export function useWindowScroll(
 }
 
 /**
- * 监听键盘事件
- * @param handler - 事件处理函数
- * @param options - 事件选项
+ * 监听全局 `keydown` 事件。
+ *
+ * @param handler 事件处理函数。
+ * @param options 监听选项。
+ * @returns 取消监听函数。
  */
 export function useKeydown(
   handler: EventHandler<KeyboardEvent>,
@@ -132,9 +161,11 @@ export function useKeydown(
 }
 
 /**
- * 监听点击外部区域
- * @param target - 目标元素引用
- * @param handler - 点击外部时的处理函数
+ * 监听点击目标元素外部区域的事件。
+ *
+ * @param target 目标元素引用。
+ * @param handler 点击发生在目标元素外部时触发的回调。
+ * @returns 取消监听函数。
  */
 export function useClickOutside(
   target: Ref<HTMLElement | null | undefined>,
@@ -142,6 +173,11 @@ export function useClickOutside(
 ): () => void {
   const { on } = useEventListener();
   
+  /**
+   * 点击事件代理：当点击发生在目标元素外部时触发回调。
+   *
+   * @param event 鼠标事件对象。
+   */
   const clickHandler = (event: MouseEvent) => {
     const el = target.value;
     if (el && !el.contains(event.target as Node)) {
@@ -153,9 +189,11 @@ export function useClickOutside(
 }
 
 /**
- * 监听元素大小变化
- * @param target - 目标元素引用
- * @param handler - 大小变化时的处理函数
+ * 监听元素尺寸变化。
+ *
+ * @param target 目标元素引用。
+ * @param handler 尺寸变化回调，参数为首个 `ResizeObserverEntry`。
+ * @returns 停止监听并销毁观察器的方法。
  */
 export function useResizeObserver(
   target: Ref<HTMLElement | null | undefined>,
@@ -163,6 +201,9 @@ export function useResizeObserver(
 ): () => void {
   let observer: ResizeObserver | null = null;
 
+  /**
+   * 停止并销毁当前 `ResizeObserver` 实例。
+   */
   const stop = () => {
     if (observer) {
       observer.disconnect();

@@ -1,3 +1,6 @@
+/**
+ * 侧边栏折叠、悬浮展开与扩展区状态控制测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { createLayoutSidebarStateController } from '../utils';
 

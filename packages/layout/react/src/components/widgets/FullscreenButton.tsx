@@ -7,25 +7,53 @@ import { useState, useEffect, useCallback, memo } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
 
+/**
+ * 兼容不同浏览器前缀的 Fullscreen Document 扩展类型。
+ */
 type FullscreenDocument = Document & {
+  /** 苹果浏览器内核当前全屏元素。 */
   webkitFullscreenElement?: Element | null;
+  /** 火狐浏览器当前全屏元素（旧前缀）。 */
   mozFullScreenElement?: Element | null;
+  /** 旧版 Edge/IE 当前全屏元素。 */
   msFullscreenElement?: Element | null;
+  /** 苹果浏览器内核退出全屏方法。 */
   webkitExitFullscreen?: () => Promise<void>;
+  /** 火狐浏览器退出全屏方法（旧前缀）。 */
   mozCancelFullScreen?: () => Promise<void>;
+  /** 旧版 Edge/IE 退出全屏方法。 */
   msExitFullscreen?: () => Promise<void>;
 };
 
+/**
+ * 兼容不同浏览器前缀的 Fullscreen Element 扩展类型。
+ */
 type FullscreenElement = HTMLElement & {
+  /** 苹果浏览器内核请求全屏方法。 */
   webkitRequestFullscreen?: () => Promise<void>;
+  /** 火狐浏览器请求全屏方法（旧前缀）。 */
   mozRequestFullScreen?: () => Promise<void>;
+  /** 旧版 Edge/IE 请求全屏方法。 */
   msRequestFullscreen?: () => Promise<void>;
 };
 
+/**
+ * 全屏切换按钮组件。
+ * @description 负责请求/退出浏览器全屏并同步全屏状态事件。
+ */
 export const FullscreenButton = memo(function FullscreenButton() {
+  /**
+   * 布局事件回调集合。
+   */
   const { events } = useLayoutContext();
+  /**
+   * 全屏状态标识。
+   */
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  /**
+   * 检测当前浏览器是否处于全屏状态，并同步到组件状态。
+   */
   const checkFullscreen = useCallback(() => {
     const fullscreenDocument = document as FullscreenDocument;
     setIsFullscreen(
@@ -38,6 +66,9 @@ export const FullscreenButton = memo(function FullscreenButton() {
     );
   }, []);
 
+  /**
+   * 切换浏览器全屏状态，兼容不同浏览器前缀 API。
+   */
   const toggleFullscreen = useCallback(async () => {
     try {
       const fullscreenDocument = document as FullscreenDocument;
@@ -70,6 +101,9 @@ export const FullscreenButton = memo(function FullscreenButton() {
   }, [isFullscreen, events]);
 
   useEffect(() => {
+    /**
+     * 初始化全屏状态并注册全屏变化事件监听。
+     */
     checkFullscreen();
     document.addEventListener('fullscreenchange', checkFullscreen);
     document.addEventListener('webkitfullscreenchange', checkFullscreen);

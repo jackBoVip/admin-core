@@ -30,6 +30,10 @@ describe('table react adapter', () => {
       | null
       | ReturnType<typeof useAdminTable<Record<string, any>, Record<string, any>>> = null;
 
+    /**
+     * 测试探针组件。
+     * @returns 空节点。
+     */
     function Probe() {
       captured = useAdminTable({
         tableTitle: '基础列表',

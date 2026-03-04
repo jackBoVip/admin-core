@@ -1,3 +1,6 @@
+/**
+ * 必填标记推断（字符串规则与 Zod 规则）测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { isFieldRequiredMark } from '../utils/required';
@@ -17,4 +20,3 @@ describe('required mark', () => {
     expect(isFieldRequiredMark({ rules: z.string().optional() })).toBe(false);
   });
 });
-

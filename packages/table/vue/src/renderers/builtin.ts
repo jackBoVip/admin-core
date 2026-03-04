@@ -1,10 +1,25 @@
+/**
+ * Table Vue 内置渲染器集合。
+ * @description 提供标签、开关、操作列等常用单元格/编辑渲染器注册实现。
+ */
 import type { VxeUIExport } from 'vxe-table';
 
 import { getColumnValueByPath, setColumnValueByPath } from '@admin-core/table-core';
 import { h } from 'vue';
 
+/**
+ * 注册 Vue 内置单元格渲染器。
+ * @param vxeUI VXE UI 导出对象。
+ * @returns 无返回值。
+ */
 export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
   vxeUI.renderer.add('CellTag', {
+    /**
+     * 渲染标签单元格。
+     * @param renderOptions 渲染配置。
+     * @param context 列与行上下文。
+     * @returns 标签节点。
+     */
     renderTableDefault({ options, props }, { column, row }) {
       const value = getColumnValueByPath(row, column.field);
       const tagOptions = options ?? [
@@ -32,6 +47,12 @@ export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
   });
 
   vxeUI.renderer.add('CellSwitch', {
+    /**
+     * 渲染开关单元格。
+     * @param renderOptions 渲染配置。
+     * @param context 列与行上下文。
+     * @returns 开关节点。
+     */
     renderTableDefault({ attrs, props }, { column, row }) {
       const loadingKey = `__loading_${column.field}`;
       const field = String(column.field ?? '');
@@ -39,6 +60,10 @@ export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
       const uncheckedValue = props?.uncheckedValue ?? 0;
       const checked = getColumnValueByPath(row, field) === checkedValue;
 
+      /**
+       * 处理开关状态切换事件，并在回调允许后同步写回行数据。
+       * @param event 原生 change 事件对象。
+       */
       const onChange = async (event: Event) => {
         const target = event.target as HTMLInputElement;
         const nextValue = target.checked ? checkedValue : uncheckedValue;
@@ -63,6 +88,12 @@ export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
   });
 
   vxeUI.renderer.add('CellOperation', {
+    /**
+     * 渲染操作列单元格。
+     * @param renderOptions 渲染配置。
+     * @param context 列与行上下文。
+     * @returns 操作按钮节点集合。
+     */
     renderTableDefault({ attrs, options, props }, { column, row }) {
       const defaultOperations = ['edit', 'delete'];
       const operationList = (options ?? defaultOperations).map((option: any) => {
@@ -92,6 +123,11 @@ export function registerBuiltinVueRenderers(vxeUI: VxeUIExport) {
                 opacity: disabled ? 0.5 : 1,
                 padding: '0 6px',
               },
+              /**
+               * 处理单条操作按钮点击，按需触发删除确认并回传操作信息。
+               *
+               * @returns 无返回值。
+               */
               onClick: () => {
                 if (disabled) return;
                 if (item.code === 'delete') {

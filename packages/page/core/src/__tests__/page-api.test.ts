@@ -1,3 +1,6 @@
+/**
+ * Page API 运行时状态同步、路由联动与渲染解析测试。
+ */
 import {
   createKeepInactivePagePaneState,
   createPageApi,

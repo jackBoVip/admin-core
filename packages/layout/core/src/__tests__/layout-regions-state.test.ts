@@ -1,3 +1,6 @@
+/**
+ * 布局区域态（头部、侧边栏、面板、响应式）测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   isHeaderAutoHideMode,

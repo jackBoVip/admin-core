@@ -2,8 +2,11 @@
  * 中文语言包
  */
 
+/**
+ * 中文语言消息集合。
+ */
 export const zhCN = {
-  // ========== 通用 ==========
+  /** 通用 */
   common: {
     confirm: '确认',
     cancel: '取消',
@@ -22,7 +25,7 @@ export const zhCN = {
     back: '返回',
   },
 
-  // ========== 偏好设置 ==========
+  /** 偏好设置 */
   preferences: {
     title: '偏好设置',
     description: '自定义偏好设置 & 实时预览',
@@ -44,7 +47,7 @@ export const zhCN = {
     disableSticky: '取消固定标签导航栏',
   },
 
-  // ========== 主题 ==========
+  /** 主题 */
   theme: {
     title: '主题',
     mode: '主题模式',
@@ -59,7 +62,7 @@ export const zhCN = {
     fontScaleLarge: '大',
     builtinTheme: '内置主题',
     other: '其他',
-    // 内置主题名称
+    /** 内置主题名称 */
     presetDefault: '默认',
     presetViolet: '紫罗兰',
     presetPink: '樱花粉',
@@ -74,7 +77,7 @@ export const zhCN = {
     presetNeutral: '中性色',
     presetSlate: '石板灰',
     presetGray: '中灰色',
-    // 颜色模式
+    /** 颜色模式 */
     colorMode: '颜色模式',
     colorFollowPrimaryLight: '浅色背景跟随主题',
     colorFollowPrimaryDark: '深色背景跟随主题',
@@ -84,7 +87,7 @@ export const zhCN = {
     colorWeakMode: '色弱模式',
   },
 
-  // ========== 布局 ==========
+  /** 布局 */
   layout: {
     title: '布局',
     type: '布局类型',
@@ -107,7 +110,7 @@ export const zhCN = {
     contentCompact: '紧凑',
   },
 
-  // ========== 功能区 ==========
+  /** 功能区 */
   panel: {
     title: '功能区',
     enable: '启用功能区',
@@ -120,7 +123,7 @@ export const zhCN = {
     collapsedWidth: '折叠宽度',
   },
 
-  // ========== 侧边栏 ==========
+  /** 侧边栏 */
   sidebar: {
     title: '侧边栏',
     enable: '启用侧边栏',
@@ -133,7 +136,7 @@ export const zhCN = {
     collapseWidth: '折叠宽度',
   },
 
-  // ========== 顶栏 ==========
+  /** 顶栏 */
   header: {
     title: '顶栏',
     enable: '启用顶栏',
@@ -151,7 +154,7 @@ export const zhCN = {
     menuLauncherTip: '将顶栏菜单折叠为按钮，点击弹出菜单面板',
   },
 
-  // ========== 标签栏 ==========
+  /** 标签栏 */
   tabbar: {
     title: '标签栏',
     enable: '启用标签栏',
@@ -173,7 +176,7 @@ export const zhCN = {
     styleBrisk: '轻快风格',
   },
 
-  // ========== 面包屑 ==========
+  /** 面包屑 */
   breadcrumb: {
     title: '面包屑',
     enable: '启用面包屑',
@@ -185,7 +188,7 @@ export const zhCN = {
     styleBackground: '带背景',
   },
 
-  // ========== 导航 ==========
+  /** 导航 */
   navigation: {
     title: '导航',
     accordion: '手风琴模式',
@@ -195,14 +198,14 @@ export const zhCN = {
     stylePlain: '朴素',
   },
 
-  // ========== 页脚 ==========
+  /** 页脚 */
   footer: {
     title: '页脚',
     enable: '启用页脚',
     fixed: '固定页脚',
   },
 
-  // ========== 版权 ==========
+  /** 版权 */
   copyright: {
     title: '版权',
     enable: '启用版权',
@@ -213,7 +216,7 @@ export const zhCN = {
     icpLink: 'ICP 网站链接',
   },
 
-  // ========== 过渡动画 ==========
+  /** 过渡动画 */
   transition: {
     title: '动画',
     enable: '启用页面动画',
@@ -234,7 +237,7 @@ export const zhCN = {
     nameSlideRightDesc: '从左向右滑入',
   },
 
-  // ========== 小部件 ==========
+  /** 小部件 */
   widget: {
     title: '小部件',
     fullscreen: '全屏按钮',
@@ -248,7 +251,7 @@ export const zhCN = {
     timezone: '时区选择',
   },
 
-  // ========== 快捷键 ==========
+  /** 快捷键 */
   shortcutKeys: {
     title: '快捷键',
     enable: '启用快捷键',
@@ -258,7 +261,7 @@ export const zhCN = {
     globalLockScreen: '锁屏',
   },
 
-  // ========== 锁屏 ==========
+  /** 锁屏 */
   lockScreen: {
     title: '锁屏',
     unlock: '解锁',
@@ -285,7 +288,7 @@ export const zhCN = {
     minute: '分钟',
   },
 
-  // ========== 通用设置 ==========
+  /** 通用设置 */
   general: {
     title: '通用',
     language: '语言',
@@ -301,4 +304,7 @@ export const zhCN = {
   },
 };
 
+/**
+ * 默认导出简体中文语言包。
+ */
 export default zhCN;

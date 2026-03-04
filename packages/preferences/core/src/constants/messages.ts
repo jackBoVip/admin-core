@@ -15,13 +15,13 @@ export const LOG_PREFIX = {
  * 警告消息
  */
 export const WARN_MESSAGES = {
-  /** Manager 已初始化 */
+  /** 管理器已初始化 */
   managerAlreadyInitialized: `${LOG_PREFIX.preferences} Manager already initialized`,
-  /** Storage 设置失败 */
+  /** 存储设置失败 */
   storageSetFailed: `${LOG_PREFIX.storage} Failed to set item:`,
-  /** Storage 获取失败 */
+  /** 存储读取失败 */
   storageGetFailed: `${LOG_PREFIX.storage} Failed to get item:`,
-  /** Storage 删除失败 */
+  /** 存储删除失败 */
   storageRemoveFailed: `${LOG_PREFIX.storage} Failed to remove item:`,
 } as const;
 
@@ -31,7 +31,7 @@ export const WARN_MESSAGES = {
 export const ERROR_MESSAGES = {
   /** 复制配置失败 */
   copyConfigFailed: 'Failed to copy config',
-  /** Manager 未初始化 */
+  /** 管理器未初始化 */
   managerNotInitialized: `${LOG_PREFIX.preferences} Manager not initialized. Call initPreferences() first.`,
 } as const;
 
@@ -39,6 +39,6 @@ export const ERROR_MESSAGES = {
  * 成功消息（可用于 toast 等）
  */
 export const SUCCESS_MESSAGES = {
-  /** CSS 文件复制成功 */
+  /** 样式文件复制成功 */
   cssCopied: 'CSS files copied successfully',
 } as const;

@@ -26,6 +26,8 @@
     "workspace:replace": "node scripts/replace-workspace.mjs",
     "workspace:restore": "node scripts/replace-workspace.mjs --restore",
     "workspace:preview": "node scripts/replace-workspace.mjs --dry-run",
+    "jsdoc:zh": "node scripts/add-zh-jsdoc.mjs",
+    "jsdoc:zh:dry": "node scripts/add-zh-jsdoc.mjs --dry-run",
     "release": "node scripts/release.mjs",
     "release:skip-check": "node scripts/release.mjs --skip-check",
     "release:dry-run": "node scripts/release.mjs --skip-check --dry-run"

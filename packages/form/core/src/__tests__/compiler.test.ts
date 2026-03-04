@@ -1,3 +1,6 @@
+/**
+ * Schema 编译缓存命中、依赖图与 LRU 淘汰策略测试。
+ */
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   clearSchemaCompileCache,

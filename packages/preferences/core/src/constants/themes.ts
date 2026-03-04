@@ -10,19 +10,24 @@ import type { BuiltinThemePreset, BuiltinThemeType } from '../types';
  * @description 使用 OKLCH 色彩空间定义，所有语义色从主色自动派生
  */
 export const BUILT_IN_THEME_PRESETS: BuiltinThemePreset[] = [
-  // 彩色主题
-  { color: 'oklch(0.55 0.2 250)', type: 'default', nameKey: 'presetDefault' }, // 蓝色
-  { color: 'oklch(0.55 0.22 290)', type: 'violet', nameKey: 'presetViolet' }, // 紫色
-  { color: 'oklch(0.6 0.2 350)', type: 'pink', nameKey: 'presetPink' }, // 粉色
-  { color: 'oklch(0.75 0.15 85)', type: 'yellow', nameKey: 'presetYellow' }, // 黄色
-  { color: 'oklch(0.6 0.18 230)', type: 'sky-blue', nameKey: 'presetSkyBlue' }, // 天蓝
-  { color: 'oklch(0.6 0.18 145)', type: 'green', nameKey: 'presetGreen' }, // 绿色
-  { color: 'oklch(0.5 0.15 180)', type: 'deep-green', nameKey: 'presetDeepGreen' }, // 深绿
-  { color: 'oklch(0.45 0.2 250)', type: 'deep-blue', nameKey: 'presetDeepBlue' }, // 深蓝
-  { color: 'oklch(0.55 0.2 45)', type: 'orange', nameKey: 'presetOrange' }, // 橙色
-  { color: 'oklch(0.5 0.22 25)', type: 'rose', nameKey: 'presetRose' }, // 玫红
+  /**
+   * 彩色主题预设。
+   */
+  { color: 'oklch(0.55 0.2 250)', type: 'default', nameKey: 'presetDefault' },
+  { color: 'oklch(0.55 0.22 290)', type: 'violet', nameKey: 'presetViolet' },
+  { color: 'oklch(0.6 0.2 350)', type: 'pink', nameKey: 'presetPink' },
+  { color: 'oklch(0.75 0.15 85)', type: 'yellow', nameKey: 'presetYellow' },
+  { color: 'oklch(0.6 0.18 230)', type: 'sky-blue', nameKey: 'presetSkyBlue' },
+  { color: 'oklch(0.6 0.18 145)', type: 'green', nameKey: 'presetGreen' },
+  { color: 'oklch(0.5 0.15 180)', type: 'deep-green', nameKey: 'presetDeepGreen' },
+  { color: 'oklch(0.45 0.2 250)', type: 'deep-blue', nameKey: 'presetDeepBlue' },
+  { color: 'oklch(0.55 0.2 45)', type: 'orange', nameKey: 'presetOrange' },
+  { color: 'oklch(0.5 0.22 25)', type: 'rose', nameKey: 'presetRose' },
 
-  // 中性主题（暗色模式使用不同主色）
+  /**
+   * 中性主题预设。
+   * @description 暗色模式下可使用独立主色，以提升可读性。
+   */
   {
     color: 'oklch(0.35 0.02 260)',
     darkPrimaryColor: 'oklch(0.98 0 0)',
@@ -48,7 +53,9 @@ export const BUILT_IN_THEME_PRESETS: BuiltinThemePreset[] = [
     nameKey: 'presetGray',
   },
 
-  // 自定义主题
+  /**
+   * 自定义主题占位项。
+   */
   { color: '', type: 'custom', nameKey: '' },
 ];
 
@@ -79,10 +86,13 @@ export function getBuiltinTheme(type: BuiltinThemeType): BuiltinThemePreset | un
 export function getThemePrimaryColor(type: BuiltinThemeType, isDark: boolean): string {
   const preset = getBuiltinTheme(type);
   if (!preset) {
-    return 'oklch(0.55 0.2 250)'; // 默认蓝色
+    return 'oklch(0.55 0.2 250)';
   }
 
-  // 暗色模式下，部分中性主题使用不同的主色
+  /**
+   * 暗色模式专用主色分支。
+   * @description 对支持 `darkPrimaryColor` 的中性主题优先使用暗色主色。
+   */
   if (isDark && preset.darkPrimaryColor) {
     return preset.darkPrimaryColor;
   }

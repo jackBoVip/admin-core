@@ -1,3 +1,7 @@
+/**
+ * Form Core 适配器注册中心。
+ * @description 维护语义组件到具体组件的映射与适配库优先级解析逻辑。
+ */
 import {
   COMPONENT_EVENT_PROP_OVERRIDES,
   DEFAULT_MODEL_PROP_NAME,
@@ -18,6 +22,7 @@ import type {
   SemanticFormComponentType,
 } from '../types';
 
+/** 适配器能力默认值。 */
 const DEFAULT_CAPABILITIES: AdapterCapabilities = {
   asyncOptions: false,
   customModelProp: false,
@@ -25,12 +30,45 @@ const DEFAULT_CAPABILITIES: AdapterCapabilities = {
   slots: false,
 };
 
+/** 语义组件与能力标识的约束映射。 */
 const COMPONENT_CAPABILITY_REQUIREMENTS: Partial<
   Record<SemanticFormComponentType, keyof AdapterCapabilities>
 > = {
   'date-range': 'dateRange',
 };
 
+/**
+ * 创建表单适配器注册中心的初始化配置。
+ */
+export interface CreateFormAdapterRegistryOptions<TComponent = unknown> {
+  /** 初始激活库，`auto` 表示按注册顺序自动匹配。 */
+  activeLibrary?: 'auto' | string;
+  /** 预注册库集合。 */
+  libraries?: Record<string, FormAdapterV1<TComponent>>;
+  /** 原生适配器。 */
+  nativeAdapter?: FormAdapterV1<TComponent>;
+}
+
+/**
+ * 适配器桥接层初始化配置。
+ */
+export interface CreateFormAdapterBridgeOptions<TComponent = unknown> {
+  /** 初始激活库。 */
+  activeLibrary?: 'auto' | string;
+  /** 默认 model 属性名。 */
+  defaultBaseModelPropName?: string;
+  /** 原生适配器。 */
+  nativeAdapter?: FormAdapterV1<TComponent>;
+  /** 原生组件映射。 */
+  nativeComponents?: Partial<Record<SemanticFormComponentType, TComponent>>;
+}
+
+/**
+ * 判断适配器是否支持指定语义组件。
+ * @param adapter 适配器实例。
+ * @param key 语义组件键。
+ * @returns 是否支持。
+ */
 function adapterSupportsKey<TComponent>(
   adapter: FormAdapterV1<TComponent>,
   key: string
@@ -41,6 +79,11 @@ function adapterSupportsKey<TComponent>(
   return !!adapter.capabilities?.[capabilityKey];
 }
 
+/**
+ * 创建原生适配器。
+ * @param components 原生组件映射。
+ * @returns 适配器对象。
+ */
 export function createNativeAdapter<TComponent = unknown>(
   components: Partial<Record<SemanticFormComponentType, TComponent>>
 ): FormAdapterV1<TComponent> {
@@ -57,6 +100,12 @@ export function createNativeAdapter<TComponent = unknown>(
   };
 }
 
+/**
+ * 解析组件 model 属性名。
+ * @param adapter 适配器对象。
+ * @param key 组件键。
+ * @returns model 属性名。
+ */
 function normalizeModelPropName<TComponent>(
   adapter: FormAdapterV1<TComponent>,
   key: string
@@ -69,6 +118,15 @@ function normalizeModelPropName<TComponent>(
   );
 }
 
+/**
+ * 构建统一的组件解析结果。
+ * @param source 解析来源。
+ * @param key 组件键。
+ * @param component 组件实例。
+ * @param adapter 适配器对象。
+ * @param library 来源库名。
+ * @returns 解析结果。
+ */
 function toResolvedBinding<TComponent>(
   source: ResolvedComponentBinding<TComponent>['source'],
   key: string,
@@ -89,12 +147,13 @@ function toResolvedBinding<TComponent>(
   };
 }
 
+/**
+ * 创建表单适配器注册中心。
+ * @param options 注册中心初始化选项。
+ * @returns 适配器注册中心实例。
+ */
 export function createFormAdapterRegistry<TComponent = unknown>(
-  options?: {
-    activeLibrary?: 'auto' | string;
-    libraries?: Record<string, FormAdapterV1<TComponent>>;
-    nativeAdapter?: FormAdapterV1<TComponent>;
-  }
+  options?: CreateFormAdapterRegistryOptions<TComponent>
 ): FormAdapterRegistry<TComponent> {
   const libraryMap = new Map<string, FormAdapterV1<TComponent>>();
   let activeLibrary: 'auto' | string = options?.activeLibrary ?? 'auto';
@@ -109,15 +168,34 @@ export function createFormAdapterRegistry<TComponent = unknown>(
   }
 
   const api: FormAdapterRegistry<TComponent> = {
+    /**
+     * 获取当前激活适配器名称。
+     * @returns 适配器名称或 `auto`。
+     */
     getActiveLibrary() {
       return activeLibrary;
     },
+    /**
+     * 获取指定名称适配器。
+     * @param name 适配器名称。
+     * @returns 适配器实例。
+     */
     getLibrary(name: string) {
       return libraryMap.get(name);
     },
+    /**
+     * 获取全部已注册适配器名称。
+     * @returns 适配器名称数组。
+     */
     listLibraries() {
       return [...libraryMap.keys()];
     },
+    /**
+     * 注册或覆盖适配器库。
+     * @param name 适配器名称。
+     * @param adapter 适配器实现。
+     * @returns 无返回值。
+     */
     registerLibrary(name, adapter) {
       if (adapter.version !== 1) {
         logger.warn(
@@ -126,6 +204,11 @@ export function createFormAdapterRegistry<TComponent = unknown>(
       }
       libraryMap.set(name, adapter);
     },
+    /**
+     * 解析字段组件绑定。
+     * @param resolveOptions 解析参数。
+     * @returns 组件绑定结果；未命中返回 `null`。
+     */
     resolveComponent(resolveOptions: ResolveComponentOptions<TComponent>) {
       const { explicitComponent, key, fallbackToNative = true } = resolveOptions;
 
@@ -148,6 +231,12 @@ export function createFormAdapterRegistry<TComponent = unknown>(
         }
       }
 
+      /**
+       * 从指定适配器尝试解析字段组件。
+       * @param name 适配器名称。
+       * @param adapter 适配器实例。
+       * @returns 命中的组件绑定，未命中返回 `null`。
+       */
       const tryFrom = (name: string, adapter: FormAdapterV1<TComponent>) => {
         const candidate = adapter.components[key as SemanticFormComponentType];
         if (!candidate) return null;
@@ -193,9 +282,19 @@ export function createFormAdapterRegistry<TComponent = unknown>(
       }
       return toResolvedBinding('native', key, nativeCandidate, nativeAdapter, 'native');
     },
+    /**
+     * 设置当前激活适配器。
+     * @param name 适配器名称。
+     * @returns 无返回值。
+     */
     setActiveLibrary(name) {
       activeLibrary = name;
     },
+    /**
+     * 更新原生适配器。
+     * @param adapter 原生适配器配置。
+     * @returns 无返回值。
+     */
     setNativeAdapter(adapter) {
       nativeAdapter = {
         ...adapter,
@@ -208,7 +307,7 @@ export function createFormAdapterRegistry<TComponent = unknown>(
       };
       for (const key of SEMANTIC_COMPONENT_KEYS) {
         if (!nativeAdapter.components[key]) {
-          // 保持键存在可预测
+          /* 保持键存在可预测。 */
           (nativeAdapter.components as Record<string, TComponent | undefined>)[key] ??=
             undefined;
         }
@@ -219,6 +318,13 @@ export function createFormAdapterRegistry<TComponent = unknown>(
   return api;
 }
 
+/**
+ * 规范化适配器输入配置。
+ * @param name 适配器名称。
+ * @param input 适配器输入。
+ * @param defaultBaseModelPropName 默认 model 属性名。
+ * @returns 标准化后的适配器对象。
+ */
 function normalizeAdapterInput<TComponent>(
   name: string,
   input: AdapterLibraryInput<TComponent>,
@@ -234,15 +340,17 @@ function normalizeAdapterInput<TComponent>(
   };
 }
 
+/**
+ * 创建适配器桥接层，统一提供 normalize/register/setup 能力。
+ * @param options 桥接初始化配置。
+ * @returns 适配器桥接实例。
+ */
 export function createFormAdapterBridge<
   TComponent = unknown,
   TAdapterInput extends AdapterLibraryInput<TComponent> = AdapterLibraryInput<TComponent>,
->(options: {
-  activeLibrary?: 'auto' | string;
-  defaultBaseModelPropName?: string;
-  nativeAdapter?: FormAdapterV1<TComponent>;
-  nativeComponents?: Partial<Record<SemanticFormComponentType, TComponent>>;
-}): FormAdapterBridge<TComponent, TAdapterInput> {
+>(
+  options: CreateFormAdapterBridgeOptions<TComponent>
+): FormAdapterBridge<TComponent, TAdapterInput> {
   const nativeAdapter =
     options.nativeAdapter ??
     createNativeAdapter<TComponent>(
@@ -261,6 +369,12 @@ export function createFormAdapterBridge<
 
   const bridge: FormAdapterBridge<TComponent, TAdapterInput> = {
     registry,
+    /**
+     * 规范化单个适配器配置。
+     * @param name 适配器名称。
+     * @param input 适配器输入配置。
+     * @returns 规范化后的适配器。
+     */
     normalize(name, input) {
       return normalizeAdapterInput(
         name,
@@ -268,6 +382,12 @@ export function createFormAdapterBridge<
         options.defaultBaseModelPropName
       );
     },
+    /**
+     * 快速注册组件映射。
+     * @param components 组件映射表。
+     * @param registerOptions 注册选项。
+     * @returns 无返回值。
+     */
     register(
       components: Partial<Record<SemanticFormComponentType, TComponent>>,
       registerOptions: RegisterFormAdapterComponentsOptions = {}
@@ -287,6 +407,11 @@ export function createFormAdapterBridge<
         )
       );
     },
+    /**
+     * 执行批量 setup。
+     * @param setupOptions setup 选项。
+     * @returns 无返回值。
+     */
     setup(setupOptions: SetupFormAdaptersOptions<TComponent, TAdapterInput> = {}) {
       if (setupOptions.library) {
         registry.setActiveLibrary(setupOptions.library);

@@ -1,3 +1,7 @@
+/**
+ * 按钮示例页。
+ * @description 展示按钮颜色、尺寸与禁用态。
+ */
 export default function ComponentsButton() {
   return (
     <div className="page-container">

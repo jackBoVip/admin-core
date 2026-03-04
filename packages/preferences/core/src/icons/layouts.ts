@@ -12,7 +12,7 @@ import type { LayoutType } from '../types';
  * viewBox: 80x50 (紧凑尺寸)
  */
 export const layoutIcons: Record<LayoutType, string> = {
-  // 侧边导航 (sidebar-nav) - 垂直布局
+  /** 侧边导航（sidebar-nav）- 垂直布局。 */
   'sidebar-nav': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 侧边栏 -->
@@ -36,7 +36,7 @@ export const layoutIcons: Record<LayoutType, string> = {
     <rect x="20" y="30" width="58" height="18" rx="2" fill="var(--background)"/>
   </svg>`,
 
-  // 侧边混合导航 (sidebar-mixed-nav) - 双列菜单
+  /** 侧边混合导航（sidebar-mixed-nav）- 双列菜单。 */
   'sidebar-mixed-nav': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 一级侧边栏 -->
@@ -64,7 +64,7 @@ export const layoutIcons: Record<LayoutType, string> = {
     <rect x="26" y="30" width="52" height="18" rx="2" fill="var(--background)"/>
   </svg>`,
 
-  // 顶部导航 (header-nav) - 水平布局
+  /** 顶部导航（header-nav）- 水平布局。 */
   'header-nav': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 顶栏 -->
@@ -85,7 +85,7 @@ export const layoutIcons: Record<LayoutType, string> = {
     <rect x="2" y="30" width="76" height="18" rx="2" fill="var(--background)"/>
   </svg>`,
 
-  // 顶部通栏 (header-sidebar-nav) - 侧边导航
+  /** 顶部通栏（header-sidebar-nav）- 侧边导航。 */
   'header-sidebar-nav': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 顶栏 -->
@@ -112,7 +112,7 @@ export const layoutIcons: Record<LayoutType, string> = {
     <rect x="20" y="30" width="58" height="18" rx="2" fill="var(--background)"/>
   </svg>`,
 
-  // 混合导航 (mixed-nav) - 混合垂直
+  /** 混合导航（mixed-nav）- 混合垂直布局。 */
   'mixed-nav': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 顶栏 -->
@@ -138,7 +138,7 @@ export const layoutIcons: Record<LayoutType, string> = {
     <rect x="20" y="30" width="58" height="18" rx="2" fill="var(--background)"/>
   </svg>`,
 
-  // 顶部混合导航 (header-mixed-nav) - 混合双列
+  /** 顶部混合导航（header-mixed-nav）- 混合双列布局。 */
   'header-mixed-nav': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 顶栏 -->
@@ -165,7 +165,7 @@ export const layoutIcons: Record<LayoutType, string> = {
     <rect x="20" y="30" width="58" height="18" rx="2" fill="var(--background)"/>
   </svg>`,
 
-  // 全屏内容 (full-content) - 内容全屏
+  /** 全屏内容（full-content）- 内容全屏布局。 */
   'full-content': `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 全屏内容区 -->
@@ -197,7 +197,7 @@ export type ContentWidthType = 'wide' | 'compact';
  * @description 用于内容宽度选择器显示
  */
 export const contentWidthIcons: Record<ContentWidthType, string> = {
-  // 流式/宽屏模式 - 内容铺满
+  /** 流式/宽屏模式图标。 */
   wide: `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 侧边栏 -->
@@ -219,7 +219,7 @@ export const contentWidthIcons: Record<ContentWidthType, string> = {
     <rect x="52" y="36" width="22" height="8" rx="1" fill="var(--background)"/>
   </svg>`,
 
-  // 定宽/紧凑模式 - 内容居中有边距
+  /** 定宽/紧凑模式图标。 */
   compact: `<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
     <rect width="80" height="50" rx="3" fill="var(--muted)"/>
     <!-- 侧边栏 -->

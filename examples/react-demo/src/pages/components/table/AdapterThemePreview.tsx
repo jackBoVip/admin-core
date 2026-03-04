@@ -2,6 +2,13 @@ import { getReactFormAdapterRegistry } from '@admin-core/form-react';
 import { Button, Checkbox, Input, Select, Switch } from 'antd';
 import { useEffect, useState } from 'react';
 
+/**
+ * 解析下拉类组件的弹层挂载容器。
+ * @description 优先挂到最近的 `.admin-table` 容器，避免表格内部弹层错位。
+ *
+ * @param triggerNode 触发弹层的 DOM 节点。
+ * @returns 弹层应挂载的目标节点。
+ */
 export function resolveTablePopupContainer(triggerNode: HTMLElement) {
   const nearest = triggerNode?.closest?.('.admin-table');
   if (nearest instanceof HTMLElement) {
@@ -13,6 +20,10 @@ export function resolveTablePopupContainer(triggerNode: HTMLElement) {
   return document.body;
 }
 
+/**
+ * 适配器主题联动预览组件。
+ * @description 用于验证 antd 组件与 Admin Core 主题变量是否同步。
+ */
 export function AdapterThemePreview() {
   const [themeSnapshot, setThemeSnapshot] = useState({
     antPrimary: '',
@@ -21,6 +32,11 @@ export function AdapterThemePreview() {
   const activeFormLibrary = getReactFormAdapterRegistry().getActiveLibrary();
 
   useEffect(() => {
+    /**
+     * 同步主题变量快照。
+     *
+     * @returns 无返回值。
+     */
     const syncThemeSnapshot = () => {
       const styles = getComputedStyle(document.documentElement);
       setThemeSnapshot({

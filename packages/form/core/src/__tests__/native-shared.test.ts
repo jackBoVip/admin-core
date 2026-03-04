@@ -1,3 +1,6 @@
+/**
+ * 原生组件共享属性与值处理工具测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   ensureDateRangeValue,

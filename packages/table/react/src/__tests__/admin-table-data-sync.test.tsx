@@ -7,6 +7,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AdminTable } from '../components/AdminTable';
 import { setupAdminTableReact } from '../setup';
 
+/**
+ * 测试桩用表单 API 结构。
+ */
+interface MockFormApi {
+  /** 读取当前表单值。 */
+  getValues: () => Promise<Record<string, any>>;
+  /** 重置表单。 */
+  resetForm: () => Promise<void>;
+  /** 写入最近提交值。 */
+  setLatestSubmissionValues: (values: Record<string, any>) => void;
+  /** 更新内部状态。 */
+  setState: (updater: any) => void;
+  /** 卸载回调。 */
+  unmount: () => void;
+}
+
+/**
+ * 跨 mock 场景共享的测试快照状态。
+ */
 const mockedState = vi.hoisted(() => ({
   latestTableProps: null as null | Record<string, any>,
 }));
@@ -42,13 +61,7 @@ vi.mock('@admin-core/form-react', async () => {
   const React = await import('react');
   return {
     useAdminForm: () => {
-      const formApiRef = React.useRef<{
-        getValues: () => Promise<Record<string, any>>;
-        resetForm: () => Promise<void>;
-        setLatestSubmissionValues: (values: Record<string, any>) => void;
-        setState: (updater: any) => void;
-        unmount: () => void;
-      }>();
+      const formApiRef = React.useRef<MockFormApi>();
       if (!formApiRef.current) {
         formApiRef.current = {
           getValues: async () => ({}),
@@ -58,6 +71,11 @@ vi.mock('@admin-core/form-react', async () => {
           unmount: () => {},
         };
       }
+
+      /**
+       * 表单组件测试桩。
+       * @returns 空节点。
+       */
       const MockForm = () => null;
       return [MockForm, formApiRef.current] as const;
     },
@@ -194,6 +212,10 @@ describe('AdminTable data sync', () => {
       renderer = create(<AdminTable api={api as any} />);
     });
 
+    /**
+     * 获取当前 `score` 列定义。
+     * @returns `score` 列配置；未命中时返回 `undefined`。
+     */
     const resolveScoreColumn = () =>
       (mockedState.latestTableProps?.columns ?? []).find(
         (column: Record<string, any>) => column.dataIndex === 'score'

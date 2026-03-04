@@ -1,3 +1,6 @@
+/**
+ * 布局内容区、面板与页脚样式计算测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   computeContentClassName,

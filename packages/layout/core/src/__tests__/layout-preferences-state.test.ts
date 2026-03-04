@@ -44,12 +44,22 @@ describe('layout-preferences-state helpers', () => {
   });
 
   it('should sync preferences from manager', () => {
-    type DemoPrefs = { layout: 'sidebar-nav' | 'header-nav'; locale: string };
+    /**
+     * 测试场景中的偏好对象结构。
+     */
+    type DemoPrefs = {
+      /** 布局模式。 */
+      layout: 'sidebar-nav' | 'header-nav';
+      /** 语言标识。 */
+      locale: string;
+    };
     let current: DemoPrefs = { layout: 'sidebar-nav', locale: 'zh-CN' };
     const listeners = new Set<(prefs: DemoPrefs) => void>();
 
     const manager = {
+      /** 获取当前偏好快照。 */
       getPreferences: () => current,
+      /** 订阅偏好变更并返回取消函数。 */
       subscribe: (listener: (preferences: DemoPrefs) => void) => {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -86,13 +96,23 @@ describe('layout-preferences-state helpers', () => {
   });
 
   it('should manage preferences sync runtime lifecycle', () => {
-    type DemoPrefs = { layout: 'sidebar-nav' | 'header-nav'; locale: string };
+    /**
+     * 测试场景中的偏好对象结构。
+     */
+    type DemoPrefs = {
+      /** 布局模式。 */
+      layout: 'sidebar-nav' | 'header-nav';
+      /** 语言标识。 */
+      locale: string;
+    };
     let current: DemoPrefs = { layout: 'sidebar-nav', locale: 'zh-CN' };
     const listeners = new Set<(prefs: DemoPrefs) => void>();
     const unsubscribe = vi.fn();
 
     const manager = {
+      /** 获取当前偏好快照。 */
       getPreferences: () => current,
+      /** 订阅偏好变更并返回取消函数。 */
       subscribe: (listener: (preferences: DemoPrefs) => void) => {
         listeners.add(listener);
         return () => {

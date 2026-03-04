@@ -3,44 +3,54 @@
  * @description 统一管理布局中使用的所有 SVG 图标路径
  */
 
+/**
+ * 结构化 SVG 节点定义。
+ * @description 用于在运行时以安全对象结构描述 SVG 片段。
+ */
 export type SvgNode = {
+  /** 图形节点标签名。 */
   tag: 'mask' | 'rect' | 'circle' | 'g' | 'line';
+  /** 标签属性。 */
   attrs?: Record<string, string>;
+  /** 子节点列表。 */
   children?: SvgNode[];
 };
 
+/** 图标定义结构。 */
 export interface IconDefinition {
+  /** 图标视口范围（viewBox）。 */
   viewBox: string;
+  /** 主路径数据。 */
   path: string;
-  /** 是否使用 fill 而非 stroke */
+  /** 是否使用 `fill` 而非 `stroke`。 */
   fill?: boolean;
-  /** 额外的 SVG 元素（如 rect） */
+  /** 额外 SVG 片段（例如 `rect`）。 */
   extra?: string;
-  /** 结构化 SVG 节点（用于安全渲染） */
+  /** 结构化 SVG 节点（用于安全渲染）。 */
   extraNodes?: SvgNode[];
-  /** 视觉尺寸微调（以 24x24 画布为基准） */
+  /** 视觉尺寸微调系数（以 `24x24` 画布为基准）。 */
   opticalScale?: number;
 }
 
-// ============================================================
-// 动画类名常量
-// ============================================================
+/* ============================================================ */
+/* 动画类名常量 */
+/* ============================================================ */
 
 /**
  * 动画类名配置
  */
 export const ANIMATION_CLASSES = {
-  /** 图标旋转动画 */
+  /** 图标旋转动画。 */
   iconRotate: 'transition-transform duration-300 ease-in-out',
-  /** 快速旋转动画 */
+  /** 快速旋转动画。 */
   iconRotateFast: 'transition-transform duration-200 ease-in-out',
-  /** 颜色过渡动画 */
+  /** 颜色过渡动画。 */
   colorTransition: 'transition-colors duration-200',
-  /** 透明度过渡动画 */
+  /** 透明度过渡动画。 */
   opacityTransition: 'transition-opacity duration-200',
-  /** 所有属性过渡 */
+  /** 所有属性过渡。 */
   allTransition: 'transition-all duration-200',
-  /** 布局过渡（用于侧边栏宽度等） */
+  /** 布局过渡（用于侧边栏宽度等）。 */
   layoutTransition: 'transition-all duration-layout-normal',
 } as const;
 
@@ -48,16 +58,24 @@ export const ANIMATION_CLASSES = {
  * 旋转角度类名
  */
 export const ROTATION_CLASSES = {
+  /** 不旋转。 */
   rotate0: 'rotate-0',
+  /** 顺时针旋转 90 度。 */
   rotate90: 'rotate-90',
+  /** 旋转 180 度。 */
   rotate180: 'rotate-180',
+  /** 逆时针旋转 90 度。 */
   rotate270: '-rotate-90',
 } as const;
 
-// ============================================================
-// 图标尺寸（统一 token）
-// ============================================================
+/* ============================================================ */
+/* 图标尺寸（统一 token） */
+/* ============================================================ */
 
+/**
+ * 布局图标尺寸配置。
+ * @description 统一定义小/中/大三档尺寸，供图标渲染器与组件共用。
+ */
 export const LAYOUT_ICON_SIZES = {
   xs: 'h-3 w-3',
   sm: 'h-4 w-4',
@@ -66,18 +84,25 @@ export const LAYOUT_ICON_SIZES = {
   xl: 'h-6 w-6',
 } as const;
 
+/** 布局图标尺寸标识。 */
 export type LayoutIconSize = keyof typeof LAYOUT_ICON_SIZES;
 
+/**
+ * 解析图标尺寸 class。
+ * @param size 尺寸标识或自定义 class。
+ * @returns 尺寸 class。
+ */
 export function resolveLayoutIconSize(size?: LayoutIconSize | string): string {
   if (!size) return LAYOUT_ICON_SIZES.md;
   return size in LAYOUT_ICON_SIZES ? LAYOUT_ICON_SIZES[size as LayoutIconSize] : size;
 }
 
 /**
- * 内置图标定义
+ * 内置图标定义表。
+ * @description 键为图标名称，值为对应 SVG 定义。
  */
 export const icons: Record<string, IconDefinition> = {
-  // 导航相关
+  /* 导航相关 */
   'chevron-right': {
     viewBox: '0 0 24 24',
     path: 'M9 18l6-6-6-6',
@@ -103,7 +128,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M11 17l-5-5 5-5m7 10l-5-5 5-5',
   },
 
-  // 菜单相关
+  /* 菜单相关 */
   menu: {
     viewBox: '0 0 24 24',
     path: 'M4 6h16M4 12h16M4 18h16',
@@ -116,7 +141,7 @@ export const icons: Record<string, IconDefinition> = {
     viewBox: '0 0 24 24',
     path: 'M4 6h16M10 12h10M4 18h16M9 8l-4 4 4 4',
   },
-  // 简洁折叠图标（不对称三横线，带箭头视觉效果）
+  /* 简洁折叠图标（不对称三横线，带箭头视觉效果）。 */
   'indent-collapse': {
     viewBox: '0 0 24 24',
     path: 'M4 6h10M4 12h16M10 18h10',
@@ -126,7 +151,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M10 6h10M4 12h16M4 18h10',
   },
 
-  // 操作相关
+  /* 操作相关 */
   close: {
     viewBox: '0 0 24 24',
     path: 'M18 6L6 18M6 6l12 12',
@@ -155,7 +180,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3',
     opticalScale: 1.08,
   },
-  // 图钉相关（用于固定/取消固定子菜单）- lucide 风格
+  /* 图钉相关（用于固定/取消固定子菜单）- lucide 风格。 */
   pin: {
     viewBox: '0 0 24 24',
     path: 'M12 17v5M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z',
@@ -164,7 +189,7 @@ export const icons: Record<string, IconDefinition> = {
     viewBox: '0 0 24 24',
     path: 'M2 2l20 20M12 17v5M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12M15 9.34V6h1a2 2 0 0 0 0-4H7.89',
   },
-  // 侧边栏折叠/展开图标（带面板的箭头）
+  /* 侧边栏折叠/展开图标（带面板的箭头）。 */
   'sidebar-collapse': {
     viewBox: '0 0 24 24',
     path: 'M14 9l3 3-3 3',
@@ -190,7 +215,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z',
   },
 
-  // 系统相关
+  /* 系统相关 */
   settings: {
     viewBox: '0 0 24 24',
     path: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z',
@@ -222,7 +247,7 @@ export const icons: Record<string, IconDefinition> = {
     opticalScale: 1.2,
   },
 
-  // 主页/仪表盘
+  /* 主页/仪表盘 */
   home: {
     viewBox: '0 0 24 24',
     path: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
@@ -232,7 +257,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z',
   },
 
-  // 文档相关
+  /* 文档相关 */
   document: {
     viewBox: '0 0 24 24',
     path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
@@ -250,7 +275,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z',
   },
 
-  // 图表相关
+  /* 图表相关 */
   chart: {
     viewBox: '0 0 24 24',
     path: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
@@ -264,7 +289,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M11 3.055A9.001 9.001 0 1020.945 13H11V3.055zM20.488 9H15V3.512A9.025 9.025 0 0120.488 9z',
   },
 
-  // 链接相关
+  /* 链接相关 */
   link: {
     viewBox: '0 0 24 24',
     path: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1',
@@ -274,7 +299,7 @@ export const icons: Record<string, IconDefinition> = {
     path: 'M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14',
   },
 
-  // 其他
+  /* 其他 */
   info: {
     viewBox: '0 0 24 24',
     path: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -297,6 +322,7 @@ export const icons: Record<string, IconDefinition> = {
   },
 };
 
+/** 主题切换专用动态图标定义。 */
 const THEME_TOGGLE_ICON: IconDefinition = {
   viewBox: '0 0 24 24',
   path: '',
@@ -349,29 +375,35 @@ const THEME_TOGGLE_ICON: IconDefinition = {
 };
 
 /**
- * 获取图标定义
+ * 获取图标定义。
+ * @param name 图标名称。
+ * @returns 匹配到的图标定义；未命中时返回 `null`。
  */
 export function getIconDefinition(name: string): IconDefinition | null {
   return icons[name] || null;
 }
 
-/** Emoji 检测正则表达式（缓存避免重复创建） */
+/** 表情符号检测正则表达式（缓存避免重复创建）。 */
 const EMOJI_REGEX = /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2300}-\u{23FF}]|[\u{2B50}]|[\u{231A}-\u{231B}]|[\u{25AA}-\u{25AB}]|[\u{25B6}]|[\u{25C0}]|[\u{25FB}-\u{25FE}]|[\u{2614}-\u{2615}]|[\u{2648}-\u{2653}]|[\u{267F}]|[\u{2693}]|[\u{26A1}]|[\u{26AA}-\u{26AB}]|[\u{26BD}-\u{26BE}]|[\u{26C4}-\u{26C5}]|[\u{26CE}]|[\u{26D4}]|[\u{26EA}]|[\u{26F2}-\u{26F3}]|[\u{26F5}]|[\u{26FA}]|[\u{26FD}]|[\u{2702}]|[\u{2705}]|[\u{2708}-\u{270D}]|[\u{270F}]|[\u{2712}]|[\u{2714}]|[\u{2716}]|[\u{271D}]|[\u{2721}]|[\u{2728}]|[\u{2733}-\u{2734}]|[\u{2744}]|[\u{2747}]|[\u{274C}]|[\u{274E}]|[\u{2753}-\u{2755}]|[\u{2757}]|[\u{2763}-\u{2764}]|[\u{2795}-\u{2797}]|[\u{27A1}]|[\u{27B0}]|[\u{27BF}]/u;
 
 /**
- * 检查是否为 emoji
+ * 检查字符串是否包含 Emoji。
+ * @param str 待检测字符串。
+ * @returns 包含 Emoji 时返回 `true`。
  */
 export function isEmoji(str: string): boolean {
   return EMOJI_REGEX.test(str);
 }
 
 /**
- * 渲染图标的类型
+ * 图标渲染类型。
  */
 export type IconRenderType = 'svg' | 'emoji' | 'custom';
 
 /**
- * 判断图标渲染类型
+ * 判断图标渲染类型。
+ * @param icon 图标名称或文本值。
+ * @returns 对应渲染类型。
  */
 export function getIconRenderType(icon: string): IconRenderType {
   if (isEmoji(icon)) return 'emoji';
@@ -379,13 +411,13 @@ export function getIconRenderType(icon: string): IconRenderType {
   return 'custom';
 }
 
-/**
- * 默认 SVG viewBox
- */
+/** 默认 SVG `viewBox` 值。 */
 export const DEFAULT_SVG_VIEWBOX = '0 0 24 24';
 
 /**
  * 获取图标 SVG 路径
+ * @param icon 图标名称。
+ * @returns 图标路径数据。
  */
 export function getIconPath(icon: string): string {
   const definition = icons[icon];
@@ -394,6 +426,8 @@ export function getIconPath(icon: string): string {
 
 /**
  * 获取图标 viewBox
+ * @param icon 图标名称。
+ * @returns 图标 viewBox。
  */
 export function getIconViewBox(icon: string): string {
   const definition = icons[icon];
@@ -402,24 +436,31 @@ export function getIconViewBox(icon: string): string {
 
 /**
  * 获取图标额外元素
+ * @param icon 图标名称。
+ * @returns 图标额外元素字符串。
  */
 export function getIconExtra(icon: string): string | undefined {
   const definition = icons[icon];
   return definition?.extra;
 }
 
-// ============================================================
-// 通用图标解析（供 React/Vue 共用）
-// ============================================================
+/* ============================================================ */
+/* 通用图标解析（供 React/Vue 共用） */
+/* ============================================================ */
 
+/** 图标元信息。 */
 export interface IconMeta {
+  /** 类型。 */
   type: IconRenderType;
+  /** 图标定义。 */
   def?: IconDefinition;
 }
 
 /**
  * 解析图标元信息
  * @description 统一处理 svg/emoji/custom 的判断逻辑
+ * @param icon 图标名称。
+ * @returns 图标元信息。
  */
 export function resolveIconMeta(icon: string): IconMeta {
   const type = getIconRenderType(icon);
@@ -431,6 +472,11 @@ export function resolveIconMeta(icon: string): IconMeta {
 
 const iconMetaCache = new Map<string, IconMeta>();
 
+/**
+ * 获取图标元信息（带缓存）。
+ * @param icon 图标名称。
+ * @returns 图标元信息。
+ */
 export function getIconMeta(icon: string | undefined): IconMeta | null {
   if (!icon) return null;
   const cached = iconMetaCache.get(icon);
@@ -440,9 +486,9 @@ export function getIconMeta(icon: string | undefined): IconMeta | null {
   return meta;
 }
 
-// ============================================================
-// 布局图标配置
-// ============================================================
+/* ============================================================ */
+/* 布局图标配置 */
+/* ============================================================ */
 
 /**
  * 布局图标配置
@@ -455,7 +501,8 @@ export const LAYOUT_ICONS = {
     iconCollapsed: 'indent-expand',
     className: 'h-5 w-5',
     animation: ANIMATION_CLASSES.iconRotate,
-    rotateWhenCollapsed: false, // 使用不同图标而非旋转
+    /* 使用不同图标而非旋转。 */
+    rotateWhenCollapsed: false,
   },
   /** 头部侧边栏切换按钮（使用简洁折叠图标） */
   headerSidebarToggle: {
@@ -463,7 +510,8 @@ export const LAYOUT_ICONS = {
     iconCollapsed: 'indent-expand',
     className: 'h-5 w-5',
     animation: ANIMATION_CLASSES.iconRotate,
-    rotateWhenCollapsed: false, // 使用不同图标而非旋转
+    /* 使用不同图标而非旋转。 */
+    rotateWhenCollapsed: false,
   },
   /** 菜单展开/折叠箭头 */
   menuArrow: {
@@ -490,19 +538,42 @@ export const LAYOUT_ICONS = {
 } as const;
 
 /**
+ * 解析 SVG 图标属性时的附加参数。
+ */
+export interface GetSvgIconPropsOptions {
+  /** 样式类名。 */
+  className?: string;
+  /** 是否应用 180 度旋转样式。 */
+  isRotated?: boolean;
+  /** 是否启用动画 class。 */
+  animation?: boolean;
+}
+
+/**
+ * 可直接绑定到 SVG 元素的图标属性。
+ */
+export interface SvgIconProps {
+  /** 图标 viewBox。 */
+  viewBox: string;
+  /** 图标路径。 */
+  path: string;
+  /** 额外 SVG 内容。 */
+  extra?: string;
+  /** 样式类名。 */
+  className: string;
+}
+
+/**
  * 获取图标 SVG 属性
  * @description 返回可直接用于 SVG 元素的属性对象
+ * @param iconName 图标名称。
+ * @param options 解析附加选项。
+ * @returns 可直接绑定到 SVG 元素的属性对象。
  */
-export function getSvgIconProps(iconName: string, options?: {
-  className?: string;
-  isRotated?: boolean;
-  animation?: boolean;
-}): {
-  viewBox: string;
-  path: string;
-  extra?: string;
-  className: string;
-} {
+export function getSvgIconProps(
+  iconName: string,
+  options?: GetSvgIconPropsOptions
+): SvgIconProps {
   const definition = icons[iconName];
   const baseClass = options?.className || 'h-5 w-5';
   const animationClass = options?.animation !== false ? ANIMATION_CLASSES.iconRotate : '';
@@ -521,12 +592,16 @@ export function getSvgIconProps(iconName: string, options?: {
   };
 }
 
-// ============================================================
-// Layout UI 图标（统一管理）
-// ============================================================
+/* ============================================================ */
+/* Layout UI 图标（统一管理） */
+/* ============================================================ */
 
+/**
+ * 布局内置 UI 图标库。
+ * @description 提供菜单、工具栏、状态类图标的 SVG 数据。
+ */
 export const LAYOUT_UI_ICONS = {
-  // Tabbar
+  /* Tabbar */
   'tabbar-scroll-left': icons['chevron-left'],
   'tabbar-scroll-right': icons['chevron-right'],
   'tabbar-pin': icons.pin,
@@ -536,17 +611,17 @@ export const LAYOUT_UI_ICONS = {
   'tabbar-restore': icons.minimize,
   'tabbar-more': icons['more-horizontal'],
 
-  // Panel
+  /* Panel */
   'panel-collapse': icons['chevron-left'],
   'panel-expand': icons['chevron-right'],
   'submenu-collapse': icons['chevrons-left'],
   'submenu-expand': icons['chevrons-right'],
 
-  // Breadcrumb
+  /* Breadcrumb */
   'breadcrumb-separator': icons['chevron-right'],
   home: icons.home,
 
-  // Header / Widgets
+  /* Header / Widgets */
   refresh: icons.refresh,
   search: icons.search,
   'search-item': icons['search-item'],
@@ -569,30 +644,54 @@ export const LAYOUT_UI_ICONS = {
   'sidebar-collapse': icons['indent-collapse'],
   'sidebar-expand': icons['indent-expand'],
 
-  // Menu arrows
+  /* Menu arrows */
   'menu-arrow-right': icons['chevron-right'],
   'menu-arrow-down': icons['chevron-down'],
   'menu-arrow-left': icons['chevron-left'],
 
-  // Status
+  /* Status */
   'status-success': icons.check,
   'status-warning': icons.alertTriangle,
   'status-error': icons.alertCircle,
   'status-info': icons.info,
 } as const;
 
+/** 布局 UI 图标名称。 */
 export type LayoutUiIconName = keyof typeof LAYOUT_UI_ICONS;
 
+/** 布局 UI 图标元信息。 */
+export interface LayoutUiIconMeta {
+  /** 图标渲染类型。 */
+  type: 'svg';
+  /** 图标定义。 */
+  def: IconDefinition;
+}
+
+/**
+ * 获取 Layout UI 图标定义。
+ * @param name 图标名称。
+ * @returns 图标定义。
+ */
 export function getLayoutUiIconDefinition(name: LayoutUiIconName): IconDefinition | null {
   return LAYOUT_UI_ICONS[name] || null;
 }
 
-export function getLayoutUiIconMeta(name: LayoutUiIconName): { type: 'svg'; def: IconDefinition } | null {
+/**
+ * 获取 Layout UI 图标元信息。
+ * @param name 图标名称。
+ * @returns 图标元信息。
+ */
+export function getLayoutUiIconMeta(name: LayoutUiIconName): LayoutUiIconMeta | null {
   const def = getLayoutUiIconDefinition(name);
   if (!def) return null;
   return { type: 'svg', def };
 }
 
+/**
+ * 生成 Layout UI 图标 SVG 字符串。
+ * @param name 图标名称。
+ * @returns SVG 字符串。
+ */
 export function getLayoutUiIconSvg(name: LayoutUiIconName): string {
   const def = getLayoutUiIconDefinition(name);
   if (!def) return '';

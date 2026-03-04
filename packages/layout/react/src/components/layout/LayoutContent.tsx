@@ -1,5 +1,6 @@
 /**
- * 内容区组件
+ * 内容区组件。
+ * @description 负责组织页面头部区、主体区、过渡动画与 KeepAlive 缓存渲染。
  */
 
 import { DEFAULT_CONTENT_CONFIG, getTabCacheName } from '@admin-core/layout';
@@ -8,14 +9,28 @@ import { useLayoutContext, useLayoutComputed, useLayoutState, useRouter } from '
 import { usePageTransition, usePanelState, useSidebarState, useTabsState } from '../../hooks/use-layout-state';
 import { LayoutRefreshView } from './LayoutRefreshView';
 
+/**
+ * 内容区域插槽属性。
+ */
 export interface LayoutContentProps {
+  /** 子节点列表。 */
   children?: ReactNode;
+  /** 内容区顶部扩展区域。 */
   header?: ReactNode;
+  /** 面包屑区域。 */
   breadcrumb?: ReactNode;
+  /** 内容区底部区域。 */
   footer?: ReactNode;
+  /** 覆盖层区域（如全局 loading/遮罩）。 */
   overlay?: ReactNode;
 }
 
+/**
+ * 将数字或像素字符串解析为数字值。
+ *
+ * @param value 待解析值，例如 `16`、`"16px"`。
+ * @returns 解析后的数值；非法输入返回 `0`。
+ */
 function parsePxValue(value: number | string | undefined): number {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : 0;
@@ -27,6 +42,10 @@ function parsePxValue(value: number | string | undefined): number {
   return 0;
 }
 
+/**
+ * 布局内容区组件。
+ * @description 组织页头、面包屑、主体与过渡动画区域，并处理内容区高度计算。
+ */
 export const LayoutContent = memo(function LayoutContent({
   children,
   header,
@@ -58,7 +77,14 @@ export const LayoutContent = memo(function LayoutContent({
       : 0;
   const viewportFooterOffset = computed.showFooter ? computed.footerHeight : 0;
 
-  const cacheRef = useRef(new Map<string, { element: ReactNode; refreshKey: number }>());
+  const cacheRef = useRef(
+    new Map<string, {
+      /** 对应标签页缓存的页面节点。 */
+      element: ReactNode;
+      /** 构建该节点时使用的刷新版本号。 */
+      refreshKey: number;
+    }>()
+  );
   const [, forceUpdate] = useState(0);
   const transitionInitRef = useRef(false);
   const transitionRafRef = useRef<number | null>(null);
@@ -67,6 +93,11 @@ export const LayoutContent = memo(function LayoutContent({
   const [transitionClassName, setTransitionClassName] = useState<string>('');
   const innerRef = useRef<HTMLDivElement | null>(null);
 
+  /**
+   * 从 CSS 变量解析页面切换动画时长（毫秒）。
+   *
+   * @returns 过渡时长，解析失败时返回默认值 `300`。
+   */
   const resolveTransitionDuration = useCallback(() => {
     if (typeof window === 'undefined') return 0;
     const styles = getComputedStyle(document.documentElement);
@@ -86,6 +117,9 @@ export const LayoutContent = memo(function LayoutContent({
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
   }, []);
 
+  /**
+   * 清理过渡动画相关的 `requestAnimationFrame` 与定时器。
+   */
   const clearTransitionTimers = useCallback(() => {
     if (transitionRafRef.current !== null) {
       window.cancelAnimationFrame(transitionRafRef.current);
@@ -97,11 +131,20 @@ export const LayoutContent = memo(function LayoutContent({
     }
   }, []);
 
+  /**
+   * 重置过渡阶段与过渡类名，回到空闲状态。
+   */
   const clearTransitionClasses = useCallback(() => {
     setTransitionPhase('idle');
     setTransitionClassName('');
   }, []);
 
+  /**
+   * 按过渡名称写入初始态内联样式（from 阶段）。
+   *
+   * @param el 目标内容容器元素。
+   * @param name 过渡名称。
+   */
   const applyTransitionInlineFrom = useCallback((el: HTMLElement, name: string) => {
     if (name === 'fade') {
       el.style.setProperty('opacity', '0', 'important');
@@ -131,6 +174,11 @@ export const LayoutContent = memo(function LayoutContent({
     }
   }, []);
 
+  /**
+   * 清除过渡初始态写入的内联样式。
+   *
+   * @param el 目标内容容器元素。
+   */
   const clearTransitionInlineFrom = useCallback((el: HTMLElement) => {
     el.style.removeProperty('opacity');
     el.style.removeProperty('transform');
@@ -196,12 +244,21 @@ export const LayoutContent = memo(function LayoutContent({
   const childrenRef = useRef(children);
   const routerLocationRef = useRef(routerLocation);
 
-  // 更新 refs
+  /**
+   * 同步缓存 `children` 与 `routerLocation` 的最新引用。
+   */
   useEffect(() => {
     childrenRef.current = children;
     routerLocationRef.current = routerLocation;
   }, [children, routerLocation]);
 
+  /**
+   * 构造用于 KeepAlive 缓存的页面节点。
+   *
+   * @param key 标签页缓存键。
+   * @param refreshKey 当前刷新版本号。
+   * @returns 可缓存的页面节点。
+   */
   const buildCachedElement = useCallback((key: string, refreshKey: number) => {
     let element: ReactNode = childrenRef.current;
     const currentRouterLocation = routerLocationRef.current;
@@ -229,7 +286,7 @@ export const LayoutContent = memo(function LayoutContent({
       });
       changed = true;
     } else {
-      // 访问活跃页时刷新 LRU 顺序
+      /** 访问活跃页时刷新 LRU 顺序。 */
       cacheRef.current.delete(activeKey);
       cacheRef.current.set(activeKey, existing);
     }
@@ -243,7 +300,7 @@ export const LayoutContent = memo(function LayoutContent({
         cacheRef.current.delete(key);
         changed = true;
       }
-      // 兜底：当均为 affix 时，至少保留当前激活页
+      /** 兜底策略：当全部为 affix 时，至少保留当前激活页。 */
       if (cacheRef.current.size > keepAliveCacheLimit) {
         for (const key of cacheRef.current.keys()) {
           if (cacheRef.current.size <= keepAliveCacheLimit) break;
@@ -302,7 +359,9 @@ export const LayoutContent = memo(function LayoutContent({
     }
   }, [tabs, layoutState.keepAliveExcludes, keepAliveAvailable]);
 
-  // 类名
+  /**
+   * 内容区样式类名集合。
+   */
   const contentClassName = useMemo(() => {
     const classes = ['layout-content'];
     if (contentCompact === 'compact') classes.push('layout-content--compact');
@@ -316,7 +375,9 @@ export const LayoutContent = memo(function LayoutContent({
     return classes.join(' ');
   }, [contentCompact, sidebarCollapsed, context.props.isMobile, computed.showPanel, panelPosition, panelCollapsed]);
 
-  // 样式
+  /**
+   * 内容区容器样式。
+   */
   const contentStyle = useMemo(() => {
     const paddingBase = context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding;
     const viewportTopOffset = parsePxValue(computed.mainStyle.marginTop);
@@ -347,7 +408,9 @@ export const LayoutContent = memo(function LayoutContent({
     viewportFooterOffset,
   ]);
 
-  // 内容容器样式
+  /**
+   * 内层内容容器样式。
+   */
   const innerStyle = useMemo(() => {
     const style: Record<string, string | number> = {};
     if (contentCompact === 'compact') {

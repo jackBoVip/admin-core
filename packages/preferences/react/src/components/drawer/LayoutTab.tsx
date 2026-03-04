@@ -23,58 +23,89 @@ import { NumberItem } from './NumberItem';
 import { SelectItem } from './SelectItem';
 import { SwitchItem } from './SwitchItem';
 
+/**
+ * 布局设置标签页参数。
+ */
 export interface LayoutTabProps {
   /** 当前语言包 */
   locale: LocaleMessages;
-  /** UI 配置（控制功能项显示/禁用） */
+  /** 界面配置（控制功能项显示/禁用） */
   uiConfig?: LayoutTabConfig;
 }
 
+/**
+ * 布局设置标签页组件。
+ */
 export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) => {
+  /**
+   * 偏好设置快照与写入方法。
+   */
   const { preferences, setPreferences } = usePreferences();
+  /**
+   * 布局设置更新器实例。
+   * @description 封装布局相关偏好项的写入逻辑，避免在组件内分散更新实现。
+   */
   const updater = useMemo(() => createLayoutTabUpdater(setPreferences), [setPreferences]);
 
-  // ========== UI 配置解析（使用 useMemo 缓存） ==========
+  /**
+   * 布局标签页功能配置快照。
+   * @description 汇总各分组/子项的可见与禁用状态。
+   */
   const configs = useMemo(() => getLayoutTabConfigs(uiConfig), [uiConfig]);
 
-  // 布局选项（翻译后）
+  /**
+   * 本地化后的布局选项集合。
+   * @description 包含布局类型、标签样式、顶栏模式与菜单对齐等下拉数据。
+   */
   const { layoutOptions, tabsStyleOptions, headerModeOptions, headerMenuAlignOptions } = useMemo(
     () => getLayoutTabOptions(locale),
     [locale]
   );
 
-  // ========== 使用工厂模式创建更新器 ==========
-  
-  // 布局类型处理器
+  /**
+   * 布局写入处理区。
+   * @description 通过工厂更新器封装的 API 操作偏好设置，保证调用语义一致。
+   */
+  /**
+   * 设置布局类型
+   * @param layout 目标布局类型。
+   */
   const handleSetLayout = useCallback((layout: LayoutType) => {
     updater.setLayout(layout);
   }, [updater]);
 
-  // 内容宽度处理器
+  /**
+   * 设置内容宽度为宽屏模式
+   * @description 将 `contentCompact` 切换为 `wide`。
+   */
   const handleSetContentWide = useCallback(() => {
     updater.setContentWide();
   }, [updater]);
 
+  /**
+   * 设置内容宽度为紧凑模式
+   * @description 将 `contentCompact` 切换为 `compact`。
+   */
   const handleSetContentCompact = useCallback(() => {
     updater.setContentCompactMode();
   }, [updater]);
 
-  // 使用工厂创建的处理器
+  /**
+   * 布局标签页动作处理器集合。
+   * @description 按模块聚合写入函数，便于模板层直接引用。
+   */
   const handlers = useMemo(() => ({
-    // 侧边栏
     sidebar: {
       collapsed: updater.setSidebarCollapsed,
       collapsedButton: updater.setSidebarCollapsedButton,
       expandOnHover: updater.setSidebarExpandOnHover,
     },
-    // 顶栏
     header: {
       enable: updater.setHeaderEnable,
       mode: updater.setHeaderMode,
       menuAlign: updater.setHeaderMenuAlign,
       menuLauncher: updater.setHeaderMenuLauncher,
     },
-    // 标签栏
     tabbar: {
       enable: updater.setTabbarEnable,
       persist: updater.setTabbarPersist,
@@ -88,23 +119,19 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
       middleClickToClose: updater.setTabbarMiddleClickToClose,
       styleType: updater.setTabbarStyleType,
     },
-    // 面包屑
     breadcrumb: {
       enable: updater.setBreadcrumbEnable,
       showIcon: updater.setBreadcrumbShowIcon,
     },
-    // 页脚
     footer: {
       enable: updater.setFooterEnable,
       fixed: updater.setFooterFixed,
     },
-    // 功能区
     panel: {
       enable: updater.setPanelEnable,
       position: updater.setPanelPosition,
       collapsed: updater.setPanelCollapsed,
     },
-    // 小部件
     widget: {
       fullscreen: updater.setWidgetFullscreen,
       globalSearch: updater.setWidgetGlobalSearch,
@@ -113,23 +140,26 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
     },
   }), [updater]);
 
-  // 顶栏模式选项（memoized）
-
-  // 菜单对齐/启动器是否可用（顶栏启用 + 顶部菜单布局）
+  /** 菜单对齐选项是否可用。 */
   const menuAlignEnabled = useMemo(() => {
     return preferences.header.enable && isHeaderMenuLayout(preferences.app.layout);
   }, [preferences.header.enable, preferences.app.layout]);
 
+  /** 顶栏菜单启动器是否可用。 */
   const menuLauncherEnabled = useMemo(() => {
     const isHeaderMixedNav = preferences.app.layout === 'header-mixed-nav';
     return preferences.header.enable && isHeaderMenuLayout(preferences.app.layout) && !isHeaderMixedNav;
   }, [preferences.header.enable, preferences.app.layout]);
 
-  // 是否允许显示折叠按钮的布局（仅 sidebar-nav 和 header-mixed-nav）
+  /** 当前布局是否允许显示侧边栏折叠按钮。 */
   const isCollapseButtonAllowedLayout = useMemo(() => {
     return preferences.app.layout === 'sidebar-nav';
   }, [preferences.app.layout]);
-  // 侧边栏折叠是否可用（sidebar-mixed-nav 下禁用）
+
+  /**
+   * 侧边栏折叠开关是否禁用。
+   * @description 在 `sidebar-mixed-nav` 与 `header-mixed-nav` 布局下禁用该开关。
+   */
   const isSidebarCollapseDisabled = useMemo(
     () => preferences.app.layout === 'sidebar-mixed-nav' || preferences.app.layout === 'header-mixed-nav',
     [preferences.app.layout]
@@ -141,38 +171,67 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
       preferences.app.layout === 'header-mixed-nav',
     [preferences.app.layout]
   );
+  /**
+   * 当前是否为顶栏导航布局。
+   */
   const isHeaderNavLayout = useMemo(
     () => preferences.app.layout === 'header-nav',
     [preferences.app.layout]
   );
+  /**
+   * 面包屑最终启用状态。
+   * @description 在禁用布局下强制为 `false`，避免无效开关状态透传。
+   */
   const breadcrumbEnabled = isBreadcrumbDisabledLayout ? false : preferences.breadcrumb.enable;
 
-  // 功能区位置选项
+  /** 功能区位置下拉选项。 */
   const panelPositionOptions = useMemo(() => [
     { label: locale.panel.positionLeft, value: 'left' },
     { label: locale.panel.positionRight, value: 'right' },
   ], [locale.panel]);
 
+  /**
+   * 处理标签栏最大数量变更
+   * @description 对输入值做非负约束后写入配置。
+   * @param value 最大标签数量。
+   */
   const handleTabbarMaxCountChange = useCallback((value: number) => {
     updater.setTabbarMaxCount(Math.max(0, value));
   }, [updater]);
 
-  // 动态预览图选项（根据当前偏好设置）
+  /**
+   * 动态布局预览参数。
+   * @description 根据当前偏好生成预览图渲染所需状态。
+   */
   const previewOptions: LayoutPreviewOptions = useMemo(
     () => getLayoutPreviewOptions(preferences),
     [preferences]
   );
 
-  // 生成布局预览图
+  /**
+   * 布局预览图缓存。
+   * @description 预先生成各布局的 SVG 字符串，减少渲染阶段重复计算。
+   */
   const previewCache = useMemo(
     () => createLayoutPreviewCache(layoutOptions, previewOptions),
     [layoutOptions, previewOptions]
   );
+  /**
+   * 获取布局预览 SVG
+   * @description 从预生成缓存中读取对应布局的预览图。
+   * @param layout 布局类型。
+   * @returns 对应布局的 SVG 字符串。
+   */
   const getPreviewSvg = useCallback(
     (layout: LayoutType) => previewCache[layout],
     [previewCache]
   );
 
+  /**
+   * 处理布局类型卡片点击
+   * @description 从节点数据属性读取布局类型并执行切换。
+   * @param e React 鼠标事件对象。
+   */
   const handleLayoutTypeClick = useCallback((e: React.MouseEvent) => {
     if (configs.layoutType.disabled) return;
     const value = (e.currentTarget as HTMLElement).dataset.value as LayoutType | undefined;
@@ -181,6 +240,11 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
     }
   }, [configs.layoutType.disabled, handleSetLayout]);
 
+  /**
+   * 处理内容宽度卡片点击
+   * @description 根据节点值在宽屏与紧凑模式间切换。
+   * @param e React 鼠标事件对象。
+   */
   const handleContentWidthClick = useCallback((e: React.MouseEvent) => {
     if (configs.contentWidth.disabled) return;
     const value = (e.currentTarget as HTMLElement).dataset.value as ContentWidthType | undefined;
@@ -576,4 +640,7 @@ export const LayoutTab: React.FC<LayoutTabProps> = memo(({ locale, uiConfig }) =
 
 LayoutTab.displayName = 'LayoutTab';
 
+/**
+ * 默认导出布局设置 Tab 组件。
+ */
 export default LayoutTab;

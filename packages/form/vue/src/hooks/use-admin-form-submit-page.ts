@@ -1,3 +1,7 @@
+/**
+ * Form Vue 提交页 Hook。
+ * @description 管理提交页开关状态、步骤状态与控制器桥接，输出可复用提交页组件。
+ */
 import type { AdminFormApi } from '@admin-core/form-core';
 
 import {
@@ -23,41 +27,82 @@ import type {
   UseAdminFormSubmitPageReturn,
 } from '../types';
 
+/**
+ * 分步表单运行时快照。
+ */
+interface SubmitPageStepConfigSnapshot {
+  /** 当前步骤字段名。 */
+  stepFieldName: string;
+  /** 当前步骤配置列表。 */
+  steps: ResolvedAdminFormStepSchema[];
+}
+
+/**
+ * 分步提交页事件回调集合。
+ */
+interface SubmitPageCallbackRefState {
+  /** 抽屉开关变化回调。 */
+  onOpenChange?: (open: boolean) => void;
+  /** 步骤变化回调。 */
+  onStepChange?: (payload: AdminFormStepChangePayload) => void;
+}
+
+/**
+ * 创建分步提交页 Hook（Vue）。
+ *
+ * @param options 提交页初始化配置。
+ * @returns `[FormSubmitPage, formApi, controller]` 元组。
+ */
 export function useAdminFormSubmitPage(
   options: UseAdminFormSubmitPageOptions
 ): UseAdminFormSubmitPageReturn {
+  /** 初次构建的分步结构。 */
   const bootStepped = buildSteppedFormSchema(options.steps ?? [], {
     includeSectionDivider: false,
     rowColumns: options.rowColumns ?? 1,
     stepFieldName: options.stepFieldName,
   });
+  /** Hook 生命周期内复用的表单 API。 */
   const api = createFormApi(
     resolveSubmitPageFormProps(options as any, bootStepped.schema)
   );
+  /** 开关状态快照。 */
   const openSnapshot = ref(!!options.open);
+  /** 当前步骤索引快照。 */
   const stepSnapshot = ref(
     clampStepIndex(options.initialStep ?? 0, bootStepped.steps.length || 1)
   );
-  const stepConfig = ref<{
-    stepFieldName: string;
-    steps: ResolvedAdminFormStepSchema[];
-  }>({
+  /** 当前步骤配置快照（步骤字段名 + 步骤数组）。 */
+  const stepConfig = ref<SubmitPageStepConfigSnapshot>({
     stepFieldName: bootStepped.stepFieldName,
     steps: bootStepped.steps,
   });
-  const callbacks = ref<{
-    onOpenChange?: (open: boolean) => void;
-    onStepChange?: (payload: AdminFormStepChangePayload) => void;
-  }>({});
+  /** 当前事件回调集合快照。 */
+  const callbacks = ref<SubmitPageCallbackRefState>({});
+  /** 当前提交流程处理器快照。 */
   const submitHandler = ref(
     resolveSubmitPageSubmitHandler(options as any)
   );
+  /** 受控初始步骤快照。 */
   const controlledInitialStep = ref(stepSnapshot.value);
 
+  /**
+   * 设置提交页开关状态。
+   *
+   * @param open 目标开关状态。
+   * @returns 无返回值。
+   */
   function setOpen(open: boolean) {
     openSnapshot.value = open;
   }
 
+  /**
+   * 切换到指定步骤并同步表单步骤字段。
+   *
+   * @param step 目标步骤索引。
+   * @param steps 当前步骤列表。
+   * @returns 校正后的步骤索引。
+   */
   async function setStep(step: number, steps = stepConfig.value.steps) {
     const safeStep = clampStepIndex(step, steps.length || 1);
     stepSnapshot.value = safeStep;
@@ -66,6 +111,7 @@ export function useAdminFormSubmitPage(
     return safeStep;
   }
 
+  /** 提交页控制器，负责外部命令与内部状态桥接。 */
   const { controller } = createSubmitPageControllerBridge(api, {
     getActiveStep: () => stepSnapshot.value,
     getOpen: () => openSnapshot.value,
@@ -89,8 +135,13 @@ export function useAdminFormSubmitPage(
     setStep,
   });
 
+  /**
+   * Hook 返回的提交页组件。
+   * @description 合并 Hook 初始化参数、组件 attrs 与 props，输出最终提交页节点。
+   */
   const FormSubmitPage = defineComponent(
     (props: UseAdminFormSubmitPageComponentProps, { attrs, expose }) => {
+      /** 卸载时释放 Hook 内创建的 API 资源。 */
       onBeforeUnmount(() => {
         api.unmount();
       });
@@ -144,12 +195,14 @@ export function useAdminFormSubmitPage(
         submitHandler.value = resolveSubmitPageSubmitHandler(mergedProps as any);
         callbacks.value.onOpenChange = mergedOnOpenChange;
         callbacks.value.onStepChange = mergedOnStepChange;
+        /** 最终开关值：优先 props/attrs 受控，其次内部快照。 */
         const resolvedOpen = typeof propOpen === 'boolean'
           ? propOpen
           : typeof attrOpen === 'boolean'
             ? attrOpen
             : openSnapshot.value;
         openSnapshot.value = resolvedOpen;
+        /** 最终初始步骤：优先 props/attrs，回退到受控快照与初始化配置。 */
         const resolvedInitialStep = typeof propInitialStep === 'number'
           ? propInitialStep
           : typeof attrInitialStep === 'number'

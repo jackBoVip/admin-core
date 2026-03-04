@@ -12,7 +12,7 @@ export default createLibraryViteConfig({
     staticImport: true,
     insertTypesEntry: true,
     logLevel: 'silent',
-    // 由 build 脚本先执行 tsc --noEmit，声明生成阶段不重复打印诊断噪音
+    /** 构建脚本已先执行 `tsc --noEmit`，声明阶段跳过重复诊断输出。 */
     skipDiagnostics: true,
   },
   external: [

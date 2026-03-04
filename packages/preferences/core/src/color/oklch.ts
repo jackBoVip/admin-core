@@ -1,6 +1,6 @@
 /**
- * OKLCH 颜色工具
- * @description OKLCH 是感知均匀的色彩空间，更适合生成协调的颜色
+ * OKLCH 颜色工具。
+ * @description OKLCH 是感知均匀色彩空间，适合生成协调且可控的主题色。
  *
  * OKLCH 格式: oklch(L C H)
  * - L (Lightness): 亮度 0-1 (0=黑, 1=白)
@@ -17,7 +17,8 @@ import { formatHex, parse, converter } from 'culori';
 const oklchConverter = converter('oklch');
 
 /**
- * OKLCH 颜色接口
+ * OKLCH 颜色接口。
+ * @description 表示解析后的亮度、色度与色相三元组。
  */
 export interface OklchColor {
   /** 亮度 (0-1) */
@@ -29,17 +30,20 @@ export interface OklchColor {
 }
 
 /**
- * 解析任意格式颜色为 OKLCH
- * @description 支持 hex, rgb, hsl, oklch 等格式
- * @param color - 颜色字符串
- * @returns OKLCH 颜色对象，解析失败返回 null
+ * 解析任意格式颜色为 OKLCH。
+ * @description 支持 `hex`、`rgb`、`hsl`、`oklch` 等常见格式。
+ * @param color 颜色字符串。
+ * @returns OKLCH 颜色对象，解析失败返回 `null`。
  */
 export function parseToOklch(color: string): OklchColor | null {
   try {
     const parsed = parse(color);
     if (!parsed) return null;
 
-    // 使用缓存的转换器
+    /**
+     * 使用缓存转换器执行色彩空间转换。
+     * @description 避免每次调用重复创建转换器实例。
+     */
     const result = oklchConverter(parsed);
 
     return {
@@ -53,18 +57,18 @@ export function parseToOklch(color: string): OklchColor | null {
 }
 
 /**
- * OKLCH 颜色对象转 CSS 字符串
- * @param color - OKLCH 颜色对象
- * @returns oklch(L C H) 格式字符串
+ * OKLCH 颜色对象转 CSS 字符串。
+ * @param color OKLCH 颜色对象。
+ * @returns `oklch(L C H)` 格式字符串。
  */
 export function oklchToCss(color: OklchColor): string {
   return `oklch(${color.l.toFixed(3)} ${color.c.toFixed(3)} ${color.h.toFixed(1)})`;
 }
 
 /**
- * OKLCH 字符串转 Hex 格式
- * @param color - 颜色字符串
- * @returns Hex 格式颜色（如 #ffffff）
+ * OKLCH 字符串转 Hex 格式。
+ * @param color 颜色字符串。
+ * @returns Hex 格式颜色（如 `#ffffff`）。
  */
 export function oklchToHex(color: string): string {
   try {
@@ -77,9 +81,9 @@ export function oklchToHex(color: string): string {
 }
 
 /**
- * 验证颜色值是否有效
- * @param color - 颜色字符串
- * @returns 是否有效
+ * 验证颜色值是否有效。
+ * @param color 颜色字符串。
+ * @returns 是否为可解析的有效颜色。
  */
 export function isValidColor(color: string): boolean {
   try {
@@ -90,14 +94,17 @@ export function isValidColor(color: string): boolean {
 }
 
 /**
- * 创建 OKLCH 颜色
- * @param l - 亮度 (0-1)
- * @param c - 色度 (0-0.4)
- * @param h - 色相 (0-360)
- * @returns OKLCH CSS 字符串
+ * 创建 OKLCH 颜色。
+ * @param l 亮度（`0-1`）。
+ * @param c 色度（`0-0.4`）。
+ * @param h 色相（`0-360`）。
+ * @returns OKLCH CSS 字符串。
  */
 export function createOklch(l: number, c: number, h: number): string {
-  // 确保值在有效范围内
+  /**
+   * 参数范围约束。
+   * @description 将亮度、色度与色相约束到 OKLCH 合法区间。
+   */
   const clampedL = Math.max(0, Math.min(1, l));
   const clampedC = Math.max(0, Math.min(0.4, c));
   const clampedH = ((h % 360) + 360) % 360;
@@ -106,10 +113,10 @@ export function createOklch(l: number, c: number, h: number): string {
 }
 
 /**
- * 调整 OKLCH 颜色的亮度
- * @param color - 颜色字符串
- * @param amount - 调整量（正值变亮，负值变暗）
- * @returns 调整后的颜色
+ * 调整 OKLCH 颜色的亮度。
+ * @param color 颜色字符串。
+ * @param amount 调整量（正值变亮，负值变暗）。
+ * @returns 调整后的颜色。
  */
 export function adjustLightness(color: string, amount: number): string {
   const oklchColor = parseToOklch(color);
@@ -120,10 +127,10 @@ export function adjustLightness(color: string, amount: number): string {
 }
 
 /**
- * 调整 OKLCH 颜色的色度（饱和度）
- * @param color - 颜色字符串
- * @param amount - 调整量
- * @returns 调整后的颜色
+ * 调整 OKLCH 颜色的色度（饱和度）。
+ * @param color 颜色字符串。
+ * @param amount 调整量。
+ * @returns 调整后的颜色。
  */
 export function adjustChroma(color: string, amount: number): string {
   const oklchColor = parseToOklch(color);
@@ -134,10 +141,10 @@ export function adjustChroma(color: string, amount: number): string {
 }
 
 /**
- * 旋转 OKLCH 颜色的色相
- * @param color - 颜色字符串
- * @param degrees - 旋转角度
- * @returns 旋转后的颜色
+ * 旋转 OKLCH 颜色的色相。
+ * @param color 颜色字符串。
+ * @param degrees 旋转角度。
+ * @returns 旋转后的颜色。
  */
 export function rotateHue(color: string, degrees: number): string {
   const oklchColor = parseToOklch(color);

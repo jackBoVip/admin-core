@@ -1,7 +1,20 @@
+/**
+ * Shared Core 深拷贝工具。
+ * @description 提供富类型深拷贝、函数检测与轻量对象数组拷贝能力。
+ */
+/**
+ * 深拷贝增强选项。
+ */
 export interface DeepCloneRichOptions {
+  /** 是否深拷贝 Error 对象（默认 `false`）。 */
   cloneError?: boolean;
 }
 
+/**
+ * 判断值是否为普通对象。
+ * @param value 待判断值。
+ * @returns 是否普通对象。
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -10,6 +23,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return proto === Object.prototype || proto === null;
 }
 
+/**
+ * 克隆 Error 实例。
+ * @param error 原始错误对象。
+ * @returns 克隆后的错误对象。
+ */
 function cloneErrorInstance(error: Error): Error {
   const clonedError = new (error.constructor as new (message?: string) => Error)(
     error.message
@@ -21,6 +39,13 @@ function cloneErrorInstance(error: Error): Error {
   return clonedError;
 }
 
+/**
+ * 深拷贝内部实现（支持循环引用、Map/Set/Date/RegExp）。
+ * @param value 待拷贝值。
+ * @param seen 循环引用跟踪表。
+ * @param options 拷贝选项。
+ * @returns 深拷贝结果。
+ */
 function deepCloneRichInternal<T>(
   value: T,
   seen: WeakMap<object, unknown>,
@@ -86,6 +111,14 @@ function deepCloneRichInternal<T>(
   return cloned;
 }
 
+/**
+ * 深拷贝增强版入口。
+ * @template T 值类型。
+ * @param value 待拷贝值。
+ * @param seen 循环引用跟踪表。
+ * @param options 拷贝选项。
+ * @returns 深拷贝结果。
+ */
 export function deepCloneRich<T>(
   value: T,
   seen: WeakMap<object, unknown> = new WeakMap(),
@@ -94,6 +127,12 @@ export function deepCloneRich<T>(
   return deepCloneRichInternal(value, seen, options);
 }
 
+/**
+ * 递归检测值中是否包含函数。
+ * @param value 待检测值。
+ * @param seen 循环引用跟踪集合。
+ * @returns 是否包含函数。
+ */
 export function containsFunctionRecursively(
   value: unknown,
   seen: WeakSet<object> = new WeakSet()
@@ -127,6 +166,13 @@ export function containsFunctionRecursively(
   return false;
 }
 
+/**
+ * 仅针对数组与普通对象的轻量深拷贝。
+ * @template T 值类型。
+ * @param value 待拷贝值。
+ * @param seen 循环引用跟踪表。
+ * @returns 深拷贝结果。
+ */
 export function deepClonePlain<T>(
   value: T,
   seen: WeakMap<object, unknown> = new WeakMap()

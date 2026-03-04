@@ -1,3 +1,7 @@
+/**
+ * Table Core 行列策略工具。
+ * @description 提供行策略、单元格策略条件匹配与样式计算能力。
+ */
 import type {
   TableCellStrategy,
   TableCellStrategyContext,
@@ -18,37 +22,62 @@ import {
   isTablePlainObject,
 } from './table-permission';
 
+/**
+ * 单元格策略缓存条目。
+ */
 interface CachedCellStrategyEntry {
+  /** 列上 `strategy` 引用。 */
   columnStrategyRef: unknown;
+  /** 旧版策略引用。 */
   legacyStrategyRef: unknown;
+  /** 全局策略配置引用。 */
   strategyConfigRef: unknown;
+  /** 解析后的单元格策略。 */
   value: TableCellStrategy | undefined;
 }
 
+/** 按表格实例缓存的单元格策略解析结果。 */
 const cachedCellStrategiesByGrid = new WeakMap<
   Record<string, any>,
   WeakMap<TableColumnRecord, Map<string, CachedCellStrategyEntry>>
 >();
+/** 无 `gridOptions` 场景下的单元格策略缓存。 */
 const cachedCellStrategiesWithoutGrid = new WeakMap<
   TableColumnRecord,
   Map<string, CachedCellStrategyEntry>
 >();
+/** 按表格实例缓存的行策略解析结果。 */
 const cachedRowStrategiesByGrid = new WeakMap<
   Record<string, any>,
   {
+    /** 旧版行策略引用。 */
     legacyRowStrategyRef: unknown;
+    /** 全局策略配置引用。 */
     strategyConfigRef: unknown;
+    /** 解析后的行策略数组。 */
     value: TableRowStrategy[];
   }
 >();
+/** 策略正则缓存容量上限。 */
 const STRATEGY_REGEX_CACHE_MAX_SIZE = 200;
+/** 策略条件正则编译缓存。 */
 const compiledStrategyRegExpCache = new Map<string, null | RegExp>();
 
 const tableFormulaHelpers = {
+  /**
+   * 绝对值函数。
+   * @param value 输入值。
+   * @returns 绝对值结果。
+   */
   ABS(value: unknown) {
     const next = parseNumberValue(value);
     return Number.isNaN(next) ? 0 : Math.abs(next);
   },
+  /**
+   * 平均值函数。
+   * @param values 输入值列表。
+   * @returns 平均值。
+   */
   AVG(...values: unknown[]) {
     const list = values
       .map((item) => parseNumberValue(item))
@@ -58,9 +87,21 @@ const tableFormulaHelpers = {
     }
     return list.reduce((sum, value) => sum + value, 0) / list.length;
   },
+  /**
+   * 条件分支函数。
+   * @param condition 条件值。
+   * @param onTrue 条件为真时返回值。
+   * @param onFalse 条件为假时返回值。
+   * @returns 分支结果。
+   */
   IF(condition: unknown, onTrue: unknown, onFalse: unknown) {
     return condition ? onTrue : onFalse;
   },
+  /**
+   * 最大值函数。
+   * @param values 输入值列表。
+   * @returns 最大值。
+   */
   MAX(...values: unknown[]) {
     const list = values
       .map((item) => parseNumberValue(item))
@@ -70,6 +111,11 @@ const tableFormulaHelpers = {
     }
     return Math.max(...list);
   },
+  /**
+   * 最小值函数。
+   * @param values 输入值列表。
+   * @returns 最小值。
+   */
   MIN(...values: unknown[]) {
     const list = values
       .map((item) => parseNumberValue(item))
@@ -79,6 +125,12 @@ const tableFormulaHelpers = {
     }
     return Math.min(...list);
   },
+  /**
+   * 四舍五入函数。
+   * @param value 输入值。
+   * @param digits 小数位数。
+   * @returns 四舍五入后的数值。
+   */
   ROUND(value: unknown, digits = 0) {
     const numberValue = parseNumberValue(value);
     const digitsValue = parseNumberValue(digits);
@@ -90,6 +142,11 @@ const tableFormulaHelpers = {
       : Math.max(0, Math.min(12, Math.trunc(digitsValue)));
     return Number(numberValue.toFixed(precision));
   },
+  /**
+   * 求和函数。
+   * @param values 输入值列表。
+   * @returns 求和结果。
+   */
   SUM(...values: unknown[]) {
     return values
       .map((item) => parseNumberValue(item))
@@ -98,6 +155,9 @@ const tableFormulaHelpers = {
   },
 } as const;
 
+/**
+ * 表达式分词类型。
+ */
 type TableFormulaTokenType =
   | 'colon'
   | 'comma'
@@ -109,54 +169,90 @@ type TableFormulaTokenType =
   | 'question'
   | 'string';
 
+/**
+ * 表达式词法单元。
+ */
 interface TableFormulaToken {
+  /** 词法类型。 */
   type: TableFormulaTokenType;
+  /** 原始词面值。 */
   value: string;
 }
 
+/**
+ * 表达式 AST 节点定义。
+ */
 type TableFormulaNode =
   | {
+      /** 字面量值。 */
       value: string | number;
+      /** 节点类型。 */
       type: 'literal';
     }
   | {
+      /** 标识符名称。 */
       name: string;
+      /** 节点类型。 */
       type: 'identifier';
     }
   | {
+      /** 一元运算参数。 */
       argument: TableFormulaNode;
+      /** 一元运算符。 */
       operator: '!' | '+' | '-';
+      /** 节点类型。 */
       type: 'unary';
     }
   | {
+      /** 左操作数。 */
       left: TableFormulaNode;
+      /** 二元运算符。 */
       operator: '%' | '*' | '+' | '-' | '/' | '<' | '<=' | '==' | '===' | '>' | '>=' | '!=' | '!==';
+      /** 右操作数。 */
       right: TableFormulaNode;
+      /** 节点类型。 */
       type: 'binary';
     }
   | {
+      /** 左操作数。 */
       left: TableFormulaNode;
+      /** 逻辑运算符。 */
       operator: '&&' | '||';
+      /** 右操作数。 */
       right: TableFormulaNode;
+      /** 节点类型。 */
       type: 'logical';
     }
   | {
+      /** 条件不成立分支。 */
       alternate: TableFormulaNode;
+      /** 条件成立分支。 */
       consequent: TableFormulaNode;
+      /** 条件表达式。 */
       test: TableFormulaNode;
+      /** 节点类型。 */
       type: 'conditional';
     }
   | {
+      /** 调用参数。 */
       args: TableFormulaNode[];
+      /** 调用函数名。 */
       callee: string;
+      /** 节点类型。 */
       type: 'call';
     };
 
+/**
+ * 表达式解析器状态。
+ */
 interface TableFormulaParserState {
+  /** 当前读取索引。 */
   index: number;
+  /** 分词结果。 */
   tokens: TableFormulaToken[];
 }
 
+/** 支持的公式运算符列表，按长操作符优先匹配。 */
 const tableFormulaOperators = [
   '===',
   '!==',
@@ -176,33 +272,65 @@ const tableFormulaOperators = [
   '!',
 ] as const;
 
+/** 字符串公式编译缓存。 */
 const compiledFormulaCache = new Map<string, TableFormulaNode>();
+/** 公式编译缓存容量上限。 */
 const TABLE_FORMULA_CACHE_MAX_SIZE = 256;
 
+/**
+ * 单元格策略解析结果。
+ */
 export interface ResolvedTableCellStrategyResult {
+  /** 样式类名。 */
   className: string;
+  /** 是否可点击。 */
   clickable: boolean;
+  /** 显示值（可能经过格式化）。 */
   displayValue: any;
+  /** 是否覆盖了原始显示值。 */
   hasDisplayOverride: boolean;
+  /** 单元格点击处理器。 */
   onClick?: (ctx: TableCellStrategyContext, event?: unknown) => any;
+  /** 点击时是否阻止事件冒泡。 */
   stopPropagation: boolean;
+  /** 样式配置。 */
   style?: Record<string, any>;
+  /** 原始值。 */
   value: any;
 }
 
+/**
+ * 行策略解析结果。
+ */
 export interface ResolvedTableRowStrategyResult {
+  /** 样式类名。 */
   className: string;
+  /** 是否可点击。 */
   clickable: boolean;
+  /** 行点击处理器。 */
   onClick?: (ctx: TableRowStrategyContext, event?: unknown) => any;
+  /** 点击时是否阻止事件冒泡。 */
   stopPropagation: boolean;
+  /** 样式配置。 */
   style?: Record<string, any>;
 }
 
+/**
+ * 策略点击触发结果。
+ */
 export interface TriggerTableStrategyClickResult {
+  /** 是否因条件不满足而阻断。 */
   blocked: boolean;
+  /** 是否已触发处理逻辑。 */
   handled: boolean;
 }
 
+/**
+ * 将单值或空值规范为数组。
+ * @template T 元素类型。
+ * @param value 原始值。
+ * @returns 数组化后的值。
+ */
 function toArrayValue<T>(value: null | T | T[] | undefined) {
   if (Array.isArray(value)) {
     return value;
@@ -213,6 +341,11 @@ function toArrayValue<T>(value: null | T | T[] | undefined) {
   return [value];
 }
 
+/**
+ * 合并 className 输入为单个字符串。
+ * @param values class 片段列表。
+ * @returns 合并后的 className。
+ */
 function joinClassNames(...values: unknown[]) {
   return values
     .flatMap((value) => String(value ?? '').split(' '))
@@ -221,6 +354,12 @@ function joinClassNames(...values: unknown[]) {
     .join(' ');
 }
 
+/**
+ * 规范化样式值。
+ * 数值会自动补 `px`，空值返回 `undefined`。
+ * @param value 原始样式值。
+ * @returns 规范化后的样式值。
+ */
 function normalizeStyleValue(value: unknown) {
   if (value === undefined || value === null) {
     return undefined;
@@ -235,6 +374,12 @@ function normalizeStyleValue(value: unknown) {
   return undefined;
 }
 
+/**
+ * 合并策略样式对象。
+ * @param base 基础样式。
+ * @param patch 补丁样式。
+ * @returns 合并后的样式对象。
+ */
 function mergeTableStrategyStyle(
   base: Record<string, any> | undefined,
   patch: Record<string, any> | undefined
@@ -248,6 +393,12 @@ function mergeTableStrategyStyle(
   };
 }
 
+/**
+ * 构建策略样式对象。
+ * 会将快捷字段（如 `fontSize`/`lineHeight`）转换为可直接渲染的样式。
+ * @param source 样式来源配置。
+ * @returns 最终样式对象；无样式时返回 `undefined`。
+ */
 function buildTableStrategyStyle(
   source: null | TableStrategyStyle | undefined
 ) {
@@ -281,6 +432,11 @@ function buildTableStrategyStyle(
   return Object.keys(nextStyle).length > 0 ? nextStyle : undefined;
 }
 
+/**
+ * 将输入解析为数字。
+ * @param value 原始值。
+ * @returns 有效数字，无法解析时返回 `NaN`。
+ */
 function parseNumberValue(value: unknown) {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : NaN;
@@ -292,6 +448,13 @@ function parseNumberValue(value: unknown) {
   return NaN;
 }
 
+/**
+ * 获取或创建缓存的正则表达式实例。
+ * 内部使用 LRU 风格淘汰策略限制缓存大小。
+ * @param pattern 正则模式。
+ * @param flags 正则标记。
+ * @returns 匹配器实例；构建失败时返回 `null`。
+ */
 function getCachedStrategyRegExp(pattern: string, flags = ''): null | RegExp {
   const cacheKey = `${flags}\u0000${pattern}`;
   if (compiledStrategyRegExpCache.has(cacheKey)) {
@@ -318,6 +481,12 @@ function getCachedStrategyRegExp(pattern: string, flags = ''): null | RegExp {
   return resolved;
 }
 
+/**
+ * 解析策略配置中的正则匹配器。
+ * 支持 `RegExp`、`/pattern/flags` 字符串和 `{ pattern, flags }` 对象。
+ * @param source 原始匹配配置。
+ * @returns 解析后的正则实例；无效时返回 `null`。
+ */
 function resolveStrategyRegExp(source: unknown): null | RegExp {
   if (source instanceof RegExp) {
     return getCachedStrategyRegExp(source.source, source.flags);
@@ -350,6 +519,12 @@ function resolveStrategyRegExp(source: unknown): null | RegExp {
   return null;
 }
 
+/**
+ * 使用策略正则匹配输入值。
+ * @param value 待匹配值。
+ * @param matcher 匹配器来源。
+ * @returns 匹配结果。
+ */
 function testStrategyRegExp(value: unknown, matcher: unknown) {
   const regex = resolveStrategyRegExp(matcher);
   if (!regex) {
@@ -359,6 +534,13 @@ function testStrategyRegExp(value: unknown, matcher: unknown) {
   return regex.test(String(value ?? ''));
 }
 
+/**
+ * 按指定操作符比较策略条件值。
+ * @param left 左值。
+ * @param right 右值。
+ * @param op 比较操作符。
+ * @returns 比较结果。
+ */
 function compareStrategyValues(
   left: unknown,
   right: unknown,
@@ -460,6 +642,14 @@ function compareStrategyValues(
   return false;
 }
 
+/**
+ * 解析策略上下文值。
+ * 支持静态值与函数值，函数执行异常时返回 `undefined`。
+ * @template TContext 上下文类型。
+ * @param source 策略值来源。
+ * @param ctx 运行时上下文。
+ * @returns 解析后的值。
+ */
 function resolveStrategyContextValue<TContext>(
   source: TableStrategyResolver<TContext> | undefined,
   ctx: TContext
@@ -474,6 +664,13 @@ function resolveStrategyContextValue<TContext>(
   return source;
 }
 
+/**
+ * 执行对象形式策略条件判断。
+ * @template TContext 上下文类型。
+ * @param condition 条件对象。
+ * @param ctx 运行时上下文。
+ * @returns 条件命中结果。
+ */
 function evaluateStrategyConditionObject<TContext extends TableStrategyContextBase>(
   condition: TableStrategyCondition,
   ctx: TContext
@@ -580,6 +777,14 @@ function evaluateStrategyConditionObject<TContext extends TableStrategyContextBa
   return !!leftValue;
 }
 
+/**
+ * 统一判断策略条件。
+ * 支持布尔值、函数与对象条件表达式。
+ * @template TContext 上下文类型。
+ * @param when 条件配置。
+ * @param ctx 运行时上下文。
+ * @returns 条件命中结果。
+ */
 function evaluateStrategyCondition<TContext extends TableStrategyContextBase>(
   when: null | TableStrategyWhen<TContext> | undefined,
   ctx: TContext
@@ -600,6 +805,13 @@ function evaluateStrategyCondition<TContext extends TableStrategyContextBase>(
   return true;
 }
 
+/**
+ * 读取单元格策略缓存条目。
+ * @param column 列配置对象。
+ * @param field 列字段名。
+ * @param gridOptions 表格配置对象。
+ * @returns 缓存条目；不存在时返回 `undefined`。
+ */
 function getCachedCellStrategyEntry(
   column: TableColumnRecord,
   field: string,
@@ -627,6 +839,13 @@ function getCachedCellStrategyEntry(
   return cacheByField.get(field);
 }
 
+/**
+ * 写入单元格策略缓存条目。
+ * @param column 列配置对象。
+ * @param field 列字段名。
+ * @param entry 缓存条目。
+ * @param gridOptions 表格配置对象。
+ */
 function setCachedCellStrategyEntry(
   column: TableColumnRecord,
   field: string,
@@ -656,21 +875,44 @@ function setCachedCellStrategyEntry(
   cacheByField.set(field, entry);
 }
 
+/**
+ * 判断字符是否可作为标识符起始字符。
+ * @param char 待判断字符。
+ * @returns 是否为合法起始字符。
+ */
 function isTableFormulaIdentifierStart(char: string) {
   return /[A-Za-z_$]/.test(char);
 }
 
+/**
+ * 判断字符是否可作为标识符组成字符。
+ * @param char 待判断字符。
+ * @returns 是否为合法组成字符。
+ */
 function isTableFormulaIdentifierPart(char: string) {
   return /[A-Za-z0-9_$]/.test(char);
 }
 
+/**
+ * 表达式分词结果（单次读取）。
+ */
+type TableFormulaTokenReadResult = {
+  /** 下一次读取起始索引。 */
+  nextIndex: number;
+  /** 读取到的 token。读取失败时为空。 */
+  token?: TableFormulaToken;
+};
+
+/**
+ * 从表达式中读取字符串 token。
+ * @param expression 原始表达式。
+ * @param startIndex 起始索引。
+ * @returns 字符串 token 读取结果。
+ */
 function readTableFormulaStringToken(
   expression: string,
   startIndex: number
-): {
-  nextIndex: number;
-  token?: TableFormulaToken;
-} {
+): TableFormulaTokenReadResult {
   const quote = expression[startIndex];
   let currentIndex = startIndex + 1;
   let value = '';
@@ -707,13 +949,16 @@ function readTableFormulaStringToken(
   };
 }
 
+/**
+ * 从表达式中读取数字 token。
+ * @param expression 原始表达式。
+ * @param startIndex 起始索引。
+ * @returns 数字 token 读取结果。
+ */
 function readTableFormulaNumberToken(
   expression: string,
   startIndex: number
-): {
-  nextIndex: number;
-  token?: TableFormulaToken;
-} {
+): TableFormulaTokenReadResult {
   let currentIndex = startIndex;
   let hasDot = false;
 
@@ -748,13 +993,16 @@ function readTableFormulaNumberToken(
   };
 }
 
+/**
+ * 从表达式中读取标识符 token。
+ * @param expression 原始表达式。
+ * @param startIndex 起始索引。
+ * @returns 标识符 token 读取结果。
+ */
 function readTableFormulaIdentifierToken(
   expression: string,
   startIndex: number
-): {
-  nextIndex: number;
-  token?: TableFormulaToken;
-} {
+): TableFormulaTokenReadResult {
   if (!isTableFormulaIdentifierStart(expression[startIndex] ?? '')) {
     return {
       nextIndex: startIndex,
@@ -787,6 +1035,11 @@ function readTableFormulaIdentifierToken(
   };
 }
 
+/**
+ * 将公式表达式拆分为 token 列表。
+ * @param expression 原始表达式。
+ * @returns token 列表；分词失败时返回 `undefined`。
+ */
 function tokenizeTableFormula(
   expression: string
 ): TableFormulaToken[] | undefined {
@@ -886,10 +1139,22 @@ function tokenizeTableFormula(
   return tokens;
 }
 
+/**
+ * 获取当前解析 token。
+ * @param state 解析器状态。
+ * @returns 当前 token；越界时返回 eof token。
+ */
 function getTableFormulaCurrentToken(state: TableFormulaParserState) {
   return state.tokens[state.index] ?? { type: 'eof', value: '' };
 }
 
+/**
+ * 尝试匹配并消费一个 token。
+ * @param state 解析器状态。
+ * @param type 目标 token 类型。
+ * @param value 可选目标 token 值。
+ * @returns 是否匹配成功。
+ */
 function matchTableFormulaToken(
   state: TableFormulaParserState,
   type: TableFormulaTokenType,
@@ -906,6 +1171,13 @@ function matchTableFormulaToken(
   return true;
 }
 
+/**
+ * 断言并消费一个 token。
+ * @param state 解析器状态。
+ * @param type 目标 token 类型。
+ * @param value 可选目标 token 值。
+ * @returns 当前 token。
+ */
 function expectTableFormulaToken(
   state: TableFormulaParserState,
   type: TableFormulaTokenType,
@@ -922,6 +1194,11 @@ function expectTableFormulaToken(
   return current;
 }
 
+/**
+ * 解析主表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaPrimary(state: TableFormulaParserState): TableFormulaNode {
   const current = getTableFormulaCurrentToken(state);
   if (current.type === 'number') {
@@ -968,6 +1245,11 @@ function parseTableFormulaPrimary(state: TableFormulaParserState): TableFormulaN
   throw new Error('Invalid formula primary expression');
 }
 
+/**
+ * 解析一元表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaUnary(state: TableFormulaParserState): TableFormulaNode {
   const current = getTableFormulaCurrentToken(state);
   if (
@@ -984,6 +1266,11 @@ function parseTableFormulaUnary(state: TableFormulaParserState): TableFormulaNod
   return parseTableFormulaPrimary(state);
 }
 
+/**
+ * 解析乘除模表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaMultiplicative(
   state: TableFormulaParserState
 ): TableFormulaNode {
@@ -1009,6 +1296,11 @@ function parseTableFormulaMultiplicative(
   return node;
 }
 
+/**
+ * 解析加减表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaAdditive(state: TableFormulaParserState): TableFormulaNode {
   let node = parseTableFormulaMultiplicative(state);
   while (true) {
@@ -1030,6 +1322,11 @@ function parseTableFormulaAdditive(state: TableFormulaParserState): TableFormula
   return node;
 }
 
+/**
+ * 解析比较表达式节点（`< <= > >=`）。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaComparison(
   state: TableFormulaParserState
 ): TableFormulaNode {
@@ -1053,6 +1350,11 @@ function parseTableFormulaComparison(
   return node;
 }
 
+/**
+ * 解析相等表达式节点（`== === != !==`）。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaEquality(state: TableFormulaParserState): TableFormulaNode {
   let node = parseTableFormulaComparison(state);
   while (true) {
@@ -1074,6 +1376,11 @@ function parseTableFormulaEquality(state: TableFormulaParserState): TableFormula
   return node;
 }
 
+/**
+ * 解析逻辑与表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaLogicalAnd(
   state: TableFormulaParserState
 ): TableFormulaNode {
@@ -1089,6 +1396,11 @@ function parseTableFormulaLogicalAnd(
   return node;
 }
 
+/**
+ * 解析逻辑或表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaLogicalOr(state: TableFormulaParserState): TableFormulaNode {
   let node = parseTableFormulaLogicalAnd(state);
   while (matchTableFormulaToken(state, 'operator', '||')) {
@@ -1102,6 +1414,11 @@ function parseTableFormulaLogicalOr(state: TableFormulaParserState): TableFormul
   return node;
 }
 
+/**
+ * 解析三元条件表达式节点。
+ * @param state 解析器状态。
+ * @returns AST 节点。
+ */
 function parseTableFormulaConditional(
   state: TableFormulaParserState
 ): TableFormulaNode {
@@ -1120,6 +1437,13 @@ function parseTableFormulaConditional(
   };
 }
 
+/**
+ * 递归执行公式 AST 节点。
+ * @param node AST 节点。
+ * @param row 当前行数据。
+ * @param helpers 内置函数集合。
+ * @returns 节点计算结果。
+ */
 function evaluateTableFormulaNode(
   node: TableFormulaNode,
   row: Record<string, any>,
@@ -1214,6 +1538,11 @@ function evaluateTableFormulaNode(
   }
 }
 
+/**
+ * 编译公式字符串为 AST。
+ * @param formula 公式字符串。
+ * @returns 编译后的 AST；编译失败时返回 `undefined`。
+ */
 function compileTableFormula(formula: string) {
   if (compiledFormulaCache.has(formula)) {
     const cached = compiledFormulaCache.get(formula);
@@ -1253,6 +1582,13 @@ function compileTableFormula(formula: string) {
   }
 }
 
+/**
+ * 计算公式值。
+ * 支持函数公式与字符串公式。
+ * @param formula 公式定义。
+ * @param ctx 单元格上下文。
+ * @returns 公式计算结果。
+ */
 function resolveFormulaValue(
   formula: ((ctx: TableCellStrategyContext) => any) | string | undefined,
   ctx: TableCellStrategyContext
@@ -1281,6 +1617,12 @@ function resolveFormulaValue(
   }
 }
 
+/**
+ * 对数值应用精度控制。
+ * @param value 原始值。
+ * @param precision 精度配置。
+ * @returns 应用精度后的值。
+ */
 function applyNumericPrecision(value: unknown, precision: unknown) {
   if (precision === undefined || precision === null || precision === '') {
     return value;
@@ -1297,6 +1639,13 @@ function applyNumericPrecision(value: unknown, precision: unknown) {
   return Number(numberValue.toFixed(digits));
 }
 
+/**
+ * 对单元格显示值应用装饰配置。
+ * @param value 原始显示值。
+ * @param config 装饰配置。
+ * @param ctx 单元格上下文。
+ * @returns 装饰后的显示值与覆盖状态。
+ */
 function applyCellDisplayDecorators(
   value: unknown,
   config: Pick<
@@ -1349,6 +1698,11 @@ function applyCellDisplayDecorators(
   };
 }
 
+/**
+ * 规范化表格策略总配置。
+ * @param value 原始配置值。
+ * @returns 合法策略配置；无效时返回 `undefined`。
+ */
 function normalizeTableStrategyConfig(
   value: unknown
 ): TableStrategyConfig | undefined {
@@ -1357,6 +1711,12 @@ function normalizeTableStrategyConfig(
     : undefined;
 }
 
+/**
+ * 解析单元格策略映射来源。
+ * 同时兼容新旧配置结构。
+ * @param gridOptions 表格配置对象。
+ * @returns 新旧策略映射集合。
+ */
 function resolveCellStrategyMap(
   gridOptions: Record<string, any> | undefined
 ) {
@@ -1373,6 +1733,13 @@ function resolveCellStrategyMap(
   };
 }
 
+/**
+ * 按列相关键从策略映射中查找策略。
+ * @param map 策略映射。
+ * @param column 列配置对象。
+ * @param field 字段名。
+ * @returns 命中的单元格策略。
+ */
 function resolveStrategyByColumnKey(
   map: Record<string, TableCellStrategy> | undefined,
   column: TableColumnRecord,
@@ -1397,6 +1764,13 @@ function resolveStrategyByColumnKey(
   return undefined;
 }
 
+/**
+ * 合并两个单元格策略配置。
+ * 规则数组会按先后顺序拼接。
+ * @param base 基础策略。
+ * @param override 覆盖策略。
+ * @returns 合并后的策略。
+ */
 function mergeCellStrategies(
   base: null | TableCellStrategy | undefined,
   override: null | TableCellStrategy | undefined
@@ -1419,6 +1793,14 @@ function mergeCellStrategies(
   };
 }
 
+/**
+ * 解析单元格最终策略。
+ * 合并顺序：列内策略 > 新版配置映射 > 旧版配置映射。
+ * @param column 列配置。
+ * @param field 字段名。
+ * @param gridOptions 表格配置。
+ * @returns 单元格策略；无可用策略时返回 `undefined`。
+ */
 export function resolveTableCellStrategy(
   column: TableColumnRecord,
   field: string,
@@ -1470,6 +1852,12 @@ export function resolveTableCellStrategy(
   return resolved;
 }
 
+/**
+ * 解析行策略列表。
+ * 合并来源：`strategy.rows` 与 `rowStrategy`。
+ * @param gridOptions 表格配置对象。
+ * @returns 可用行策略数组。
+ */
 export function resolveTableRowStrategies(
   gridOptions?: Record<string, any>
 ) {
@@ -1504,6 +1892,13 @@ export function resolveTableRowStrategies(
   return resolved;
 }
 
+/**
+ * 解析单元格基础值。
+ * 优先级：`formula` > `compute` > `value` > 当前值。
+ * @param strategy 单元格策略。
+ * @param ctx 单元格上下文。
+ * @returns 解析后的基础值。
+ */
 function resolveCellBaseValue(
   strategy: TableCellStrategy,
   ctx: TableCellStrategyContext
@@ -1523,14 +1918,31 @@ function resolveCellBaseValue(
   return ctx.value;
 }
 
+/**
+ * 可变的单元格策略视觉状态。
+ * 用于在规则命中时累积样式与交互信息。
+ */
+interface MutableCellStrategyVisual {
+  /** 样式类名。 */
+  className: string;
+  /** 是否可点击。 */
+  clickable: boolean;
+  /** 单元格点击处理器。 */
+  onClick?: (ctx: TableCellStrategyContext, event?: unknown) => any;
+  /** 点击时是否阻止冒泡。 */
+  stopPropagation: boolean;
+  /** 样式配置。 */
+  style?: Record<string, any>;
+}
+
+/**
+ * 将策略规则应用到单元格视觉状态。
+ * @param target 目标视觉状态。
+ * @param rule 策略规则。
+ * @returns 无返回值。
+ */
 function applyCellStyleRule(
-  target: {
-    className: string;
-    clickable: boolean;
-    onClick?: (ctx: TableCellStrategyContext, event?: unknown) => any;
-    stopPropagation: boolean;
-    style?: Record<string, any>;
-  },
+  target: MutableCellStrategyVisual,
   rule: TableCellStrategy | TableCellStrategyRule
 ) {
   target.className = joinClassNames(target.className, rule.className);
@@ -1552,6 +1964,13 @@ function applyCellStyleRule(
   }
 }
 
+/**
+ * 解析规则命中后的值。
+ * 优先级：`formula` > `compute` > `value` > 当前值。
+ * @param rule 策略规则。
+ * @param ctx 单元格上下文。
+ * @returns 规则计算结果。
+ */
 function resolveCellRuleValue(
   rule: TableCellStrategyRule,
   ctx: TableCellStrategyContext
@@ -1571,14 +1990,34 @@ function resolveCellRuleValue(
   return ctx.value;
 }
 
-export function resolveTableCellStrategyResult(options: {
+/**
+ * 计算单元格策略最终渲染结果。
+ * @param options 计算参数。
+ * @returns 单元格策略渲染结果；无策略时返回 `undefined`。
+ */
+export interface ResolveTableCellStrategyResultOptions {
+  /** 列配置。 */
   column: TableColumnRecord;
+  /** 字段名。 */
   field: string;
+  /** 表格配置。 */
   gridOptions?: Record<string, any>;
+  /** 行数据。 */
   row: Record<string, any>;
+  /** 行索引。 */
   rowIndex: number;
+  /** 原始值。 */
   value: any;
-}) {
+}
+
+/**
+ * 计算单元格策略最终渲染结果。
+ * @param options 计算参数。
+ * @returns 单元格策略渲染结果；无策略时返回 `undefined`。
+ */
+export function resolveTableCellStrategyResult(
+  options: ResolveTableCellStrategyResultOptions
+) {
   const strategy = resolveTableCellStrategy(
     options.column,
     options.field,
@@ -1591,6 +2030,11 @@ export function resolveTableCellStrategyResult(options: {
   const ctx: TableCellStrategyContext = {
     column: options.column,
     field: options.field,
+    /**
+     * 读取当前行指定字段值。
+     * @param field 目标字段，未传时使用当前字段。
+     * @returns 字段值。
+     */
     getValue(field) {
       return getColumnValueByPath(options.row, field ?? options.field);
     },
@@ -1655,11 +2099,28 @@ export function resolveTableCellStrategyResult(options: {
   } satisfies ResolvedTableCellStrategyResult;
 }
 
-export function resolveTableRowStrategyResult(options: {
+/**
+ * 计算行策略最终渲染结果。
+ * @param options 计算参数。
+ * @returns 行策略渲染结果；无命中时返回 `undefined`。
+ */
+export interface ResolveTableRowStrategyResultOptions {
+  /** 表格配置。 */
   gridOptions?: Record<string, any>;
+  /** 行数据。 */
   row: Record<string, any>;
+  /** 行索引。 */
   rowIndex: number;
-}) {
+}
+
+/**
+ * 计算行策略最终渲染结果。
+ * @param options 计算参数。
+ * @returns 行策略渲染结果；无命中时返回 `undefined`。
+ */
+export function resolveTableRowStrategyResult(
+  options: ResolveTableRowStrategyResultOptions
+) {
   const strategies = resolveTableRowStrategies(options.gridOptions);
   if (strategies.length <= 0) {
     return undefined;
@@ -1667,6 +2128,11 @@ export function resolveTableRowStrategyResult(options: {
   const ctx: TableRowStrategyContext = {
     column: undefined,
     field: undefined,
+    /**
+     * 读取当前行指定字段值。
+     * @param field 目标字段。
+     * @returns 字段值。
+     */
     getValue(field) {
       if (!field || !isTableNonEmptyString(field)) {
         return undefined;
@@ -1726,15 +2192,36 @@ export function resolveTableRowStrategyResult(options: {
   } satisfies ResolvedTableRowStrategyResult;
 }
 
-export function triggerTableCellStrategyClick(options: {
+/**
+ * 触发单元格策略点击。
+ * @param options 触发参数。
+ * @returns 触发状态结果。
+ */
+export interface TriggerTableCellStrategyClickOptions {
+  /** 列配置。 */
   column: TableColumnRecord;
+  /** 事件对象。 */
   event?: unknown;
+  /** 字段名。 */
   field: string;
+  /** 是否尊重 `defaultPrevented`。 */
   respectDefaultPrevented?: boolean;
+  /** 行数据。 */
   row: Record<string, any>;
+  /** 行索引。 */
   rowIndex: number;
+  /** 单元格策略结果。 */
   strategyResult: ResolvedTableCellStrategyResult | undefined;
-}): TriggerTableStrategyClickResult {
+}
+
+/**
+ * 触发单元格策略点击。
+ * @param options 触发参数。
+ * @returns 触发状态结果。
+ */
+export function triggerTableCellStrategyClick(
+  options: TriggerTableCellStrategyClickOptions
+): TriggerTableStrategyClickResult {
   const strategyResult = options.strategyResult;
   if (!strategyResult?.onClick) {
     return {
@@ -1751,6 +2238,11 @@ export function triggerTableCellStrategyClick(options: {
     {
       column: options.column,
       field: options.field,
+      /**
+       * 读取当前行指定字段值。
+       * @param nextField 目标字段，未传时使用当前字段。
+       * @returns 字段值。
+       */
       getValue(nextField?: string) {
         return getColumnValueByPath(options.row, nextField ?? options.field);
       },
@@ -1773,13 +2265,32 @@ export function triggerTableCellStrategyClick(options: {
   };
 }
 
-export function triggerTableRowStrategyClick(options: {
+/**
+ * 触发行策略点击。
+ * @param options 触发参数。
+ * @returns 触发状态结果。
+ */
+export interface TriggerTableRowStrategyClickOptions {
+  /** 事件对象。 */
   event?: unknown;
+  /** 是否尊重 `defaultPrevented`。 */
   respectDefaultPrevented?: boolean;
+  /** 行数据。 */
   row: Record<string, any>;
+  /** 行索引。 */
   rowIndex: number;
+  /** 行策略结果。 */
   strategyResult: ResolvedTableRowStrategyResult | undefined;
-}): TriggerTableStrategyClickResult {
+}
+
+/**
+ * 触发行策略点击。
+ * @param options 触发参数。
+ * @returns 触发状态结果。
+ */
+export function triggerTableRowStrategyClick(
+  options: TriggerTableRowStrategyClickOptions
+): TriggerTableStrategyClickResult {
   const strategyResult = options.strategyResult;
   if (!strategyResult?.onClick) {
     return {
@@ -1796,6 +2307,11 @@ export function triggerTableRowStrategyClick(options: {
     {
       column: undefined,
       field: undefined,
+      /**
+       * 读取当前行指定字段值。
+       * @param field 目标字段。
+       * @returns 字段值。
+       */
       getValue(field?: string) {
         return getColumnValueByPath(options.row, field);
       },
@@ -1818,16 +2334,31 @@ export function triggerTableRowStrategyClick(options: {
   };
 }
 
+/**
+ * 判断值是否可用于写入 CSS 变量。
+ * @param value 待判断值。
+ * @returns 可用于样式变量时返回 `true`。
+ */
 function hasValueForStyleVar(value: unknown) {
   return value !== undefined && value !== null && value !== '';
 }
 
+/**
+ * 判断行策略样式对象是否有效。
+ * @param style 行样式对象。
+ * @returns 是否存在有效样式键。
+ */
 export function hasTableRowStrategyStyle(
   style: null | Record<string, any> | undefined
 ) {
   return !!style && Object.keys(style).length > 0;
 }
 
+/**
+ * 解析行策略内联样式并同步 CSS 变量。
+ * @param style 行样式对象。
+ * @returns 规范化后的行样式对象。
+ */
 export function resolveTableRowStrategyInlineStyle(
   style: null | Record<string, any> | undefined
 ) {

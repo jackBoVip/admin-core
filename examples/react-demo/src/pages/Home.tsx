@@ -1,3 +1,7 @@
+/**
+ * 首页概览页。
+ * @description 展示核心统计卡片与快速开始说明。
+ */
 export default function Home() {
   return (
     <div className="page-container">

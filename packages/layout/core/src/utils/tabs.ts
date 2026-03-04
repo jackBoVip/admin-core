@@ -7,7 +7,25 @@ import { logger } from './logger';
 import type { MenuItem, TabItem } from '../types';
 
 /**
- * 获取不包含查询参数的路径
+ * 基于菜单创建标签时的附加参数。
+ */
+export interface CreateMenuTabOptions {
+  /** 是否将标签标记为固定标签。 */
+  affix?: boolean;
+}
+
+/**
+ * 菜单转标签函数签名。
+ */
+export type MenuTabFactory = (
+  menu: MenuItem,
+  options?: CreateMenuTabOptions
+) => TabItem;
+
+/**
+ * 获取不包含查询参数的路径。
+ * @param path 原始路径。
+ * @returns 去除查询参数后的路径。
  */
 export function getPathWithoutQuery(path: string): string {
   if (!path) return '';
@@ -16,7 +34,9 @@ export function getPathWithoutQuery(path: string): string {
 }
 
 /**
- * 从路径中解析 pageKey
+ * 从路径中解析 `pageKey`。
+ * @param fullPath 完整路径（可能包含 query/hash）。
+ * @returns `pageKey` 值；未命中时返回空字符串。
  */
 export function getPageKeyFromPath(fullPath: string): string {
   if (!fullPath || !fullPath.includes('?')) return '';
@@ -31,7 +51,10 @@ export function getPageKeyFromPath(fullPath: string): string {
 }
 
 /**
- * 解析标签页 key（支持 pageKey 与 fullPathKey）
+ * 解析标签页 key（支持 `pageKey` 与 `fullPathKey`）。
+ * @param fullPath 当前完整路径。
+ * @param menu 命中的菜单项。
+ * @returns 标签页 key。
  */
 export function resolveTabKey(fullPath: string, menu?: MenuItem): string {
   const basePath = getPathWithoutQuery(fullPath);
@@ -49,12 +72,16 @@ export function resolveTabKey(fullPath: string, menu?: MenuItem): string {
 }
 
 /**
- * 从菜单构建标签页
+ * 从菜单构建标签页。
+ * @param menu 菜单项。
+ * @param fullPath 当前完整路径。
+ * @param createTab 标签构建函数。
+ * @returns 标签项。
  */
 export function buildTabFromMenu(
   menu: MenuItem,
   fullPath: string,
-  createTab: (menu: MenuItem, options?: { affix?: boolean }) => TabItem
+  createTab: MenuTabFactory
 ): TabItem {
   const resolvedFullPath = fullPath || menu.path || '';
   const basePath = getPathWithoutQuery(resolvedFullPath || menu.path || '');
@@ -76,7 +103,9 @@ export function buildTabFromMenu(
 }
 
 /**
- * 获取标签页缓存名称
+ * 获取标签页缓存名称。
+ * @param tab 标签项。
+ * @returns 缓存名称；无可用值时返回 `undefined`。
  */
 export function getTabCacheName(tab: TabItem): string | undefined {
   const meta = tab.meta as Record<string, unknown> | undefined;
@@ -88,7 +117,10 @@ export function getTabCacheName(tab: TabItem): string | undefined {
 }
 
 /**
- * 解析 keep-alive include 列表
+ * 解析 keep-alive include 列表。
+ * @param tabs 标签列表。
+ * @param keepAliveEnabled 是否启用 keep-alive。
+ * @returns include 列表。
  */
 export function resolveKeepAliveIncludes(
   tabs: TabItem[],
@@ -101,25 +133,45 @@ export function resolveKeepAliveIncludes(
     .filter(Boolean) as string[];
 }
 
-// ============================================================
-// 标签管理器
-// ============================================================
+/* ============================================================ */
+/* 标签管理器 */
+/* ============================================================ */
 
 /**
  * 标签项（内部使用，带额外状态）
  */
 export interface TabItemWithState extends TabItem {
-  /** 是否来自菜单 */
+  /** 是否来自菜单。 */
   fromMenu?: boolean;
-  /** 打开时间（用于排序） */
+  /** 打开时间（用于排序）。 */
   openTime?: number;
 }
 
 const TAB_STORAGE_PREFIX = 'layout-tabs';
 
+/** `TabManager` 初始化参数。 */
+export interface TabManagerOptions {
+  /** 最大标签数量，`0` 表示不限制。 */
+  maxCount?: number;
+  /** 固定标签 key 列表。 */
+  affixTabs?: string[];
+  /** 持久化存储键。 */
+  persistKey?: string;
+  /** 标签集合变化时触发。 */
+  onChange?: (tabs: TabItem[]) => void;
+}
+
+/** `TabManager` 可更新配置参数。 */
+export interface TabManagerUpdateOptions {
+  /** 最大标签数量，`0` 表示不限制。 */
+  maxCount?: number;
+  /** 持久化存储键。 */
+  persistKey?: string;
+}
+
 /**
  * 标签管理器
- * @description 自动管理标签的添加、删除、排序等
+ * @description 自动管理标签的添加、删除、排序等能力。
  */
 export class TabManager {
   private tabs: TabItemWithState[] = [];
@@ -135,12 +187,11 @@ export class TabManager {
   /** 防抖延迟时间（毫秒） */
   private static readonly SAVE_DEBOUNCE_DELAY = 300;
 
-  constructor(options?: {
-    maxCount?: number;
-    affixTabs?: string[];
-    persistKey?: string;
-    onChange?: (tabs: TabItem[]) => void;
-  }) {
+  /**
+   * 创建标签管理器。
+   * @param options 初始化选项。
+   */
+  constructor(options?: TabManagerOptions) {
     this.maxCount = options?.maxCount || 0;
     this.persistKey = options?.persistKey || null;
     this.initStorage();
@@ -148,20 +199,26 @@ export class TabManager {
     if (options?.affixTabs) {
       options.affixTabs.forEach((key) => this.affixTabs.add(key));
     }
-    // 从持久化存储恢复
+    /* 从持久化存储恢复。 */
     this.restoreFromStorage();
     this.syncTabMaps();
   }
 
   /**
-   * 更新变更回调（用于复用缓存实例时重绑订阅）
+   * 更新变更回调（用于复用缓存实例时重绑订阅）。
+   *
+   * @param onChange 标签列表变更回调。
+   * @returns 无返回值。
    */
   setOnChange(onChange?: (tabs: TabItem[]) => void): void {
     this.onChange = onChange;
   }
 
   /**
-   * 验证标签数据格式
+   * 验证持久化恢复数据是否满足标签结构。
+   *
+   * @param data 待校验数据。
+   * @returns `true` 表示数据可作为标签列表使用。
    */
   private isValidTabData(data: unknown): data is TabItem[] {
     if (!Array.isArray(data)) return false;
@@ -175,6 +232,11 @@ export class TabManager {
     );
   }
 
+  /**
+   * 按需初始化标签持久化存储实例。
+   *
+   * @returns 无返回值。
+   */
   private initStorage(): void {
     if (!this.persistKey || this.storage) return;
     this.storage = createStorageManager({
@@ -199,7 +261,9 @@ export class TabManager {
   }
 
   /**
-   * 从持久化存储恢复标签
+   * 从新旧存储格式恢复标签列表。
+   *
+   * @returns 无返回值。
    */
   private restoreFromStorage(): void {
     if (!this.persistKey) return;
@@ -217,7 +281,7 @@ export class TabManager {
       storage.removeItem(this.persistKey);
     }
 
-    // 兼容旧的未包裹存储格式（直接 localStorage）
+    /* 兼容旧的未包裹存储格式（直接 localStorage）。 */
     if (typeof localStorage === 'undefined') return;
     try {
       const legacyStored = localStorage.getItem(this.persistKey);
@@ -237,7 +301,9 @@ export class TabManager {
   }
 
   /**
-   * 保存到持久化存储
+   * 将当前标签列表写入持久化存储。
+   *
+   * @returns 无返回值。
    */
   private saveToStorage(): void {
     if (!this.persistKey) return;
@@ -246,14 +312,16 @@ export class TabManager {
   }
 
   /**
-   * 通知变更
-   * @description 使用防抖机制优化 localStorage 写入频率
+   * 触发变更回调并防抖落盘。
+   * @description 使用防抖机制优化 localStorage 写入频率。
+   *
+   * @returns 无返回值。
    */
   private notifyChange(): void {
-    // 先触发回调，确保 UI 立即更新
+    /* 先触发回调，确保 UI 立即更新。 */
     this.onChange?.(this.getTabs());
 
-    // 使用防抖延迟保存到 localStorage，避免频繁写入
+    /* 使用防抖延迟保存到 localStorage，避免频繁写入。 */
     if (this.saveDebounceTimer) {
       clearTimeout(this.saveDebounceTimer);
     }
@@ -263,6 +331,11 @@ export class TabManager {
     }, TabManager.SAVE_DEBOUNCE_DELAY);
   }
 
+  /**
+   * 重建标签 key 到对象/索引的映射缓存。
+   *
+   * @returns 无返回值。
+   */
   private syncTabMaps(): void {
     this.tabMap.clear();
     this.tabIndexMap.clear();
@@ -272,18 +345,31 @@ export class TabManager {
     });
   }
 
+  /**
+   * 获取标签在当前列表中的索引。
+   *
+   * @param key 标签 key。
+   * @returns 标签索引，未命中返回 `-1`。
+   */
   private getTabIndex(key: string): number {
     const index = this.tabIndexMap.get(key);
     return index === undefined ? -1 : index;
   }
 
   /**
-   * 从菜单创建标签
+   * 从菜单对象创建标签对象。
+   *
+   * @param menu 菜单项。
+   * @param options 创建附加参数。
+   * @returns 标签对象。
    */
-  createTabFromMenu(menu: MenuItem, options?: { affix?: boolean }): TabItem {
+  createTabFromMenu(
+    menu: MenuItem,
+    options?: CreateMenuTabOptions
+  ): TabItem {
     const meta = {
       ...(menu.meta || {}),
-      // 同步常用元数据，方便 tabbar 显示/控制
+      /* 同步常用元数据，方便 tabbar 显示与控制。 */
       keepAlive: menu.keepAlive,
       affixOrder: menu.affixOrder,
       title: menu.title ?? menu.name,
@@ -303,7 +389,10 @@ export class TabManager {
   }
 
   /**
-   * 验证标签数据
+   * 校验单个标签对象是否合法。
+   *
+   * @param tab 标签对象。
+   * @returns `true` 表示通过校验。
    */
   private validateTab(tab: TabItem): boolean {
     return (
@@ -317,10 +406,13 @@ export class TabManager {
   }
 
   /**
-   * 添加标签（如果不存在）
+   * 添加标签（已存在则合并更新）。
+   *
+   * @param tab 标签对象。
+   * @returns 最新标签列表快照。
    */
   addTab(tab: TabItem): TabItem[] {
-    // 验证标签数据
+    /* 验证标签数据。 */
     if (!this.validateTab(tab)) {
       logger.warn('Invalid tab data:', tab);
       return this.getTabs();
@@ -337,12 +429,12 @@ export class TabManager {
           ...(tab.meta || {}),
         },
       };
-      // 保留固定/不可关闭状态
+      /* 保留固定/不可关闭状态。 */
       if (currentTab?.affix) {
         mergedTab.affix = true;
         mergedTab.closable = false;
       }
-      // 保留自定义标题
+      /* 保留自定义标题。 */
       if (currentTab?.meta && 'newTabTitle' in currentTab.meta) {
         mergedTab.meta = {
           ...mergedTab.meta,
@@ -390,15 +482,25 @@ export class TabManager {
   }
 
   /**
-   * 从菜单添加标签
+   * 从菜单创建并添加标签。
+   *
+   * @param menu 菜单项。
+   * @param options 创建附加参数。
+   * @returns 最新标签列表快照。
    */
-  addTabFromMenu(menu: MenuItem, options?: { affix?: boolean }): TabItem[] {
+  addTabFromMenu(
+    menu: MenuItem,
+    options?: CreateMenuTabOptions
+  ): TabItem[] {
     const tab = this.createTabFromMenu(menu, options);
     return this.addTab(tab);
   }
 
   /**
-   * 移除标签
+   * 移除指定标签（仅可关闭标签可移除）。
+   *
+   * @param key 目标标签 key。
+   * @returns 最新标签列表快照。
    */
   removeTab(key: string): TabItem[] {
     const tab = this.findTab(key);
@@ -415,7 +517,10 @@ export class TabManager {
   }
 
   /**
-   * 移除其他标签
+   * 仅保留目标标签及不可关闭标签。
+   *
+   * @param exceptKey 需要保留的标签 key。
+   * @returns 最新标签列表快照。
    */
   removeOtherTabs(exceptKey: string): TabItem[] {
     const nextTabs: TabItemWithState[] = [];
@@ -431,7 +536,10 @@ export class TabManager {
   }
 
   /**
-   * 移除左侧标签
+   * 移除目标标签左侧可关闭标签。
+   *
+   * @param key 参考标签 key。
+   * @returns 最新标签列表快照。
    */
   removeLeftTabs(key: string): TabItem[] {
     const index = this.getTabIndex(key);
@@ -451,7 +559,10 @@ export class TabManager {
   }
 
   /**
-   * 移除右侧标签
+   * 移除目标标签右侧可关闭标签。
+   *
+   * @param key 参考标签 key。
+   * @returns 最新标签列表快照。
    */
   removeRightTabs(key: string): TabItem[] {
     const index = this.getTabIndex(key);
@@ -471,7 +582,9 @@ export class TabManager {
   }
 
   /**
-   * 移除所有可关闭标签
+   * 移除所有可关闭标签，仅保留固定或强制保留标签。
+   *
+   * @returns 最新标签列表快照。
    */
   removeAllTabs(): TabItem[] {
     const nextTabs: TabItemWithState[] = [];
@@ -487,7 +600,10 @@ export class TabManager {
   }
 
   /**
-   * 设置固定标签
+   * 设置固定标签集合并同步现有标签状态。
+   *
+   * @param keys 固定标签 key 列表。
+   * @returns 无返回值。
    */
   setAffixTabs(keys: string[]): void {
     const nextAffixTabs = new Set(
@@ -496,7 +612,7 @@ export class TabManager {
     this.affixTabs = nextAffixTabs;
 
     let changed = false;
-    // 更新现有标签的 affix 状态，仅在实际变化时触发更新
+    /* 更新现有标签的 affix 状态，仅在实际变化时触发更新。 */
     for (const tab of this.tabs) {
       const meta = tab.meta as Record<string, unknown> | undefined;
       const menuKey = meta?.menuKey as string | undefined;
@@ -517,7 +633,10 @@ export class TabManager {
   }
 
   /**
-   * 切换固定状态
+   * 切换指定标签的固定状态。
+   *
+   * @param key 标签 key。
+   * @returns 最新标签列表快照。
    */
   toggleAffix(key: string): TabItem[] {
     const tab = this.findTab(key);
@@ -546,7 +665,11 @@ export class TabManager {
   }
 
   /**
-   * 排序标签（拖拽后）
+   * 调整标签顺序（通常用于拖拽排序）。
+   *
+   * @param fromIndex 原始索引。
+   * @param toIndex 目标索引。
+   * @returns 最新标签列表快照。
    */
   sortTabs(fromIndex: number, toIndex: number): TabItem[] {
     const [removed] = this.tabs.splice(fromIndex, 1);
@@ -560,7 +683,9 @@ export class TabManager {
   }
 
   /**
-   * 清除持久化存储
+   * 清理当前持久化键对应的存储数据（含兼容旧格式）。
+   *
+   * @returns 无返回值。
    */
   clearStorage(): void {
     if (!this.persistKey) return;
@@ -571,9 +696,12 @@ export class TabManager {
   }
 
   /**
-   * 更新配置
+   * 更新运行时配置（最大标签数/持久化键）。
+   *
+   * @param options 配置补丁。
+   * @returns 无返回值。
    */
-  updateOptions(options: { maxCount?: number; persistKey?: string }): void {
+  updateOptions(options: TabManagerUpdateOptions): void {
     if (options.maxCount !== undefined) {
       this.maxCount = options.maxCount;
     }
@@ -584,14 +712,19 @@ export class TabManager {
   }
 
   /**
-   * 获取所有标签
+   * 获取所有标签快照。
+   *
+   * @returns 标签数组副本。
    */
   getTabs(): TabItem[] {
     return [...this.tabs];
   }
 
   /**
-   * 设置标签（用于初始化或持久化恢复）
+   * 批量设置标签（用于初始化或持久化恢复）。
+   *
+   * @param tabs 标签数组。
+   * @returns 无返回值。
    */
   setTabs(tabs: TabItem[]): void {
     const now = Date.now();
@@ -612,6 +745,8 @@ export class TabManager {
 
   /**
    * 确保固定标签靠前，并按 affixOrder 排序（稳定排序）
+   *
+   * @returns 无返回值。
    */
   private normalizeAffixOrder(): void {
     if (this.tabs.length === 0) return;
@@ -633,14 +768,20 @@ export class TabManager {
   }
 
   /**
-   * 查找标签
+   * 查找指定 key 的标签对象。
+   *
+   * @param key 标签 key。
+   * @returns 命中的标签对象，未命中返回 `undefined`。
    */
   findTab(key: string): TabItem | undefined {
     return this.tabMap.get(key);
   }
 
   /**
-   * 检查标签是否存在
+   * 检查指定 key 的标签是否存在。
+   *
+   * @param key 标签 key。
+   * @returns 是否存在。
    */
   hasTab(key: string): boolean {
     return this.tabMap.has(key);

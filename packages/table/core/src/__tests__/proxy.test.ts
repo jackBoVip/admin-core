@@ -40,7 +40,13 @@ describe('extendProxyOptions', () => {
     );
 
     const eventLike = {
+      /**
+       * 事件对象桩：阻止默认行为（空实现）。
+       */
       preventDefault() {},
+      /**
+       * 事件对象桩：阻止冒泡（空实现）。
+       */
       stopPropagation() {},
     };
 

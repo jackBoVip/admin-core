@@ -23,7 +23,15 @@ import {
 } from '@admin-core/layout';
 import { getPreferencesManager } from '@admin-core/preferences-vue';
 
+/**
+ * 布局上下文
+ * @description 提供侧栏配置、菜单数据与布局交互能力。
+ */
 const context = useLayoutContext();
+/**
+ * 布局派生状态
+ * @description 提供当前布局模式与侧栏主题等计算值。
+ */
 const layoutComputed = useLayoutComputed();
 const {
   collapsed,
@@ -37,15 +45,29 @@ const {
 } = useSidebarState();
 const { activeKey, handleSelect } = useMenuState();
 
-// 配置 - 直接返回 sidebar 对象引用，确保响应式追踪
+/**
+ * 侧栏配置
+ * @description 直接引用 `context.props.sidebar` 保持响应式追踪。
+ */
 const sidebarConfig = computed(() => {
-  // 访问 context.props.sidebar 会触发响应式追踪
+  /** 访问 `context.props.sidebar` 可建立响应式依赖。 */
   const sidebar = context.props.sidebar;
   return sidebar || {};
 });
+/**
+ * Logo 配置
+ * @description 读取侧栏 logo 展示配置并做空对象兜底。
+ */
 const logoConfig = computed(() => context.props.logo || {});
-// 使用 layoutComputed 中计算的主题（考虑 semiDarkSidebar）
+/**
+ * 侧栏主题
+ * @description 使用派生主题，兼容半深色侧栏策略。
+ */
 const theme = computed(() => layoutComputed.value.sidebarTheme || 'light');
+/**
+ * 偏好管理器引用
+ * @description 用于同步 `expandOnHover` 到偏好持久化层。
+ */
 const preferencesManager = ref<ReturnType<typeof getPreferencesManager> | null>(null);
 
 onMounted(() => {
@@ -56,30 +78,75 @@ onMounted(() => {
   }
 });
 
-// 是否是混合侧边栏模式（sidebar-mixed-nav 或 header-mixed-nav）
+/**
+ * 是否混合侧栏模式
+ * @description 包含 `sidebar-mixed-nav` 与 `header-mixed-nav` 两类布局。
+ */
 const isMixedMode = computed(() => 
   layoutComputed.value.isSidebarMixedNav || layoutComputed.value.isHeaderMixedNav
 );
 
-// 是否允许显示折叠按钮的布局（仅 sidebar-nav）
+/**
+ * 是否允许显示折叠按钮（基础布局规则）
+ * @description 仅 `sidebar-nav` 默认允许显示折叠按钮。
+ */
 const isCollapseButtonAllowedLayout = computed(() => {
   const layout = layoutComputed.value.currentLayout;
   return layout === 'sidebar-nav';
 });
 
-// 当前选中的一级菜单（用于混合模式）
+/**
+ * 当前选中的一级菜单
+ * @description 混合模式下用于渲染右侧子菜单面板。
+ */
 const selectedRootMenu = ref<MenuItem | null>(null);
+/**
+ * 上次同步的激活键
+ * @description 避免重复执行根菜单同步逻辑。
+ */
 const lastActiveKey = ref('');
+/**
+ * 菜单集合
+ * @description 从上下文读取菜单并做空数组兜底。
+ */
 const menus = computed<MenuItem[]>(() => context.props.menus || []);
+/**
+ * 规范化菜单键值为可比较字符串。
+ *
+ * @param value 原始键值。
+ * @returns 规范化后的字符串键。
+ */
 const normalizeKey = (value: unknown) => (value == null || value === '' ? '' : String(value));
+
+/**
+ * 获取菜单节点的唯一标识（优先 key，其次 path/name）。
+ *
+ * @param menu 菜单节点。
+ * @returns 菜单标识字符串。
+ */
 const getMenuId = (menu: MenuItem | null) =>
   menu ? normalizeKey(menu.key ?? menu.path ?? menu.name ?? '') : '';
 
+/**
+ * 判断菜单是否匹配目标键（同时比较 key 与 path）。
+ *
+ * @param menu 菜单节点。
+ * @param key 目标键。
+ * @returns 是否匹配。
+ */
 const menuMatchesKey = (menu: MenuItem, key: string) => {
   const target = normalizeKey(key);
   if (!target) return false;
   return normalizeKey(menu.key ?? '') === target || normalizeKey(menu.path ?? '') === target;
 };
+
+/**
+ * 判断菜单树内是否包含目标键。
+ *
+ * @param menu 根菜单节点。
+ * @param key 目标键。
+ * @returns 是否命中当前节点或其任意后代节点。
+ */
 const menuContainsKey = (menu: MenuItem, key: string): boolean => {
   if (menuMatchesKey(menu, key)) return true;
   if (!menu.children?.length) return false;
@@ -97,6 +164,12 @@ const menuContainsKey = (menu: MenuItem, key: string): boolean => {
   return false;
 };
 
+/**
+ * 根据当前激活键在一级菜单中查找匹配根节点。
+ *
+ * @param key 激活菜单键。
+ * @returns 命中的一级菜单；未命中时返回 `null`。
+ */
 const findRootMenuByKey = (key: string) => {
   if (!key) return null;
   for (const item of menus.value) {
@@ -106,12 +179,18 @@ const findRootMenuByKey = (key: string) => {
   return null;
 };
 
-// 处理 MixedSidebarMenu 的根菜单变化
+/**
+ * 更新当前选中的一级菜单。
+ *
+ * @param menu 新选中的一级菜单。
+ */
 const onRootMenuChange = (menu: MenuItem | null) => {
   selectedRootMenu.value = menu;
 };
 
-// 同步路由激活的一级菜单，确保混合模式子菜单可见
+/**
+ * 同步路由激活的一级菜单，确保混合模式子菜单可见。
+ */
 watch(
   [() => activeKey.value, menus, isMixedMode],
   ([key, menuList, mixed]) => {
@@ -132,24 +211,42 @@ watch(
   { immediate: true }
 );
 
-// 子菜单（选中一级菜单的children）
+/**
+ * 当前子菜单集合
+ * @description 取选中一级菜单的 children 作为右侧面板内容。
+ */
 const subMenus = computed(() => selectedRootMenu.value?.children || []);
+/**
+ * 子菜单面板标题
+ * @description 展示当前选中一级菜单名称。
+ */
 const subMenuTitle = computed(() => selectedRootMenu.value?.name || '');
 
-// 是否显示子菜单面板（固定模式下始终显示，折叠时显示图标）
+/**
+ * 是否显示子菜单面板内容
+ * @description 需同时满足“存在子菜单”与“extraVisible 为真”。
+ */
 const showExtraContent = computed(() => {
   if (!subMenus.value.length) return false;
   return extraVisible.value;
 });
 
+/**
+ * 子菜单面板生效折叠状态
+ * @description 悬停展开模式下强制不折叠。
+ */
 const effectiveExtraCollapsed = computed(() => (expandOnHover.value ? false : extraCollapsed.value));
 
-// 处理子菜单面板折叠/展开切换（点击同一个按钮进行折叠/展开）
+/**
+ * 切换混合模式下子菜单面板折叠状态。
+ */
 const handleExtraCollapseToggle = () => {
   extraCollapsed.value = !extraCollapsed.value;
 };
 
-// 处理固定/取消固定
+/**
+ * 切换子菜单面板固定模式与悬停展开模式。
+ */
 const handleTogglePin = () => {
   const nextHoverMode = !expandOnHover.value;
   expandOnHover.value = nextHoverMode;
@@ -157,11 +254,13 @@ const handleTogglePin = () => {
     extraVisible.value = true;
   }
   extraCollapsed.value = false;
-  // 同步偏好设置（避免下一次渲染被覆盖）
+  /** 同步偏好设置，避免后续渲染被旧配置覆盖。 */
   preferencesManager.value?.setPreferences({ sidebar: { expandOnHover: nextHoverMode } });
 };
 
-// 固定模式下确保子菜单面板可见，避免内容区与侧边栏重叠
+/**
+ * 固定模式下确保子菜单面板可见，避免内容区与侧边栏重叠。
+ */
 watch(
   [() => isMixedMode.value, () => expandOnHover.value, subMenus],
   ([mixed, hover, menus]) => {
@@ -174,7 +273,10 @@ watch(
   { immediate: true }
 );
 
-// 类名
+/**
+ * 侧栏根类名
+ * @description 根据主题、折叠、混合模式与移动端状态生成。
+ */
 const sidebarClass = computed(() => [
   'layout-sidebar',
   `layout-sidebar--${theme.value}`,
@@ -187,19 +289,31 @@ const sidebarClass = computed(() => [
   },
 ]);
 
-// 混合模式下的图标列宽度
+/**
+ * 混合模式图标列宽度
+ * @description 取配置值，缺省回退默认侧栏配置。
+ */
 const mixedWidth = computed(() => sidebarConfig.value.mixedWidth || DEFAULT_SIDEBAR_CONFIG.mixedWidth);
 
-// 子菜单面板折叠宽度
+/**
+ * 子菜单面板折叠宽度
+ * @description 取配置值，缺省回退默认折叠宽度。
+ */
 const extraCollapsedWidth = computed(() => sidebarConfig.value.extraCollapsedWidth || DEFAULT_SIDEBAR_CONFIG.extraCollapsedWidth);
 
-// 子菜单面板宽度（类似常见 admin 布局的 sidebarExtraWidth）
+/**
+ * 子菜单面板当前宽度
+ * @description 根据是否显示与折叠状态动态计算宽度。
+ */
 const extraWidthValue = computed(() => {
   if (!showExtraContent.value) return 0;
   return effectiveExtraCollapsed.value ? extraCollapsedWidth.value : (sidebarConfig.value.width || DEFAULT_SIDEBAR_CONFIG.width);
 });
 
-// 侧边栏宽度（混合模式下只是图标列宽度，子菜单面板是独立的 fixed 元素）
+/**
+ * 主侧栏内联样式
+ * @description 混合模式固定为图标列宽，普通模式使用侧栏宽度状态。
+ */
 const sidebarStyle = computed(() => {
   if (isMixedMode.value) {
     return { width: `${mixedWidth.value}px` };
@@ -207,16 +321,30 @@ const sidebarStyle = computed(() => {
   return { width: `${width.value}px` };
 });
 
-// 子菜单面板样式（fixed 定位在主菜单右侧）
+/**
+ * 子菜单面板内联样式
+ * @description 固定定位于图标列右侧，并按显示状态设置宽度。
+ */
 const extraStyle = computed(() => ({
   left: `${mixedWidth.value}px`,
   width: showExtraContent.value ? `${extraWidthValue.value}px` : LAYOUT_STYLE_CONSTANTS.ZERO_PX,
 }));
 
+/**
+ * 是否 `header-sidebar-nav` 布局
+ * @description 该布局允许在头部保留侧栏折叠控制入口。
+ */
 const isHeaderSidebarNav = computed(() => layoutComputed.value.currentLayout === 'header-sidebar-nav');
+/**
+ * 是否 `mixed-nav` 布局
+ * @description 用于折叠按钮可见性与菜单展示分支判断。
+ */
 const isMixedNavLayout = computed(() => layoutComputed.value.currentLayout === 'mixed-nav');
 
-// 折叠按钮 - 仅在 sidebar-nav / header-sidebar-nav 布局下显示
+/**
+ * 是否显示主侧栏折叠按钮
+ * @description 综合布局模式、sidebar 配置与禁用项开关判断。
+ */
 const showCollapseButton = computed(() => {
   const allowedLayout =
     isCollapseButtonAllowedLayout.value || isHeaderSidebarNav.value || isMixedNavLayout.value;
@@ -224,22 +352,32 @@ const showCollapseButton = computed(() => {
     return false;
   }
   
-  // 直接从 sidebar 配置读取 collapsedButton
+  /** 直接读取 sidebar 配置中的 `collapsedButton` 开关。 */
   const collapsedButton = context.props.sidebar?.collapsedButton;
   const disabled = context.props.disabled?.sidebarCollapseButton;
   
   return collapsedButton !== false && disabled !== true;
 });
 
-// 折叠图标配置（根据状态显示不同图标）
+/**
+ * 折叠按钮图标名称
+ * @description 根据侧栏折叠状态切换图标。
+ */
 const collapseIconName = computed(() =>
   collapsed.value ? 'sidebar-toggle-collapsed' : 'sidebar-toggle'
 );
 
+/**
+ * 折叠按钮图标类名
+ * @description 组合基础图标类与旋转动画类。
+ */
 const collapseIconClass = computed(() =>
   `${LAYOUT_ICONS.sidebarCollapse.className} ${ANIMATION_CLASSES.iconRotate}`
 );
 
+/**
+ * 切换主侧边栏折叠状态。
+ */
 const toggleCollapse = () => {
   context.toggleSidebarCollapse();
 };

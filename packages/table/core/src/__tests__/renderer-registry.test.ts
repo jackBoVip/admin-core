@@ -1,3 +1,6 @@
+/**
+ * 表格渲染器与格式化器注册中心测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   createTableFormatterRegistry,

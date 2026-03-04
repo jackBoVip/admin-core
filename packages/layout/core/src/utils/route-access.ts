@@ -19,6 +19,9 @@ import type {
  * - 移除相对路径前缀
  * - 移除文件扩展名
  * - 可选移除 viewsRoot 前缀
+ * @param path 原始视图路径。
+ * @param viewsRoot 视图根目录前缀。
+ * @returns 标准化后的视图路径。
  */
 export function normalizeViewPath(path: string, viewsRoot?: string): string {
   if (!path) return '';
@@ -40,13 +43,23 @@ export function normalizeViewPath(path: string, viewsRoot?: string): string {
 }
 
 /**
- * 规范化 pageMap（支持 index 别名）
+ * 规范化页面组件映射（支持 `index` 别名与小写兜底键）。
+ * @param pageMap 原始页面组件映射表。
+ * @param viewsRoot 视图根目录前缀。
+ * @returns 规范化后的页面组件映射表。
  */
 export function normalizePageMap<TComponent = unknown>(
   pageMap: Record<string, TComponent>,
   viewsRoot?: string
 ): Record<string, TComponent> {
   const normalized: Record<string, TComponent> = {};
+
+  /**
+   * 注册路径到组件映射，并补充小写键。
+   * @param path 规范化路径。
+   * @param value 组件值。
+   * @returns 无返回值。
+   */
   const register = (path: string, value: TComponent) => {
     if (!(path in normalized)) {
       normalized[path] = value;
@@ -69,7 +82,9 @@ export function normalizePageMap<TComponent = unknown>(
 }
 
 /**
- * 判断是否为外链
+ * 判断链接是否为外链地址。
+ * @param link 待判断链接。
+ * @returns 是否为 `http/https` 外链。
  */
 function isExternalLink(link?: string): boolean {
   if (!link) return false;
@@ -77,7 +92,13 @@ function isExternalLink(link?: string): boolean {
 }
 
 /**
- * 根据 component 字符串解析真实组件
+ * 根据组件标识解析实际组件。
+ * @param component 路由里的组件标识（字符串或组件对象）。
+ * @param pageMap 页面组件映射表。
+ * @param layoutMap 布局组件映射表。
+ * @param viewsRoot 视图根目录前缀。
+ * @param normalizedPageMap 预先规范化后的页面映射表。
+ * @returns 匹配到的组件；无法匹配时返回 `undefined`。
  */
 export function resolveComponentFromMap<TComponent = unknown>(
   component: unknown,
@@ -116,7 +137,12 @@ export function resolveComponentFromMap<TComponent = unknown>(
 }
 
 /**
- * 将 component=string 的路由转换为真实组件路由
+ * 将 `component=string` 的路由记录转换为真实组件路由。
+ * @param routes 待解析路由列表。
+ * @param pageMap 页面组件映射表。
+ * @param layoutMap 布局组件映射表。
+ * @param viewsRoot 视图根目录前缀。
+ * @returns 已完成组件解析的路由列表。
  */
 function resolveRouteRecords<TComponent = unknown>(
   routes: RouteRecordStringComponent[],
@@ -126,6 +152,11 @@ function resolveRouteRecords<TComponent = unknown>(
 ): RouteRecord<TComponent>[] {
   const normalizedMap = normalizePageMap(pageMap, viewsRoot);
 
+  /**
+   * 递归解析路由数组，将字符串组件标识替换为真实组件实例。
+   * @param items 路由列表。
+   * @returns 已解析组件后的路由列表。
+   */
   const resolve = (items: RouteRecordStringComponent[]): RouteRecord<TComponent>[] =>
     items.map((route) => {
       const resolvedComponent = resolveComponentFromMap(
@@ -150,6 +181,8 @@ function resolveRouteRecords<TComponent = unknown>(
 /**
  * 合并路由模块
  * @description 支持多种导出格式：{ default: [] }、[]、() => []
+ * @param routeModules 路由模块映射。
+ * @returns 合并后的路由数组。
  */
 export async function mergeRouteModules(
   routeModules: Record<string, RouteModule<RouteRecordStringComponent[]>>
@@ -163,9 +196,14 @@ export async function mergeRouteModules(
       continue;
     }
 
-    // 处理 { default: [] } 格式
+    /* 处理 `{ default: [] }` 格式。 */
     if (typeof routeModule === 'object' && routeModule !== null && 'default' in routeModule) {
-      const defaultExport = (routeModule as { default: RouteRecordStringComponent[] | (() => RouteRecordStringComponent[] | Promise<RouteRecordStringComponent[]>) }).default;
+      const defaultExport = (routeModule as {
+        /** 模块默认导出。 */
+        default:
+          | RouteRecordStringComponent[]
+          | (() => RouteRecordStringComponent[] | Promise<RouteRecordStringComponent[]>);
+      }).default;
       if (Array.isArray(defaultExport)) {
         moduleRoutes = defaultExport;
       } else if (typeof defaultExport === 'function') {
@@ -173,11 +211,11 @@ export async function mergeRouteModules(
         moduleRoutes = Array.isArray(result) ? result : [];
       }
     }
-    // 处理直接数组格式
+    /* 处理直接数组格式。 */
     else if (Array.isArray(routeModule)) {
       moduleRoutes = routeModule;
     }
-    // 处理函数格式
+    /* 处理函数格式。 */
     else if (typeof routeModule === 'function') {
       const result = await routeModule();
       moduleRoutes = Array.isArray(result) ? result : [];
@@ -192,7 +230,9 @@ export async function mergeRouteModules(
 }
 
 /**
- * 动态生成路由 - 后端方式
+ * 通过后端菜单接口生成动态路由。
+ * @param options 路由生成参数。
+ * @returns 已解析组件的动态路由列表。
  */
 export async function generateRoutesFromBackend<TComponent = unknown>(
   options: GenerateRoutesOptions<TComponent>
@@ -205,7 +245,9 @@ export async function generateRoutesFromBackend<TComponent = unknown>(
 }
 
 /**
- * 从路由模块生成路由
+ * 通过路由模块生成动态路由。
+ * @param options 路由生成参数。
+ * @returns 已解析组件的模块路由列表。
  */
 export async function generateRoutesFromModules<TComponent = unknown>(
   options: GenerateRoutesOptions<TComponent>
@@ -220,7 +262,10 @@ export async function generateRoutesFromModules<TComponent = unknown>(
 }
 
 /**
- * 合并静态路由与动态路由（同名/同路径动态覆盖静态）
+ * 合并静态路由与动态路由（同名/同路径时动态路由覆盖静态路由）。
+ * @param staticRoutes 静态路由列表。
+ * @param dynamicRoutes 动态路由列表。
+ * @returns 合并后的路由列表。
  */
 export function mergeStaticRoutes<TComponent = unknown>(
   staticRoutes: RouteRecord<TComponent>[],
@@ -229,6 +274,11 @@ export function mergeStaticRoutes<TComponent = unknown>(
   const result = [...staticRoutes];
   const indexMap = new Map<string, number>();
 
+  /**
+   * 生成路由去重键（优先 name，其次 path）。
+   * @param route 路由记录。
+   * @returns 路由去重键。
+   */
   const getKey = (route: RouteRecord<TComponent>) =>
     route.name || route.path || '';
 
@@ -237,6 +287,12 @@ export function mergeStaticRoutes<TComponent = unknown>(
     if (key) indexMap.set(key, index);
   });
 
+  /**
+   * 合并单条路由记录。
+   * @param baseRoute 基础路由（通常来自静态路由）。
+   * @param overrideRoute 覆盖路由（通常来自动态路由）。
+   * @returns 合并后的路由记录。
+   */
   function mergeRoute(
     baseRoute: RouteRecord<TComponent>,
     overrideRoute: RouteRecord<TComponent>
@@ -269,7 +325,10 @@ export function mergeStaticRoutes<TComponent = unknown>(
 }
 
 /**
- * 注入默认 redirect（没有 redirect 且子路由路径为绝对时）
+ * 为父路由注入默认 `redirect`。
+ * @description 当父路由未配置 `redirect` 且首个子路由为绝对路径时自动注入。
+ * @param routes 路由列表。
+ * @returns 注入默认重定向后的路由列表。
  */
 export function injectDefaultRedirects<TComponent = unknown>(
   routes: RouteRecord<TComponent>[]
@@ -289,11 +348,19 @@ export function injectDefaultRedirects<TComponent = unknown>(
 }
 
 /**
- * 生成菜单（基于 meta）
+ * 根据路由元信息生成菜单树。
+ * @param routes 路由列表。
+ * @returns 过滤隐藏项并按 `meta.order` 排序后的菜单树。
  */
 export function generateMenusFromRoutes<TComponent = unknown>(
   routes: RouteRecord<TComponent>[]
 ): MenuItem[] {
+  /**
+   * 递归将路由树转换为菜单树。
+   * @param items 路由列表。
+   * @param parentPath 父级路径。
+   * @returns 菜单列表。
+   */
   const buildMenus = (
     items: RouteRecord<TComponent>[],
     parentPath?: string
@@ -339,14 +406,20 @@ export function generateMenusFromRoutes<TComponent = unknown>(
       menus.push(menuItem);
     }
 
-    // 排序
+    /* 排序。 */
     menus.sort((a, b) => {
-      const orderA = (a.meta as { order?: number } | undefined)?.order ?? 999;
-      const orderB = (b.meta as { order?: number } | undefined)?.order ?? 999;
+      const orderA = (a.meta as {
+        /** 排序信息。 */
+        order?: number;
+      } | undefined)?.order ?? 999;
+      const orderB = (b.meta as {
+        /** 排序信息。 */
+        order?: number;
+      } | undefined)?.order ?? 999;
       return orderA - orderB;
     });
 
-    // 过滤隐藏
+    /* 过滤隐藏。 */
     return menus.filter((menu) => !menu.hidden);
   };
 
@@ -363,34 +436,36 @@ export function generateMenusFromRoutes<TComponent = unknown>(
  * 3. 动态路由（fetchMenuList）- 后端 API 返回的路由
  * 
  * 同名/同路径的路由，后面的会覆盖前面的
+ * @param options 路由访问构建参数。
+ * @returns 包含最终路由与菜单的访问结果对象。
  */
 export async function createRouteAccess<TComponent = unknown>(
   options: GenerateRoutesOptions<TComponent>
 ): Promise<RouteAccessResult<TComponent>> {
   const { staticRoutes = [], pageMap = {}, layoutMap, viewsRoot, transformRoutes } = options;
 
-  // 1. 解析静态路由
+  /* 1. 解析静态路由。 */
   const resolvedStatic = resolveRouteRecords(staticRoutes, pageMap, layoutMap, viewsRoot);
 
-  // 2. 从路由模块生成路由（自动扫描 modules/**/*.ts）
+  /* 2. 从路由模块生成路由（自动扫描 modules 目录下路由文件）。 */
   const moduleRoutes = await generateRoutesFromModules(options);
 
-  // 3. 从后端 API 生成路由
+  /* 3. 从后端 API 生成路由。 */
   const dynamicRoutes = await generateRoutesFromBackend(options);
 
-  // 4. 合并路由：静态 -> 模块 -> 动态（后面的覆盖前面的）
+  /* 4. 合并路由：静态 -> 模块 -> 动态（后者覆盖前者）。 */
   let mergedRoutes = mergeStaticRoutes(resolvedStatic, moduleRoutes);
   mergedRoutes = mergeStaticRoutes(mergedRoutes, dynamicRoutes);
-  
-  // 5. 注入默认 redirect
+
+  /* 5. 注入默认 redirect。 */
   mergedRoutes = injectDefaultRedirects(mergedRoutes);
 
-  // 6. 应用自定义转换
+  /* 6. 应用自定义转换。 */
   if (transformRoutes) {
     mergedRoutes = await transformRoutes(mergedRoutes);
   }
 
-  // 7. 生成菜单
+  /* 7. 生成菜单。 */
   const menus = generateMenusFromRoutes(mergedRoutes);
   return { routes: mergedRoutes, menus };
 }

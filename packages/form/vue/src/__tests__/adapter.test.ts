@@ -40,6 +40,11 @@ describe('form-vue adapter', () => {
   });
 
   it('should provide API from useAdminForm', async () => {
+    /**
+     * 统一 `runFormContract` 所需的 API 创建签名。
+     * @param props 表单配置。
+     * @returns 表单 API。
+     */
     const createApi = (props: any) => {
       const [, api] = useAdminForm(props);
       return api;

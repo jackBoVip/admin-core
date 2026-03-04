@@ -3,7 +3,7 @@
  * @description 导出所有类型定义
  */
 
-// 主题相关类型
+/** 主题相关类型。 */
 export type {
   BuiltinThemePreset,
   BuiltinThemeType,
@@ -11,7 +11,7 @@ export type {
   ThemeModeType,
 } from './theme';
 
-// 布局相关类型
+/** 布局相关类型。 */
 export type {
   AccessModeType,
   AuthPageLayoutType,
@@ -28,7 +28,7 @@ export type {
   TimezoneOption,
 } from './layout';
 
-// 偏好设置接口
+/** 偏好设置主结构类型。 */
 export type {
   AppPreferences,
   BreadcrumbPreferences,
@@ -50,7 +50,7 @@ export type {
   WidgetPreferences,
 } from './preferences';
 
-// 工具类型
+/** 工具与适配层通用类型。 */
 export type {
   DeepPartial,
   DeepReadonly,
@@ -62,10 +62,10 @@ export type {
   StorageErrorType,
 } from './utils';
 
-// 适配器类型
+/** 初始化与 DOM 适配类型。 */
 export type { PreferencesInitOptions, DOMSelectors } from './adapters';
 
-// 组件 Props 类型（Vue/React 共享）
+/** 组件 Props 类型（Vue/React 共享）。 */
 export type {
   DrawerComponentProps,
   TriggerComponentProps,
@@ -87,7 +87,7 @@ export type {
   InputItemBaseProps,
 } from './components';
 
-// 抽屉 UI 配置类型
+/** 抽屉 UI 配置类型。 */
 export type {
   FeatureItemConfig,
   FeatureBlockConfig,

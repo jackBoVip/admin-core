@@ -1,13 +1,41 @@
 import { useState, useEffect } from 'react';
 
+/**
+ * 统计卡片属性。
+ */
 interface StatCardProps {
+  /** 标题文案。 */
   title: string;
+  /** 值。 */
   value: string | number;
+  /** 趋势百分比。 */
   trend: number;
+  /** 趋势方向是否上涨。 */
   isUp: boolean;
+  /** 是否处于加载态。 */
   loading?: boolean;
 }
 
+/**
+ * 统计指标项数据结构。
+ */
+interface StatMetric {
+  /** 指标标题。 */
+  title: string;
+  /** 当前值文本。 */
+  value: string;
+  /** 环比趋势值。 */
+  trend: number;
+  /** 是否上涨。 */
+  isUp: boolean;
+}
+
+/**
+ * 统计卡片组件。
+ *
+ * @param options 卡片标题、数值、趋势及加载状态。
+ * @returns 统计卡片渲染结果。
+ */
 function StatCard({ title, value, trend, isUp, loading }: StatCardProps) {
   if (loading) {
     return (
@@ -30,6 +58,10 @@ function StatCard({ title, value, trend, isUp, loading }: StatCardProps) {
   );
 }
 
+/**
+ * 图表占位组件。
+ * @description 模拟异步加载图表区域。
+ */
 function ChartPlaceholder() {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,9 +91,20 @@ function ChartPlaceholder() {
   );
 }
 
+/**
+ * 数据分析示例页。
+ * @description 展示统计指标、趋势图与明细表格。
+ */
 export default function DashboardAnalysis() {
+  /**
+   * 页面整体加载状态。
+   */
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState([
+
+  /**
+   * 统计卡片数据集合。
+   */
+  const [stats, setStats] = useState<StatMetric[]>([
     { title: '页面浏览量', value: '12,345', trend: 20.5, isUp: true },
     { title: '独立访客', value: '3,456', trend: 15.2, isUp: true },
     { title: '跳出率', value: '32.5%', trend: 5.1, isUp: false },

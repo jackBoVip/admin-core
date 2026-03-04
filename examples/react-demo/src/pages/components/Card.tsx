@@ -1,3 +1,7 @@
+/**
+ * 卡片示例页。
+ * @description 展示卡片容器、操作区与信息列表样式。
+ */
 export default function ComponentsCard() {
   return (
     <div className="page-container">

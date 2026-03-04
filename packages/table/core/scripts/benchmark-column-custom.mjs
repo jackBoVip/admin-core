@@ -25,6 +25,13 @@ const argMap = new Map(
 );
 const hasCheck = args.includes('--check');
 
+/**
+ * 读取整数型命令行参数。
+ *
+ * @param name 参数名（不含 `--`）。
+ * @param fallback 参数缺失或非法时的默认值。
+ * @returns 解析后的正整数值。
+ */
 function readIntArg(name, fallback) {
   const raw = argMap.get(name);
   if (!raw) {
@@ -34,6 +41,13 @@ function readIntArg(name, fallback) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+/**
+ * 读取浮点型命令行参数。
+ *
+ * @param name 参数名（不含 `--`）。
+ * @param fallback 参数缺失或非法时的默认值。
+ * @returns 解析后的正浮点值。
+ */
 function readFloatArg(name, fallback) {
   const raw = argMap.get(name);
   if (!raw) {
@@ -56,6 +70,12 @@ const {
   createColumnCustomSnapshot,
 } = await import(distEntryUrl.href);
 
+/**
+ * 构造用于性能测试的列配置列表。
+ *
+ * @param count 列数量。
+ * @returns 模拟列配置数组。
+ */
 function createColumns(count) {
   const result = [];
   for (let index = 0; index < count; index += 1) {
@@ -88,6 +108,12 @@ function createColumns(count) {
   return result;
 }
 
+/**
+ * 构造列自定义快照输入源。
+ *
+ * @param columns 列配置数组。
+ * @returns 快照源对象（顺序、可见性、固定列、排序与筛选状态）。
+ */
 function createSnapshotSource(columns) {
   const order = [];
   const fixed = {};
@@ -111,6 +137,13 @@ function createSnapshotSource(columns) {
   };
 }
 
+/**
+ * 执行单个基准用例并计算耗时指标。
+ *
+ * @param name 用例名称。
+ * @param fn 用例执行函数。
+ * @returns 基准结果（平均耗时、总耗时、吞吐）。
+ */
 function runCase(name, fn) {
   for (let index = 0; index < warmup; index += 1) {
     fn();

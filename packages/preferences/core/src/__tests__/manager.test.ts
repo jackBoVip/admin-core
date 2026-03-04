@@ -9,7 +9,9 @@ import {
 } from '../index';
 import type { PreferencesManager } from '../types';
 
-// Mock localStorage
+/**
+ * localStorage 测试桩。
+ */
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -30,7 +32,7 @@ Object.defineProperty(global, 'localStorage', {
   value: localStorageMock,
 });
 
-// Mock matchMedia
+/* Mock `matchMedia`。 */
 Object.defineProperty(global, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation(query => ({
@@ -199,7 +201,7 @@ describe('PreferencesManager', () => {
 
   describe('锁屏状态持久化', () => {
     it('从存储加载 isLocked: true 时应保持为 true（刷新后保持锁屏）', () => {
-      // 模拟旧数据：storage 中有 isLocked: true
+      /* 模拟旧数据：storage 中有 `isLocked: true`。 */
       localStorageMock.setItem(
         'test:preferences',
         JSON.stringify({ value: { lockScreen: { isLocked: true, password: 'test123' } } })
@@ -210,26 +212,27 @@ describe('PreferencesManager', () => {
 
     it('锁屏后刷新页面应保持锁屏状态', () => {
       const m = createPreferencesManager({ namespace: 'test' });
-      // 设置密码并锁屏
+      /* 设置密码并锁屏。 */
       m.setPreferences({ lockScreen: { password: 'test123', isLocked: true } });
-      m.flush(); // 立即保存
-      
-      // 模拟刷新：创建新的管理器实例
+      /* 立即保存。 */
+      m.flush();
+
+      /* 模拟刷新：创建新的管理器实例。 */
       const m2 = createPreferencesManager({ namespace: 'test' });
       expect(m2.getPreferences().lockScreen.isLocked).toBe(true);
     });
 
     it('解锁后刷新页面应保持解锁状态', () => {
       const m = createPreferencesManager({ namespace: 'test' });
-      // 先锁屏
+      /* 先锁屏。 */
       m.setPreferences({ lockScreen: { password: 'test123', isLocked: true } });
       m.flush();
-      
-      // 解锁
+
+      /* 解锁。 */
       m.setPreferences({ lockScreen: { isLocked: false } });
       m.flush();
-      
-      // 模拟刷新：创建新的管理器实例
+
+      /* 模拟刷新：创建新的管理器实例。 */
       const m2 = createPreferencesManager({ namespace: 'test' });
       expect(m2.getPreferences().lockScreen.isLocked).toBe(false);
     });

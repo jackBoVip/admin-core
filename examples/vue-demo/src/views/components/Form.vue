@@ -12,19 +12,38 @@ import {
   type AdminFormSchema,
 } from '@admin-core/form-vue';
 
+/**
+ * 通用下拉选项结构。
+ */
+type OptionItem = {
+  /** 显示标签。 */
+  label: string;
+  /** 实际值。 */
+  value: string;
+};
+
+/**
+ * 渠道选项。
+ */
 const CHANNEL_OPTIONS = [
   { label: 'SaaS 渠道', value: 'saas' },
   { label: '代理商渠道', value: 'reseller' },
   { label: '私有化渠道', value: 'private' },
 ];
 
+/**
+ * 区域选项。
+ */
 const REGION_OPTIONS = [
   { label: '中国区', value: 'cn' },
   { label: '欧洲区', value: 'eu' },
   { label: '美洲区', value: 'us' },
 ];
 
-const PRODUCT_OPTIONS: Record<string, Array<{ label: string; value: string }>> = {
+/**
+ * 渠道对应的产品选项映射。
+ */
+const PRODUCT_OPTIONS: Record<string, OptionItem[]> = {
   private: [
     { label: '私有化基础版', value: 'private-basic' },
     { label: '私有化旗舰版', value: 'private-pro' },
@@ -39,7 +58,10 @@ const PRODUCT_OPTIONS: Record<string, Array<{ label: string; value: string }>> =
   ],
 };
 
-const DEPLOY_WINDOW_OPTIONS: Record<string, Array<{ label: string; value: string }>> = {
+/**
+ * 区域对应的部署窗口选项映射。
+ */
+const DEPLOY_WINDOW_OPTIONS: Record<string, OptionItem[]> = {
   cn: [
     { label: '工作日 10:00-18:00', value: 'cn-day' },
     { label: '凌晨 01:00-05:00', value: 'cn-night' },
@@ -54,33 +76,88 @@ const DEPLOY_WINDOW_OPTIONS: Record<string, Array<{ label: string; value: string
   ],
 };
 
+/**
+ * 远程下发表单字段配置。
+ */
 type RemoteFieldConfig = {
+  /** 显示标签。 */
   label: string;
+  /** 最大输入长度。 */
   maxLength?: number;
+  /** 最小输入长度。 */
   minLength?: number;
+  /** 字段名。 */
   name: string;
-  options?: Array<{ label: string; value: string }>;
+  /** 下拉选项。 */
+  options?: OptionItem[];
+  /** 占位提示。 */
   placeholder?: string;
+  /** 是否必填。 */
   required?: boolean;
+  /** 组件类型。 */
   type: 'email' | 'password' | 'select' | 'switch' | 'text' | 'textarea';
+  /** 条件展示配置。 */
   visibleWhen?: {
+    /** 触发显示时的匹配值。 */
     equals: any;
+    /** 依赖字段名。 */
     field: string;
   };
 };
 
+/**
+ * 远程模板版本标识。
+ */
 type RemoteTemplate = 'advanced' | 'basic';
 
+/**
+ * 远程表单模板载荷结构。
+ */
 type RemoteFormPayload = {
+  /** 折叠后默认展示行数。 */
   collapsedRows: number;
+  /** 字段定义列表。 */
   fields: RemoteFieldConfig[];
+  /** 表单标识。 */
   formId: string;
+  /** 初始值。 */
   initialValues: Record<string, any>;
+  /** 布局列数。 */
   layoutColumns: 1 | 2;
+  /** 是否显示折叠按钮。 */
   showCollapseButton: boolean;
+  /** 标题文案。 */
   title: string;
 };
 
+/**
+ * 动态表单元数据摘要。
+ */
+type DynamicFormMeta = {
+  /** 远程模板表单 ID。 */
+  formId: string;
+  /** 远程模板标题。 */
+  title: string;
+};
+
+/**
+ * 提交页展示模式。
+ */
+type SubmitPageMode = 'drawer' | 'modal';
+
+/**
+ * 查询提交结果快照。
+ */
+type QueryResultSnapshot = {
+  /** 查询场景标识。 */
+  scene: string;
+  /** 查询参数快照。 */
+  values: Record<string, any>;
+};
+
+/**
+ * 注册示例中使用到的自定义校验规则。
+ */
 registerFormRules({
   mustBeTrue: (value) => (value === true ? true : '请先同意该项设置'),
   reservedName: async (value) => {
@@ -102,6 +179,12 @@ registerFormRules({
   },
 });
 
+/**
+ * 模拟拉取远程表单模板。
+ *
+ * @param version 模板版本。
+ * @returns 远程表单模板数据。
+ */
 async function fetchRemoteFormPayload(version: RemoteTemplate): Promise<RemoteFormPayload> {
   await new Promise((resolve) => setTimeout(resolve, 420));
 
@@ -223,6 +306,12 @@ async function fetchRemoteFormPayload(version: RemoteTemplate): Promise<RemoteFo
   };
 }
 
+/**
+ * 将远程字段配置转换为 `AdminFormSchema`。
+ *
+ * @param fields 远程字段列表。
+ * @returns 适配后的 schema 列表。
+ */
 function buildSchemaFromRemote(fields: RemoteFieldConfig[]): AdminFormSchema[] {
   return fields.map((field) => {
     const component: AdminFormSchema['component'] =
@@ -283,38 +372,115 @@ function buildSchemaFromRemote(fields: RemoteFieldConfig[]): AdminFormSchema[] {
   });
 }
 
+/**
+ * 将数据序列化为可读 JSON 字符串。
+ *
+ * @param value 任意待展示值。
+ * @returns 格式化后的 JSON 文本。
+ */
 function toPrettyJson(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
+/**
+ * 仅校验按钮的校验结果快照。
+ */
 const validationCheckResult = ref<Record<string, any> | null>(null);
+
+/**
+ * 校验示例表单提交结果。
+ */
 const validationSubmitResult = ref<Record<string, any> | null>(null);
+
+/**
+ * 主从表单合并提交结果。
+ */
 const linkedSubmitResult = ref<Record<string, any> | null>(null);
+
+/**
+ * 动态表单提交结果。
+ */
 const dynamicSubmitResult = ref<Record<string, any> | null>(null);
-const dynamicMeta = ref<{ formId: string; title: string } | null>(null);
+
+/**
+ * 动态表单模板元信息。
+ */
+const dynamicMeta = ref<DynamicFormMeta | null>(null);
+
+/**
+ * 动态模板原始载荷预览。
+ */
 const dynamicPreview = ref<RemoteFormPayload | null>(null);
+
+/**
+ * 当前动态模板版本。
+ */
 const dynamicVersion = ref<RemoteTemplate>('basic');
+
+/**
+ * 动态模板加载中状态。
+ */
 const dynamicLoading = ref(true);
-const submitPageMode = ref<'drawer' | 'modal'>('modal');
+
+/**
+ * 分步提交页展示模式（抽屉/弹窗）。
+ */
+const submitPageMode = ref<SubmitPageMode>('modal');
+
+/**
+ * 分步提交页最终提交结果。
+ */
 const submitPageResult = ref<Record<string, any> | null>(null);
+
+/**
+ * 分步提交页打开状态。
+ */
 const submitPageOpenState = ref(false);
+
+/**
+ * 分步提交页当前步骤索引（从 0 开始）。
+ */
 const submitPageStepState = ref(0);
+
+/**
+ * 分步提交页最近外部动作结果标识。
+ */
 const submitPageActionResult = ref<string | null>(null);
-const queryResult = ref<Record<string, any> | null>(null);
+
+/**
+ * 条件查询示例提交结果。
+ */
+const queryResult = ref<QueryResultSnapshot | null>(null);
+
+/**
+ * 数据优先示例的表单值。
+ */
 const dataFirstValues = ref<Record<string, any>>({
   quickAgreement: false,
   quickChannel: 'saas',
   quickTenant: '',
 });
+
+/**
+ * 查询模式（2/3 同行）表单值。
+ */
 const queryInlineValues = ref<Record<string, any>>({
   keyword: '',
   status: '',
 });
+
+/**
+ * 查询模式（3/3 换行）表单值。
+ */
 const queryNewLineValues = ref<Record<string, any>>({
   keyword: '',
   region: '',
   status: '',
 });
+
+/**
+ * 折叠查询模式表单值。
+ */
 const queryCollapsedValues = ref<Record<string, any>>({
   channel: '',
   keyword: '',
@@ -323,6 +489,10 @@ const queryCollapsedValues = ref<Record<string, any>>({
   status: '',
   updatedAtRange: ['', ''],
 });
+
+/**
+ * 数据优先示例 schema（v-model + schema）。
+ */
 const dataFirstSchema: AdminFormSchema[] = [
   {
     component: 'input',
@@ -359,6 +529,10 @@ const dataFirstSchema: AdminFormSchema[] = [
     label: '私有化备注',
   },
 ];
+
+/**
+ * 查询模式 schema：2/3 同行布局。
+ */
 const queryInlineSchema: AdminFormSchema[] = [
   {
     component: 'input',
@@ -382,6 +556,10 @@ const queryInlineSchema: AdminFormSchema[] = [
     label: '状态',
   },
 ];
+
+/**
+ * 查询模式 schema：3/3 换行布局。
+ */
 const queryNewRowSchema: AdminFormSchema[] = [
   ...queryInlineSchema,
   {
@@ -394,6 +572,10 @@ const queryNewRowSchema: AdminFormSchema[] = [
     label: '区域',
   },
 ];
+
+/**
+ * 查询模式 schema：字段超出后支持折叠展开。
+ */
 const queryCollapsedSchema: AdminFormSchema[] = [
   {
     component: 'input',
@@ -457,6 +639,9 @@ const queryCollapsedSchema: AdminFormSchema[] = [
   },
 ];
 
+/**
+ * 多种校验示例表单与 API。
+ */
 const [ValidationForm, validationApi] = useAdminForm({
   commonConfig: {
     componentProps: {
@@ -510,6 +695,9 @@ const [ValidationForm, validationApi] = useAdminForm({
   wrapperClass: 'admin-form__grid--1',
 });
 
+/**
+ * 被联动的明细表单与 API。
+ */
 const [DetailForm, detailApi] = useAdminForm({
   commonConfig: {
     componentProps: {
@@ -553,6 +741,13 @@ const [DetailForm, detailApi] = useAdminForm({
   wrapperClass: 'admin-form__grid--1',
 });
 
+/**
+ * 主表单字段联动明细表单。
+ *
+ * @param values 主表单当前值。
+ * @param changedFields 本次变更字段名列表。
+ * @returns 无返回值。
+ */
 const syncDetailForm = async (values: Record<string, any>, changedFields: string[]) => {
   const changed = new Set(changedFields);
   const schemaPatch: Partial<AdminFormSchema>[] = [];
@@ -597,6 +792,9 @@ const syncDetailForm = async (values: Record<string, any>, changedFields: string
   }
 };
 
+/**
+ * 主表单（驱动端）与 API。
+ */
 const [MasterForm, masterApi] = useAdminForm({
   handleValuesChange: (values, changedFields) => {
     void syncDetailForm(values, changedFields);
@@ -631,6 +829,9 @@ const [MasterForm, masterApi] = useAdminForm({
   wrapperClass: 'admin-form__grid--1',
 });
 
+/**
+ * 动态远程 schema 表单与 API。
+ */
 const [DynamicForm, dynamicApi] = useAdminForm({
   handleSubmit: (values) => {
     dynamicSubmitResult.value = values;
@@ -641,6 +842,9 @@ const [DynamicForm, dynamicApi] = useAdminForm({
   wrapperClass: 'admin-form__grid--1',
 });
 
+/**
+ * 提交页分步定义。
+ */
 const submitPageSteps = [
   {
     title: '基础信息',
@@ -746,6 +950,10 @@ const submitPageSteps = [
     ],
   },
 ];
+
+/**
+ * 分步提交页组件、状态与控制器。
+ */
 const [SubmitPage, , submitController] = useAdminFormSubmitPage({
   animation: 'slide',
   cancelText: '取消',
@@ -766,6 +974,12 @@ const [SubmitPage, , submitController] = useAdminFormSubmitPage({
   title: '租户创建向导',
 });
 
+/**
+ * 根据模板版本加载并应用远程 schema。
+ *
+ * @param version 模板版本。
+ * @returns 无返回值。
+ */
 async function loadRemoteSchema(version: RemoteTemplate) {
   dynamicLoading.value = true;
   const payload = await fetchRemoteFormPayload(version);
@@ -785,24 +999,51 @@ async function loadRemoteSchema(version: RemoteTemplate) {
   dynamicLoading.value = false;
 }
 
+/**
+ * 仅执行校验，不提交数据。
+ *
+ * @returns 无返回值。
+ */
 async function handleValidateOnly() {
   validationCheckResult.value = await validationApi.validate();
 }
 
+/**
+ * 联动提交主从表单并合并结果。
+ *
+ * @returns 无返回值。
+ */
 async function handleSubmitLinked() {
   const merged = await masterApi.merge(detailApi).submitAllForm(true);
   linkedSubmitResult.value = (merged ?? null) as Record<string, any> | null;
 }
 
+/**
+ * 在远程模板 `basic/advanced` 间切换。
+ *
+ * @returns 无返回值。
+ */
 function toggleDynamicVersion() {
   dynamicVersion.value = dynamicVersion.value === 'basic' ? 'advanced' : 'basic';
 }
 
+/**
+ * 处理数据驱动表单中的租户输入。
+ *
+ * @param event 原生输入事件。
+ * @param setValue 字段值写入函数。
+ * @returns 无返回值。
+ */
 function handleDataFirstTenantInput(event: Event, setValue: (value: any) => void) {
   const target = event.target as HTMLInputElement | null;
   setValue(target?.value ?? '');
 }
 
+/**
+ * 重置数据驱动表单默认值。
+ *
+ * @returns 无返回值。
+ */
 function resetDataFirstForm() {
   dataFirstValues.value = {
     quickAgreement: false,
@@ -811,6 +1052,13 @@ function resetDataFirstForm() {
   };
 }
 
+/**
+ * 写入查询提交结果快照。
+ *
+ * @param scene 查询场景标识。
+ * @param values 查询参数。
+ * @returns 无返回值。
+ */
 function handleQuerySubmit(scene: string, values: Record<string, any>) {
   queryResult.value = {
     scene,
@@ -818,18 +1066,42 @@ function handleQuerySubmit(scene: string, values: Record<string, any>) {
   };
 }
 
+/**
+ * 处理 2/3 同行布局查询提交。
+ *
+ * @param values 查询参数。
+ * @returns 无返回值。
+ */
 function handleQuerySubmitInline(values: Record<string, any>) {
   handleQuerySubmit('2/3', values);
 }
 
+/**
+ * 处理 3/3 换行布局查询提交。
+ *
+ * @param values 查询参数。
+ * @returns 无返回值。
+ */
 function handleQuerySubmitNewRow(values: Record<string, any>) {
   handleQuerySubmit('3/3', values);
 }
 
+/**
+ * 处理折叠查询表单提交。
+ *
+ * @param values 查询参数。
+ * @returns 无返回值。
+ */
 function handleQuerySubmitOverflow(values: Record<string, any>) {
   handleQuerySubmit('overflow-collapse', values);
 }
 
+/**
+ * 打开步骤提交页（抽屉或弹窗模式）。
+ *
+ * @param mode 展示模式。
+ * @returns 无返回值。
+ */
 function openSubmitPage(mode: 'drawer' | 'modal') {
   submitPageMode.value = mode;
   submitPageStepState.value = 0;
@@ -837,24 +1109,44 @@ function openSubmitPage(mode: 'drawer' | 'modal') {
   submitController.open();
 }
 
+/**
+ * 向上一步切换。
+ *
+ * @returns 无返回值。
+ */
 async function submitPagePrev() {
   const moved = await submitController.prev();
   submitPageActionResult.value = moved ? 'moved-prev' : 'blocked';
   submitPageStepState.value = submitController.getStep();
 }
 
+/**
+ * 向下一步切换并执行当前步骤校验。
+ *
+ * @returns 无返回值。
+ */
 async function submitPageNext() {
   const result = await submitController.next();
   submitPageActionResult.value = result.status;
   submitPageStepState.value = submitController.getStep();
 }
 
+/**
+ * 跳转至首个步骤。
+ *
+ * @returns 无返回值。
+ */
 async function submitPageGoToFirst() {
   await submitController.goToStep(0);
   submitPageActionResult.value = 'goto-first';
   submitPageStepState.value = submitController.getStep();
 }
 
+/**
+ * 跳转至最后一个步骤。
+ *
+ * @returns 无返回值。
+ */
 async function submitPageGoToLast() {
   const last = Math.max(submitController.getTotalSteps() - 1, 0);
   await submitController.goToStep(last);
@@ -862,17 +1154,31 @@ async function submitPageGoToLast() {
   submitPageStepState.value = submitController.getStep();
 }
 
+/**
+ * 关闭步骤提交页。
+ *
+ * @returns 无返回值。
+ */
 function submitPageClose() {
   submitController.close();
   submitPageOpenState.value = false;
   submitPageActionResult.value = 'closed';
 }
 
+/**
+ * 处理步骤页最终提交结果。
+ *
+ * @param values 提交值。
+ * @returns 无返回值。
+ */
 function handleSubmitPageSubmit(values: Record<string, any>) {
   submitPageResult.value = values;
   submitPageActionResult.value = 'submitted';
 }
 
+/**
+ * 初始化默认表单值，避免首次进入时为空状态。
+ */
 onMounted(() => {
   void validationApi.setValues({
     agreePolicy: false,
@@ -885,6 +1191,9 @@ onMounted(() => {
   });
 });
 
+/**
+ * 模板版本变化时自动刷新远程 schema。
+ */
 watch(
   dynamicVersion,
   (version) => {

@@ -16,6 +16,16 @@ import {
 } from '../utils';
 import type { MenuItem } from '../types';
 
+/**
+ * 标签更新测试入参。
+ */
+interface LayoutTabsUpdateItem {
+  /** 最大标签数量。 */
+  maxCount?: number;
+  /** 持久化存储键。 */
+  persistKey?: string;
+}
+
 describe('layout-tabs-state helpers', () => {
   it('should resolve runtime config from layout props', () => {
     const config = resolveTabsRuntimeConfig({
@@ -425,12 +435,27 @@ describe('layout-tabs-state helpers', () => {
     const managerA = {
       keys: ['a'],
       listener: undefined as ((keys: string[]) => void) | undefined,
+      /**
+       * 获取当前收藏键集合。
+       *
+       * @returns 收藏键数组副本。
+       */
       getKeys() {
         return [...this.keys];
       },
+      /**
+       * 绑定收藏变更监听器。
+       *
+       * @param listener 收藏键变更回调。
+       */
       setOnChange(listener?: (keys: string[]) => void) {
         this.listener = listener;
       },
+      /**
+       * 主动触发收藏变更事件。
+       *
+       * @param keys 最新收藏键列表。
+       */
       emit(keys: string[]) {
         this.keys = keys;
         this.listener?.(keys);
@@ -440,12 +465,27 @@ describe('layout-tabs-state helpers', () => {
     const managerB = {
       keys: ['b'],
       listener: undefined as ((keys: string[]) => void) | undefined,
+      /**
+       * 获取当前收藏键集合。
+       *
+       * @returns 收藏键数组副本。
+       */
       getKeys() {
         return [...this.keys];
       },
+      /**
+       * 绑定收藏变更监听器。
+       *
+       * @param listener 收藏键变更回调。
+       */
       setOnChange(listener?: (keys: string[]) => void) {
         this.listener = listener;
       },
+      /**
+       * 主动触发收藏变更事件。
+       *
+       * @param keys 最新收藏键列表。
+       */
       emit(keys: string[]) {
         this.keys = keys;
         this.listener?.(keys);
@@ -481,7 +521,7 @@ describe('layout-tabs-state helpers', () => {
   });
 
   it('should sync tab manager options and storage cleanup', () => {
-    const updates: Array<{ maxCount?: number; persistKey?: string }> = [];
+    const updates: LayoutTabsUpdateItem[] = [];
     let clearCount = 0;
     let tabs = [{ key: 'a', name: 'A', path: '/a' }];
     let syncedTabs: typeof tabs = [];

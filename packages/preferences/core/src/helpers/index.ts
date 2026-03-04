@@ -3,7 +3,7 @@
  * @description 框架无关的工具函数和配置
  */
 
-// 选项工厂
+/** 选项工厂。 */
 export {
   createTranslatedOptions,
   getLanguageOptions,
@@ -13,7 +13,7 @@ export {
   type LanguageOption,
 } from './options-factory';
 
-// 抽屉配置
+/** 抽屉配置。 */
 export {
   DRAWER_TABS,
   DRAWER_DEFAULT_PROPS,
@@ -41,7 +41,7 @@ export {
   type UITabConfig,
 } from './drawer-config';
 
-// 图标工具
+/** 图标工具。 */
 export {
   ICON_SIZE_MAP,
   LAYOUT_ICON_SIZE,
@@ -53,7 +53,7 @@ export {
   type ExtendedIconSize,
 } from './icon';
 
-// 字体缩放
+/** 字体缩放。 */
 export {
   FONT_SCALE_CONFIG,
   FONT_SCALE_PRESETS,
@@ -69,10 +69,10 @@ export {
   type FontScaleConfig,
 } from './font-scale';
 
-// 布局偏好映射
+/** 布局偏好映射。 */
 export { mapPreferencesToLayoutProps } from './layout/layout-mapping';
 
-// 布局设置页辅助
+/** 布局设置页辅助。 */
 export {
   getLayoutTabConfigs,
   getLayoutTabOptions,
@@ -83,7 +83,7 @@ export {
   type LayoutTabUpdater,
 } from './layout/layout-tab';
 
-// 主题工具
+/** 主题工具。 */
 export {
   getActualThemeMode,
   clearThemeModeCache,
@@ -92,7 +92,7 @@ export {
   type ThemeRuntimeConfig,
 } from './theme';
 
-// 锁屏辅助
+/** 锁屏辅助。 */
 export {
   isLockScreenEnabled,
   hasLockScreenPassword,

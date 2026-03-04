@@ -1,3 +1,6 @@
+/**
+ * Page 语言包注册、切换与文案回退测试。
+ */
 import {
   getLocale,
   getLocaleMessages,

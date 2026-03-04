@@ -2,7 +2,52 @@
  * Shared tsup config helpers.
  */
 
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { copyFiles } from './copy.js';
+
+const STRIPPABLE_FILE_SUFFIXES = ['.js', '.cjs', '.mjs', '.d.ts', '.d.cts', '.d.mts'];
+
+function isStrippableFile(filePath) {
+  return STRIPPABLE_FILE_SUFFIXES.some((suffix) => filePath.endsWith(suffix));
+}
+
+function stripJSDocComments(content) {
+  return content.replace(/\/\*\*(?!\!)[\s\S]*?\*\//g, '');
+}
+
+function walkDistDirectory(dirPath, filePaths) {
+  const entries = readdirSync(dirPath);
+  for (const entry of entries) {
+    const entryPath = join(dirPath, entry);
+    const entryStat = statSync(entryPath);
+    if (entryStat.isDirectory()) {
+      walkDistDirectory(entryPath, filePaths);
+      continue;
+    }
+    filePaths.push(entryPath);
+  }
+}
+
+export function stripJSDocCommentsFromDist(outDir = 'dist') {
+  if (!existsSync(outDir)) {
+    return;
+  }
+
+  const filePaths = [];
+  walkDistDirectory(outDir, filePaths);
+
+  for (const filePath of filePaths) {
+    if (!isStrippableFile(filePath)) {
+      continue;
+    }
+    const currentContent = readFileSync(filePath, 'utf8');
+    const strippedContent = stripJSDocComments(currentContent);
+    if (strippedContent !== currentContent) {
+      writeFileSync(filePath, strippedContent);
+    }
+  }
+}
 
 function createBanner(packageName, mode) {
   if (mode === 'dev') {
@@ -30,20 +75,26 @@ export function createCoreLibraryTsupConfig(options) {
     {
       entry,
       format: ['cjs', 'esm'],
-      dts: true,
+      dts: {
+        compilerOptions: {
+          removeComments: true,
+        },
+      },
       clean: true,
       sourcemap: shouldGenerateSourceMap,
       treeshake: true,
       minify: true,
       target: 'es2020',
+      esbuildOptions(esbuildConfig) {
+        esbuildConfig.legalComments = 'none';
+      },
+      onSuccess() {
+        if (hasCopyEntries) {
+          copyFiles(copyEntries);
+        }
+        stripJSDocCommentsFromDist();
+      },
       ...(hasExternal ? { external } : {}),
-      ...(hasCopyEntries
-        ? {
-            onSuccess() {
-              copyFiles(copyEntries);
-            },
-          }
-        : {}),
     },
     {
       entry: ['src/index.ts'],
@@ -58,9 +109,13 @@ export function createCoreLibraryTsupConfig(options) {
       target: 'es2020',
       ...(hasNoExternal ? { noExternal } : {}),
       esbuildOptions(esbuildConfig) {
+        esbuildConfig.legalComments = 'none';
         esbuildConfig.banner = {
           js: createBanner(packageName, 'prod'),
         };
+      },
+      onSuccess() {
+        stripJSDocCommentsFromDist();
       },
     },
     {
@@ -76,9 +131,13 @@ export function createCoreLibraryTsupConfig(options) {
       target: 'es2020',
       ...(hasNoExternal ? { noExternal } : {}),
       esbuildOptions(esbuildConfig) {
+        esbuildConfig.legalComments = 'none';
         esbuildConfig.banner = {
           js: createBanner(packageName, 'dev'),
         };
+      },
+      onSuccess() {
+        stripJSDocCommentsFromDist();
       },
     },
   ];

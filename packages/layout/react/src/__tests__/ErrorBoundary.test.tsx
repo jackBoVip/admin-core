@@ -3,6 +3,10 @@ import renderer from 'react-test-renderer';
 import { describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
+/**
+ * 抛错组件测试桩。
+ * @throws 始终抛出错误。
+ */
 const Boom = () => {
   throw new Error('boom');
 };

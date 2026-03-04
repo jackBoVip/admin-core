@@ -1,3 +1,6 @@
+/**
+ * 查询表单布局折叠、操作区位置与默认行为测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { setLocale } from '../locales';
 import {

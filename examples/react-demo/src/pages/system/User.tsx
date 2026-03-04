@@ -1,3 +1,7 @@
+/**
+ * 用户管理示例页。
+ * @description 展示用户列表、状态与基础筛选区样式。
+ */
 export default function SystemUser() {
   return (
     <div className="page-container">

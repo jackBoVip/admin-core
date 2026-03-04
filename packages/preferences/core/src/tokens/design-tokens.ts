@@ -1,6 +1,6 @@
 /**
  * 设计令牌 (Design Tokens)
- * @description 统一管理所有 UI 基础样式值
+ * @description 统一管理所有 UI 基础样式值与默认回退配置。
  *
  * 特点：
  * 1. 所有值都有默认值
@@ -29,7 +29,8 @@ import type { DeepPartial } from '../types';
 /* ========== 类型定义 ========== */
 
 /**
- * 抽屉尺寸配置
+ * 抽屉尺寸配置。
+ * @description 定义偏好抽屉基础宽度等尺寸参数。
  */
 export interface DrawerTokens {
   /** 抽屉宽度 (px) */
@@ -37,7 +38,8 @@ export interface DrawerTokens {
 }
 
 /**
- * 布局图标尺寸配置
+ * 布局图标尺寸配置。
+ * @description 定义布局预览图标在设置面板中的默认尺寸。
  */
 export interface LayoutIconTokens {
   /** 宽度 (px) */
@@ -47,7 +49,8 @@ export interface LayoutIconTokens {
 }
 
 /**
- * 图标尺寸配置
+ * 图标尺寸配置。
+ * @description 定义通用图标的预设尺寸档位。
  */
 export interface IconSizeTokens {
   /** 超小 (px) */
@@ -63,7 +66,8 @@ export interface IconSizeTokens {
 }
 
 /**
- * 字体大小配置
+ * 字体大小配置。
+ * @description 定义字号滑块的可调范围与步进参数。
  */
 export interface FontSizeTokens {
   /** 最小值 (px) */
@@ -77,7 +81,8 @@ export interface FontSizeTokens {
 }
 
 /**
- * 圆角配置
+ * 圆角配置。
+ * @description 定义可选圆角值、默认值与像素换算结果。
  */
 export interface RadiusTokens {
   /** 可选值 (rem) */
@@ -89,7 +94,8 @@ export interface RadiusTokens {
 }
 
 /**
- * 边框配置
+ * 边框配置。
+ * @description 定义默认与激活态边框线宽。
  */
 export interface BorderTokens {
   /** 默认宽度 (px) */
@@ -99,7 +105,8 @@ export interface BorderTokens {
 }
 
 /**
- * 过渡动画时长配置
+ * 过渡动画时长配置。
+ * @description 定义快/中/慢三档过渡时长（毫秒）。
  */
 export interface TransitionTokens {
   /** 快速 (ms) */
@@ -111,7 +118,8 @@ export interface TransitionTokens {
 }
 
 /**
- * 颜色配置
+ * 颜色配置。
+ * @description 定义主题基础颜色与回退色值。
  */
 export interface ColorTokens {
   /** 主色调 (备用，实际使用 preferences.theme.colorPrimary) */
@@ -127,7 +135,8 @@ export interface ColorTokens {
 }
 
 /**
- * Z-Index 层级配置
+ * Z-Index 层级配置。
+ * @description 定义弹层体系中各区域的层级优先级。
  */
 export interface ZIndexTokens {
   /** 下拉菜单 */
@@ -145,31 +154,41 @@ export interface ZIndexTokens {
 }
 
 /**
- * 所有设计令牌类型
+ * 所有设计令牌类型。
+ * @description 汇总组件样式系统中可配置的全部令牌分类。
  */
 export interface DesignTokens {
+  /** 抽屉尺寸令牌。 */
   drawer: DrawerTokens;
+  /** 布局图标尺寸令牌。 */
   layoutIcon: LayoutIconTokens;
+  /** 通用图标尺寸令牌。 */
   iconSizes: IconSizeTokens;
+  /** 字号令牌。 */
   fontSize: FontSizeTokens;
+  /** 圆角令牌。 */
   radius: RadiusTokens;
+  /** 边框令牌。 */
   border: BorderTokens;
+  /** 动画时长令牌。 */
   transition: TransitionTokens;
+  /** 颜色令牌。 */
   colors: ColorTokens;
+  /** 层级令牌。 */
   zIndex: ZIndexTokens;
 }
 
 /* ========== 默认值 ========== */
 
 /**
- * 默认抽屉尺寸
+ * 默认抽屉尺寸。
  */
 export const DRAWER_TOKEN_DEFAULTS: DrawerTokens = {
   width: 384,
 };
 
 /**
- * 默认布局图标尺寸
+ * 默认布局图标尺寸。
  */
 export const LAYOUT_ICON_TOKEN_DEFAULTS: LayoutIconTokens = {
   width: 104,
@@ -177,7 +196,7 @@ export const LAYOUT_ICON_TOKEN_DEFAULTS: LayoutIconTokens = {
 };
 
 /**
- * 默认图标尺寸
+ * 默认图标尺寸。
  */
 export const ICON_SIZE_TOKEN_DEFAULTS: IconSizeTokens = {
   xs: 12,
@@ -188,7 +207,7 @@ export const ICON_SIZE_TOKEN_DEFAULTS: IconSizeTokens = {
 };
 
 /**
- * 默认字体大小
+ * 默认字体大小。
  */
 export const FONT_SIZE_TOKEN_DEFAULTS: FontSizeTokens = {
   min: 12,
@@ -198,7 +217,7 @@ export const FONT_SIZE_TOKEN_DEFAULTS: FontSizeTokens = {
 };
 
 /**
- * 默认圆角
+ * 默认圆角。
  */
 export const RADIUS_TOKEN_DEFAULTS: RadiusTokens = {
   options: ['0', '0.25', '0.5', '0.75', '1'],
@@ -207,7 +226,7 @@ export const RADIUS_TOKEN_DEFAULTS: RadiusTokens = {
 };
 
 /**
- * 默认边框
+ * 默认边框。
  */
 export const BORDER_TOKEN_DEFAULTS: BorderTokens = {
   width: 1,
@@ -215,7 +234,7 @@ export const BORDER_TOKEN_DEFAULTS: BorderTokens = {
 };
 
 /**
- * 默认过渡动画时长
+ * 默认过渡动画时长。
  */
 export const TRANSITION_TOKEN_DEFAULTS: TransitionTokens = {
   fast: 150,
@@ -224,7 +243,7 @@ export const TRANSITION_TOKEN_DEFAULTS: TransitionTokens = {
 };
 
 /**
- * 默认颜色
+ * 默认颜色。
  */
 export const COLOR_TOKEN_DEFAULTS: ColorTokens = {
   primary: '#0066ff',
@@ -235,7 +254,7 @@ export const COLOR_TOKEN_DEFAULTS: ColorTokens = {
 };
 
 /**
- * 默认 Z-Index
+ * 默认 Z-Index。
  */
 export const Z_INDEX_TOKEN_DEFAULTS: ZIndexTokens = {
   dropdown: 1000,
@@ -247,7 +266,8 @@ export const Z_INDEX_TOKEN_DEFAULTS: ZIndexTokens = {
 };
 
 /**
- * 所有默认设计令牌
+ * 所有默认设计令牌。
+ * @description 作为运行时初始值与重置目标值。
  */
 export const DEFAULT_DESIGN_TOKENS: DesignTokens = {
   drawer: DRAWER_TOKEN_DEFAULTS,
@@ -264,15 +284,17 @@ export const DEFAULT_DESIGN_TOKENS: DesignTokens = {
 /* ========== 运行时状态 ========== */
 
 /**
- * 当前设计令牌（可被用户配置覆盖）
+ * 当前设计令牌（可被用户配置覆盖）。
+ * @description 维护运行时实际生效的令牌快照。
  */
 let currentTokens: DesignTokens = { ...DEFAULT_DESIGN_TOKENS };
 
 /* ========== 公共 API ========== */
 
 /**
- * 配置设计令牌（覆盖默认值）
- * @param overrides - 要覆盖的令牌
+ * 配置设计令牌（覆盖默认值）。
+ * @description 以默认令牌为基准，按深度合并覆盖传入配置。
+ * @param overrides 要覆盖的令牌。
  *
  * @example
  * ```ts
@@ -287,23 +309,23 @@ export function configureDesignTokens(overrides: DeepPartial<DesignTokens>): voi
 }
 
 /**
- * 获取当前设计令牌
- * @returns 当前设计令牌（包含用户覆盖）
+ * 获取当前设计令牌。
+ * @returns 当前设计令牌（包含用户覆盖）。
  */
 export function getDesignTokens(): Readonly<DesignTokens> {
   return currentTokens;
 }
 
 /**
- * 获取默认设计令牌
- * @returns 默认设计令牌（不受用户配置影响）
+ * 获取默认设计令牌。
+ * @returns 默认设计令牌（不受用户配置影响）。
  */
 export function getDefaultDesignTokens(): Readonly<DesignTokens> {
   return DEFAULT_DESIGN_TOKENS;
 }
 
 /**
- * 重置设计令牌为默认值
+ * 重置设计令牌为默认值。
  */
 export function resetDesignTokens(): void {
   currentTokens = { ...DEFAULT_DESIGN_TOKENS };
@@ -312,70 +334,80 @@ export function resetDesignTokens(): void {
 /* ========== 向后兼容的快捷访问 ========== */
 
 /**
- * 获取抽屉配置
+ * 获取抽屉配置。
+ * @description 通过代理实时读取当前令牌中的抽屉配置。
  */
 export const drawer = new Proxy({} as DrawerTokens, {
   get: (_, prop) => currentTokens.drawer[prop as keyof DrawerTokens],
 });
 
 /**
- * 获取布局图标配置
+ * 获取布局图标配置。
+ * @description 通过代理实时读取当前令牌中的布局图标配置。
  */
 export const layoutIcon = new Proxy({} as LayoutIconTokens, {
   get: (_, prop) => currentTokens.layoutIcon[prop as keyof LayoutIconTokens],
 });
 
 /**
- * 获取图标尺寸配置
+ * 获取图标尺寸配置。
+ * @description 通过代理实时读取当前令牌中的图标尺寸配置。
  */
 export const iconSizes = new Proxy({} as IconSizeTokens, {
   get: (_, prop) => currentTokens.iconSizes[prop as keyof IconSizeTokens],
 });
 
 /**
- * 获取字体大小配置
+ * 获取字体大小配置。
+ * @description 通过代理实时读取当前令牌中的字号配置。
  */
 export const fontSize = new Proxy({} as FontSizeTokens, {
   get: (_, prop) => currentTokens.fontSize[prop as keyof FontSizeTokens],
 });
 
 /**
- * 获取圆角配置
+ * 获取圆角配置。
+ * @description 通过代理实时读取当前令牌中的圆角配置。
  */
 export const radius = new Proxy({} as RadiusTokens, {
   get: (_, prop) => currentTokens.radius[prop as keyof RadiusTokens],
 });
 
 /**
- * 获取边框配置
+ * 获取边框配置。
+ * @description 通过代理实时读取当前令牌中的边框配置。
  */
 export const border = new Proxy({} as BorderTokens, {
   get: (_, prop) => currentTokens.border[prop as keyof BorderTokens],
 });
 
 /**
- * 获取过渡动画配置
+ * 获取过渡动画配置。
+ * @description 通过代理实时读取当前令牌中的动画时长配置。
  */
 export const transition = new Proxy({} as TransitionTokens, {
   get: (_, prop) => currentTokens.transition[prop as keyof TransitionTokens],
 });
 
 /**
- * 获取颜色配置
+ * 获取颜色配置。
+ * @description 通过代理实时读取当前令牌中的颜色配置。
  */
 export const colors = new Proxy({} as ColorTokens, {
   get: (_, prop) => currentTokens.colors[prop as keyof ColorTokens],
 });
 
 /**
- * 获取 Z-Index 配置
+ * 获取 Z-Index 配置。
+ * @description 通过代理实时读取当前令牌中的层级配置。
  */
 export const zIndex = new Proxy({} as ZIndexTokens, {
   get: (_, prop) => currentTokens.zIndex[prop as keyof ZIndexTokens],
 });
 
 /**
- * 所有设计令牌的便捷访问
+ * 所有设计令牌的便捷访问。
+ * @description 统一代理入口，便于按分类读取任意令牌。
  */
 export const designTokens = new Proxy({} as DesignTokens, {
   get: (_, prop) => currentTokens[prop as keyof DesignTokens],

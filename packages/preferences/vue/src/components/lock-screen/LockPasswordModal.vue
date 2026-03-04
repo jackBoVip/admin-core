@@ -13,31 +13,113 @@ import {
   type LocaleMessages,
 } from '@admin-core/preferences';
 
-const props = withDefaults(defineProps<{
+/**
+ * 锁屏密码弹窗入参。
+ * @description 通过 `open` 控制弹窗显隐，由宿主组件以受控方式管理。
+ */
+export interface LockPasswordModalProps {
+  /** 是否显示弹窗。 */
   open: boolean;
-}>(), {});
+}
 
-const emit = defineEmits<{
+/**
+ * 锁屏密码弹窗事件签名。
+ * @description 向外同步显隐状态并通知关闭、设置成功等关键交互节点。
+ */
+export interface LockPasswordModalEmits {
+  /** 更新受控开关状态。 */
   (e: 'update:open', value: boolean): void;
+  /** 主动关闭弹窗后触发。 */
   (e: 'close'): void;
+  /** 密码设置并锁屏成功后触发。 */
   (e: 'success'): void;
-}>();
+}
 
+/**
+ * 锁屏密码弹窗文案集合。
+ */
+interface LockPasswordModalTexts {
+  /** 弹窗标题。 */
+  title: string;
+  /** 弹窗副标题。 */
+  subtitle: string;
+  /** 主密码输入占位文案。 */
+  passwordPlaceholder: string;
+  /** 确认密码输入占位文案。 */
+  confirmPlaceholder: string;
+  /** 提交按钮文案。 */
+  submit: string;
+  /** 密码最小长度校验文案。 */
+  minLengthError: string;
+  /** 两次密码不一致校验文案。 */
+  mismatchError: string;
+  /** “显示密码”按钮文案。 */
+  showPassword: string;
+  /** “隐藏密码”按钮文案。 */
+  hidePassword: string;
+}
+
+const props = withDefaults(defineProps<LockPasswordModalProps>(), {});
+
+/**
+ * 锁屏密码弹窗事件
+ * @description 向外同步显隐状态并通知关闭、设置成功等关键交互节点。
+ */
+const emit = defineEmits<LockPasswordModalEmits>();
+
+/**
+ * 偏好状态与写入方法
+ * @description 用于读取当前语言配置并在提交成功后写入锁屏密码与锁定状态。
+ */
 const { preferences, setPreferences } = usePreferences();
 
+/**
+ * 主密码输入值
+ * @description 保存用户输入的初次密码内容。
+ */
 const password = ref('');
+/**
+ * 确认密码输入值
+ * @description 保存用户二次输入内容，用于一致性校验。
+ */
 const confirmPassword = ref('');
+/**
+ * 表单错误信息
+ * @description 校验失败时向用户展示的错误提示。
+ */
 const error = ref('');
+/**
+ * 主密码是否明文显示
+ * @description 控制主密码输入框的可见性切换。
+ */
 const showPassword = ref(false);
+/**
+ * 确认密码是否明文显示
+ * @description 控制确认密码输入框的可见性切换。
+ */
 const showConfirmPassword = ref(false);
+/**
+ * 主密码输入框引用
+ * @description 弹窗打开后用于自动聚焦。
+ */
 const inputRef = ref<HTMLInputElement | null>(null);
+/**
+ * 关闭动画状态
+ * @description 关闭过程中保持节点可见，等待过渡动画结束再真正卸载。
+ */
 const isClosing = ref(false);
 
-// 定时器管理 - 使用 ref 确保每个组件实例独立
+/**
+ * 定时器引用集合。
+ * @description 使用实例级 ref 保存，确保多个弹窗实例间互不干扰。
+ */
 const focusTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const closeTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
-// 清理定时器的辅助函数
+/**
+ * 清理输入框自动聚焦定时器
+ * @description 取消未执行的聚焦任务，避免组件关闭后仍触发焦点操作。
+ */
 const clearFocusTimer = () => {
   if (focusTimer.value) {
     clearTimeout(focusTimer.value);
@@ -45,6 +127,10 @@ const clearFocusTimer = () => {
   }
 };
 
+/**
+ * 清理弹窗关闭动画定时器
+ * @description 取消延迟关闭任务，防止重复触发关闭事件。
+ */
 const clearCloseTimer = () => {
   if (closeTimer.value) {
     clearTimeout(closeTimer.value);
@@ -52,20 +138,29 @@ const clearCloseTimer = () => {
   }
 };
 
-// 清理所有定时器
+/**
+ * 组件卸载清理。
+ * @description 卸载时清理所有未完成定时器，避免异步回调泄漏。
+ */
 onUnmounted(() => {
   clearFocusTimer();
   clearCloseTimer();
 });
 
-// 国际化
+/**
+ * 当前语言包
+ * @description 基于偏好设置解析锁屏弹窗所需的本地化文案。
+ */
 const locale = computed(() => {
   if (!preferences.value) return {} as LocaleMessages;
   return getLocaleByPreferences(preferences.value) as LocaleMessages;
 });
 
-// 文本 - 使用国际化
-const texts = computed(() => {
+/**
+ * 弹窗文案集合
+ * @description 对锁屏语言包做容错兜底，并生成可直接渲染的文案对象。
+ */
+const texts = computed<LockPasswordModalTexts>(() => {
   const ls = locale.value.lockScreen || {};
   const minLengthText = ls.passwordMinLength ?? '';
   return {
@@ -81,6 +176,10 @@ const texts = computed(() => {
   };
 });
 
+/**
+ * 监听弹窗显隐状态。
+ * @description 打开时执行输入框聚焦；关闭时重置表单字段、错误信息与可见性状态。
+ */
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
     isClosing.value = false;
@@ -103,6 +202,10 @@ watch(() => props.open, (isOpen) => {
   }
 });
 
+/**
+ * 关闭密码设置弹窗
+ * @description 先进入关闭动画状态，动画结束后再同步 `open` 并触发关闭事件。
+ */
 const handleClose = () => {
   isClosing.value = true;
   clearCloseTimer();
@@ -113,6 +216,12 @@ const handleClose = () => {
   }, 200);
 };
 
+/**
+ * 提交并校验锁屏密码
+ * @description
+ * 依次执行空值、最小长度、二次确认一致性校验；
+ * 校验通过后保存哈希密码并立即进入锁屏状态。
+ */
 const handleSubmit = () => {
   if (!password.value) {
     error.value = texts.value.passwordPlaceholder;
@@ -145,21 +254,46 @@ const handleSubmit = () => {
   emit('success');
 };
 
+/**
+ * 处理输入框快捷键
+ * @description 回车触发提交，Esc 触发关闭。
+ * @param e 键盘事件对象。
+ */
 const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Enter') handleSubmit();
   if (e.key === 'Escape') handleClose();
 };
 
+/**
+ * 切换主密码可见性
+ * @description 在明文和密文显示模式之间切换主密码输入框状态。
+ */
 const handleTogglePassword = () => {
   showPassword.value = !showPassword.value;
 };
 
+/**
+ * 切换确认密码可见性
+ * @description 在明文和密文显示模式之间切换确认密码输入框状态。
+ */
 const handleToggleConfirmPassword = () => {
   showConfirmPassword.value = !showConfirmPassword.value;
 };
 
+/**
+ * 关闭按钮图标
+ * @description 用于弹窗右上角关闭操作按钮。
+ */
 const closeIcon = getIcon('close');
+/**
+ * 密码可见图标
+ * @description 代表“显示密码”的眼睛图标。
+ */
 const eyeIcon = getIcon('eye');
+/**
+ * 密码隐藏图标
+ * @description 代表“隐藏密码”的闭眼图标。
+ */
 const eyeOffIcon = getIcon('eyeOff');
 </script>
 

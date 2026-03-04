@@ -1,3 +1,6 @@
+/**
+ * table-vue 初始化配置与运行时状态读取测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 
 import { getAdminTableVueSetupState, setupAdminTableVue } from '../setup';

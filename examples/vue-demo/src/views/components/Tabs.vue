@@ -7,6 +7,13 @@ import {
   h,
 } from 'vue';
 
+/**
+ * 创建用于 Tabs 示例的面板组件。
+ *
+ * @param title 面板标题。
+ * @param lines 面板段落内容。
+ * @returns 可直接挂到 `AdminTabs` 的 Vue 组件。
+ */
 function createPanel(
   title: string,
   lines: string[]
@@ -25,6 +32,9 @@ function createPanel(
   });
 }
 
+/**
+ * Tabs 演示页签配置集合。
+ */
 const items: AdminTabVueItem[] = [
   {
     closable: false,

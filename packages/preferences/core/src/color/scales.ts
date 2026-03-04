@@ -60,7 +60,10 @@ const CHROMA_MULTIPLIER: Record<ColorShade, number> = {
 export function generateColorScale(baseColor: string): Record<ColorShade, string> {
   const base = parseToOklch(baseColor);
 
-  // 如果解析失败，使用默认蓝色
+  /**
+   * 解析失败兜底色。
+   * @description 无法解析时使用默认蓝色作为基础色。
+   */
   const defaultBase = { l: 0.55, c: 0.2, h: 250 };
   const color = base ?? defaultBase;
 
@@ -68,7 +71,10 @@ export function generateColorScale(baseColor: string): Record<ColorShade, string
 
   COLOR_SHADES.forEach((shade) => {
     const l = LIGHTNESS_MAP[shade];
-    // 保持原色相，根据色阶调整饱和度
+    /**
+     * 色阶色度调节。
+     * @description 保持原色相，仅按色阶倍率调整色度。
+     */
     const c = Math.min(color.c * CHROMA_MULTIPLIER[shade], 0.4);
     scale[shade] = createOklch(l, c, color.h);
   });
@@ -89,10 +95,15 @@ export function generateColorScaleVariables(
   const scale = generateColorScale(baseColor);
   const variables: Record<string, string> = {};
 
-  // 设置基础色（500 为基准）
+  /**
+   * 设置基础主色变量。
+   * @description 以 `500` 阶作为默认主色。
+   */
   variables[`--${prefix}`] = scale[500];
 
-  // 设置所有色阶
+  /**
+   * 输出所有色阶变量。
+   */
   COLOR_SHADES.forEach((shade) => {
     variables[`--${prefix}-${shade}`] = scale[shade];
   });

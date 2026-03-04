@@ -15,12 +15,43 @@ import { useMenuState, useSidebarState } from '../../hooks/use-layout-state';
 import { renderLayoutIcon } from '../../utils';
 import { renderIcon as renderIconByType } from '../../utils/icon-renderer';
 
+/**
+ * 混合侧边栏一级菜单组件属性。
+ */
 interface MixedSidebarMenuProps {
+  /** 一级菜单选中项变化回调。 */
   onRootMenuChange?: (menu: MenuItem | null) => void;
 }
 
 /**
- * 混合侧边栏主菜单组件
+ * 折叠态根菜单弹层状态。
+ */
+interface MixedSidebarPopupState {
+  /** 是否可见。 */
+  visible: boolean;
+  /** 当前弹层对应的根菜单项。 */
+  item: MenuItem | null;
+  /** 弹层顶部定位（viewport 坐标）。 */
+  top: number;
+  /** 弹层左侧定位（viewport 坐标）。 */
+  left: number;
+}
+
+/**
+ * 根菜单自动同步去重状态。
+ */
+interface MixedSidebarLastSyncState {
+  /** 上次同步时的激活 key。 */
+  key: string | null;
+  /** 上次同步时使用的一级菜单数组引用。 */
+  menus: MenuItem[] | null;
+}
+
+/**
+ * 混合侧边栏主菜单组件。
+ * @description 渲染一级菜单图标列，并负责根菜单选中、悬停弹层与子菜单联动。
+ * @param props 组件参数。
+ * @returns 混合侧边栏主菜单节点。
  */
 export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   const context = useLayoutContext();
@@ -29,25 +60,50 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
   const { extraVisible, setExtraVisible, layoutComputed } = useSidebarState();
   const { activeKey, handleSelect } = useMenuState();
   
-  // Logo 配置
+  /**
+   * Logo 区域配置。
+   */
   const logoConfig = useMemo(() => context.props.logo || {}, [context.props.logo]);
-  // 主题（考虑 semiDarkSidebar）
+  /**
+   * 当前侧边栏主题（已包含 semi-dark 计算结果）。
+   */
   const theme = useMemo(() => layoutComputed?.sidebarTheme || 'light', [layoutComputed?.sidebarTheme]);
   const isHeaderMixedNav = computed.isHeaderMixedNav;
 
-  // 菜单数据
+  /**
+   * 当前可用菜单数据。
+   */
   const menus = useMemo<MenuItem[]>(
     () => context.props.menus || [],
     [context.props.menus]
   );
+  /**
+   * 生成菜单稳定标识，按 `key -> path -> name` 顺序回退。
+   *
+   * @param menu 菜单项。
+   * @returns 稳定菜单标识。
+   */
   const getMenuId = useCallback((menu: MenuItem) => {
     const id = menu.key ?? menu.path ?? menu.name ?? '';
     return id === '' ? '' : String(id);
   }, []);
+  /**
+   * 规范化键值，空值统一为空字符串。
+   *
+   * @param value 原始键值。
+   * @returns 规范化后的键。
+   */
   const normalizeKey = useCallback((value: unknown) => {
     if (value === null || value === undefined || value === '') return '';
     return String(value);
   }, []);
+  /**
+   * 判断菜单项是否匹配目标键（key/path/id 任一命中）。
+   *
+   * @param menu 菜单项。
+   * @param key 目标键。
+   * @returns 是否匹配。
+   */
   const menuMatchesKey = useCallback((menu: MenuItem, key: string) => {
     const target = normalizeKey(key);
     if (!target) return false;
@@ -60,6 +116,13 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
       (menuId && menuId === target)
     );
   }, [normalizeKey, getMenuId]);
+  /**
+   * 判断菜单树是否包含目标键。
+   *
+   * @param menu 根菜单项。
+   * @param key 目标键。
+   * @returns 是否包含。
+   */
   const menuContainsKey = useCallback((menu: MenuItem, key: string) => {
     if (menuMatchesKey(menu, key)) return true;
     if (!menu.children?.length) return false;
@@ -76,6 +139,12 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     }
     return false;
   }, [menuMatchesKey]);
+  /**
+   * 根据目标键查找所属一级根菜单。
+   *
+   * @param key 目标键。
+   * @returns 命中的根菜单或 `null`。
+   */
   const findRootMenuByKey = useCallback((key: string) => {
     if (!key) return null;
     for (const item of menus) {
@@ -103,8 +172,10 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     if (!headerMixedRootMenu) return;
     const rootKey = normalizeKey(headerMixedRootMenu.key ?? headerMixedRootMenu.path ?? '');
     if (!rootKey) return;
-    // 使用函数式更新避免依赖 layoutState.mixedNavRootKey，防止循环更新
-    // 使用 startTransition 避免在渲染期间更新组件
+    /*
+     * 使用函数式更新避免依赖旧的 `layoutState.mixedNavRootKey`，
+     * 并通过 `startTransition` 降低渲染期更新冲突风险。
+     */
     startTransition(() => {
       setLayoutState((prev) => {
         if (prev.mixedNavRootKey === rootKey) return prev;
@@ -148,14 +219,26 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     setRootScrollTop((prev) => (prev === nextTop ? prev : nextTop));
   }, [rootTotalHeight, rootViewportHeight, rootScrollTop]);
 
-  // 当前选中的一级菜单
+  /**
+   * 当前选中的一级根菜单。
+   */
   const [selectedRootMenu, setSelectedRootMenu] = useState<MenuItem | null>(null);
 
-  // 记录每个一级菜单最后激活的子菜单路径（类似常见 admin 布局的 defaultSubMap）
+  /**
+   * 记录每个一级菜单最后一次激活的子菜单路径。
+   * @description 类似常见 admin 布局中的 `defaultSubMap` 行为。
+   */
   const lastActiveSubMenuMapRef = useRef<Map<string, string>>(new Map());
 
   const parentPathMap = useMemo(() => {
     const map = new Map<string, string | null>();
+
+    /**
+     * 遍历菜单树并建立“节点 -> 父节点”映射关系。
+     *
+     * @param items 当前层菜单列表。
+     * @param parent 父节点标识。
+     */
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
         const rawKey = menu.key ?? '';
@@ -190,17 +273,21 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     return parentSet;
   }, [activeKey, parentPathMap]);
 
-  // 同步 selectedRootMenu 变化到父组件
+  /**
+   * 将选中的根菜单变化同步给父组件。
+   */
   useEffect(() => {
     onRootMenuChange?.(selectedRootMenu);
   }, [selectedRootMenu, onRootMenuChange]);
 
-  const lastSyncRef = useRef<{ key: string | null; menus: MenuItem[] | null }>({
+  const lastSyncRef = useRef<MixedSidebarLastSyncState>({
     key: null,
     menus: null,
   });
 
-  // 根据当前路径自动选中一级菜单，并记录激活的子菜单
+  /**
+   * 根据当前激活路径自动选中一级菜单，并记录对应激活子菜单。
+   */
   useEffect(() => {
     if (!rootMenus.length) {
       if (selectedRootMenu) {
@@ -244,13 +331,18 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
       if (extraVisible !== nextExtraVisible) {
         setExtraVisible(nextExtraVisible);
       }
-      // 记录该一级菜单最后激活的子菜单
+      /** 记录该一级菜单最后激活的子菜单路径。 */
       if (rootMenu.children?.length && activeKey) {
         lastActiveSubMenuMapRef.current.set(getMenuId(rootMenu), activeKey);
       }
     }
   }, [activeKey, rootMenus, activeParentSet, extraVisible, setExtraVisible, getMenuId, selectedRootMenu]);
 
+  /**
+   * 处理一级菜单悬停，更新当前根菜单并按需展示子菜单面板。
+   *
+   * @param item 当前悬停菜单项。
+   */
   const handleRootMenuEnter = useCallback((item: MenuItem) => {
     setSelectedRootMenu((prev) => {
       const prevId = prev ? getMenuId(prev) : '';
@@ -262,6 +354,11 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     }
   }, [extraVisible, setExtraVisible, getMenuId]);
 
+  /**
+   * 处理一级菜单点击，支持自动激活最近子菜单或首个子菜单。
+   *
+   * @param item 被点击菜单项。
+   */
   const handleRootMenuClick = useCallback((item: MenuItem) => {
     setSelectedRootMenu((prev) => {
       const prevId = prev ? getMenuId(prev) : '';
@@ -273,7 +370,7 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
       if (!extraVisible) {
         setExtraVisible(true);
       }
-      // 自动激活子菜单：优先使用上次记录的，否则使用第一个
+      /** 自动激活子菜单：优先使用历史记录，否则回退到第一个子菜单。 */
       const autoActivateChild = context.props.sidebar?.autoActivateChild ?? true;
       if (autoActivateChild) {
         const lastActivePath = lastActiveSubMenuMapRef.current.get(getMenuId(item));
@@ -297,10 +394,20 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     }
   }, [setExtraVisible, handleSelect, context.props.sidebar?.autoActivateChild, activeKey, getMenuId, extraVisible]);
 
+  /**
+   * 一级菜单鼠标移入事件代理。
+   *
+   * @param item 当前悬停菜单项。
+   */
   const handleRootMenuMouseEnter = useCallback((item: MenuItem) => {
     handleRootMenuEnter(item);
   }, [handleRootMenuEnter]);
 
+  /**
+   * 一级菜单点击事件代理。
+   *
+   * @param item 被点击菜单项。
+   */
   const handleRootMenuItemClick = useCallback((item: MenuItem) => {
     handleRootMenuClick(item);
   }, [handleRootMenuClick]);
@@ -379,7 +486,13 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     };
   }, [rootMenus.length, rootItemHeight]);
 
-  // 渲染图标
+  /**
+   * 渲染一级菜单图标，缺省时回退首字母占位。
+   *
+   * @param icon 图标标识。
+   * @param itemName 菜单名称。
+   * @returns 图标节点。
+   */
   const renderRootIcon = (icon: string | undefined, itemName: string) => {
     if (!icon) {
       return (
@@ -390,7 +503,11 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
     return <span className="mixed-sidebar-menu__icon">{renderIconByType(icon, 'md')}</span>;
   };
 
-  // 渲染 Logo
+  /**
+   * 渲染左侧 Logo 区域。
+   *
+   * @returns Logo 节点或 `null`。
+   */
   const renderLogo = () => {
     if (logoConfig.enable === false || isHeaderMixedNav) return null;
     
@@ -469,22 +586,40 @@ export function MixedSidebarMenu({ onRootMenuChange }: MixedSidebarMenuProps) {
 }
 
 /**
- * 混合侧边栏子菜单组件
+ * 混合侧边栏子菜单组件参数。
+ * @description 约束子菜单数据、折叠态与交互回调。
  */
 interface MixedSidebarSubMenuProps {
+  /** 当前二级菜单数据。 */
   menus: MenuItem[];
+  /** 当前激活菜单键。 */
   activeKey: string;
+  /** 标题文案。 */
   title?: string;
+  /** 是否折叠显示。 */
   collapsed?: boolean;
+  /** 是否固定子菜单面板。 */
   pinned?: boolean;
+  /** 是否显示折叠按钮。 */
   showCollapseBtn?: boolean;
+  /** 是否显示固定/取消固定按钮。 */
   showPinBtn?: boolean;
+  /** 子菜单主题。 */
   theme?: string;
+  /** 选中指定子菜单项时触发。 */
   onSelect?: (key: string) => void;
+  /** 点击折叠按钮时触发。 */
   onCollapse?: () => void;
+  /** 切换固定/悬停模式时触发。 */
   onTogglePin?: () => void;
 }
 
+/**
+ * 混合侧边栏子菜单组件。
+ * @description 负责二级菜单展开收起、折叠态弹层与虚拟滚动渲染。
+ * @param props 组件参数。
+ * @returns 混合侧边栏子菜单节点。
+ */
 export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   menus,
   activeKey,
@@ -512,6 +647,12 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
   const SUB_OVERSCAN = LAYOUT_UI_TOKENS.MENU_OVERSCAN;
   const subResizeObserverRef = useRef<ResizeObserver | null>(null);
   const subItemResizeObserverRef = useRef<ResizeObserver | null>(null);
+  /**
+   * 生成子菜单稳定标识，按 `key -> path -> name` 顺序回退。
+   *
+   * @param menu 菜单项。
+   * @returns 稳定菜单标识。
+   */
   const getMenuId = useCallback((menu: MenuItem) => {
     const id = menu.key ?? menu.path ?? menu.name ?? '';
     return id === '' ? '' : String(id);
@@ -563,6 +704,11 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     return map;
   }, [menus, getMenuId]);
 
+  /**
+   * 切换子菜单节点展开状态。
+   *
+   * @param key 节点键。
+   */
   const toggleExpand = useCallback((key: string) => {
     if (!menuItemMap.has(key)) return;
     setExpandedKeys((prev) => {
@@ -588,6 +734,13 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
 
   const parentPathMap = useMemo(() => {
     const map = new Map<string, string | null>();
+
+    /**
+     * 遍历子菜单树并建立父子映射关系。
+     *
+     * @param items 当前层菜单列表。
+     * @param parent 父节点标识。
+     */
     const visit = (items: MenuItem[], parent: string | null) => {
       for (const menu of items) {
         const rawKey = menu.key ?? '';
@@ -622,18 +775,27 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     return parentSet;
   }, [activeKey, parentPathMap]);
 
-  const [popupState, setPopupState] = useState<{
-    visible: boolean;
-    item: MenuItem | null;
-    top: number;
-    left: number;
-  }>({ visible: false, item: null, top: 0, left: 0 });
+  const [popupState, setPopupState] = useState<MixedSidebarPopupState>({
+    visible: false,
+    item: null,
+    top: 0,
+    left: 0,
+  });
 
+  /**
+   * 关闭折叠态弹层菜单并清理锚点引用。
+   */
   const hidePopupMenu = useCallback(() => {
     setPopupState((prev) => (prev.visible ? { ...prev, visible: false, item: null } : prev));
     popupAnchorRef.current = null;
   }, []);
 
+  /**
+   * 根据激活路径构建弹层菜单默认展开集合。
+   *
+   * @param root 弹层根菜单项。
+   * @returns 默认展开键集合。
+   */
   const buildPopupExpandedKeys = useCallback((root: MenuItem) => {
     const keys = new Set<string>();
     if (!root.children?.length) return keys;
@@ -655,6 +817,12 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     return keys;
   }, [activeKey, activeParentSet, getMenuId]);
 
+  /**
+   * 显示折叠态弹层菜单并计算定位。
+   *
+   * @param item 触发弹层的菜单项。
+   * @param event React 鼠标事件对象。
+   */
   const showPopupMenu = useCallback((item: MenuItem, event: React.MouseEvent) => {
     const target = event.currentTarget as HTMLElement;
     popupAnchorRef.current = target;
@@ -670,6 +838,9 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     });
   }, [buildPopupExpandedKeys]);
 
+  /**
+   * 根据当前锚点重新计算弹层位置。
+   */
   const updatePopupPosition = useCallback(() => {
     if (!popupState.visible || !popupAnchorRef.current) return;
     const rect = popupAnchorRef.current.getBoundingClientRect();
@@ -678,6 +849,12 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     setPopupState((prev) => (prev.visible ? { ...prev, top: rect.top, left } : prev));
   }, [popupState.visible]);
 
+  /**
+   * 处理子菜单项点击：有子节点时展开/弹层，无子节点时触发选中。
+   *
+   * @param item 被点击菜单项。
+   * @param event React 鼠标事件（折叠态弹层定位时使用）。
+   */
   const handleClick = useCallback(
     (item: MenuItem, event?: React.MouseEvent) => {
       const id = getMenuId(item);
@@ -706,6 +883,11 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     [collapsed, popupState.visible, popupState.item, getMenuId, toggleExpand, onSelect, hidePopupMenu, showPopupMenu]
   );
 
+  /**
+   * 处理菜单项 DOM 点击事件并映射到目标菜单项。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handleItemClick = useCallback((e: React.MouseEvent) => {
     const key = (e.currentTarget as HTMLElement).dataset.key;
     if (!key) return;
@@ -715,17 +897,31 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     }
   }, [menuItemMap, handleClick]);
 
-  // 渲染图标
+  /**
+   * 渲染子菜单图标。
+   *
+   * @param icon 图标标识。
+   * @returns 图标节点。
+   */
   const renderSubIcon = (icon: string | undefined) => {
     if (!icon) return null;
     return <span className="mixed-sidebar-submenu__icon">{renderIconByType(icon, 'sm')}</span>;
   };
+
+  /**
+   * 渲染弹层菜单图标。
+   *
+   * @param icon 图标标识。
+   * @returns 图标节点。
+   */
   const renderPopupIcon = (icon: string | undefined) => {
     if (!icon) return null;
     return <span className="sidebar-menu__popup-icon">{renderIconByType(icon, 'sm')}</span>;
   };
 
-  // 递归渲染菜单项
+  /**
+   * 递归渲染子菜单节点。
+   */
   const renderMenuItem = (
     item: MenuItem,
     level: number,
@@ -743,6 +939,11 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     const expanded = expandedKeys.has(menuId);
     const hasActive = menuId ? activeParentSet.has(menuId) : false;
 
+    /**
+     * 组装普通子菜单项类名。
+     *
+     * @returns 类名字符串。
+     */
     const itemClassName = (() => {
       const classes = [
         'mixed-sidebar-submenu__item',
@@ -808,6 +1009,11 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     const expanded = expandedKeys.has(menuId);
     const hasActive = menuId ? activeParentSet.has(menuId) : false;
 
+    /**
+     * 组装弹层菜单项类名。
+     *
+     * @returns 类名字符串。
+     */
     const itemClassName = (() => {
       const classes = [
         'sidebar-menu__popup-item',
@@ -818,6 +1024,9 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       return classes.join(' ');
     })();
 
+    /**
+     * 处理弹层菜单点击，子节点切换展开，叶子节点触发选中。
+     */
     const handlePopupClick = () => {
       if (hasChildren) {
         toggleExpand(menuId);
@@ -978,6 +1187,12 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
 
   useEffect(() => {
     if (!popupState.visible) return;
+
+    /**
+     * 点击弹层外区域时关闭弹层。
+     *
+     * @param e 鼠标事件。
+     */
     const handleDocClick = (e: MouseEvent) => {
       const target = e.target as Node | null;
       if (!target) return;
@@ -985,6 +1200,12 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
       if (popupAnchorRef.current?.contains(target)) return;
       hidePopupMenu();
     };
+
+    /**
+     * 按下 `Escape` 时关闭弹层。
+     *
+     * @param e 键盘事件。
+     */
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') hidePopupMenu();
     };
@@ -1002,6 +1223,11 @@ export const MixedSidebarSubMenu = memo(function MixedSidebarSubMenu({
     }
   }, [collapsed, popupState.visible, hidePopupMenu]);
 
+  /**
+   * 计算子菜单容器类名。
+   *
+   * @returns 类名字符串。
+   */
   const containerClassName = (() => {
     const classes = ['mixed-sidebar-submenu'];
     if (collapsed) classes.push('mixed-sidebar-submenu--collapsed');

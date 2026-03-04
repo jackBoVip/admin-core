@@ -4,6 +4,10 @@ import { useMemo } from 'react';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 表格搜索表单示例页。
+ * @description 演示表格与查询表单联动筛选。
+ */
 export default function TableForm() {
   const [TableView] = useAdminTable<DemoProductRow>(
     useMemo(

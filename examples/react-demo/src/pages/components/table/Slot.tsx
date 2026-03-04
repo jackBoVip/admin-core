@@ -42,6 +42,10 @@ const toolbarCenterHintStyle: CSSProperties = {
   whiteSpace: 'nowrap',
 };
 
+/**
+ * 表格插槽示例页。
+ * @description 演示标题区、工具栏、空状态与列插槽定制能力。
+ */
 export default function TableSlot() {
   const [TableView, tableApi] = useAdminTable<DemoRow>(
     useMemo(
@@ -84,6 +88,11 @@ export default function TableSlot() {
     )
   );
 
+  /**
+   * 模拟表格加载态切换。
+   *
+   * @returns 无返回值。
+   */
   const triggerLoading = async () => {
     tableApi.setLoading(true);
     await new Promise((resolve) => {

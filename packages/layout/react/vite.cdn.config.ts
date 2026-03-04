@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { createCdnLibraryConfig } from '../../../internal/build-config/vite.js';
 
+/**
+ * layout-react CDN 库构建配置。
+ */
 export default createCdnLibraryConfig({
   entry: resolve(__dirname, 'src/index.ts'),
   name: 'AdminCoreLayoutReact',

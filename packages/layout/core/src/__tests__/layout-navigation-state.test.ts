@@ -1,3 +1,6 @@
+/**
+ * 菜单与面包屑导航状态解析及交互控制测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   createLayoutBreadcrumbStateController,

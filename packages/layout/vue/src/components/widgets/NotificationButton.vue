@@ -8,17 +8,27 @@ import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
 import { LAYOUT_UI_TOKENS, type NotificationItem } from '@admin-core/layout';
 
+/**
+ * 布局上下文
+ * @description 提供通知数据、未读数及通知点击事件回调。
+ */
 const context = useLayoutContext();
 
-// 下拉菜单状态
+/**
+ * 通知下拉菜单开关状态。
+ */
 const isOpen = ref(false);
 
-// 通知列表
+/**
+ * 通知数据列表。
+ */
 const notifications = computed<NotificationItem[]>(() => 
   context.props.notifications || []
 );
 
-// 未读数量
+/**
+ * 未读通知数量，优先使用外部显式传值。
+ */
 const unreadCount = computed(() => {
   if (context.props.unreadCount !== undefined) return context.props.unreadCount;
   let count = 0;
@@ -28,20 +38,31 @@ const unreadCount = computed(() => {
   return count;
 });
 
-// 是否有未读通知
+/**
+ * 是否存在未读通知。
+ */
 const hasUnread = computed(() => unreadCount.value > 0);
 
-// 切换下拉菜单
+/**
+ * 切换通知下拉菜单显示状态。
+ */
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
 };
 
-// 关闭下拉菜单
+/**
+ * 关闭通知下拉菜单。
+ */
 const closeDropdown = () => {
   isOpen.value = false;
 };
 
-// 格式化时间
+/**
+ * 将通知时间格式化为相对时间文案。
+ *
+ * @param time 通知时间。
+ * @returns 格式化后的时间文本。
+ */
 const formatTime = (time?: Date | string) => {
   if (!time) return '';
   const date = time instanceof Date ? time : new Date(time);
@@ -59,6 +80,9 @@ const formatTime = (time?: Date | string) => {
   return date.toLocaleDateString();
 };
 
+/**
+ * 通知 ID 到通知实体的映射索引。
+ */
 const notificationMap = computed(() => {
   if (!isOpen.value) return new Map<string, NotificationItem>();
   const map = new Map<string, NotificationItem>();
@@ -68,6 +92,9 @@ const notificationMap = computed(() => {
   return map;
 });
 
+/**
+ * 通知渲染数据，补充格式化时间字段。
+ */
 const formattedNotifications = computed(() => {
   if (!isOpen.value) return [];
   return notifications.value.map((item) => ({
@@ -76,30 +103,67 @@ const formattedNotifications = computed(() => {
   }));
 });
 
+/**
+ * 通知列表容器引用
+ * @description 用于读取滚动位置并计算虚拟列表可见范围。
+ */
 const listRef = ref<HTMLElement | null>(null);
+/**
+ * 通知列表滚动位置
+ * @description 驱动虚拟列表起止索引计算。
+ */
 const scrollTop = ref(0);
 
+/**
+ * 通知列表 UI 令牌
+ * @description 提供列表最大高度与单项高度默认值。
+ */
 const {
   NOTIFICATION_MAX_HEIGHT,
   NOTIFICATION_ITEM_HEIGHT,
 } = LAYOUT_UI_TOKENS;
 
+/**
+ * 通知虚拟列表单项高度。
+ */
 const itemHeight = ref<number>(NOTIFICATION_ITEM_HEIGHT);
+/**
+ * 通知列表尺寸监听器。
+ */
 const listResizeObserver = ref<ResizeObserver | null>(null);
+/**
+ * 通知虚拟列表超出渲染数量
+ * @description 在可视区上下额外渲染项数，降低滚动抖动。
+ */
 const OVERSCAN = LAYOUT_UI_TOKENS.RESULT_OVERSCAN;
+/**
+ * 通知列表总高度。
+ */
 const totalHeight = computed(() => formattedNotifications.value.length * itemHeight.value);
+/**
+ * 通知列表可视区域高度。
+ */
 const viewportHeight = computed(() =>
   totalHeight.value === 0 ? NOTIFICATION_MAX_HEIGHT : Math.min(totalHeight.value, NOTIFICATION_MAX_HEIGHT)
 );
+/**
+ * 虚拟列表起始索引。
+ */
 const startIndex = computed(() =>
   Math.max(0, Math.floor(scrollTop.value / itemHeight.value) - OVERSCAN)
 );
+/**
+ * 虚拟列表结束索引。
+ */
 const endIndex = computed(() =>
   Math.min(
     formattedNotifications.value.length,
     Math.ceil((scrollTop.value + viewportHeight.value) / itemHeight.value) + OVERSCAN
   )
 );
+/**
+ * 当前视口范围内的通知项集合。
+ */
 const visibleNotifications = computed(() =>
   formattedNotifications.value.slice(startIndex.value, endIndex.value)
 );
@@ -120,6 +184,11 @@ watch(
   }
 );
 
+/**
+ * 同步通知列表滚动位置。
+ *
+ * @param e 滚动事件对象。
+ */
 const handleScroll = (e: Event) => {
   const target = e.target as HTMLElement | null;
   if (!target) return;
@@ -129,6 +198,11 @@ const handleScroll = (e: Event) => {
   }
 };
 
+/**
+ * 处理滚轮事件，接管默认滚动以稳定虚拟列表滚动。
+ *
+ * @param e 滚轮事件对象。
+ */
 const handleWheel = (e: WheelEvent) => {
   if (e.ctrlKey) return;
   e.preventDefault();
@@ -142,6 +216,10 @@ const handleWheel = (e: WheelEvent) => {
 };
 
 watch(isOpen, (open) => {
+  /**
+   * 收起面板时重置滚动状态。
+   * @description 避免下次打开面板时保留上一次滚动位置。
+   */
   if (open) return;
   if (listRef.value) {
     listRef.value.scrollTop = 0;
@@ -152,6 +230,9 @@ watch(isOpen, (open) => {
 });
 
 onUnmounted(() => {
+  /**
+   * 组件卸载时销毁尺寸观察器。
+   */
   if (listResizeObserver.value) {
     listResizeObserver.value.disconnect();
     listResizeObserver.value = null;
@@ -160,6 +241,10 @@ onUnmounted(() => {
 
 watch([isOpen, () => formattedNotifications.value.length], ([open]) => {
   if (!open) return;
+  /**
+   * 打开面板后测量首项高度并建立尺寸观察。
+   * @description 保障虚拟列表行高与真实渲染高度一致。
+   */
   nextTick(() => {
     const list = listRef.value;
     if (!list) return;
@@ -186,13 +271,20 @@ watch([isOpen, () => formattedNotifications.value.length], ([open]) => {
 
 watch(isOpen, (open) => {
   if (open) return;
+  /**
+   * 面板关闭时停止尺寸观察，减少无效监听开销。
+   */
   if (listResizeObserver.value) {
     listResizeObserver.value.disconnect();
     listResizeObserver.value = null;
   }
 });
 
-// 处理通知点击
+/**
+ * 处理通知项点击并触发外部通知回调。
+ *
+ * @param e 鼠标事件对象。
+ */
 const handleNotificationClick = (e: MouseEvent) => {
   const id = (e.currentTarget as HTMLElement | null)?.dataset?.id;
   if (!id) return;

@@ -1,3 +1,6 @@
+/**
+ * 布局运行时能力（全屏、锁屏、快捷键、检查更新）测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   createLayoutAutoLockRuntime,

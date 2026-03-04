@@ -1,3 +1,7 @@
+/**
+ * Form React 分步提交页组件实现。
+ * @description 提供弹层式分步表单提交流程，包括步骤切换、提交与重置策略。
+ */
 
 import {
   buildSteppedFormSchema,
@@ -39,10 +43,22 @@ import { useLocaleVersion } from '../hooks/useLocaleVersion';
 import type { AdminFormSubmitPageReactProps } from '../types';
 import type { CSSProperties } from 'react';
 
+/**
+ * 提交页组件内部属性。
+ */
 type AdminFormSubmitPageInternalProps = AdminFormSubmitPageReactProps & {
+  /** 可选的已预构建分步 schema 结果，用于跳过重复构建。 */
   steppedResult?: BuildSteppedFormSchemaResult;
 };
 
+/**
+ * 返回稳定的表单 API 引用。
+ * 当外部未传入 `formApi` 时，在首次渲染时创建并缓存内部实例。
+ *
+ * @param inputFormApi 外部传入的表单 API。
+ * @param initialFormProps 创建内部 API 时使用的初始属性。
+ * @returns 稳定可复用的表单 API。
+ */
 function useStableFormApi(
   inputFormApi: AdminFormApi | undefined,
   initialFormProps: Record<string, any>
@@ -56,6 +72,12 @@ function useStableFormApi(
   return inputFormApi ?? (createdApiRef.current as AdminFormApi);
 }
 
+/**
+ * 分步提交页组件（React）。
+ *
+ * @param props 组件属性。
+ * @returns 提交页渲染节点。
+ */
 export function AdminFormSubmitPage(props: AdminFormSubmitPageInternalProps) {
   const localeVersion = useLocaleVersion();
   const localeMessages = useMemo(

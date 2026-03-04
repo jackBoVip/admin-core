@@ -1,3 +1,7 @@
+/**
+ * 菜单管理示例页。
+ * @description 展示树状菜单数据与编辑入口。
+ */
 export default function SystemMenu() {
   return (
     <div className="page-container">

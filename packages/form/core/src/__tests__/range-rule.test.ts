@@ -18,6 +18,13 @@ describe('range rule utils', () => {
   it('should support custom validate and message', async () => {
     const rule = createRangeRule({
       message: '区间长度不能超过 30',
+      /**
+       * 自定义区间校验逻辑测试桩。
+       *
+       * @param start 区间起点。
+       * @param end 区间终点。
+       * @returns `true` 表示校验通过。
+       */
       validate(start, end) {
         return Number(end) - Number(start) <= 30;
       },

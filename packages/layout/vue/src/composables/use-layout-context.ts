@@ -48,46 +48,86 @@ export const LAYOUT_COMPUTED_KEY: InjectionKey<ComputedRef<LayoutComputed>> = Sy
 export const LAYOUT_CSS_VARS_KEY: InjectionKey<ComputedRef<Record<string, string>>> = Symbol('layout-css-vars');
 
 /**
- * 创建布局上下文
- * @param propsOrGetter - props 对象、返回 props 的 getter 函数或 ComputedRef（支持响应式更新）
+ * 创建布局上下文时的附加配置。
+ */
+export interface CreateLayoutContextOptions {
+  /** 初始语言。 */
+  locale?: SupportedLocale;
+  /** 自定义国际化消息。 */
+  customMessages?: Record<string, Record<string, unknown>>;
+}
+
+/**
+ * 创建布局上下文的返回结果。
+ */
+export interface CreateLayoutContextResult {
+  /** 布局上下文对象。 */
+  context: LayoutContext;
+  /** 布局计算状态。 */
+  computed: ComputedRef<LayoutComputed>;
+  /** 计算得到的 CSS 变量集合。 */
+  cssVars: ComputedRef<Record<string, string>>;
+  /** 响应式布局运行时状态。 */
+  state: LayoutState;
+}
+
+/**
+ * 创建并注入布局上下文。
+ *
+ * @param propsOrGetter `props` 对象、`props` getter 或 `ComputedRef`（支持响应式更新）。
+ * @param events 布局事件回调集合。
+ * @param options 上下文初始化选项。
  */
 export function createLayoutContext(
   propsOrGetter: BasicLayoutProps | (() => BasicLayoutProps) | ComputedRef<BasicLayoutProps>,
   events: LayoutEvents,
-  options?: {
-    locale?: SupportedLocale;
-    customMessages?: Record<string, Record<string, unknown>>;
-  }
-): {
-  context: LayoutContext;
-  computed: ComputedRef<LayoutComputed>;
-  cssVars: ComputedRef<Record<string, string>>;
-  state: LayoutState;
-} {
-  // 支持 ComputedRef、getter 函数或直接的 props 对象
+  options?: CreateLayoutContextOptions
+): CreateLayoutContextResult {
+  /**
+   * 标准化 `props` 读取器，兼容对象、getter 与 `ComputedRef`。
+   */
   const getProps = isRef(propsOrGetter) 
     ? () => propsOrGetter.value 
     : typeof propsOrGetter === 'function' 
       ? propsOrGetter 
       : () => propsOrGetter;
   
-  // 合并默认配置（响应式）
+  /**
+   * 合并默认配置后的响应式 props。
+   */
   const mergedProps = computed(() => mergeConfig(DEFAULT_LAYOUT_CONFIG, getProps()));
 
-  // 从 props 中获取初始状态值
+  /**
+   * 初始化 props 快照。
+   */
   const initialProps = getProps();
+  /**
+   * 初始语言值。
+   */
   const initialLocale =
     (initialProps.locale as SupportedLocale | undefined) ??
     options?.locale ??
     'zh-CN';
   
-  // 创建响应式状态（从 props 中读取初始值）
+  /**
+   * 布局响应式状态（由初始化 props 生成）。
+   */
   const state = reactive<LayoutState>(getInitialLayoutState(initialProps));
 
-  // 创建国际化实例
+  /**
+   * 国际化实例。
+   */
   const i18n = createI18n(initialLocale, options?.customMessages);
+  /**
+   * 当前语言响应式引用。
+   */
   const localeRef = ref<SupportedLocale>(initialLocale);
 
+  /**
+   * 同步上下文语言到本地状态与 i18n 实例。
+   *
+   * @param nextLocale 目标语言。
+   */
   const syncLocale = (nextLocale?: SupportedLocale) => {
     if (!nextLocale) return;
     if (localeRef.value !== nextLocale) {
@@ -98,6 +138,9 @@ export function createLayoutContext(
     }
   };
 
+  /**
+   * 上下文动作控制器。
+   */
   const contextActionsController = createLayoutContextActionsController({
     getProps: () => mergedProps.value,
     getState: () => state,
@@ -111,6 +154,9 @@ export function createLayoutContext(
       events.onPanelCollapse?.(collapsed);
     },
   });
+  /**
+   * props 状态同步控制器。
+   */
   const propsSyncController = createLayoutPropsStateSyncController({
     getState: () => state,
     setState: (patch) => {
@@ -121,31 +167,42 @@ export function createLayoutContext(
     },
   });
 
-  // 切换侧边栏折叠
+  /**
+   * 切换侧边栏折叠状态。
+   */
   const toggleSidebarCollapse = () => {
     contextActionsController.toggleSidebarCollapse();
   };
 
-  // 切换功能区折叠
+  /**
+   * 切换面板折叠状态。
+   */
   const togglePanelCollapse = () => {
     contextActionsController.togglePanelCollapse();
   };
 
-  // 设置展开的菜单
+  /**
+   * 设置当前展开的菜单键集合。
+   *
+   * @param keys 展开菜单键数组。
+   */
   const setOpenMenuKeys = (keys: string[]) => {
     contextActionsController.setOpenMenuKeys(keys);
   };
 
-  // 创建响应式 props 代理
+  /**
+   * 响应式 props 代理对象（保持引用稳定）。
+   */
   const reactiveProps = reactive<BasicLayoutProps>({} as BasicLayoutProps);
   
-  // 创建响应式上下文（整个 context 都是响应式的）
+  /**
+   * 响应式布局上下文对象。
+   */
   const context = reactive<LayoutContext>({
     props: reactiveProps,
     state,
     events,
     t: (key, params) => {
-      // Touch localeRef to keep translations reactive in templates.
       void localeRef.value;
       return i18n.t(key, params);
     },
@@ -154,6 +211,11 @@ export function createLayoutContext(
     setOpenMenuKeys,
   });
 
+  /**
+   * 同步顶层 props 到响应式代理对象，保持引用稳定并移除过期字段。
+   *
+   * @param nextProps 最新布局 props。
+   */
   const syncTopLevelProps = (nextProps: BasicLayoutProps) => {
     const propsRecord = reactiveProps as Record<string, unknown>;
     const nextRecord = nextProps as Record<string, unknown>;
@@ -172,7 +234,9 @@ export function createLayoutContext(
     }
   };
 
-  // 监听并同步 props 变化（基于 mergedProps 的新引用触发，避免 deep watch 的深层遍历开销）
+  /**
+   * 监听并同步 props 变化（避免 deep watch 深层遍历开销）。
+   */
   watch(
     mergedProps,
     (newProps) => {
@@ -182,7 +246,9 @@ export function createLayoutContext(
     { immediate: true }
   );
 
-  // 监听 locale 变化并更新 i18n
+  /**
+   * 监听 locale 变化并更新 i18n 实例。
+   */
   watch(
     () => mergedProps.value.locale,
     (nextLocale) => {
@@ -191,13 +257,19 @@ export function createLayoutContext(
     { immediate: true }
   );
 
-  // 计算布局属性（直接依赖 mergedProps 确保响应式）
+  /**
+   * 布局派生计算结果。
+   */
   const layoutComputed = computed(() => calculateLayoutComputed(mergedProps.value, state));
 
-  // 生成 CSS 变量（依赖响应式 props）
+  /**
+   * 布局 CSS 变量映射。
+   */
   const cssVars = computed(() => generateCSSVariables(reactiveProps, state));
 
-  // 注入上下文
+  /**
+   * 注入布局上下文与派生结果。
+   */
   provide(LAYOUT_CONTEXT_KEY, context);
   provide(LAYOUT_COMPUTED_KEY, layoutComputed);
   provide(LAYOUT_CSS_VARS_KEY, cssVars);
@@ -211,7 +283,10 @@ export function createLayoutContext(
 }
 
 /**
- * 使用布局上下文
+ * 获取当前组件树中的布局上下文。
+ *
+ * @returns 布局上下文对象。
+ * @throws 当未在 `BasicLayout` 组件上下文中调用时抛出错误。
  */
 export function useLayoutContext(): LayoutContext {
   const context = inject(LAYOUT_CONTEXT_KEY);
@@ -222,7 +297,10 @@ export function useLayoutContext(): LayoutContext {
 }
 
 /**
- * 使用布局计算属性
+ * 获取布局派生计算状态。
+ *
+ * @returns 布局计算状态 `ComputedRef`。
+ * @throws 当未在 `BasicLayout` 组件上下文中调用时抛出错误。
  */
 export function useLayoutComputed(): ComputedRef<LayoutComputed> {
   const computed = inject(LAYOUT_COMPUTED_KEY);
@@ -233,7 +311,10 @@ export function useLayoutComputed(): ComputedRef<LayoutComputed> {
 }
 
 /**
- * 使用布局 CSS 变量
+ * 获取布局 CSS 变量集合。
+ *
+ * @returns CSS 变量映射 `ComputedRef`。
+ * @throws 当未在 `BasicLayout` 组件上下文中调用时抛出错误。
  */
 export function useLayoutCSSVars(): ComputedRef<Record<string, string>> {
   const cssVars = inject(LAYOUT_CSS_VARS_KEY);

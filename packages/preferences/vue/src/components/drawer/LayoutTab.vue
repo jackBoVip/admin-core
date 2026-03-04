@@ -30,28 +30,59 @@ import SwitchItem from './SwitchItem.vue';
 import SelectItem from './SelectItem.vue';
 import NumberItem from './NumberItem.vue';
 
-const props = defineProps<{
-  /** 当前语言包 */
+/**
+ * 布局标签页入参
+ * @description 提供语言包与布局分组的 UI 可见性配置。
+ */
+export interface LayoutTabProps {
+  /** 当前语言包。 */
   locale: LocaleMessages;
-  /** UI 配置（控制功能项显示/禁用） */
+  /** UI 配置（控制功能项显示/禁用）。 */
   uiConfig?: LayoutTabConfig;
-}>();
+}
 
-// ========== UI 配置解析（使用 computed 缓存） ==========
-const configs = computed(() => getLayoutTabConfigs(props.uiConfig));
-
-const { preferences, setPreferences } = usePreferences();
-const updater = createLayoutTabUpdater(setPreferences);
-
-// 默认值简写
-const D = DEFAULT_PREFERENCES;
-
-// ========== 工厂函数：减少重复的 computed 定义 ==========
+const props = defineProps<LayoutTabProps>();
 
 /**
- * 创建双向绑定的 computed
- * @param path - 偏好设置路径，如 'sidebar.collapsed'
- * @param defaultValue - 默认值
+ * 下拉模型值类型。
+ * @description 统一描述 `SelectItem` 输出的 `string | number` 联合值。
+ */
+type SelectModelValue = number | string;
+
+/**
+ * 布局标签页功能配置快照。
+ * @description 汇总各分组功能项的可见与禁用状态。
+ */
+const configs = computed(() => getLayoutTabConfigs(props.uiConfig));
+
+/**
+ * 偏好状态与写回方法
+ * @description 读取布局相关状态，并响应用户操作写回偏好配置。
+ */
+const { preferences, setPreferences } = usePreferences();
+/**
+ * 布局更新器
+ * @description 封装布局域的常用写入操作，避免重复组装 patch。
+ */
+const updater = createLayoutTabUpdater(setPreferences);
+
+/**
+ * 默认偏好常量引用
+ * @description 作为布局各字段的兜底默认值。
+ */
+const D = DEFAULT_PREFERENCES;
+
+/**
+ * 绑定工厂函数区。
+ * @description 封装重复的偏好读取与写入逻辑，减少同构 computed 定义。
+ */
+
+/**
+ * 创建偏好字段双向绑定计算属性
+ * @description 根据点路径读取嵌套偏好值，并在写入时自动构造同路径 patch 对象。
+ * @param path 偏好设置路径，如 `sidebar.collapsed`。
+ * @param defaultValue 当路径值不存在时使用的兜底默认值。
+ * @returns 可读可写的计算属性引用。
  */
 function createPreferenceComputed<T>(
   path: string,
@@ -67,7 +98,10 @@ function createPreferenceComputed<T>(
       return (value ?? defaultValue) as T;
     },
     set: (newValue: T) => {
-      // 构建嵌套更新对象
+      /**
+       * 构建嵌套更新对象。
+       * @description 按路径从内到外组装 patch，保持 setPreferences 入参结构正确。
+       */
       const update = keys.reduceRight<Record<string, unknown>>(
         (acc, key, index) => (index === keys.length - 1 ? { [key]: newValue } : { [key]: acc }),
         {}
@@ -77,45 +111,75 @@ function createPreferenceComputed<T>(
   });
 }
 
+/** 布局标签页本地化选项集合。 */
 const layoutTabOptions = computed(() => getLayoutTabOptions(props.locale));
+/** 布局类型选项。 */
 const layoutOptions = computed(() => layoutTabOptions.value.layoutOptions);
+/** 标签栏样式选项。 */
 const tabsStyleOptions = computed(() => layoutTabOptions.value.tabsStyleOptions);
+/** 顶栏菜单对齐选项。 */
 const headerMenuAlignOptions = computed(() => layoutTabOptions.value.headerMenuAlignOptions);
 
-// ========== 使用工厂函数简化 computed 定义 ==========
-
-// 布局设置
+/**
+ * 当前布局类型绑定
+ * @description 控制整体布局形态（侧栏、顶栏、混合等）。
+ */
 const layout = createPreferenceComputed<LayoutType>('app.layout', D.app.layout);
+/**
+ * 内容宽度模式绑定
+ * @description 在宽屏与紧凑模式之间切换内容区域宽度。
+ */
 const contentCompact = createPreferenceComputed<'wide' | 'compact'>('app.contentCompact', D.app.contentCompact);
 
+/**
+ * 设置布局类型
+ * @description 调用布局更新器将布局切换为指定类型。
+ * @param value 目标布局类型。
+ */
 const handleSetLayout = (value: LayoutType) => {
   updater.setLayout(value);
 };
 
+/**
+ * 设置内容宽度为宽屏模式
+ * @description 将 `contentCompact` 切换为 `wide`。
+ */
 const handleSetContentWide = () => {
   updater.setContentWide();
 };
 
+/**
+ * 设置内容宽度为紧凑模式
+ * @description 将 `contentCompact` 切换为 `compact`。
+ */
 const handleSetContentCompact = () => {
   updater.setContentCompactMode();
 };
 
+/**
+ * 创建下拉选择更新处理器
+ * @description 将 `string | number | undefined` 事件值转换为安全调用，忽略 `undefined`。
+ * @param setter 具体的偏好更新函数。
+ * @returns 供组件事件绑定的值更新处理函数。
+ */
 const createSelectUpdateHandler =
-  (setter: (value: string | number) => void) =>
-  (value: string | number | undefined) => {
+  (setter: (value: SelectModelValue) => void) =>
+  (value: SelectModelValue | undefined) => {
     if (value === undefined) return;
     setter(value);
   };
 
-// 是否允许显示折叠按钮的布局（仅 sidebar-nav）
+/** 当前布局是否允许显示侧边栏折叠按钮。 */
 const isCollapseButtonAllowedLayout = computed(() => {
   return layout.value === 'sidebar-nav';
 });
-// 侧边栏折叠是否可用（sidebar-mixed-nav 下禁用）
+/** 侧边栏折叠能力是否禁用。 */
 const isSidebarCollapseDisabled = computed(() =>
   layout.value === 'sidebar-mixed-nav' || layout.value === 'header-mixed-nav'
 );
+/** 是否为顶栏导航布局。 */
 const isHeaderNavLayout = computed(() => layout.value === 'header-nav');
+/** 当前布局是否禁用面包屑设置能力。 */
 const isBreadcrumbDisabledLayout = computed(
   () =>
     layout.value === 'header-nav' ||
@@ -123,10 +187,20 @@ const isBreadcrumbDisabledLayout = computed(
     layout.value === 'header-mixed-nav'
 );
 
-// 侧边栏设置
+/**
+ * 侧边栏折叠状态绑定
+ * @description 控制侧边栏是否折叠。
+ */
 const sidebarCollapsed = createPreferenceComputed<boolean>('sidebar.collapsed', D.sidebar.collapsed);
+/**
+ * 侧边栏折叠按钮原始开关绑定
+ * @description 记录用户对折叠按钮显示能力的配置值。
+ */
 const sidebarCollapsedButtonRaw = createPreferenceComputed<boolean>('sidebar.collapsedButton', D.sidebar.collapsedButton);
-// 折叠按钮：在非允许布局下强制返回 false
+/**
+ * 侧边栏折叠按钮展示开关。
+ * @description 在非允许布局下强制返回 `false`，避免出现无效控制项。
+ */
 const sidebarCollapsedButton = computed({
   get: () => isCollapseButtonAllowedLayout.value ? sidebarCollapsedButtonRaw.value : false,
   set: (value: boolean) => {
@@ -135,71 +209,147 @@ const sidebarCollapsedButton = computed({
     }
   },
 });
+/**
+ * 侧边栏悬停展开开关绑定
+ * @description 控制侧边栏折叠后是否在悬停时自动展开。
+ */
 const sidebarExpandOnHover = createPreferenceComputed<boolean>('sidebar.expandOnHover', D.sidebar.expandOnHover);
 
-// 顶栏设置
+/**
+ * 顶栏启用开关绑定
+ * @description 控制顶部导航区域是否展示。
+ */
 const headerEnable = createPreferenceComputed<boolean>('header.enable', D.header.enable);
+/**
+ * 顶栏模式绑定
+ * @description 控制顶栏布局模式（固定/静态等）。
+ */
 const headerMode = createPreferenceComputed<LayoutHeaderModeType>('header.mode', D.header.mode);
+/**
+ * 顶栏菜单对齐绑定
+ * @description 控制顶栏菜单在可用场景下的对齐方式。
+ */
 const headerMenuAlign = createPreferenceComputed<LayoutHeaderMenuAlignType>('header.menuAlign', D.header.menuAlign);
+/**
+ * 顶栏菜单启动器开关绑定
+ * @description 控制是否显示顶栏菜单触发按钮。
+ */
 const headerMenuLauncher = createPreferenceComputed<boolean>('header.menuLauncher', D.header.menuLauncher);
 
-// 菜单启动器是否可用（顶栏启用 + 顶部菜单布局）
+/** 顶栏菜单启动器是否可用。 */
 const menuLauncherEnabled = computed(() => {
   const isHeaderMixedNav = layout.value === 'header-mixed-nav';
   return headerEnable.value && isHeaderMenuLayout(layout.value) && !isHeaderMixedNav;
 });
+/** 顶栏菜单对齐设置是否可用。 */
 const menuAlignEnabled = computed(() => {
   return headerEnable.value && isHeaderMenuLayout(layout.value);
 });
 
-// 标签栏设置
+/**
+ * 标签栏启用开关绑定
+ * @description 控制页面标签栏区域是否启用。
+ */
 const tabbarEnable = createPreferenceComputed<boolean>('tabbar.enable', D.tabbar.enable);
+/** 标签栏持久化开关绑定。 */
 const tabbarPersist = createPreferenceComputed<boolean>('tabbar.persist', D.tabbar.persist);
+/** 标签页缓存保活开关绑定。 */
 const tabbarKeepAlive = createPreferenceComputed<boolean>('tabbar.keepAlive', D.tabbar.keepAlive);
+/** 标签栏最大数量绑定。 */
 const tabbarMaxCount = createPreferenceComputed<number>('tabbar.maxCount', D.tabbar.maxCount);
+/** 标签栏图标显示开关绑定。 */
 const tabbarShowIcon = createPreferenceComputed<boolean>('tabbar.showIcon', D.tabbar.showIcon);
+/** 标签栏“更多”菜单开关绑定。 */
 const tabbarShowMore = createPreferenceComputed<boolean>('tabbar.showMore', D.tabbar.showMore);
+/** 标签栏最大化按钮开关绑定。 */
 const tabbarShowMaximize = createPreferenceComputed<boolean>('tabbar.showMaximize', D.tabbar.showMaximize);
+/** 标签页拖拽排序开关绑定。 */
 const tabbarDraggable = createPreferenceComputed<boolean>('tabbar.draggable', D.tabbar.draggable);
+/** 标签栏滚轮切换开关绑定。 */
 const tabbarWheelable = createPreferenceComputed<boolean>('tabbar.wheelable', D.tabbar.wheelable);
+/** 中键关闭标签开关绑定。 */
 const tabbarMiddleClickToClose = createPreferenceComputed<boolean>('tabbar.middleClickToClose', D.tabbar.middleClickToClose);
+/** 标签栏样式类型绑定。 */
 const tabbarStyleType = createPreferenceComputed<TabsStyleType>('tabbar.styleType', D.tabbar.styleType);
 
-// 面包屑设置
+/**
+ * 面包屑启用开关绑定
+ * @description 控制面包屑导航是否显示。
+ */
 const breadcrumbEnable = createPreferenceComputed<boolean>('breadcrumb.enable', D.breadcrumb.enable);
+/**
+ * 面包屑图标开关绑定
+ * @description 控制面包屑项是否展示图标。
+ */
 const breadcrumbShowIcon = createPreferenceComputed<boolean>('breadcrumb.showIcon', D.breadcrumb.showIcon);
+/** 面包屑启用态（考虑布局限制后的展示值）。 */
 const breadcrumbEnableDisplay = computed(() => isBreadcrumbDisabledLayout.value ? false : breadcrumbEnable.value);
+/** 面包屑图标启用态（考虑布局限制后的展示值）。 */
 const breadcrumbShowIconDisplay = computed(() => isBreadcrumbDisabledLayout.value ? false : breadcrumbShowIcon.value);
 
-// 页脚设置
+/**
+ * 页脚启用开关绑定
+ * @description 控制页脚区域是否显示。
+ */
 const footerEnable = createPreferenceComputed<boolean>('footer.enable', D.footer.enable);
+/**
+ * 页脚固定开关绑定
+ * @description 控制页脚是否固定在视口底部。
+ */
 const footerFixed = createPreferenceComputed<boolean>('footer.fixed', D.footer.fixed);
 
-// 小部件设置
+/**
+ * 全屏按钮开关绑定
+ * @description 控制头部全屏组件是否可见。
+ */
 const widgetFullscreen = createPreferenceComputed<boolean>('widget.fullscreen', D.widget.fullscreen);
+/** 全局搜索组件开关绑定。 */
 const widgetGlobalSearch = createPreferenceComputed<boolean>('widget.globalSearch', D.widget.globalSearch);
+/** 主题切换组件开关绑定。 */
 const widgetThemeToggle = createPreferenceComputed<boolean>('widget.themeToggle', D.widget.themeToggle);
+/** 语言切换组件开关绑定。 */
 const widgetLanguageToggle = createPreferenceComputed<boolean>('widget.languageToggle', D.widget.languageToggle);
 
-// 功能区设置
+/**
+ * 功能区启用开关绑定
+ * @description 控制右侧或底部功能面板是否启用。
+ */
 const panelEnable = createPreferenceComputed<boolean>('panel.enable', D.panel.enable);
+/**
+ * 功能区位置绑定
+ * @description 设置功能区位于顶部、底部或侧边等位置。
+ */
 const panelPosition = createPreferenceComputed<PanelPositionType>('panel.position', D.panel.position);
+/**
+ * 功能区折叠状态绑定
+ * @description 控制功能区当前是否处于折叠状态。
+ */
 const panelCollapsed = createPreferenceComputed<boolean>('panel.collapsed', D.panel.collapsed);
 
-// 动态预览图选项（根据当前偏好设置）
+/** 布局预览渲染选项。 */
 const previewOptions = computed(() =>
   getLayoutPreviewOptions(preferences.value ?? D)
 );
 
-// 缓存预览图（避免每次渲染重新生成）
+/** 布局预览 SVG 缓存映射。 */
 const previewSvgCache = computed(() => {
   const options = previewOptions.value;
   return createLayoutPreviewCache(layoutOptions.value, options);
 });
 
-// 生成布局预览图（从缓存获取）
+/**
+ * 获取布局预览 SVG
+ * @description 直接从缓存字典读取对应布局的预览图，避免重复生成。
+ * @param layoutType 布局类型。
+ * @returns 对应布局类型的 SVG 字符串。
+ */
 const getPreviewSvg = (layoutType: LayoutType) => previewSvgCache.value[layoutType];
 
+/**
+ * 处理布局类型项激活事件
+ * @description 从元素 `data-value` 读取布局类型并触发布局更新。
+ * @param e 点击或键盘激活事件对象。
+ */
 const handleLayoutTypeActivate = (e: Event) => {
   if (configs.value.layoutType.disabled) return;
   const value = (e.currentTarget as HTMLElement).dataset.value as LayoutType | undefined;
@@ -208,6 +358,11 @@ const handleLayoutTypeActivate = (e: Event) => {
   }
 };
 
+/**
+ * 处理内容宽度项激活事件
+ * @description 根据 `data-value` 在宽屏与紧凑模式之间切换内容宽度。
+ * @param e 点击或键盘激活事件对象。
+ */
 const handleContentWidthActivate = (e: Event) => {
   if (configs.value.contentWidth.disabled) return;
   const value = (e.currentTarget as HTMLElement).dataset.value as ContentWidthType | undefined;
@@ -219,9 +374,25 @@ const handleContentWidthActivate = (e: Event) => {
   }
 };
 
+/**
+ * 功能区位置下拉更新处理器
+ * @description 将下拉值安全映射到功能区位置更新动作。
+ */
 const handlePanelPositionChange = createSelectUpdateHandler(updater.setPanelPosition);
+/**
+ * 顶栏模式下拉更新处理器
+ * @description 将下拉值安全映射到顶栏模式更新动作。
+ */
 const handleHeaderModeChange = createSelectUpdateHandler(updater.setHeaderMode);
+/**
+ * 顶栏菜单对齐下拉更新处理器
+ * @description 将下拉值安全映射到菜单对齐更新动作。
+ */
 const handleHeaderMenuAlignChange = createSelectUpdateHandler(updater.setHeaderMenuAlign);
+/**
+ * 标签栏样式下拉更新处理器
+ * @description 将下拉值安全映射到标签栏样式更新动作。
+ */
 const handleTabbarStyleTypeChange = createSelectUpdateHandler(updater.setTabbarStyleType);
 
 </script>

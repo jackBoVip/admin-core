@@ -1,5 +1,5 @@
 /**
- * Tab 内容配置
+ * 页签内容配置。
  * @description 定义各 Tab 的控件配置，Vue/React 可共享此配置进行渲染
  */
 
@@ -16,6 +16,7 @@ export type ControlType = 'switch' | 'select' | 'color' | 'slider' | 'layout-pic
  * 开关控件配置
  */
 export interface SwitchControlConfig {
+  /** 类型。 */
   type: 'switch';
   /** 本地化键路径，如 'general.dynamicTitle' */
   labelKey: string;
@@ -26,9 +27,20 @@ export interface SwitchControlConfig {
 }
 
 /**
+ * 选择控件静态选项。
+ */
+export interface ControlOptionItem {
+  /** 显示标签。 */
+  label: string;
+  /** 值。 */
+  value: number | string;
+}
+
+/**
  * 选择控件配置
  */
 export interface SelectControlConfig {
+  /** 类型。 */
   type: 'select';
   /** 本地化键路径 */
   labelKey: string;
@@ -37,7 +49,7 @@ export interface SelectControlConfig {
   /** 选项来源：静态数组或需要翻译的常量名 */
   optionsSource: 'static' | 'translated' | 'locales';
   /** 静态选项或常量名 */
-  options?: Array<{ label: string; value: string | number }> | string;
+  options?: ControlOptionItem[] | string;
   /** 禁用条件（可选） */
   disabledWhen?: (preferences: Preferences) => boolean;
 }
@@ -53,16 +65,18 @@ export interface BlockConfig {
 }
 
 /**
- * Tab 配置
+ * 页签配置。
  */
 export interface TabConfig {
-  /** Tab ID */
+  /** 页签唯一标识。 */
   id: string;
   /** 区块列表 */
   blocks: BlockConfig[];
 }
 
-// ========== 通用设置 Tab 配置 ==========
+/**
+ * 通用设置页签配置。
+ */
 export const GENERAL_TAB_CONFIG: TabConfig = {
   id: 'general',
   blocks: [
@@ -147,7 +161,9 @@ export const GENERAL_TAB_CONFIG: TabConfig = {
   ],
 };
 
-// ========== 快捷键 Tab 配置 ==========
+/**
+ * 快捷键页签配置。
+ */
 export const SHORTCUT_KEYS_TAB_CONFIG: TabConfig = {
   id: 'shortcutKeys',
   blocks: [
@@ -176,7 +192,9 @@ export const SHORTCUT_KEYS_TAB_CONFIG: TabConfig = {
   ],
 };
 
-// ========== 布局 Tab 配置 ==========
+/**
+ * 布局页签配置。
+ */
 export const LAYOUT_TAB_CONFIG: TabConfig = {
   id: 'layout',
   blocks: [
@@ -324,12 +342,13 @@ export const LAYOUT_TAB_CONFIG: TabConfig = {
   ],
 };
 
-// ========== 工具函数 ==========
+/* ========== 工具函数 ========== */
 
 /**
  * 从嵌套路径获取值（使用 helpers.get 统一实现）
- * @param obj - 对象
- * @param path - 路径，如 'app.locale'
+ * @param obj 数据对象。
+ * @param path 路径，如 `app.locale`。
+ * @returns 对应路径上的值。
  */
 export function getNestedValue<T>(obj: Record<string, unknown>, path: string): T {
   return get<T>(obj, path);
@@ -337,8 +356,9 @@ export function getNestedValue<T>(obj: Record<string, unknown>, path: string): T
 
 /**
  * 从本地化键获取文本（使用 helpers.get 统一实现）
- * @param locale - 语言包
- * @param key - 键路径，如 'general.title'
+ * @param locale 当前语言包。
+ * @param key 键路径，如 `general.title`。
+ * @returns 解析后的文本；缺失时返回键名本身。
  */
 export function getLocaleText(locale: LocaleMessages, key: string): string {
   const result = get<string>(locale, key, key);
@@ -347,8 +367,9 @@ export function getLocaleText(locale: LocaleMessages, key: string): string {
 
 /**
  * 创建偏好设置更新对象
- * @param path - 路径，如 'app.locale'
- * @param value - 新值
+ * @param path 目标路径，如 `app.locale`。
+ * @param value 新值。
+ * @returns 可直接用于合并写入的嵌套对象。
  */
 export function createPreferencesUpdate(path: string, value: unknown): Record<string, unknown> {
   const parts = path.split('.');

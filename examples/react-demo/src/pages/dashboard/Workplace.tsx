@@ -1,3 +1,7 @@
+/**
+ * 工作台示例页。
+ * @description 展示待办事项与快捷操作面板。
+ */
 export default function DashboardWorkplace() {
   return (
     <div className="page-container">

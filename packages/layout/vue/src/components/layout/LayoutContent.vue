@@ -7,18 +7,67 @@ import { useLayoutContext, useLayoutComputed, usePageTransition, useSidebarState
 import { DEFAULT_CONTENT_CONFIG } from '@admin-core/layout';
 import LayoutRefreshView from './LayoutRefreshView.vue';
 
+/**
+ * 布局上下文
+ * @description 提供运行时配置、国际化与跨区域共享状态。
+ */
 const context = useLayoutContext();
+/**
+ * 布局派生状态
+ * @description 汇总头部、侧栏、面板、页脚等区域的可见性与尺寸信息。
+ */
 const layoutComputed = useLayoutComputed();
+/**
+ * 侧栏折叠状态
+ * @description 用于内容区在桌面端的左侧留白计算。
+ */
 const { collapsed: sidebarCollapsed } = useSidebarState();
+/**
+ * 功能面板状态
+ * @description 提供面板折叠状态与停靠方向，用于内容区边距计算。
+ */
 const { collapsed: panelCollapsed, position: panelPosition } = usePanelState();
+/**
+ * 页面转场配置
+ * @description 提供转场开关与转场名称。
+ */
 const { enabled: transitionEnabled, transitionName } = usePageTransition();
+/**
+ * 当前路由路径
+ * @description 与刷新键组合形成转场触发键。
+ */
 const { currentPath } = useRouter();
+/**
+ * 内容内层容器引用
+ * @description 用于注入转场内联样式与读取布局宽度。
+ */
 const innerRef = ref<HTMLElement | null>(null);
+/**
+ * 转场结束定时器句柄
+ * @description 在转场持续时长后清理阶段状态。
+ */
 let transitionTimer: number | null = null;
+/**
+ * 下一帧任务句柄
+ * @description 保障“from -> active”样式切换发生在下一帧。
+ */
 let transitionRaf: number | null = null;
+/**
+ * 当前转场阶段
+ * @description `idle` 表示无动画，`from` 为初始态，`active` 为过渡中。
+ */
 const transitionPhase = ref<'idle' | 'from' | 'active'>('idle');
+/**
+ * 当前转场类名前缀
+ * @description 与阶段共同拼接过渡类。
+ */
 const transitionClassName = ref('');
 
+/**
+ * 从 CSS 变量解析页面过渡动画时长（毫秒）。
+ *
+ * @returns 过渡时长。
+ */
 const resolveTransitionDuration = () => {
   if (typeof window === 'undefined') return 0;
   const styles = getComputedStyle(document.documentElement);
@@ -39,6 +88,9 @@ const resolveTransitionDuration = () => {
 };
 
 
+/**
+ * 清理过渡动画相关定时器与帧任务。
+ */
 const clearTransitionTimers = () => {
   if (transitionRaf !== null) {
     window.cancelAnimationFrame(transitionRaf);
@@ -50,11 +102,20 @@ const clearTransitionTimers = () => {
   }
 };
 
+/**
+ * 重置过渡阶段与过渡类名。
+ */
 const clearTransitionClasses = () => {
   transitionPhase.value = 'idle';
   transitionClassName.value = '';
 };
 
+/**
+ * 写入过渡初始态内联样式。
+ *
+ * @param el 目标元素。
+ * @param name 过渡名称。
+ */
 const applyTransitionInlineFrom = (el: HTMLElement, name: string) => {
   if (name === 'fade') {
     el.style.setProperty('opacity', '0', 'important');
@@ -84,11 +145,19 @@ const applyTransitionInlineFrom = (el: HTMLElement, name: string) => {
   }
 };
 
+/**
+ * 清除过渡初始态内联样式。
+ *
+ * @param el 目标元素。
+ */
 const clearTransitionInlineFrom = (el: HTMLElement) => {
   el.style.removeProperty('opacity');
   el.style.removeProperty('transform');
 };
 
+/**
+ * 执行一次页面切换过渡动画。
+ */
 const runTransition = async () => {
   if (!transitionEnabled.value || typeof window === 'undefined') return;
   if (!innerRef.value) return;
@@ -108,6 +177,10 @@ const runTransition = async () => {
   }, resolveTransitionDuration());
 };
 
+/**
+ * 转场触发键
+ * @description 由“当前路径 + 刷新键”组成，任意一项变化都触发转场。
+ */
 const transitionTrigger = computed(() => {
   return `${currentPath.value || ''}:${context.state.refreshKey}`;
 });
@@ -139,25 +212,62 @@ onBeforeUnmount(() => {
   }
 });
 
-// 配置
+/**
+ * 内容区密度模式
+ * @description 读取内容区紧凑模式配置，缺省回退核心默认值。
+ */
 const contentCompact = computed(() => context.props.contentCompact || DEFAULT_CONTENT_CONFIG.contentCompact);
+/**
+ * 紧凑模式最大宽度
+ * @description 在 `compact` 模式下用于限制内容最大宽度。
+ */
 const contentCompactWidth = computed(() => context.props.contentCompactWidth || DEFAULT_CONTENT_CONFIG.contentCompactWidth);
+/**
+ * KeepAlive 开关
+ * @description 当标签页设置显式关闭缓存时禁用 KeepAlive。
+ */
 const keepAliveEnabled = computed(() => context.props.tabbar?.keepAlive !== false);
+/**
+ * KeepAlive 最大缓存数
+ * @description 结合 `tabbar.maxCount` 与 `autoTab.maxCount` 计算，0 表示不限制。
+ */
 const keepAliveMax = computed(() => {
   const max = context.props.tabbar?.maxCount ?? context.props.autoTab?.maxCount ?? 0;
   return max > 0 ? max : undefined;
 });
+/**
+ * KeepAlive include 列表
+ * @description 指定需要缓存的组件名集合。
+ */
 const keepAliveInclude = computed(() => context.state.keepAliveIncludes || []);
+/**
+ * KeepAlive exclude 列表
+ * @description 指定需要排除缓存的组件名集合。
+ */
 const keepAliveExclude = computed(() => context.state.keepAliveExcludes || []);
+/**
+ * 内容区底部额外留白
+ * @description 当页脚固定时，为避免遮挡内容在底部追加页脚高度。
+ */
 const footerPaddingOffset = computed(() => {
   return layoutComputed.value.showFooter && context.props.footer?.fixed
     ? layoutComputed.value.footerHeight
     : 0;
 });
+/**
+ * 视口页脚偏移
+ * @description 供视口高度类计算使用，表示当前页脚占位高度。
+ */
 const viewportFooterOffset = computed(() => {
   return layoutComputed.value.showFooter ? layoutComputed.value.footerHeight : 0;
 });
 
+/**
+ * 将数字或像素字符串解析为数值。
+ *
+ * @param value 待解析值。
+ * @returns 解析后的数值；非法输入返回 `0`。
+ */
 const parsePxValue = (value: number | string | undefined) => {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : 0;
@@ -169,7 +279,10 @@ const parsePxValue = (value: number | string | undefined) => {
   return 0;
 };
 
-// 类名
+/**
+ * 内容区类名集合
+ * @description 根据紧凑模式、侧栏/面板状态生成语义类。
+ */
 const contentClass = computed(() => [
   'layout-content',
   {
@@ -182,7 +295,10 @@ const contentClass = computed(() => [
   },
 ]);
 
-// 样式
+/**
+ * 内容区外层样式
+ * @description 统一计算边距、内边距以及视口偏移 CSS 变量。
+ */
 const contentStyle = computed(() => {
   const { mainStyle } = layoutComputed.value;
   const paddingBase = context.props.contentPadding ?? DEFAULT_CONTENT_CONFIG.contentPadding;
@@ -203,7 +319,10 @@ const contentStyle = computed(() => {
   };
 });
 
-// 内容容器样式
+/**
+ * 内容区内层样式
+ * @description 仅在紧凑模式下追加最大宽度与居中规则。
+ */
 const innerStyle = computed(() => {
   const style: Record<string, string | number> = {};
   if (contentCompact.value === 'compact') {
@@ -213,6 +332,10 @@ const innerStyle = computed(() => {
   return style;
 });
 
+/**
+ * 转场内联样式
+ * @description 依据转场名称与阶段计算 opacity/transform/transition 属性。
+ */
 const transitionStyle = computed(() => {
   if (!transitionEnabled.value) return {};
   const style: Record<string, string | number> = {
@@ -244,6 +367,10 @@ const transitionStyle = computed(() => {
   return style;
 });
 
+/**
+ * 转场类名
+ * @description 将阶段映射为 enter 相关类名，配合内联样式完成过渡。
+ */
 const transitionClasses = computed(() => {
   if (!transitionClassName.value || transitionPhase.value === 'idle') return '';
   if (transitionPhase.value === 'from') {

@@ -14,7 +14,8 @@ import type { Preferences } from '../types';
  * 默认主色配置
  * @description 只需配置主色，其他语义色通过 OKLCH 色相旋转自动派生
  */
-export const DEFAULT_PRIMARY_COLOR = 'oklch(0.55 0.2 250)'; // 蓝色
+/** 默认主色为蓝色。 */
+export const DEFAULT_PRIMARY_COLOR = 'oklch(0.55 0.2 250)';
 
 /**
  * 快捷键配置
@@ -80,7 +81,7 @@ export function getShortcutKeyDisplay(key: string, isMac = false): string {
  * 默认偏好设置
  */
 export const DEFAULT_PREFERENCES: Preferences = {
-  // ========== 应用配置 ==========
+  /* ========== 应用配置 ========== */
   app: {
     /** 权限模式: frontend-前端控制 | backend-后端控制 | mixed-混合 */
     accessMode: 'frontend',
@@ -152,7 +153,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     zIndex: 200,
   },
 
-  // ========== 面包屑配置 ==========
+  /* ========== 面包屑配置 ========== */
   breadcrumb: {
     /** 启用面包屑 */
     enable: true,
@@ -166,7 +167,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     styleType: 'normal',
   },
 
-  // ========== 版权配置 ==========
+  /* ========== 版权配置 ========== */
   copyright: {
     /** 公司名称 */
     companyName: '',
@@ -176,15 +177,15 @@ export const DEFAULT_PREFERENCES: Preferences = {
     date: new Date().getFullYear().toString(),
     /** 启用版权信息 */
     enable: true,
-    /** ICP 备案号 */
+    /** 备案编号 */
     icp: '',
-    /** ICP 链接 */
+    /** 备案信息链接 */
     icpLink: '',
     /** 在设置面板中显示 */
     settingShow: true,
   },
 
-  // ========== 页脚配置 ==========
+  /* ========== 页脚配置 ========== */
   footer: {
     /** 启用页脚 */
     enable: false,
@@ -194,7 +195,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     height: 32,
   },
 
-  // ========== 顶栏配置 ==========
+  /* ========== 顶栏配置 ========== */
   header: {
     /** 启用顶栏 */
     enable: true,
@@ -218,7 +219,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     mode: 'fixed',
   },
 
-  // ========== 锁屏配置 ==========
+  /* ========== 锁屏配置 ========== */
   lockScreen: {
     /** 是否已锁定 */
     isLocked: false,
@@ -230,19 +231,19 @@ export const DEFAULT_PREFERENCES: Preferences = {
     autoLockTime: 0,
   },
 
-  // ========== Logo 配置 ==========
+  /* ========== 应用标识配置 ========== */
   logo: {
-    /** 启用 Logo */
+    /** 启用应用标识 */
     enable: true,
     /** 图片适应方式 */
     fit: 'contain',
-    /** Logo 图片 URL */
+    /** 应用标识图片地址 */
     source: '',
-    /** 暗色模式 Logo URL（可选，空字符串表示使用默认 source） */
+    /** 暗色模式应用标识图片地址（可选，空字符串表示使用默认 source） */
     sourceDark: '',
   },
 
-  // ========== 导航配置 ==========
+  /* ========== 导航配置 ========== */
   navigation: {
     /** 手风琴模式（同级只展开一个） */
     accordion: true,
@@ -252,7 +253,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     styleType: 'rounded',
   },
 
-  // ========== 功能区配置 ==========
+  /* ========== 功能区配置 ========== */
   panel: {
     /** 启用功能区 */
     enable: false,
@@ -268,7 +269,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     collapsedWidth: 0,
   },
 
-  // ========== 快捷键配置 ==========
+  /* ========== 快捷键配置 ========== */
   shortcutKeys: {
     /** 启用全局快捷键 */
     enable: true,
@@ -282,7 +283,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     globalSearch: true,
   },
 
-  // ========== 侧边栏配置 ==========
+  /* ========== 侧边栏配置 ========== */
   sidebar: {
     /** 点击目录自动激活子菜单 */
     autoActivateChild: false,
@@ -312,7 +313,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     width: 224,
   },
 
-  // ========== 标签栏配置 ==========
+  /* ========== 标签栏配置 ========== */
   tabbar: {
     /** 可拖拽排序 */
     draggable: true,
@@ -340,7 +341,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     wheelable: true,
   },
 
-  // ========== 主题配置 ==========
+  /* ========== 主题配置 ========== */
   theme: {
     /** 内置主题类型 */
     builtinType: 'default',
@@ -361,7 +362,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     semiDarkSidebar: false,
   },
 
-  // ========== 过渡动画配置 ==========
+  /* ========== 过渡动画配置 ========== */
   transition: {
     /** 启用页面切换动画 */
     enable: true,
@@ -373,7 +374,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
     progress: true,
   },
 
-  // ========== 小部件配置 ==========
+  /* ========== 小部件配置 ========== */
   widget: {
     /** 全屏按钮 */
     fullscreen: true,
@@ -408,7 +409,7 @@ let cachedDefaultPreferencesJSON: string | null = null;
  * @returns 默认偏好设置副本
  */
 export function getDefaultPreferences(): Preferences {
-  // 延迟初始化缓存（仅在首次调用时序列化）
+  /* 延迟初始化缓存（仅在首次调用时序列化）。 */
   if (cachedDefaultPreferencesJSON === null) {
     cachedDefaultPreferencesJSON = JSON.stringify(DEFAULT_PREFERENCES);
   }

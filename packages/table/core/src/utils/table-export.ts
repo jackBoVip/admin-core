@@ -1,3 +1,7 @@
+/**
+ * Table Core 导出工具。
+ * @description 提供导出动作解析、列提取与 Excel 数据生成相关能力。
+ */
 import type {
   AdminTablePagerExportPayload,
   TablePagerExportConfig,
@@ -26,6 +30,11 @@ import {
   normalizeToolbarPermissionDirective,
 } from './table-permission';
 
+/**
+ * 规范化分页导出类型值。
+ * @param value 原始类型值。
+ * @returns 有效导出类型；无效时返回 `undefined`。
+ */
 function normalizePagerExportType(value: unknown): TablePagerExportType | undefined {
   const source = typeof value === 'string'
     ? value.trim().toLowerCase()
@@ -36,6 +45,14 @@ function normalizePagerExportType(value: unknown): TablePagerExportType | undefi
   return undefined;
 }
 
+/**
+ * 解析分页导出动作标题。
+ * 优先级：`title > label > name > 本地化默认文案`。
+ * @param type 导出类型。
+ * @param localeText 本地化文案。
+ * @param source 动作配置对象。
+ * @returns 最终标题。
+ */
 function resolvePagerExportTitle(
   type: TablePagerExportType,
   localeText: Pick<
@@ -62,11 +79,21 @@ function resolvePagerExportTitle(
   return localeText.exportCurrentPage;
 }
 
+/**
+ * 执行分页导出规则判定。
+ * 支持布尔值或函数规则，函数异常时回退到默认值。
+ * @param rule 规则定义。
+ * @param fallback 默认值。
+ * @param context 规则上下文。
+ * @returns 判定结果。
+ */
 function resolveTablePagerExportRule(
   rule: TablePagerExportRule | undefined,
   fallback: boolean,
   context: {
+    /** 当前导出动作配置。 */
     action: TablePagerExportOption;
+    /** 索引。 */
     index: number;
   }
 ) {
@@ -83,10 +110,23 @@ function resolveTablePagerExportRule(
   return fallback;
 }
 
+/**
+ * 规范化分页导出文件名字段。
+ * @param value 原始文件名。
+ * @returns 去空格后的文件名；无效时返回 `undefined`。
+ */
 function normalizePagerExportFileName(value: unknown) {
   return isTableNonEmptyString(value) ? value.trim() : undefined;
 }
 
+/**
+ * 规范化单个分页导出动作配置。
+ * @template TData 行数据类型。
+ * @param rawOption 原始动作配置或动作类型字符串。
+ * @param index 动作索引。
+ * @param localeText 本地化文案。
+ * @returns 标准化动作；不可用时返回 `undefined`。
+ */
 function normalizePagerExportActionOption<
   TData extends Record<string, any> = Record<string, any>,
 >(
@@ -137,6 +177,14 @@ function normalizePagerExportActionOption<
   } as ResolvedTablePagerExportAction<TData>;
 }
 
+/**
+ * 解析分页导出总配置。
+ * 支持布尔开关与对象配置，内部会标准化动作列表并补齐默认图标和标题。
+ * @template TData 行数据类型。
+ * @param source 原始分页导出配置。
+ * @param localeText 本地化文案。
+ * @returns 标准化导出配置；禁用或无可用动作时返回 `undefined`。
+ */
 export function resolveTablePagerExportConfig<
   TData extends Record<string, any> = Record<string, any>,
 >(
@@ -195,6 +243,13 @@ export function resolveTablePagerExportConfig<
   };
 }
 
+/**
+ * 规范化导出文件名。
+ * 会替换非法文件名字符，并确保带有导出后缀。
+ * @param value 原始文件名。
+ * @param fallback 兜底文件名。
+ * @returns 最终可用于下载的文件名。
+ */
 export function normalizeTableExportFileName(
   value: unknown,
   fallback = 'table-export'
@@ -205,6 +260,12 @@ export function normalizeTableExportFileName(
   return /\.(xlsx?|csv)$/i.test(next) ? next : `${next}.xls`;
 }
 
+/**
+ * 解析导出字段路径。
+ * 优先使用 `dataIndex`，其次使用 `field`。
+ * @param column 列配置。
+ * @returns 字段路径；未配置时返回 `undefined`。
+ */
 function normalizeTableExportField(column: TableColumnRecord) {
   const dataIndex = column.dataIndex;
   if (Array.isArray(dataIndex)) {
@@ -225,6 +286,11 @@ function normalizeTableExportField(column: TableColumnRecord) {
   return undefined;
 }
 
+/**
+ * 判断列是否为操作列。
+ * @param column 列配置。
+ * @returns 命中操作列时返回 `true`。
+ */
 function isOperationExportColumn(column: TableColumnRecord) {
   if (resolveColumnType(column) === 'operation') {
     return true;
@@ -239,6 +305,14 @@ function isOperationExportColumn(column: TableColumnRecord) {
   return false;
 }
 
+/**
+ * 解析导出列定义。
+ * 可按选项过滤隐藏列、选择列、操作列，并支持序号列起始偏移。
+ * @template TData 行数据类型。
+ * @param columns 表格列配置数组。
+ * @param options 导出列解析选项。
+ * @returns 导出列定义数组。
+ */
 export function resolveTableExportColumns<
   TData extends Record<string, any> = Record<string, any>,
 >(
@@ -291,10 +365,20 @@ export function resolveTableExportColumns<
   return resolved;
 }
 
+/**
+ * 处理导出单元格值，防止公式注入。
+ * @param value 单元格文本值。
+ * @returns 处理后的安全文本。
+ */
 function sanitizeTableExportCell(value: string) {
   return /^[=+\-@]/.test(value) ? `'${value}` : value;
 }
 
+/**
+ * 转义 HTML 特殊字符。
+ * @param value 原始文本。
+ * @returns HTML 安全文本。
+ */
 function escapeTableExportHTML(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -304,6 +388,11 @@ function escapeTableExportHTML(value: string) {
     .replaceAll("'", '&#39;');
 }
 
+/**
+ * 将任意值转换为可导出的字符串。
+ * @param value 原始值。
+ * @returns 导出字符串值。
+ */
 function resolveTableExportCellValue(value: unknown) {
   if (value === null || value === undefined) {
     return '';
@@ -321,6 +410,12 @@ function resolveTableExportCellValue(value: unknown) {
   return String(value);
 }
 
+/**
+ * 使用 HTML Table + Blob 方式导出 Excel 文件。
+ * @template TData 行数据类型。
+ * @param options 导出参数。
+ * @returns 导出是否执行成功。
+ */
 export function exportTableRowsToExcel<
   TData extends Record<string, any> = Record<string, any>,
 >(
@@ -371,13 +466,24 @@ export function exportTableRowsToExcel<
   return true;
 }
 
+/**
+ * 创建分页导出事件载荷。
+ * @param payload 载荷输入参数。
+ * @returns 标准化后的分页导出事件对象。
+ */
 export function createPagerExportEventPayload(
   payload: {
+    /** 导出动作编码。 */
     code: TablePagerExportType;
+    /** 当前页码。 */
     currentPage: number;
+    /** 导出文件名。 */
     fileName: string;
+    /** 每页条数。 */
     pageSize: number;
+    /** 调用来源。 */
     source: 'react' | 'vue';
+    /** 总条数。 */
     total?: number;
   }
 ): AdminTablePagerExportPayload {

@@ -74,6 +74,11 @@ describe('form-react adapter', () => {
 
   it('should provide API from useAdminForm', async () => {
     let capturedApi: ReturnType<typeof createFormApi> | null = null;
+
+    /**
+     * `useAdminForm` 测试宿主组件。
+     * @returns 空节点。
+     */
     function HookHarness() {
       const [, api] = useAdminForm({
         schema: [{ fieldName: 'name', component: 'input' }],
@@ -88,6 +93,11 @@ describe('form-react adapter', () => {
     });
 
     expect(capturedApi).toBeTruthy();
+    /**
+     * 统一 `runFormContract` 所需的 API 创建签名。
+     * @param props 表单配置。
+     * @returns 表单 API。
+     */
     const createApi = (props: any) => createFormApi(props);
     await runFormContract(createApi);
   });
@@ -95,6 +105,11 @@ describe('form-react adapter', () => {
   it('should provide API from useAdminFormSubmitPage', async () => {
     let capturedApi: ReturnType<typeof createFormApi> | null = null;
     let controller: any = null;
+
+    /**
+     * `useAdminFormSubmitPage` 测试宿主组件。
+     * @returns 空节点。
+     */
     function HookHarness() {
       const [, api, submitController] = useAdminFormSubmitPage({
         open: false,
@@ -134,6 +149,11 @@ describe('form-react adapter', () => {
 
   it('should support step controls from submitController', async () => {
     let controller: any = null;
+
+    /**
+     * 多步骤控制测试宿主组件。
+     * @returns 空节点。
+     */
     function HookHarness() {
       const [, , submitController] = useAdminFormSubmitPage({
         open: false,
@@ -183,6 +203,11 @@ describe('form-react adapter', () => {
 
   it('should reset to first step after submit via submitController', async () => {
     let controller: any = null;
+
+    /**
+     * 提交后回到首步测试宿主组件。
+     * @returns 空节点。
+     */
     function HookHarness() {
       const [, , submitController] = useAdminFormSubmitPage({
         open: true,
@@ -219,6 +244,11 @@ describe('form-react adapter', () => {
 
   it('should keep step and open state when submit callback returns false', async () => {
     let controller: any = null;
+
+    /**
+     * 提交被阻断场景测试宿主组件。
+     * @returns 空节点。
+     */
     function HookHarness() {
       const [, , submitController] = useAdminFormSubmitPage({
         onSubmit: async () => false,

@@ -8,15 +8,37 @@ import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
 import { getLocaleDisplayList, createI18n, type SupportedLocale } from '@admin-core/layout';
 
+/**
+ * 布局上下文
+ * @description 提供当前语言、国际化能力与语言切换事件回调。
+ */
 const context = useLayoutContext();
 
-// 当前语言
+/**
+ * 语言展示选项结构。
+ */
+interface LanguageOption {
+  /** 语言值。 */
+  value: string;
+  /** 语言展示名。 */
+  label: string;
+  /** 语言简称。 */
+  abbr: string;
+}
+
+/**
+ * 当前语言标识，默认回退到 `zh-CN`。
+ */
 const currentLocale = computed(() => (context.props.locale || 'zh-CN') as SupportedLocale);
 
-// 下拉菜单状态
+/**
+ * 语言下拉菜单开关状态。
+ */
 const isOpen = ref(false);
 
-// 语言选项 - 使用 core 的 getLocaleDisplayList
+/**
+ * 语言选项列表，基于 core 语言配置生成展示文案与简称。
+ */
 const languageOptions = computed(() => {
   const i18n = createI18n(currentLocale.value);
   const displayList = getLocaleDisplayList(i18n);
@@ -34,16 +56,25 @@ const languageOptions = computed(() => {
       value: item.value,
       label: item.label,
       abbr,
-    };
+    } satisfies LanguageOption;
   });
 });
 
-// 切换语言
+/**
+ * 处理语言切换并关闭下拉菜单。
+ *
+ * @param locale 目标语言标识。
+ */
 const handleLocaleChange = (locale: string) => {
   context.events.onLocaleChange?.(locale);
   isOpen.value = false;
 };
 
+/**
+ * 处理语言选项点击并提取语言值。
+ *
+ * @param e 鼠标事件对象。
+ */
 const handleLocaleOptionClick = (e: MouseEvent) => {
   const locale = (e.currentTarget as HTMLElement | null)?.dataset?.value;
   if (locale) {
@@ -51,12 +82,16 @@ const handleLocaleOptionClick = (e: MouseEvent) => {
   }
 };
 
-// 切换下拉菜单
+/**
+ * 切换语言下拉菜单显示状态。
+ */
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
 };
 
-// 关闭下拉菜单
+/**
+ * 关闭语言下拉菜单。
+ */
 const closeDropdown = () => {
   isOpen.value = false;
 };

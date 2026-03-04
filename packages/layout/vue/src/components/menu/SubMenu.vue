@@ -11,6 +11,9 @@ import LayoutIcon from '../common/LayoutIcon.vue';
 import MenuIcon from '../common/MenuIcon.vue';
 import { LAYOUT_UI_TOKENS, rafThrottle, type MenuItem } from '@admin-core/layout';
 
+/**
+ * 子菜单组件属性。
+ */
 interface Props {
   /** 菜单项数据 */
   item: MenuItem;
@@ -20,35 +23,100 @@ interface Props {
   isMore?: boolean;
 }
 
+/**
+ * 子菜单组件入参
+ * @description 提供子菜单节点、层级及“更多”占位标记。
+ */
 const props = withDefaults(defineProps<Props>(), {
   isMore: false,
 });
 
+/**
+ * 菜单上下文
+ * @description 提供展开状态、激活状态与菜单交互方法。
+ */
 const menuContext = useMenuContext();
+/**
+ * 父级子菜单上下文
+ * @description 用于构建父路径链与级联悬停行为。
+ */
 const parentSubMenu = useSubMenuContext();
 
-// 当前组件实例
+/**
+ * 当前组件实例
+ * @description 用于在特殊场景向父级节点派发事件。
+ */
 const instance = getCurrentInstance();
 
-// 状态
+/**
+ * 鼠标是否位于子层菜单区域
+ * @description 控制悬停离开后的延迟收起逻辑。
+ */
 const mouseInChild = ref(false);
+/**
+ * 悬停展开定时器
+ * @description 控制子菜单悬停延时展开。
+ */
 let hoverTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * 子菜单分批渲染批次大小
+ * @description 控制纵向展开时子项渐进渲染节奏。
+ */
 const CHILD_RENDER_CHUNK = LAYOUT_UI_TOKENS.SUB_MENU_RENDER_CHUNK;
+/**
+ * 子菜单当前渲染数量
+ * @description 用于控制展开内容的渐进渲染数量。
+ */
 const renderCount = ref<number>(CHILD_RENDER_CHUNK);
+/**
+ * 弹层滚动位置
+ * @description 驱动弹层虚拟列表区间计算。
+ */
 const popupScrollTop = ref(0);
+/**
+ * 弹层视口高度
+ * @description 用于计算可见项范围。
+ */
 const popupViewportHeight = ref(0);
+/**
+ * 弹层项高度
+ * @description 虚拟列表滚动区间计算基准。
+ */
 const popupItemHeight = ref(40);
+/**
+ * 弹层虚拟列表 overscan
+ * @description 在可视区上下额外渲染项数量。
+ */
 const POPUP_OVERSCAN = LAYOUT_UI_TOKENS.POPUP_OVERSCAN;
+/**
+ * 弹层容器尺寸观察器
+ * @description 监听弹层高度变化并刷新虚拟参数。
+ */
 const popupResizeObserver = ref<ResizeObserver | null>(null);
+/**
+ * 弹层项尺寸观察器
+ * @description 监听项高变化并同步 `popupItemHeight`。
+ */
 const popupItemResizeObserver = ref<ResizeObserver | null>(null);
+/**
+ * 弹层滚轮监听清理函数
+ * @description 用于解绑自定义滚轮行为。
+ */
 let popupWheelCleanup: (() => void) | null = null;
 
+/**
+ * 当前子菜单路径键
+ * @description 标准化 key/path 值作为菜单唯一标识。
+ */
 const path = computed(() => {
   const raw = props.item.key ?? props.item.path ?? '';
   return raw === '' ? '' : String(raw);
 });
 
-// 父级路径（遍历父级子菜单上下文获取完整路径链）
+/**
+ * 父级路径链
+ * @description 从父子菜单上下文回溯得到完整父级路径。
+ */
 const parentPaths = computed(() => {
   const paths: string[] = [];
   let parent = parentSubMenu;
@@ -59,16 +127,28 @@ const parentPaths = computed(() => {
   return paths;
 });
 
-// 是否展开
+/**
+ * 当前子菜单是否展开
+ * @description 根据上下文展开集合判断。
+ */
 const opened = computed(() => (path.value ? menuContext.openedMenuSet.value.has(path.value) : false));
 
-// 是否激活（有子菜单激活）
+/**
+ * 当前子菜单是否激活
+ * @description 当子链中存在激活节点时返回 `true`。
+ */
 const active = computed(() => (path.value ? menuContext.activeParentSet.value.has(path.value) : false));
 
-// 是否为一级菜单
+/**
+ * 是否一级子菜单
+ * @description 一级子菜单在水平模式下弹层位置为下方。
+ */
 const isFirstLevel = computed(() => props.level === 0);
 
-// 是否为弹出模式
+/**
+ * 是否处于弹层模式
+ * @description 折叠或水平场景下使用浮层子菜单。
+ */
 const isPopup = computed(() => menuContext.isMenuPopup);
 
 watch(
@@ -93,7 +173,9 @@ watchEffect((onCleanup) => {
   onCleanup(() => cancelAnimationFrame(frame));
 });
 
-// 创建子菜单上下文（传递父级引用以支持完整路径遍历）
+/**
+ * 创建子菜单上下文并向下传递父级链路。
+ */
 createSubMenuContext({
   path: path.value,
   level: props.level,
@@ -102,13 +184,24 @@ createSubMenuContext({
   parent: parentSubMenu,
 });
 
-// ============================================================
-// Floating UI 定位
-// ============================================================
+/**
+ * Floating UI 定位配置区。
+ */
+/**
+ * 浮层定位参考节点引用
+ * @description 指向子菜单触发器元素。
+ */
 const referenceRef = ref<HTMLElement | null>(null);
+/**
+ * 浮层节点引用
+ * @description 指向弹出层容器元素。
+ */
 const floatingRef = ref<HTMLElement | null>(null);
 
-// 弹出位置：水平模式一级在下方，其他在右侧
+/**
+ * 弹层定位方向
+ * @description 水平一级菜单使用 `bottom-start`，其他场景使用 `right-start`。
+ */
 const placement = computed(() => {
   if (menuContext.props.mode === 'horizontal' && isFirstLevel.value) {
     return 'bottom-start';
@@ -116,6 +209,10 @@ const placement = computed(() => {
   return 'right-start';
 });
 
+/**
+ * 浮层定位样式
+ * @description 由 Floating UI 计算得到的实时定位样式对象。
+ */
 const { floatingStyles } = useFloating(referenceRef, floatingRef, {
   placement: placement.value,
   middleware: [
@@ -127,13 +224,18 @@ const { floatingStyles } = useFloating(referenceRef, floatingRef, {
   whileElementsMounted: autoUpdate,
 });
 
-// ============================================================
-// 悬停事件处理
-// ============================================================
+/**
+ * 处理子菜单触发器进入事件，按模式决定是否延迟展开。
+ *
+ * @param e 鼠标或焦点事件。
+ * @param showTimeout 展开延迟（毫秒）。
+ */
 function handleMouseenter(e: MouseEvent | FocusEvent, showTimeout = 300) {
   if (e.type === 'focus') return;
-  
-  // 垂直非折叠模式不自动展开
+
+  /**
+   * 垂直非折叠模式下由点击控制展开，不执行悬停展开。
+   */
   if (!menuContext.props.collapse && menuContext.props.mode === 'vertical') {
     if (parentSubMenu) {
       parentSubMenu.mouseInChild.value = true;
@@ -152,7 +254,9 @@ function handleMouseenter(e: MouseEvent | FocusEvent, showTimeout = 300) {
     hoverTimer = null;
   }
 
-  // 已展开无需重复调度
+  /**
+   * 已展开时不再重复调度展开计时器。
+   */
   if (opened.value) {
     const parentEl = instance?.parent?.vnode.el as HTMLElement | null;
     parentEl?.dispatchEvent(new MouseEvent('mouseenter'));
@@ -163,13 +267,22 @@ function handleMouseenter(e: MouseEvent | FocusEvent, showTimeout = 300) {
     menuContext.openMenu(path.value, parentPaths.value);
   }, showTimeout);
   
-  // 触发父级的 mouseenter
+  /**
+   * 向父级触发 `mouseenter`，保持上层菜单展开状态。
+   */
   const parentEl = instance?.parent?.vnode.el as HTMLElement | null;
   parentEl?.dispatchEvent(new MouseEvent('mouseenter'));
 }
 
+/**
+ * 处理子菜单触发器离开事件，按需延迟关闭并级联到父级。
+ *
+ * @param deepDispatch 是否向父级继续派发离开行为。
+ */
 function handleMouseleave(deepDispatch = false) {
-  // 垂直非折叠模式
+  /**
+   * 垂直非折叠模式下仅同步父级鼠标状态，不执行自动关闭。
+   */
   if (!menuContext.props.collapse && menuContext.props.mode === 'vertical' && parentSubMenu) {
     parentSubMenu.mouseInChild.value = false;
     return;
@@ -202,20 +315,31 @@ function handleMouseleave(deepDispatch = false) {
   }
 }
 
-// 弹出层内的事件处理
+/**
+ * 处理弹层鼠标进入事件，缩短展开延迟保持交互连贯。
+ *
+ * @param e 鼠标或焦点事件。
+ */
 function handlePopupMouseenter(e: MouseEvent | FocusEvent) {
   handleMouseenter(e, 100);
 }
 
+/**
+ * 处理弹层鼠标离开事件，触发级联关闭流程。
+ */
 function handlePopupMouseleave() {
   handleMouseleave(true);
 }
 
-// 点击处理（垂直模式切换展开）
+/**
+ * 处理子菜单点击，在垂直非折叠模式下切换展开状态。
+ */
 function handleClick() {
   if (props.item.disabled) return;
-  
-  // 垂直非折叠模式：切换展开状态
+
+  /**
+   * 垂直非折叠模式下通过点击切换展开状态。
+   */
   if (menuContext.props.mode === 'vertical' && !menuContext.props.collapse) {
     if (opened.value) {
       menuContext.closeMenu(path.value, parentPaths.value);
@@ -225,7 +349,9 @@ function handleClick() {
   }
 }
 
-// 清理定时器
+/**
+ * 组件卸载时清理悬停定时器。
+ */
 onUnmounted(() => {
   if (hoverTimer) {
     clearTimeout(hoverTimer);
@@ -233,18 +359,28 @@ onUnmounted(() => {
   }
 });
 
-// 箭头图标
+/**
+ * 子菜单箭头图标方向
+ * @description 根据模式与层级选择右箭头或下箭头。
+ */
 const arrowIcon = computed(() => {
-  // 水平模式非一级、或垂直折叠模式：右箭头
+  /**
+   * 水平非一级菜单或垂直折叠菜单使用右箭头。
+   */
   if ((menuContext.props.mode === 'horizontal' && !isFirstLevel.value) ||
       (menuContext.props.mode === 'vertical' && menuContext.props.collapse)) {
     return 'right';
   }
-  // 其他：下箭头
+  /**
+   * 其他场景使用下箭头。
+   */
   return 'down';
 });
 
-// 箭头样式
+/**
+ * 箭头图标样式
+ * @description 下箭头在展开时旋转 180 度。
+ */
 const arrowStyle = computed(() => {
   if (arrowIcon.value === 'down' && opened.value) {
     return { transform: 'rotate(180deg)' };
@@ -252,7 +388,10 @@ const arrowStyle = computed(() => {
   return {};
 });
 
-// 类名
+/**
+ * 子菜单根类名
+ * @description 根据激活、展开、禁用、层级与“更多”状态生成。
+ */
 const subMenuClass = computed(() => [
   'menu__sub-menu',
   {
@@ -264,24 +403,52 @@ const subMenuClass = computed(() => [
   },
 ]);
 
+/**
+ * 子菜单内容类名
+ * @description 统一子菜单内容容器基础类。
+ */
 const contentClass = computed(() => [
   'menu__sub-menu-content',
 ]);
 
+/**
+ * 渐进渲染可见子项
+ * @description 非弹层模式下按渲染数量截取子项。
+ */
 const visibleChildren = computed(() => (props.item.children ?? []).slice(0, renderCount.value));
+/**
+ * 弹层子项集合
+ * @description 弹层模式下用于虚拟列表计算的数据源。
+ */
 const popupChildren = computed(() => props.item.children ?? []);
+/**
+ * 弹层虚拟起始索引
+ * @description 基于滚动位置与 overscan 计算。
+ */
 const popupStartIndex = computed(() =>
   Math.max(0, Math.floor(popupScrollTop.value / popupItemHeight.value) - POPUP_OVERSCAN)
 );
+/**
+ * 弹层虚拟结束索引
+ * @description 基于滚动位置、视口高度与 overscan 计算。
+ */
 const popupEndIndex = computed(() =>
   Math.min(
     popupChildren.value.length,
     Math.ceil((popupScrollTop.value + popupViewportHeight.value) / popupItemHeight.value) + POPUP_OVERSCAN
   )
 );
+/**
+ * 弹层可见子项切片
+ * @description 返回当前应渲染的弹层子项区间。
+ */
 const popupVisibleChildren = computed(() =>
   popupChildren.value.slice(popupStartIndex.value, popupEndIndex.value)
 );
+/**
+ * 弹层列表占位样式
+ * @description 通过上下 padding 模拟未渲染区间占位。
+ */
 const popupListStyle = computed(() => {
   if (!isPopup.value) return undefined;
   const paddingTop = popupStartIndex.value * popupItemHeight.value;
@@ -309,6 +476,9 @@ watch(
   }
 );
 
+/**
+ * 同步弹层滚动容器尺寸与菜单项高度，用于虚拟区间计算。
+ */
 const updatePopupMetrics = () => {
   const popupEl = floatingRef.value;
   if (!popupEl) return;
@@ -327,6 +497,11 @@ const updatePopupMetrics = () => {
   popupViewportHeight.value = popupEl.clientHeight;
 };
 
+/**
+ * 同步弹层滚动位置到响应式状态。
+ *
+ * @param e 滚动事件对象。
+ */
 const handlePopupScroll = (e: Event) => {
   const target = e.currentTarget as HTMLElement | null;
   if (!target) return;
@@ -377,6 +552,11 @@ watch(opened, (value, _, onCleanup) => {
         popupItemResizeObserver.value.observe(observedItem);
       }
     }
+    /**
+     * 处理弹层滚轮事件，接管默认行为以改善滚动体验。
+     *
+     * @param e 滚轮事件对象。
+     */
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return;
       e.preventDefault();

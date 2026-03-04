@@ -1,6 +1,6 @@
 /**
- * Vue 组件 Props 类型定义
- * @description 导出所有抽屉组件的 Props 类型，供外部使用
+ * Vue 抽屉组件 Props 类型定义。
+ * @description 汇总偏好抽屉相关子组件的属性契约，供组件实现与外部调用复用。
  */
 
 import type {
@@ -12,7 +12,8 @@ import type {
 } from '@admin-core/preferences';
 
 /**
- * PreferencesDrawer Props
+ * 偏好抽屉组件 Props。
+ * @description 定义抽屉显隐与蒙层交互行为。
  */
 export interface PreferencesDrawerProps {
   /** 是否显示 */
@@ -24,7 +25,8 @@ export interface PreferencesDrawerProps {
 }
 
 /**
- * PreferencesTrigger Props
+ * 偏好触发器组件 Props。
+ * @description 定义触发入口的样式扩展参数。
  */
 export interface PreferencesTriggerProps {
   /** 自定义类名 */
@@ -32,7 +34,8 @@ export interface PreferencesTriggerProps {
 }
 
 /**
- * Block Props
+ * 区块组件 Props。
+ * @description 定义抽屉内分组标题与说明文案。
  */
 export interface BlockProps {
   /** 标题（可选） */
@@ -42,7 +45,8 @@ export interface BlockProps {
 }
 
 /**
- * SwitchItem Props
+ * 开关设置项 Props。
+ * @description 在开关基础属性上补充 `v-model` 绑定值。
  */
 export interface SwitchItemProps extends SwitchItemBaseProps {
   /** 当前值 */
@@ -50,7 +54,8 @@ export interface SwitchItemProps extends SwitchItemBaseProps {
 }
 
 /**
- * SelectItem Props
+ * 下拉设置项 Props。
+ * @description 在选择器基础属性上补充 `v-model` 绑定值。
  */
 export interface SelectItemProps extends SelectItemBaseProps {
   /** 当前值 */
@@ -58,7 +63,8 @@ export interface SelectItemProps extends SelectItemBaseProps {
 }
 
 /**
- * SliderItem Props
+ * 滑块设置项 Props。
+ * @description 在滑块基础属性上补充值格式化能力。
  */
 export interface SliderItemProps extends SliderItemBaseProps {
   /** 当前值 */
@@ -68,7 +74,8 @@ export interface SliderItemProps extends SliderItemBaseProps {
 }
 
 /**
- * InputItem Props
+ * 文本输入设置项 Props。
+ * @description 在输入基础属性上补充字符串类型的 `v-model` 绑定值。
  */
 export interface InputItemProps extends InputItemBaseProps {
   /** 当前值 */
@@ -76,7 +83,8 @@ export interface InputItemProps extends InputItemBaseProps {
 }
 
 /**
- * NumberItem Props
+ * 数值输入设置项 Props。
+ * @description 在输入基础属性上补充数值类型的 `v-model` 绑定值。
  */
 export interface NumberItemProps extends InputItemBaseProps {
   /** 当前值 */
@@ -84,21 +92,25 @@ export interface NumberItemProps extends InputItemBaseProps {
 }
 
 /**
- * AppearanceTab Props
+ * 外观页签 Props。
+ * @description 外观设置页签的属性别名，复用通用页签属性。
  */
 export type AppearanceTabProps = TabComponentProps;
 
 /**
- * LayoutTab Props
+ * 布局页签 Props。
+ * @description 布局设置页签的属性别名，复用通用页签属性。
  */
 export type LayoutTabProps = TabComponentProps;
 
 /**
- * ShortcutKeysTab Props
+ * 快捷键页签 Props。
+ * @description 快捷键设置页签的属性别名，复用通用页签属性。
  */
 export type ShortcutKeysTabProps = TabComponentProps;
 
 /**
- * GeneralTab Props
+ * 通用页签 Props。
+ * @description 通用设置页签的属性别名，复用通用页签属性。
  */
 export type GeneralTabProps = TabComponentProps;

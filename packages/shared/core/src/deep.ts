@@ -1,5 +1,14 @@
+/**
+ * Shared Core 深比较与深合并工具。
+ * @description 提供深拷贝、深比较与数组覆盖式对象合并能力。
+ */
 import { deepClonePlain } from './clone';
 
+/**
+ * 判断值是否为普通对象。
+ * @param value 待判断值。
+ * @returns 是否普通对象。
+ */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -8,10 +17,22 @@ export function isPlainObject(value: unknown): value is Record<string, unknown> 
   return proto === Object.prototype || proto === null;
 }
 
+/**
+ * 深拷贝值。
+ * @template T 值类型。
+ * @param value 待拷贝值。
+ * @returns 深拷贝结果。
+ */
 export function deepClone<T>(value: T): T {
   return deepClonePlain(value);
 }
 
+/**
+ * 深比较两个值是否相等（不处理循环引用）。
+ * @param a 左值。
+ * @param b 右值。
+ * @returns 是否相等。
+ */
 export function deepEqual(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) {
     return true;
@@ -46,6 +67,13 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   return false;
 }
 
+/**
+ * 记录已比较对象对，避免循环比较死循环。
+ * @param a 左对象。
+ * @param b 右对象。
+ * @param seen 已比较映射。
+ * @returns 是否已存在该对象对的比较记录。
+ */
 function markComparedPair(
   a: object,
   b: object,
@@ -63,9 +91,21 @@ function markComparedPair(
   return false;
 }
 
+/**
+ * 深比较两个值是否相等（支持循环引用）。
+ * @param a 左值。
+ * @param b 右值。
+ * @returns 是否相等。
+ */
 export function deepEqualWithCycles(a: unknown, b: unknown): boolean {
   const seen = new WeakMap<object, WeakSet<object>>();
 
+  /**
+   * 递归比较两个值是否深度相等。
+   * @param left 左值。
+   * @param right 右值。
+   * @returns 是否相等。
+   */
   const compare = (left: unknown, right: unknown): boolean => {
     if (Object.is(left, right)) return true;
     if (typeof left !== typeof right) return false;
@@ -100,16 +140,35 @@ export function deepEqualWithCycles(a: unknown, b: unknown): boolean {
   return compare(a, b);
 }
 
+/**
+ * 数组合并覆盖策略配置。
+ */
 export interface MergeWithArrayOverrideOptions {
+  /** 合并时数组是否复制（默认 `true`）。 */
   cloneArrays?: boolean;
+  /** 是否启用循环引用跟踪（默认 `false`）。 */
   trackCircularRefs?: boolean;
 }
 
+/**
+ * 数组合并覆盖内部上下文。
+ * @internal
+ */
 interface MergeWithArrayOverrideContext {
+  /** 合并时数组是否复制。 */
   cloneArrays: boolean;
+  /** 循环引用跟踪映射。 */
   seen?: WeakMap<object, WeakMap<object, object>>;
 }
 
+/**
+ * 递归合并对象，数组字段采用覆盖策略。
+ * @param source 源对象。
+ * @param target 目标对象。
+ * @param context 合并上下文。
+ * @param output 输出对象。
+ * @returns 合并结果。
+ */
 function mergeWithArrayOverrideInternal(
   source: Record<string, unknown>,
   target: Record<string, unknown>,
@@ -165,6 +224,14 @@ function mergeWithArrayOverrideInternal(
   return output;
 }
 
+/**
+ * 合并对象，数组字段直接覆盖（而非按索引深合并）。
+ * @template T 对象类型。
+ * @param source 源对象。
+ * @param target 目标对象。
+ * @param options 合并配置。
+ * @returns 合并后的对象。
+ */
 export function mergeWithArrayOverride<T extends object>(
   source: Partial<T>,
   target: T,

@@ -1,3 +1,7 @@
+/**
+ * Table React 主表格组件实现。
+ * @description 负责表格渲染、列自定义、查询联动、工具栏与分页交互等核心逻辑。
+ */
 /* eslint-disable react-hooks/exhaustive-deps -- large stateful table module with intentional hook dependency partitioning */
 import type {
   SortOrder,
@@ -144,6 +148,13 @@ import {
   syncAdminTableReactWithPreferences,
 } from '../setup';
 
+/**
+ * 解析具名插槽，兼容静态节点与函数插槽。
+ * @param slots 插槽映射表。
+ * @param name 插槽名称。
+ * @param params 传给函数插槽的参数。
+ * @returns 渲染节点；未命中时返回 `null`。
+ */
 function resolveSlot(
   slots: AdminTableSlots | undefined,
   name: string,
@@ -156,6 +167,12 @@ function resolveSlot(
   return slot ?? null;
 }
 
+/**
+ * 比较两个单元格值，优先按数字/时间语义比较，回退到文本比较。
+ * @param left 左值。
+ * @param right 右值。
+ * @returns 排序比较结果：负数表示左值更小，正数表示左值更大，`0` 表示相等。
+ */
 function compareTableSortValues(left: unknown, right: unknown) {
   if (left === right) {
     return 0;
@@ -167,6 +184,12 @@ function compareTableSortValues(left: unknown, right: unknown) {
     return -1;
   }
 
+  /**
+   * 将单元格值解析为可比较的数值（数值、日期、数字字符串）。
+   *
+   * @param value 原始值。
+   * @returns 可比较数值；无法转换时返回 `undefined`。
+   */
   const toComparableNumber = (value: unknown) => {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return value;
@@ -209,6 +232,12 @@ function compareTableSortValues(left: unknown, right: unknown) {
   });
 }
 
+/**
+ * 浅比较两个字符串数组是否完全一致。
+ * @param previous 上一次值。
+ * @param next 下一次值。
+ * @returns 两个数组内容与顺序都一致时返回 `true`。
+ */
 function shallowEqualStringList(
   previous: Array<string> | undefined,
   next: Array<string>
@@ -227,17 +256,88 @@ function shallowEqualStringList(
   return true;
 }
 
+/** 用于检测分页配置输入变化的关键信号。 */
 interface TablePagerSignal {
+  /** 当前页码。 */
   currentPage: null | number;
+  /** 每页条数。 */
   pageSize: null | number;
+  /** 总记录数。 */
   total: null | number;
 }
 
+/**
+ * 树形行节点类型。
+ * @description 在原始行数据基础上附加可选 `children`，用于树表构建。
+ */
+type TreeNodeWithChildren<TData extends Record<string, any>> = TData & {
+  /** 子节点列表。 */
+  children?: TreeNodeWithChildren<TData>[];
+};
+
+/**
+ * 表格排序状态。
+ */
+interface TableSortState {
+  /** 当前排序字段。 */
+  field?: string;
+  /** 当前排序方向。 */
+  order?: SortOrder;
+}
+
+/**
+ * 单元格编辑状态。
+ */
+interface TableEditingCellState {
+  /** 编辑中的字段。 */
+  dataIndex: string;
+  /** 编辑中的行主键值。 */
+  rowKey: any;
+}
+
+/**
+ * 列自定义面板初始快照。
+ */
+interface ColumnCustomOriginStateSnapshot {
+  /** 初始筛选能力开关快照。 */
+  filterable: Record<string, boolean>;
+  /** 初始固定列方向快照。 */
+  fixed: Record<string, '' | 'left' | 'right'>;
+  /** 初始列排序顺序快照。 */
+  order: string[];
+  /** 初始排序能力开关快照。 */
+  sortable: Record<string, boolean>;
+  /** 初始可见性开关快照。 */
+  visible: Record<string, boolean>;
+}
+
+/**
+ * 列自定义拖拽待应用移动信息。
+ */
+interface ColumnCustomPendingMoveState {
+  /** 当前拖拽列 key。 */
+  dragKey: string;
+  /** 当前悬停列 key。 */
+  overKey: string;
+  /** 插入位置。 */
+  position: ColumnCustomDragPosition;
+}
+
+/**
+ * 将输入值标准化为分页信号数字，非法值返回 `null`。
+ * @param value 原始输入值。
+ * @returns 可用数值；无效输入返回 `null`。
+ */
 function toPagerSignalNumber(value: unknown) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * 提取分页配置中的关键字段，构建可比较信号。
+ * @param pagerConfig 分页配置对象。
+ * @returns 仅包含 `currentPage/pageSize/total` 的信号对象。
+ */
 function resolvePagerSignal(pagerConfig: unknown): TablePagerSignal {
   const record =
     pagerConfig && typeof pagerConfig === 'object'
@@ -250,6 +350,11 @@ function resolvePagerSignal(pagerConfig: unknown): TablePagerSignal {
   };
 }
 
+/**
+ * 判断分页信号是否包含至少一个有效值。
+ * @param signal 分页信号。
+ * @returns 至少存在一个非空分页字段时返回 `true`。
+ */
 function hasPagerSignal(signal: null | TablePagerSignal) {
   return !!signal && (
     signal.currentPage !== null ||
@@ -258,6 +363,12 @@ function hasPagerSignal(signal: null | TablePagerSignal) {
   );
 }
 
+/**
+ * 判断两次分页信号是否相同。
+ * @param previous 上一次信号。
+ * @param next 下一次信号。
+ * @returns 两次分页信号字段值完全一致时返回 `true`。
+ */
 function isSamePagerSignal(
   previous: null | TablePagerSignal,
   next: TablePagerSignal
@@ -268,13 +379,20 @@ function isSamePagerSignal(
     previous.total === next.total;
 }
 
+/**
+ * 将平铺数组按父子关系转换为树形结构。
+ * @param data 原始平铺数据。
+ * @param rowField 当前节点主键字段。
+ * @param parentField 父节点字段。
+ * @returns 树形数据。
+ */
 function transformTreeData<TData extends Record<string, any>>(
   data: TData[],
   rowField = 'id',
   parentField = 'parentId'
 ): TData[] {
-  const map = new Map<any, TData & { children?: TData[] }>();
-  const roots: Array<TData & { children?: TData[] }> = [];
+  const map = new Map<any, TreeNodeWithChildren<TData>>();
+  const roots: TreeNodeWithChildren<TData>[] = [];
 
   for (const item of data) {
     map.set(item[rowField], { ...item, children: [] });
@@ -297,12 +415,24 @@ function transformTreeData<TData extends Record<string, any>>(
   return roots as TData[];
 }
 
+/** 行选择模式。 */
 type RowSelectionMode = 'checkbox' | 'radio';
 
+/**
+ * 从未知输入中读取布尔值配置。
+ * @param value 原始输入。
+ * @returns 布尔值或 `undefined`。
+ */
 function resolveBooleanOption(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined;
 }
 
+/**
+ * 解析表格纵向滚动高度。
+ * @param height 高度配置。
+ * @param fallback 回退高度。
+ * @returns 解析后的滚动高度（正数像素值）。
+ */
 function resolveTableScrollHeight(height: unknown, fallback = 500) {
   if (typeof height === 'number' && Number.isFinite(height) && height > 0) {
     return height;
@@ -316,11 +446,21 @@ function resolveTableScrollHeight(height: unknown, fallback = 500) {
   return fallback;
 }
 
+/**
+ * 解析 CSS 像素值字符串。
+ * @param value CSS 值。
+ * @returns 有效像素数值；无法解析时返回 `0`。
+ */
 function parseCssPixel(value: string) {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * 计算元素外部高度（包含上下 margin）。
+ * @param element 目标元素。
+ * @returns 元素外部高度（像素）。
+ */
 function resolveElementOuterHeight(element: null | HTMLElement) {
   if (!element || typeof window === 'undefined') {
     return 0;
@@ -333,6 +473,11 @@ function resolveElementOuterHeight(element: null | HTMLElement) {
   );
 }
 
+/**
+ * 从显式像素配置中解析数值高度，仅接受正值。
+ * @param value 高度配置。
+ * @returns 解析得到的高度；无效输入返回 `null`。
+ */
 function resolveExplicitPixelHeight(value: unknown) {
   if (typeof value === 'number') {
     return Number.isFinite(value) && value > 0 ? value : null;
@@ -351,10 +496,27 @@ function resolveExplicitPixelHeight(value: unknown) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+/**
+ * 主体滚动锁类名。
+ * @description 命中该类名时启用“锁定主体高度”滚动策略。
+ */
 const BODY_SCROLL_LOCK_CLASS = 'admin-table--lock-body-scroll';
+/**
+ * 主体滚动高度安全间隙（像素）。
+ * @description 用于避免临界高度产生滚动条抖动。
+ */
 const BODY_SCROLL_SAFE_GAP = 2;
+/**
+ * 主体滚动高度比较容差（像素）。
+ * @description 用于判断高度是否可视为“近似不变”。
+ */
 const BODY_SCROLL_HEIGHT_EPSILON = 4;
 
+/**
+ * 将表格语言标识映射到 antd locale 对象。
+ * @param locale 语言标识。
+ * @returns antd locale。
+ */
 function resolveAntdTableLocale(locale: unknown): AntdLocale {
   if (locale === 'en-US') {
     return antdEnUS;
@@ -362,11 +524,19 @@ function resolveAntdTableLocale(locale: unknown): AntdLocale {
   return antdZhCN;
 }
 
+/**
+ * 表格工具栏图标渲染器。
+ *
+ * @param options 图标类型与激活状态。
+ * @returns 工具栏图标节点。
+ */
 function ToolbarToolIcon({
   active,
   code,
 }: {
+  /** 图标类型编码。 */
   code: 'custom' | 'refresh' | 'zoom';
+  /** 是否激活（如最大化中、刷新中）。 */
   active?: boolean;
 }) {
   const iconClass =
@@ -390,10 +560,32 @@ function ToolbarToolIcon({
   );
 }
 
+/**
+ * React 版 `AdminTable` 组件内部入参。
+ */
+interface AdminTableInternalProps<
+  TData extends Record<string, any> = Record<string, any>,
+  TFormValues extends Record<string, any> = Record<string, any>,
+> extends AdminTableReactProps<TData, TFormValues> {
+  /** 外部注入的表格 API 实例。 */
+  api?: AdminTableApi<TData, TFormValues>;
+}
+
+/**
+ * React 版 `AdminTable` 主组件。
+ * @description 负责整合表格配置、数据代理请求、列自定义、选择态、分页与工具栏交互逻辑。
+ *
+ * @param props 表格运行时配置与可选外部注入 API。
+ * @returns 表格渲染节点。
+ */
 export const AdminTable = memo(function AdminTable<
   TData extends Record<string, any> = Record<string, any>,
   TFormValues extends Record<string, any> = Record<string, any>,
->(props: AdminTableReactProps<TData, TFormValues> & { api?: AdminTableApi<TData, TFormValues> }) {
+>(props: AdminTableInternalProps<TData, TFormValues>) {
+  /**
+   * 当前生效的表格 API。
+   * @description 优先复用外部注入实例，缺省时在组件内惰性创建。
+   */
   const api = useMemo(
     () =>
       props.api
@@ -404,24 +596,57 @@ export const AdminTable = memo(function AdminTable<
       ),
     [props.api]
   );
+  /**
+   * 是否由当前组件持有并负责释放表格 API。
+   */
   const ownsTableApi = !props.api;
+  /**
+   * React 端表格全局 setup 状态快照。
+   */
   const setupState = getAdminTableReactSetupState();
+  /**
+   * 表格语言版本号订阅值。
+   */
   const localeVersion = useLocaleVersion();
+  /**
+   * 偏好主题版本号订阅值。
+   */
   const preferencesVersion = usePreferencesVersion();
+  /**
+   * 当前语言下表格文案集合。
+   */
   const localeText = useMemo(
     () => createTableLocaleText(getLocaleMessages().table),
     [localeVersion]
   );
+  /**
+   * 当前语言对应的 antd locale 对象。
+   */
   const antdLocale = useMemo(
     () => resolveAntdTableLocale(setupState.locale),
     [localeVersion, setupState.locale]
   );
 
+  /**
+   * 表格运行时 props 快照。
+   */
   const [tableState, setTableState] = useState(() => api.getSnapshot().props as AdminTableReactProps<TData, TFormValues>);
+  /**
+   * 当前渲染数据源。
+   */
   const [dataSource, setDataSource] = useState<TData[]>(() => (tableState.gridOptions?.data as TData[]) ?? []);
+  /**
+   * 表格加载状态。
+   */
   const [loading, setLoading] = useState<boolean>(() => !!tableState.gridOptions?.loading);
+  /**
+   * 工具栏刷新按钮加载状态。
+   */
   const [refreshing, setRefreshing] = useState(false);
-  const [sortState, setSortState] = useState<{ field?: string; order?: SortOrder }>(() => {
+  /**
+   * 当前排序状态。
+   */
+  const [sortState, setSortState] = useState<TableSortState>(() => {
     const defaultSort = tableState.gridOptions?.sortConfig?.defaultSort;
     if (!defaultSort?.field || !defaultSort.order) return {};
     return {
@@ -429,6 +654,9 @@ export const AdminTable = memo(function AdminTable<
       order: defaultSort.order === 'asc' ? 'ascend' : 'descend',
     };
   });
+  /**
+   * 当前分页状态（传给 antd Table）。
+   */
   const [pagination, setPagination] = useState<TablePaginationConfig>(() => ({
     current: tableState.gridOptions?.pagerConfig?.currentPage ?? 1,
     pageSize: tableState.gridOptions?.pagerConfig?.pageSize ?? 20,
@@ -438,7 +666,13 @@ export const AdminTable = memo(function AdminTable<
       tableState.gridOptions?.pagerConfig?.pageSizes
     ).map((item) => String(item)),
   }));
+  /**
+   * 是否命中移动端断点。
+   */
   const [mobile, setMobile] = useState(() => resolveTableMobileMatched());
+  /**
+   * 非受控场景下的内部选中键集合。
+   */
   const [innerSelectedRowKeys, setInnerSelectedRowKeys] = useState<Key[]>(() => {
     const rowSelection = tableState.gridOptions?.rowSelection;
     if (Array.isArray(rowSelection?.selectedRowKeys)) {
@@ -450,75 +684,213 @@ export const AdminTable = memo(function AdminTable<
     return [];
   });
 
+  /**
+   * 表格最大化状态。
+   */
   const [maximized, setMaximized] = useState(false);
+  /**
+   * 列自定义面板显隐状态。
+   */
   const [customPanelOpen, setCustomPanelOpen] = useState(false);
+  /**
+   * 列自定义草稿态：可见性映射。
+   */
   const [customDraftVisibleColumns, setCustomDraftVisibleColumns] = useState<Record<string, boolean>>({});
+  /**
+   * 列自定义草稿态：可筛选能力映射。
+   */
   const [customDraftFilterableColumns, setCustomDraftFilterableColumns] = useState<Record<string, boolean>>({});
+  /**
+   * 列自定义草稿态：固定方向映射。
+   */
   const [customDraftFixedColumns, setCustomDraftFixedColumns] = useState<Record<string, '' | 'left' | 'right'>>({});
+  /**
+   * 列自定义草稿态：列顺序。
+   */
   const [customDraftOrder, setCustomDraftOrder] = useState<string[]>([]);
+  /**
+   * 列自定义草稿态：可排序能力映射。
+   */
   const [customDraftSortableColumns, setCustomDraftSortableColumns] = useState<Record<string, boolean>>({});
+  /**
+   * 列自定义拖拽状态。
+   */
   const [customDragState, setCustomDragState] = useState<ColumnCustomDragState>(
     () => createColumnCustomDragResetState().dragState
   );
+  /**
+   * 当前生效列状态：可见性映射。
+   */
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({});
+  /**
+   * 当前生效列状态：可筛选能力映射。
+   */
   const [filterableColumns, setFilterableColumns] = useState<Record<string, boolean>>({});
+  /**
+   * 当前生效列状态：固定方向映射。
+   */
   const [fixedColumns, setFixedColumns] = useState<Record<string, '' | 'left' | 'right'>>({});
+  /**
+   * 当前生效列顺序。
+   */
   const [columnOrder, setColumnOrder] = useState<string[]>([]);
+  /**
+   * 当前生效列状态：可排序能力映射。
+   */
   const [sortableColumns, setSortableColumns] = useState<Record<string, boolean>>({});
+  /**
+   * 行编辑模式下的当前编辑行键。
+   */
   const [editingRowKey, setEditingRowKey] = useState<any>(null);
-  const [editingCell, setEditingCell] = useState<{ dataIndex: string; rowKey: any } | null>(null);
+  /**
+   * 单元格编辑模式下的当前编辑单元格状态。
+   */
+  const [editingCell, setEditingCell] = useState<TableEditingCellState | null>(null);
+  /**
+   * 行主键字段名。
+   */
   const rowKeyField = tableState.gridOptions?.rowConfig?.keyField ?? 'id';
 
+  /**
+   * 最新外部运行时 props 快照。
+   */
   const latestPropsRef = useRef<AdminTableReactProps<TData, TFormValues> | null>(null);
+  /**
+   * 最新入参分页信号快照。
+   */
   const latestIncomingPagerSignalRef = useRef<null | TablePagerSignal>(null);
+  /**
+   * 最近一次 `gridOptions.data` 引用快照。
+   */
   const latestGridOptionsDataRef = useRef<unknown>(tableState.gridOptions?.data);
+  /**
+   * 最新查询表单值快照。
+   */
   const latestFormValuesRef = useRef<Record<string, any>>({});
+  /**
+   * 最新表格状态引用。
+   */
   const tableStateRef = useRef(tableState);
+  /**
+   * 最新分页状态引用。
+   */
   const paginationRef = useRef(pagination);
+  /**
+   * 最新排序状态引用。
+   */
   const sortStateRef = useRef(sortState);
+  /**
+   * 最新编辑行键引用。
+   */
   const editingRowKeyRef = useRef<any>(editingRowKey);
+  /**
+   * 最新行主键字段名引用。
+   */
   const rowKeyFieldRef = useRef<string>(rowKeyField);
-  const customOriginStateRef = useRef<{
-    filterable: Record<string, boolean>;
-    fixed: Record<string, '' | 'left' | 'right'>;
-    order: string[];
-    sortable: Record<string, boolean>;
-    visible: Record<string, boolean>;
-  }>({
+  /**
+   * 列自定义面板打开时的原始状态快照。
+   */
+  const customOriginStateRef = useRef<ColumnCustomOriginStateSnapshot>({
     filterable: {},
     fixed: {},
     order: [],
     sortable: {},
     visible: {},
   });
+  /**
+   * 列自定义面板行节点引用表。
+   */
   const customRowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  /**
+   * 列自定义面板主体节点引用。
+   */
   const customBodyRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 列自定义面板弹层节点引用。
+   */
   const customPopoverRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 列自定义工具按钮节点引用。
+   */
   const customTriggerRef = useRef<HTMLButtonElement | null>(null);
+  /**
+   * 表格根容器节点引用。
+   */
   const tableRootRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 工具栏提示可视区节点引用。
+   */
   const toolbarHintViewportRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 工具栏提示文本节点引用。
+   */
   const toolbarHintTextRef = useRef<HTMLSpanElement | null>(null);
+  /**
+   * 分页栏提示可视区节点引用。
+   */
   const pagerHintViewportRef = useRef<HTMLDivElement | null>(null);
+  /**
+   * 分页栏提示文本节点引用。
+   */
   const pagerHintTextRef = useRef<HTMLSpanElement | null>(null);
+  /**
+   * 当前可见数据源引用（用于导出与分页扩展）。
+   */
   const visibleDataSourceRef = useRef<TData[]>(dataSource);
+  /**
+   * 列自定义行位置信息缓存（FLIP 动画）。
+   */
   const customRowRectsRef = useRef<Map<string, ColumnCustomFlipRect>>(new Map());
+  /**
+   * 列自定义行过渡动画帧句柄。
+   */
   const customRowAnimationFrameRef = useRef<null | number>(null);
+  /**
+   * 列拖拽重排调度动画帧句柄。
+   */
   const customMoveAnimationFrameRef = useRef<null | number>(null);
-  const customPendingMoveRef = useRef<null | {
-    dragKey: string;
-    overKey: string;
-    position: ColumnCustomDragPosition;
-  }>(null);
+  /**
+   * 待执行的列拖拽移动信息。
+   */
+  const customPendingMoveRef = useRef<ColumnCustomPendingMoveState | null>(null);
+  /**
+   * 当前拖拽列键引用。
+   */
   const customDraggingKeyRef = useRef<null | string>(null);
+  /**
+   * 当前拖拽悬停状态引用。
+   */
   const customDragHoverRef = useRef<ColumnCustomDragHoverState>(
     createColumnCustomDragResetState().dragHover
   );
+  /**
+   * 工具栏提示是否需要滚动跑马灯。
+   */
   const [toolbarHintShouldScroll, setToolbarHintShouldScroll] = useState(false);
+  /**
+   * 分页栏提示是否需要滚动跑马灯。
+   */
   const [pagerHintShouldScroll, setPagerHintShouldScroll] = useState(false);
+  /**
+   * 分页扩展节点挂载目标。
+   */
   const [paginationMountNode, setPaginationMountNode] = useState<HTMLElement | null>(null);
+  /**
+   * 自动测量得到的表格主体纵向滚动高度。
+   */
   const [autoBodyScrollY, setAutoBodyScrollY] = useState<null | number>(null);
+  /**
+   * 默认选中值是否已在当前模式应用过。
+   */
   const hasAppliedDefaultSelectionRef = useRef(false);
+  /**
+   * 上一次选择模式快照。
+   */
   const previousSelectionModeRef = useRef<undefined | RowSelectionMode>(undefined);
+  /**
+   * 生成 antd 主题配置。
+   * @description 将系统主题设置映射为 antd 的 token 与亮暗算法；无有效主题配置时返回 `undefined`。
+   */
   const antdThemeConfig = useMemo(() => {
     const themeState = setupState.theme;
     const hasTheme =
@@ -556,6 +928,10 @@ export const AdminTable = memo(function AdminTable<
     setupState.theme.radius,
   ]);
 
+  /**
+   * 清理列自定义拖拽动画帧
+   * @description 取消未执行的移动动画并重置待处理移动状态。
+   */
   const clearCustomMoveFrame = useCallback(() => {
     customPendingMoveRef.current = null;
     if (typeof window !== 'undefined' && customMoveAnimationFrameRef.current !== null) {
@@ -564,6 +940,11 @@ export const AdminTable = memo(function AdminTable<
     customMoveAnimationFrameRef.current = null;
   }, []);
 
+  /**
+   * 重置列自定义拖拽状态
+   * @description 清理拖拽动画并恢复拖拽相关状态到初始值。
+   * @returns 无返回值。
+   */
   const resetCustomDragState = useCallback(() => {
     clearCustomMoveFrame();
     const nextState = createColumnCustomDragResetState();
@@ -572,6 +953,12 @@ export const AdminTable = memo(function AdminTable<
     setCustomDragState(nextState.dragState);
   }, [clearCustomMoveFrame]);
 
+  /**
+   * 自动滚动列自定义面板
+   * @description 在拖拽接近容器边缘时自动调整滚动条位置。
+   * @param clientY 当前指针纵坐标。
+   * @returns 无返回值。
+   */
   const autoScrollCustomBody = useCallback((clientY: number) => {
     const body = customBodyRef.current;
     if (!body) {
@@ -594,6 +981,10 @@ export const AdminTable = memo(function AdminTable<
     }
   }, []);
 
+  /**
+   * 创建查询表单动作处理器。
+   * @description 统一封装提交、重置与代理查询刷新流程。
+   */
   const tableSearchFormActions = createTableSearchFormActionHandlers({
     getFormApi: () => formApi as any,
     onValuesResolved: (values) => {
@@ -751,6 +1142,11 @@ export const AdminTable = memo(function AdminTable<
       return undefined;
     }
     const media = window.matchMedia(TABLE_MOBILE_MEDIA_QUERY);
+
+    /**
+     * 同步移动端匹配状态。
+     * @returns 无返回值。
+     */
     const update = () => {
       setMobile(media.matches);
     };
@@ -793,30 +1189,64 @@ export const AdminTable = memo(function AdminTable<
     }));
   }, [formApi, localeText.search]);
 
+  /**
+   * 兼容 `table-core` 的表格实例桥接对象。
+   * @description 向 runtime 暴露编辑态操作能力，供 API 层统一调用。
+   */
   const tableLikeGridRef = useRef({
+    /**
+     * 清空当前编辑状态（行编辑与单元格编辑）。
+     * @returns 无返回值。
+     */
     clearEdit: async () => {
       setEditingRowKey(null);
       setEditingCell(null);
     },
+    /**
+     * 判断指定行是否处于行编辑状态。
+     *
+     * @param row 行数据。
+     * @returns 是否处于行编辑状态。
+     */
     isEditByRow: (row: TData) => {
       return row?.[rowKeyFieldRef.current] === editingRowKeyRef.current;
     },
+    /**
+     * 将指定行设置为当前编辑行。
+     *
+     * @param row 行数据。
+     * @returns 无返回值。
+     */
     setEditRow: (row: TData) => {
       setEditingRowKey(row?.[rowKeyFieldRef.current]);
     },
   });
 
+  /**
+   * 执行代理查询或刷新
+   * @description 统一处理 query/reload 两种模式，解析分页与排序上下文并驱动数据请求。
+   * @param mode 执行模式（查询或刷新）。
+   * @param params 额外请求参数。
+   * @param context 分页与排序上下文信息。
+   * @returns 请求完成后的结果数据。
+   */
   const executeProxy = useCallback(
     async (
       mode: 'query' | 'reload',
       params: Record<string, any>,
       context?: {
+        /** 分页上下文。 */
         page?: {
+          /** 当前页码。 */
           current?: number;
+          /** 每页条数。 */
           pageSize?: number;
         };
+        /** 排序上下文。 */
         sort?: {
+          /** 排序字段。 */
           field?: string;
+          /** 排序信息。 */
           order?: SortOrder;
         };
       }
@@ -964,6 +1394,10 @@ export const AdminTable = memo(function AdminTable<
     tableState.gridOptions?.proxyConfig?.enabled,
   ]);
 
+  /**
+   * 合并运行时表格配置。
+   * @description 以页面入参与全局默认配置做深合并，并补齐序号列定义。
+   */
   const mergedGridOptions = useMemo(() => {
     const sourceGridOptions = tableState.gridOptions as
       | AntdGridOptions<TData>
@@ -992,6 +1426,10 @@ export const AdminTable = memo(function AdminTable<
     return merged;
   }, [localeText.seq, setupState.defaultGridOptions, tableState.gridOptions]);
 
+  /**
+   * 解析列自定义持久化配置。
+   * @description 基于当前列配置计算本地存储键、作用域与开关。
+   */
   const columnCustomPersistenceConfig = useMemo(() => {
     return resolveColumnCustomPersistenceConfig(
       mergedGridOptions as Record<string, any>,
@@ -999,6 +1437,10 @@ export const AdminTable = memo(function AdminTable<
     );
   }, [mergedGridOptions.columnCustomPersistence, mergedGridOptions.columns]);
 
+  /**
+   * 读取外部列自定义状态。
+   * @description 优先使用外部传入快照，缺省时回退到持久化存储。
+   */
   const externalColumnCustomState = useMemo(() => {
     const external = resolveColumnCustomState(mergedGridOptions as Record<string, any>);
     if (hasColumnCustomSnapshot(external)) {
@@ -1007,6 +1449,11 @@ export const AdminTable = memo(function AdminTable<
     return readColumnCustomStateFromStorage(columnCustomPersistenceConfig);
   }, [columnCustomPersistenceConfig, mergedGridOptions.columnCustomState]);
 
+  /**
+   * 获取当前列自定义状态
+   * @description 返回当前已生效的可见性、固定列、顺序及可排序/可筛选状态。
+   * @returns 当前列自定义状态快照。
+   */
   const getCurrentColumnCustomState = useCallback(() => {
     return {
       filterable: filterableColumns,
@@ -1017,6 +1464,11 @@ export const AdminTable = memo(function AdminTable<
     };
   }, [columnOrder, filterableColumns, fixedColumns, sortableColumns, visibleColumns]);
 
+  /**
+   * 获取草稿列自定义状态
+   * @description 返回自定义面板中的草稿状态，用于预览与确认操作。
+   * @returns 草稿列自定义状态快照。
+   */
   const getDraftColumnCustomState = useCallback(() => {
     return {
       filterable: customDraftFilterableColumns,
@@ -1033,6 +1485,12 @@ export const AdminTable = memo(function AdminTable<
     customDraftVisibleColumns,
   ]);
 
+  /**
+   * 应用当前列自定义快照
+   * @description 将解析后的快照同步到当前生效状态，保持引用稳定以减少无效重渲染。
+   * @param snapshot 列自定义工作快照。
+   * @returns 无返回值。
+   */
   const applyCurrentColumnCustomSnapshot = useCallback(
     (snapshot: ReturnType<typeof resolveColumnCustomWorkingSnapshot>) => {
       setVisibleColumns((prev) => {
@@ -1054,6 +1512,12 @@ export const AdminTable = memo(function AdminTable<
     []
   );
 
+  /**
+   * 应用草稿列自定义快照
+   * @description 将解析后的快照同步到面板草稿状态，用于编辑过程中的临时展示。
+   * @param snapshot 列自定义工作快照。
+   * @returns 无返回值。
+   */
   const applyDraftColumnCustomSnapshot = useCallback(
     (snapshot: ReturnType<typeof resolveColumnCustomWorkingSnapshot>) => {
       setCustomDraftVisibleColumns((prev) => {
@@ -1107,17 +1571,46 @@ export const AdminTable = memo(function AdminTable<
     mergedGridOptions.columns,
   ]);
 
+  /**
+   * 当前生效插槽映射。
+   */
   const runtimeSlots = props.slots ?? tableState.slots;
+  /**
+   * 当前生效表格标题。
+   */
   const runtimeTableTitle = props.tableTitle ?? tableState.tableTitle;
+  /**
+   * 当前生效表格标题提示文案。
+   */
   const runtimeTableTitleHelp = props.tableTitleHelp ?? tableState.tableTitleHelp;
+  /**
+   * 当前生效根节点 className。
+   */
   const runtimeClassName = props.class ?? tableState.class;
+  /**
+   * 当前生效查询表单配置。
+   */
   const runtimeFormOptions = props.formOptions ?? tableState.formOptions;
+  /**
+   * 当前查询表单展示状态。
+   */
   const runtimeShowSearchForm = props.showSearchForm ?? tableState.showSearchForm;
+  /**
+   * 当前生效表格事件回调集合。
+   */
   const runtimeGridEvents = props.gridEvents ?? tableState.gridEvents;
+  /**
+   * 解析表格根节点 CSS 变量。
+   * @description 按主题配置生成运行时样式变量，供表格容器透传。
+   */
   const runtimeRootStyle = useMemo<CSSProperties | undefined>(
     () => resolveTableThemeCssVars(setupState.theme) as CSSProperties | undefined,
     [preferencesVersion, setupState.theme.colorPrimary]
   );
+  /**
+   * 判断是否开启主体滚动锁定模式。
+   * @description 通过 className 是否包含锁定标识类决定布局测量策略。
+   */
   const bodyScrollLockEnabled = useMemo(() => {
     if (typeof runtimeClassName !== 'string' || !runtimeClassName.trim()) {
       return false;
@@ -1128,6 +1621,10 @@ export const AdminTable = memo(function AdminTable<
       .includes(BODY_SCROLL_LOCK_CLASS);
   }, [runtimeClassName]);
 
+  /**
+   * 计算最终可渲染数据源。
+   * @description 在树形转换开启时把平铺数据转为树结构，否则直接使用原始数据。
+   */
   const computedDataSource = useMemo(() => {
     const treeConfig = mergedGridOptions.treeConfig;
     if (!treeConfig?.transform) {
@@ -1139,10 +1636,18 @@ export const AdminTable = memo(function AdminTable<
       treeConfig.parentField ?? 'parentId'
     );
   }, [dataSource, mergedGridOptions.treeConfig]);
+  /**
+   * 展平当前数据源。
+   * @description 用于选择态、导出与行索引映射等依赖平铺结构的场景。
+   */
   const flattenedDataSource = useMemo(
     () => flattenTableRows(computedDataSource),
     [computedDataSource]
   );
+  /**
+   * 构建可比较行键到行索引的映射表。
+   * @description 便于在行选择校验中由 rowKey 快速定位到行索引。
+   */
   const rowIndexByComparableKey = useMemo(() => {
     const map = new Map<string, number>();
     flattenedDataSource.forEach((row, index) => {
@@ -1162,12 +1667,21 @@ export const AdminTable = memo(function AdminTable<
     new Map<
       string,
       {
+        /** 生成过滤选项时使用的空值文案。 */
         emptyLabel: string;
+        /** 行数据集合。 */
         rows: TData[];
+        /** 默认筛选项数组。 */
         options: ReturnType<typeof buildDefaultColumnFilterOptions>;
       }
     >()
   );
+  /**
+   * 解析列默认筛选选项
+   * @description 按字段缓存默认筛选项，减少重复扫描数据源带来的开销。
+   * @param field 列字段名。
+   * @returns 列默认筛选配置项。
+   */
   const resolveDefaultColumnFilterOptions = useCallback(
     (field: string) => {
       const cache = defaultColumnFilterOptionsCacheRef.current;
@@ -1194,6 +1708,10 @@ export const AdminTable = memo(function AdminTable<
     },
     [dataSource, localeText.emptyValue]
   );
+  /**
+   * 解析行策略结果。
+   * @description 针对同一行对象按行索引缓存策略计算，减少重复求值。
+   */
   const resolveRowStrategy = useMemo(() => {
     const gridOptions = mergedGridOptions as Record<string, any>;
     const cache = new WeakMap<
@@ -1226,7 +1744,14 @@ export const AdminTable = memo(function AdminTable<
     };
   }, [computedDataSource, mergedGridOptions.rowStrategy, mergedGridOptions.strategy]);
 
+  /**
+   * 原始列定义集合（含隐藏与选择列）。
+   */
   const sourceColumns = mergedGridOptions.columns ?? [];
+  /**
+   * 解析行选择模式。
+   * @description 兼容 `checkboxConfig`、`radioConfig` 与 `rowSelection` 三种输入来源。
+   */
   const selectionMode = useMemo(
     () => resolveSelectionMode(mergedGridOptions, sourceColumns),
     [
@@ -1236,6 +1761,10 @@ export const AdminTable = memo(function AdminTable<
       sourceColumns,
     ]
   );
+  /**
+   * 解析选择列配置。
+   * @description 根据当前选择模式从列配置中提取对应的选择列定义。
+   */
   const selectionColumn = useMemo(
     () =>
       resolveSelectionColumn(
@@ -1244,19 +1773,48 @@ export const AdminTable = memo(function AdminTable<
       ),
     [selectionMode, sourceColumns]
   );
+  /**
+   * 当前选择模式对应的配置源（radio/checkbox）。
+   */
   const selectionConfig = selectionMode === 'radio'
     ? mergedGridOptions.radioConfig
     : selectionMode === 'checkbox'
       ? mergedGridOptions.checkboxConfig
       : undefined;
+  /**
+   * 行选择判定上下文。
+   */
+  interface RowSelectionCheckMethodContext {
+    /** 当前行数据。 */
+    row: TData;
+    /** 当前行索引。 */
+    rowIndex: number;
+  }
+
+  /**
+   * 行选择配置的运行时结构。
+   */
+  interface RowSelectionRuntimeConfig extends Record<string, any> {
+    /** 使用行字段值驱动选中状态时的字段名。 */
+    checkField?: string;
+    /** 按行动态判定是否允许选中。 */
+    checkMethod?: (ctx: RowSelectionCheckMethodContext) => boolean;
+    /** 树表场景中是否启用严格父子节点联动。 */
+    strict?: boolean;
+    /** 触发选中的交互区域。 */
+    trigger?: string;
+  }
+
+  /**
+   * 标准化后的 `rowSelection` 运行时配置。
+   */
   const rowSelectionConfig = mergedGridOptions.rowSelection as
-    | (Record<string, any> & {
-        checkField?: string;
-        checkMethod?: (ctx: { row: TData; rowIndex: number }) => boolean;
-        strict?: boolean;
-        trigger?: string;
-      })
+    | RowSelectionRuntimeConfig
     | undefined;
+  /**
+   * 解析勾选字段名。
+   * @description 兼容选择配置与 rowSelection 中的 `checkField` 并做字符串标准化。
+   */
   const selectionCheckField = useMemo(() => {
     const value = typeof selectionConfig?.checkField === 'string'
       ? selectionConfig.checkField
@@ -1265,6 +1823,10 @@ export const AdminTable = memo(function AdminTable<
       ? value.trim()
       : undefined;
   }, [rowSelectionConfig?.checkField, selectionConfig?.checkField]);
+  /**
+   * 解析行可选判定函数。
+   * @description 优先读取选择配置中的 `checkMethod`，回退到 rowSelection 的同名配置。
+   */
   const selectionCheckMethod = useMemo(() => {
     if (typeof selectionConfig?.checkMethod === 'function') {
       return selectionConfig.checkMethod;
@@ -1274,10 +1836,17 @@ export const AdminTable = memo(function AdminTable<
     }
     return undefined;
   }, [rowSelectionConfig?.checkMethod, selectionConfig?.checkMethod]);
+  /**
+   * 判断是否开启“点击整行触发选择”。
+   */
   const selectionTriggerByRow = useMemo(() => {
     const trigger = selectionConfig?.trigger ?? rowSelectionConfig?.trigger;
     return trigger === 'row';
   }, [rowSelectionConfig?.trigger, selectionConfig?.trigger]);
+  /**
+   * 解析单选严格模式。
+   * @description 仅在 radio 模式下读取 strict 配置，未配置时默认开启。
+   */
   const selectionStrict = useMemo(() => {
     if (selectionMode !== 'radio') {
       return true;
@@ -1296,6 +1865,10 @@ export const AdminTable = memo(function AdminTable<
     selectionConfig?.strict,
     selectionMode,
   ]);
+  /**
+   * 解析选中高亮开关。
+   * @description 支持从选择配置或 rowSelection 继承；默认跟随是否启用选择模式。
+   */
   const selectionHighlight = useMemo(() => {
     const rowSelectionHighlight = resolveBooleanOption(
       rowSelectionConfig?.highlight
@@ -1307,6 +1880,10 @@ export const AdminTable = memo(function AdminTable<
     selectionConfig?.highlight,
     selectionMode,
   ]);
+  /**
+   * 解析受控选中键集合。
+   * @description 当外部传入 `selectedRowKeys` 时进行标准化并视为受控模式。
+   */
   const controlledSelectedKeys = useMemo(() => {
     const keys = mergedGridOptions.rowSelection?.selectedRowKeys;
     if (!selectionMode || !Array.isArray(keys)) {
@@ -1314,6 +1891,10 @@ export const AdminTable = memo(function AdminTable<
     }
     return normalizeTableSelectionKeys<Key>(keys as Key[], selectionMode);
   }, [mergedGridOptions.rowSelection?.selectedRowKeys, selectionMode]);
+  /**
+   * 解析默认选中键集合。
+   * @description 非受控模式下首次初始化时使用。
+   */
   const defaultSelectedKeys = useMemo(() => {
     const keys = mergedGridOptions.rowSelection?.defaultSelectedRowKeys;
     if (!selectionMode || !Array.isArray(keys)) {
@@ -1321,10 +1902,20 @@ export const AdminTable = memo(function AdminTable<
     }
     return normalizeTableSelectionKeys<Key>(keys as Key[], selectionMode);
   }, [mergedGridOptions.rowSelection?.defaultSelectedRowKeys, selectionMode]);
+  /**
+   * 当前是否处于受控选择模式。
+   */
   const isSelectionControlled = !!controlledSelectedKeys;
+  /**
+   * 当前生效选中键集合（受控优先，回退内部状态）。
+   */
   const effectiveSelectedRowKeys = selectionMode
     ? (controlledSelectedKeys ?? innerSelectedRowKeys)
     : [];
+  /**
+   * 构建当前选中键集合（可比较形式）。
+   * @description 用于高频判断某行是否处于选中态。
+   */
   const effectiveSelectedKeySet = useMemo(
     () => createTableComparableSelectionKeySet(effectiveSelectedRowKeys),
     [effectiveSelectedRowKeys]
@@ -1376,13 +1967,26 @@ export const AdminTable = memo(function AdminTable<
     selectionMode,
   ]);
 
+  /**
+   * 生成运行时列定义。
+   * @description 统一处理列可见性、排序、筛选、编辑、单元格策略与渲染器扩展。
+   */
   const columns = useMemo(() => {
+    /**
+     * 是否启用远程排序。
+     */
     const isRemoteSortEnabled =
       mergedGridOptions.sortConfig?.remote === true ||
       isProxyEnabled(mergedGridOptions.proxyConfig as Record<string, any>);
+    /**
+     * 序号列分页偏移量。
+     */
     const seqOffset = mergedGridOptions.pagerConfig?.enabled === false
       ? 0
       : ((pagination.current ?? 1) - 1) * (pagination.pageSize ?? 20);
+    /**
+     * 列运行时构建结果（含可见性与顺序控制）。
+     */
     const list = buildColumnRuntimeItems(
       sourceColumns,
       {
@@ -1405,7 +2009,9 @@ export const AdminTable = memo(function AdminTable<
       Map<
         string,
         {
+          /** 参与策略计算的原始单元格值。 */
           rawValue: unknown;
+          /** 对应原始值的策略计算结果。 */
           result: ReturnType<typeof resolveTableCellStrategyResult>;
         }
       >
@@ -1414,10 +2020,22 @@ export const AdminTable = memo(function AdminTable<
       Record<string, any>,
       Map<number, CSSProperties | undefined>
     >();
+    /**
+     * 解析指定行在当前索引下的策略样式并缓存结果。
+     * @param record 行数据。
+     * @param rowIndex 行索引。
+     * @returns 可应用到单元格的样式对象；无策略样式时返回 `undefined`。
+     */
     const resolveRowCellStyle = (
       record: TData,
       rowIndex: number
     ): CSSProperties | undefined => {
+      /**
+       * 从行策略样式中提取可应用到单元格的基础样式字段。
+       *
+       * @param rowStyle 行策略样式对象。
+       * @returns 可用于单元格的样式对象。
+       */
       const toRowCellStyle = (rowStyle?: Record<string, any>) => {
         if (!rowStyle) {
           return undefined;
@@ -1478,7 +2096,14 @@ export const AdminTable = memo(function AdminTable<
           render: (_value: any, _record: TData, rowIndex: number) => seqOffset + rowIndex + 1,
         };
       }
+      /**
+       * 当前列数据字段名。
+       */
       const dataIndex = String(column.dataIndex ?? column.field ?? '');
+      /**
+       * 默认本地排序器。
+       * @description 仅在可解析字段且未启用远程排序时生效。
+       */
       const defaultLocalSorter =
         dataIndex && !isRemoteSortEnabled
           ? (leftRecord: TData, rightRecord: TData) =>
@@ -1487,21 +2112,36 @@ export const AdminTable = memo(function AdminTable<
                 getColumnValueByPath(rightRecord as Record<string, any>, dataIndex)
               )
           : undefined;
+      /**
+       * 当前列最终排序配置。
+       */
       const columnSorter =
         column.sortable === false
           ? undefined
           : column.sortable === true
             ? (column.sorter ?? defaultLocalSorter ?? true)
             : column.sorter;
+      /**
+       * 当前列是否启用筛选能力。
+       */
       const filterable = column.filterable !== false;
+      /**
+       * 当前列是否显式声明筛选配置。
+       */
       const hasFilterConfig =
         (Array.isArray(column.filters) && column.filters.length > 0) ||
         typeof column.filterDropdown === 'function' ||
         typeof column.onFilter === 'function';
+      /**
+       * 当前列自动生成的默认筛选项。
+       */
       const defaultFilters =
         filterable && !hasFilterConfig && dataIndex
           ? resolveDefaultColumnFilterOptions(dataIndex)
           : [];
+      /**
+       * 当前列最终筛选项列表。
+       */
       const filters = filterable
         ? Array.isArray(column.filters)
           ? column.filters
@@ -1510,6 +2150,9 @@ export const AdminTable = memo(function AdminTable<
             value: item.value,
           }))
         : undefined;
+      /**
+       * 当前列筛选执行函数。
+       */
       const onFilter = filterable
         ? typeof column.onFilter === 'function'
           ? column.onFilter
@@ -1523,6 +2166,15 @@ export const AdminTable = memo(function AdminTable<
             }
             : undefined
         : undefined;
+
+      /**
+       * 解析并缓存单元格点击策略结果。
+       *
+       * @param record 行数据。
+       * @param rowIndex 行索引。
+       * @param value 单元格值。
+       * @returns 单元格策略结果。
+       */
       const resolveCellStrategy = (record: TData, rowIndex: number, value: any) => {
         if (!dataIndex) {
           return undefined;
@@ -1543,7 +2195,9 @@ export const AdminTable = memo(function AdminTable<
           rowCache = new Map<
             string,
             {
+              /** 参与策略计算的原始单元格值。 */
               rawValue: unknown;
+              /** 对应原始值的策略计算结果。 */
               result: ReturnType<typeof resolveTableCellStrategyResult>;
             }
           >();
@@ -1585,36 +2239,70 @@ export const AdminTable = memo(function AdminTable<
         sorter: columnSorter,
         sortOrder: columnSorter && sortState.field === dataIndex ? sortState.order : undefined,
         onCell: (record: TData, rowIndex?: number) => {
+          /**
+           * 外部原始 `onCell` 返回对象。
+           */
           const sourceOnCell = typeof column.onCell === 'function'
             ? (column.onCell(record, rowIndex ?? -1) ?? {})
             : {};
+          /**
+           * 外部单元格样式。
+           */
           const sourceStyle =
             typeof (sourceOnCell as Record<string, any>).style === 'object' &&
             (sourceOnCell as Record<string, any>).style
               ? ((sourceOnCell as Record<string, any>).style as Record<string, any>)
               : undefined;
+          /**
+           * 外部单击处理函数。
+           */
           const sourceOnClick =
             typeof (sourceOnCell as Record<string, any>).onClick === 'function'
               ? (sourceOnCell as Record<string, any>).onClick
               : undefined;
+          /**
+           * 外部双击处理函数。
+           */
           const sourceOnDoubleClick =
             typeof (sourceOnCell as Record<string, any>).onDoubleClick === 'function'
               ? (sourceOnCell as Record<string, any>).onDoubleClick
               : undefined;
+          /**
+           * 编辑触发方式。
+           */
           const trigger = mergedGridOptions.editConfig?.trigger ?? 'click';
+          /**
+           * 对应触发方式的事件键名。
+           */
           const clickEventName = trigger === 'dblclick' ? 'onDoubleClick' : 'onClick';
+          /**
+           * 当前列是否可编辑。
+           */
           const editable = !!column.editRender;
+          /**
+           * 当前单元格策略计算结果。
+           */
           const strategyResult = resolveCellStrategy(
             record,
             rowIndex ?? -1,
             dataIndex ? getColumnValueByPath(record as Record<string, any>, dataIndex) : undefined
           );
+          /**
+           * 当前行策略带入的单元格样式。
+           */
           const rowCellStyle = resolveRowCellStyle(record, rowIndex ?? -1);
+          /**
+           * 策略点击态 className。
+           */
           const strategyClassName =
             strategyResult?.clickable || strategyResult?.onClick
               ? 'admin-table__strategy-clickable'
               : '';
 
+          /**
+           * 按编辑模式触发行/单元格编辑状态切换。
+           * @returns 无返回值。
+           */
           const runEditTrigger = () => {
             if (!editable) return;
             const key = record[rowKeyField];
@@ -1662,12 +2350,27 @@ export const AdminTable = memo(function AdminTable<
           };
         },
         render: (value: any, record: TData, rowIndex: number) => {
+          /**
+           * 当前单元格策略结果。
+           */
           const strategyResult = resolveCellStrategy(record, rowIndex, value);
+          /**
+           * 策略解析后的单元格值。
+           */
           const strategyValue = strategyResult
             ? strategyResult.value
             : (dataIndex ? getColumnValueByPath(record as Record<string, any>, dataIndex) : value);
+          /**
+           * 当前行键。
+           */
           const rowKey = record[rowKeyField];
+          /**
+           * 当前行是否处于行编辑状态。
+           */
           const inRowEdit = mergedGridOptions.editConfig?.mode === 'row' && rowKey === editingRowKey;
+          /**
+           * 当前单元格是否处于单元格编辑状态。
+           */
           const inCellEdit =
             mergedGridOptions.editConfig?.mode === 'cell' &&
             editingCell?.rowKey === rowKey &&
@@ -1685,6 +2388,9 @@ export const AdminTable = memo(function AdminTable<
             );
           }
 
+          /**
+           * 单元格具名插槽名称。
+           */
           const slotName = column.slots?.default;
           if (slotName) {
             const slotResult = resolveSlot(runtimeSlots, slotName, {
@@ -1697,6 +2403,9 @@ export const AdminTable = memo(function AdminTable<
             }
           }
 
+          /**
+           * 单元格渲染器名称。
+           */
           const rendererName = column.cellRender?.name;
           if (rendererName) {
             const renderer = getReactTableRenderer(rendererName);
@@ -1716,6 +2425,9 @@ export const AdminTable = memo(function AdminTable<
             }
           }
 
+          /**
+           * 单元格格式化器配置。
+           */
           const formatter = column.formatter;
           if (formatter) {
             const currentValue = strategyValue;
@@ -1737,6 +2449,9 @@ export const AdminTable = memo(function AdminTable<
             }
           }
 
+          /**
+           * 最终展示内容。
+           */
           const content = strategyResult?.hasDisplayOverride
             ? strategyResult.displayValue
             : strategyValue;
@@ -1791,10 +2506,15 @@ export const AdminTable = memo(function AdminTable<
     visibleColumns,
   ]);
 
+  /** 运行时工具栏配置记录。 */
   const toolbarConfig = mergedGridOptions.toolbarConfig ?? {};
   const toolbarActionsSlot = resolveSlot(runtimeSlots, 'toolbar-actions');
   const toolbarCenterSlot = resolveSlot(runtimeSlots, 'toolbar-center');
   const toolbarToolsSlot = resolveSlot(runtimeSlots, 'toolbar-tools');
+  /**
+   * 解析工具栏提示配置。
+   * @description 统一标准化提示文本、对齐方式与溢出滚动策略。
+   */
   const resolvedToolbarHint = useMemo(
     () => resolveToolbarHintConfig(toolbarConfig.hint),
     [toolbarConfig.hint]
@@ -1828,6 +2548,10 @@ export const AdminTable = memo(function AdminTable<
   const hasToolbarToolsSlotReplaceBuiltin = toolbarToolsSlotState.replace;
   const hasToolbarToolsSlotBeforeBuiltin = toolbarToolsSlotState.before;
   const hasToolbarToolsSlotAfterBuiltin = toolbarToolsSlotState.after;
+  /**
+   * 解析内置工具按钮列表。
+   * @description 根据工具栏配置与当前状态（例如最大化）生成可渲染工具集合。
+   */
   const builtinToolbarTools = useMemo(() => {
     return buildBuiltinToolbarTools(toolbarConfig, localeText, {
       hasToolbarToolsSlot: hasToolbarToolsSlotReplaceBuiltin,
@@ -1844,6 +2568,10 @@ export const AdminTable = memo(function AdminTable<
     toolbarConfig.refresh,
     toolbarConfig.zoom,
   ]);
+  /**
+   * 解析分页导出配置。
+   * @description 标准化导出动作、标题与文件名规则。
+   */
   const pagerExportConfig = useMemo(
     () =>
       resolveTablePagerExportConfig<TData>(
@@ -1858,6 +2586,10 @@ export const AdminTable = memo(function AdminTable<
       mergedGridOptions.pagerConfig?.exportConfig,
     ]
   );
+  /**
+   * 过滤并解析可见导出动作。
+   * @description 按权限与业务开关生成当前可操作的分页导出动作列表。
+   */
   const pagerExportActions = useMemo<
     Array<ResolvedTablePagerExportAction<TData>>
   >(
@@ -1875,6 +2607,10 @@ export const AdminTable = memo(function AdminTable<
       setupState.permissionChecker,
     ]
   );
+  /**
+   * 解析导出触发器展示状态。
+   * @description 根据动作数量决定是直接执行单动作还是显示下拉菜单。
+   */
   const pagerExportTriggerState = useMemo(
     () =>
       resolveTablePagerExportTriggerState<TData>({
@@ -1885,6 +2621,10 @@ export const AdminTable = memo(function AdminTable<
   const pagerExportSingleAction = pagerExportTriggerState.singleAction;
   const pagerConfigRecord = (mergedGridOptions.pagerConfig ?? {}) as Record<string, any>;
   const pagerPosition = pagerConfigRecord.position === 'left' ? 'left' : 'right';
+  /**
+   * 解析分页栏工具配置。
+   * @description 兼容 `toolbar` 与 `toolbarConfig` 两种字段写法。
+   */
   const pagerToolbarConfig = useMemo(() => {
     return resolveToolbarConfigRecord(
       pagerConfigRecord.toolbar ?? pagerConfigRecord.toolbarConfig
@@ -1893,6 +2633,10 @@ export const AdminTable = memo(function AdminTable<
   const pagerLeftSlot = resolveSlot(runtimeSlots, 'pager-left');
   const pagerCenterSlot = resolveSlot(runtimeSlots, 'pager-center');
   const pagerToolsSlot = resolveSlot(runtimeSlots, 'pager-tools');
+  /**
+   * 解析分页栏提示配置。
+   * @description 与主工具栏提示保持同构能力，支持滚动提示文本。
+   */
   const resolvedPagerHint = useMemo(
     () => resolveToolbarHintConfig(pagerToolbarConfig.hint),
     [pagerToolbarConfig.hint]
@@ -1927,6 +2671,10 @@ export const AdminTable = memo(function AdminTable<
   const hasPagerLeftSlotReplaceTools = pagerLeftSlotState.replace;
   const hasPagerLeftSlotBeforeTools = pagerLeftSlotState.before;
   const hasPagerLeftSlotAfterTools = pagerLeftSlotState.after;
+  /**
+   * 解析分页栏左侧工具列表。
+   * @description 基于权限、搜索态与最大化状态筛选可显示工具。
+   */
   const pagerLeftTools = useMemo(
     () =>
       resolveVisibleToolbarActionTools({
@@ -1957,6 +2705,10 @@ export const AdminTable = memo(function AdminTable<
   );
   const pagerLeftToolsBeforeSlot = pagerLeftToolsPlacement.before;
   const pagerLeftToolsAfterSlot = pagerLeftToolsPlacement.after;
+  /**
+   * 解析分页栏右侧工具原始配置。
+   * @description 优先使用 `rightTools`，未提供时回退到 `tools`。
+   */
   const pagerRightToolsSource = useMemo(() => {
     if (Array.isArray(pagerToolbarConfig.rightTools)) {
       return pagerToolbarConfig.rightTools;
@@ -1979,6 +2731,10 @@ export const AdminTable = memo(function AdminTable<
   const hasPagerToolsSlotReplaceTools = pagerToolsSlotState.replace;
   const hasPagerToolsSlotBeforeTools = pagerToolsSlotState.before;
   const hasPagerToolsSlotAfterTools = pagerToolsSlotState.after;
+  /**
+   * 解析分页栏右侧工具列表。
+   * @description 按权限与状态过滤后用于与导出按钮合并渲染。
+   */
   const pagerRightTools = useMemo(
     () =>
       resolveVisibleToolbarActionTools({
@@ -2010,6 +2766,10 @@ export const AdminTable = memo(function AdminTable<
   const pagerRightToolsBeforeBuiltin = pagerRightToolsPlacement.before;
   const pagerRightToolsAfterBuiltin = pagerRightToolsPlacement.after;
 
+  /**
+   * 构建列自定义面板控制项。
+   * @description 将当前草稿状态映射为可渲染的列控制列表。
+   */
   const customColumnControls = useMemo(() => {
     return buildColumnCustomControls(mergedGridOptions.columns ?? [], {
       filterable: customDraftFilterableColumns,
@@ -2026,6 +2786,7 @@ export const AdminTable = memo(function AdminTable<
     customDraftVisibleColumns,
     mergedGridOptions.columns,
   ]);
+  /** 列控制顺序摘要，用于检测拖拽重排后的 FLIP 动画触发条件。 */
   const customColumnControlOrderDigest = useMemo(
     () => createColumnCustomControlsOrderDigest(customColumnControls),
     [customColumnControls]
@@ -2095,6 +2856,11 @@ export const AdminTable = memo(function AdminTable<
   const customAllIndeterminate =
     customColumnControls.some((column) => column.checked) &&
     !customAllChecked;
+  /**
+   * 判断列自定义草稿是否有变更。
+   * @description 用于控制“重置/确认”按钮可用状态。
+   * @returns 草稿状态是否发生变更。
+   */
   const customPanelDirty = useMemo(
     () =>
       hasColumnCustomDraftChanges(
@@ -2104,6 +2870,13 @@ export const AdminTable = memo(function AdminTable<
     [getDraftColumnCustomState]
   );
 
+  /**
+   * 触发列自定义变更事件
+   * @description 按动作类型构建并派发列自定义事件载荷。
+   * @param action 变更动作类型。
+   * @param snapshot 列状态快照。
+   * @returns 无返回值。
+   */
   const emitColumnCustomChange = useCallback(
     (action: 'cancel' | 'confirm' | 'open' | 'reset', snapshot: ReturnType<typeof resolveColumnCustomWorkingSnapshot>) => {
       runtimeGridEvents?.columnCustomChange?.(
@@ -2117,6 +2890,11 @@ export const AdminTable = memo(function AdminTable<
     [mergedGridOptions.columns, runtimeGridEvents]
   );
 
+  /**
+   * 打开列自定义面板
+   * @description 生成打开态快照、初始化草稿状态并通知工具栏与外部事件。
+   * @returns 无返回值。
+   */
   const openCustomPanel = useCallback(() => {
     const transition = resolveColumnCustomOpenTransition(
       mergedGridOptions.columns ?? [],
@@ -2139,6 +2917,11 @@ export const AdminTable = memo(function AdminTable<
     runtimeGridEvents,
   ]);
 
+  /**
+   * 切换指定列可见性
+   * @param key 列键值。
+   * @returns 无返回值。
+   */
   const toggleCustomColumnVisible = useCallback((key: string) => {
     setCustomDraftVisibleColumns((prev) => {
       const next = toggleColumnCustomVisible(prev, key);
@@ -2146,6 +2929,12 @@ export const AdminTable = memo(function AdminTable<
     });
   }, []);
 
+  /**
+   * 设置指定列固定方向
+   * @param key 列键值。
+   * @param value 固定方向（左/右/取消固定）。
+   * @returns 无返回值。
+   */
   const setCustomColumnFixed = useCallback((key: string, value: '' | 'left' | 'right') => {
     setCustomDraftFixedColumns((prev) => {
       const next = toggleColumnCustomFixed(prev, key, value);
@@ -2153,6 +2942,11 @@ export const AdminTable = memo(function AdminTable<
     });
   }, []);
 
+  /**
+   * 切换指定列排序能力
+   * @param key 列键值。
+   * @returns 无返回值。
+   */
   const toggleCustomColumnSortableByKey = useCallback((key: string) => {
     setCustomDraftSortableColumns((prev) => {
       const next = toggleColumnCustomSortable(prev, key);
@@ -2160,6 +2954,11 @@ export const AdminTable = memo(function AdminTable<
     });
   }, []);
 
+  /**
+   * 切换指定列筛选能力
+   * @param key 列键值。
+   * @returns 无返回值。
+   */
   const toggleCustomColumnFilterableByKey = useCallback((key: string) => {
     setCustomDraftFilterableColumns((prev) => {
       const next = toggleColumnCustomFilterable(prev, key);
@@ -2167,6 +2966,13 @@ export const AdminTable = memo(function AdminTable<
     });
   }, []);
 
+  /**
+   * 移动列到目标位置
+   * @param dragKey 被拖拽列键值。
+   * @param overKey 目标列键值。
+   * @param position 放置位置（上方或下方）。
+   * @returns 无返回值。
+   */
   const moveCustomColumnTo = useCallback((dragKey: string, overKey: string, position: 'bottom' | 'top') => {
     setCustomDraftOrder((prev) => {
       const next = applyColumnCustomDragMove(
@@ -2180,6 +2986,12 @@ export const AdminTable = memo(function AdminTable<
     });
   }, [mergedGridOptions.columns]);
 
+  /**
+   * 处理列拖拽开始
+   * @param key 当前拖拽列键值。
+   * @param event 拖拽事件对象。
+   * @returns 无返回值。
+   */
   const handleCustomDragStart = useCallback((key: string, event: any) => {
     if (event?.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
@@ -2191,6 +3003,13 @@ export const AdminTable = memo(function AdminTable<
     setCustomDragState(nextState.dragState);
   }, []);
 
+  /**
+   * 处理列拖拽悬停
+   * @description 更新拖拽悬停状态并在必要时排队执行列重排。
+   * @param key 当前悬停列键值。
+   * @param event 拖拽事件对象。
+   * @returns 无返回值。
+   */
   const handleCustomDragOver = useCallback((key: string, event: any) => {
     event?.preventDefault?.();
     if (event?.dataTransfer) {
@@ -2255,6 +3074,12 @@ export const AdminTable = memo(function AdminTable<
     });
   }, [autoScrollCustomBody, customDragState.dragKey, moveCustomColumnTo]);
 
+  /**
+   * 处理拖拽经过列面板主体区域
+   * @description 维持拖拽可放置状态并按需触发自动滚动。
+   * @param event 拖拽事件对象。
+   * @returns 无返回值。
+   */
   const handleCustomBodyDragOver = useCallback((event: any) => {
     const dragKey = resolveColumnCustomDraggingKey(
       customDraggingKeyRef.current,
@@ -2272,15 +3097,32 @@ export const AdminTable = memo(function AdminTable<
     }
   }, [autoScrollCustomBody, customDragState.dragKey]);
 
+  /**
+   * 处理列拖拽放下
+   * @description 阻止默认行为并重置拖拽状态。
+   * @param _key 占位参数，保留与调用方签名一致。
+   * @param event 拖拽事件对象。
+   * @returns 无返回值。
+   */
   const handleCustomDrop = useCallback((_key: string, event: any) => {
     event?.preventDefault?.();
     resetCustomDragState();
   }, [resetCustomDragState]);
 
+  /**
+   * 处理列拖拽结束
+   * @description 无论是否成功放置都统一重置拖拽状态。
+   * @returns 无返回值。
+   */
   const handleCustomDragEnd = useCallback(() => {
     resetCustomDragState();
   }, [resetCustomDragState]);
 
+  /**
+   * 切换全部列可见性
+   * @description 基于当前状态在“全显/部分显示”之间切换。
+   * @returns 无返回值。
+   */
   const toggleCustomAllColumns = useCallback(() => {
     setCustomDraftVisibleColumns((prev) => {
       const next = toggleAllColumnCustomVisible(
@@ -2291,6 +3133,10 @@ export const AdminTable = memo(function AdminTable<
     });
   }, [mergedGridOptions.columns]);
 
+  /**
+   * 取消列自定义编辑
+   * @description 恢复到打开面板前的状态并关闭面板。
+   */
   const handleCustomCancel = useCallback(() => {
     const transition = resolveColumnCustomCancelTransition(
       mergedGridOptions.columns ?? [],
@@ -2311,6 +3157,10 @@ export const AdminTable = memo(function AdminTable<
     resetCustomDragState,
   ]);
 
+  /**
+   * 确认列自定义编辑
+   * @description 应用草稿状态、持久化到存储并同步到表格配置。
+   */
   const handleCustomConfirm = useCallback(() => {
     const transition = resolveColumnCustomConfirmTransition(
       mergedGridOptions.columns ?? [],
@@ -2338,6 +3188,10 @@ export const AdminTable = memo(function AdminTable<
     resetCustomDragState,
   ]);
 
+  /**
+   * 重置列自定义设置
+   * @description 根据用户确认恢复默认列配置并刷新草稿状态。
+   */
   const handleCustomReset = useCallback(() => {
     if (!customPanelDirty) {
       return;
@@ -2376,6 +3230,11 @@ export const AdminTable = memo(function AdminTable<
     resetCustomDragState,
   ]);
 
+  /**
+   * 切换列自定义面板显隐
+   * @description 已打开时执行取消流程，未打开时执行打开流程。
+   * @returns 无返回值。
+   */
   const toggleCustomPanel = useCallback(() => {
     if (customPanelOpen) {
       handleCustomCancel();
@@ -2388,6 +3247,13 @@ export const AdminTable = memo(function AdminTable<
     if (typeof window === 'undefined') {
       return undefined;
     }
+
+    /**
+     * 处理全局按键：`Escape` 优先关闭自定义面板，其次退出最大化。
+     *
+     * @param event 键盘事件。
+     * @returns 无返回值。
+     */
     const handleKeydown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') {
         return;
@@ -2412,6 +3278,12 @@ export const AdminTable = memo(function AdminTable<
       return undefined;
     }
 
+    /**
+     * 监听文档点击，点击面板外区域时关闭自定义面板。
+     *
+     * @param event 鼠标事件。
+     * @returns 无返回值。
+     */
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (!target) {
@@ -2603,6 +3475,12 @@ export const AdminTable = memo(function AdminTable<
     </div>
   );
 
+  /**
+   * 处理内置工具栏按钮点击
+   * @description 支持刷新与全屏切换，并在执行后触发工具点击事件。
+   * @param code 内置工具编码。
+   * @returns 无返回值。
+   */
   const handleBuiltinToolClick = useCallback(
     async (code: 'refresh' | 'zoom') => {
       if (code === 'refresh') {
@@ -2640,6 +3518,13 @@ export const AdminTable = memo(function AdminTable<
     ]
   );
 
+  /**
+   * 处理扩展工具栏按钮点击
+   * @description 按工具配置触发回调并同步派发工具栏点击事件。
+   * @param tool 工具配置项。
+   * @param index 工具索引。
+   * @returns 无返回值。
+   */
   const handleToolbarActionToolClick = useCallback((tool: Record<string, any>, index: number) => {
     if (tool?.disabled) {
       return;
@@ -2651,6 +3536,11 @@ export const AdminTable = memo(function AdminTable<
     });
   }, [runtimeGridEvents]);
 
+  /**
+   * 解析当前页可导出行
+   * @description 根据分页配置与当前页信息返回当前页导出数据。
+   * @returns 当前页数据行数组。
+   */
   const resolveCurrentRowsForExport = useCallback(() => {
     const sourceRows = flattenTableRows(
       Array.isArray(visibleDataSourceRef.current)
@@ -2684,6 +3574,11 @@ export const AdminTable = memo(function AdminTable<
     pagination.pageSize,
   ]);
 
+  /**
+   * 解析已选中可导出行
+   * @description 按选择键集合从当前可见数据中筛出已选行。
+   * @returns 已选数据行数组。
+   */
   const resolveSelectedRowsForExport = useCallback(() => {
     return resolveSelectionRowsByKeys(
       flattenTableRows(
@@ -2698,6 +3593,12 @@ export const AdminTable = memo(function AdminTable<
     );
   }, [effectiveSelectedRowKeys, rowKeyField]);
 
+  /**
+   * 执行分页导出动作
+   * @description 按动作类型准备导出数据并触发导出执行与事件回调。
+   * @param action 分页导出动作配置。
+   * @returns 无返回值。
+   */
   const handlePagerExportAction = useCallback(
     async (action: ResolvedTablePagerExportAction<TData>) => {
       if (!action || action.disabled) {
@@ -2783,6 +3684,11 @@ export const AdminTable = memo(function AdminTable<
     ]
   );
 
+  /**
+   * 处理分页导出触发按钮点击
+   * @description 当仅存在单个导出动作时直接执行该动作。
+   * @returns 无返回值。
+   */
   const handlePagerExportTriggerClick = useCallback(() => {
     if (!pagerExportSingleAction) {
       return;
@@ -2790,6 +3696,15 @@ export const AdminTable = memo(function AdminTable<
     void handlePagerExportAction(pagerExportSingleAction);
   }, [handlePagerExportAction, pagerExportSingleAction]);
 
+  /**
+   * 处理行操作工具点击
+   * @description 校验禁用状态后触发行操作并透传外部事件。
+   * @param tool 工具配置项。
+   * @param index 工具索引。
+   * @param row 当前行数据。
+   * @param rowIndex 当前行索引。
+   * @returns 无返回值。
+   */
   const handleOperationActionToolClick = useCallback(
     (
       tool: Record<string, any>,
@@ -2811,6 +3726,12 @@ export const AdminTable = memo(function AdminTable<
     [runtimeGridEvents]
   );
 
+  /**
+   * 应用勾选字段同步
+   * @description 将选择键集合同步到数据行勾选字段。
+   * @param keys 选中键集合。
+   * @returns 无返回值。
+   */
   const applySelectionCheckField = useCallback((keys: Key[]) => {
     if (!selectionCheckField) {
       return;
@@ -2825,6 +3746,13 @@ export const AdminTable = memo(function AdminTable<
     });
   }, [rowKeyField, selectionCheckField]);
 
+  /**
+   * 更新选择状态
+   * @description 统一处理受控/非受控选择更新，并触发行选择变更回调。
+   * @param keys 选中键集合。
+   * @param info 选择变更附加信息。
+   * @returns 无返回值。
+   */
   const updateSelectionState = useCallback((keys: Key[], info?: Record<string, any>) => {
     const resolved = resolveTableSelectionChange<TData, Key>({
       keys,
@@ -2854,6 +3782,10 @@ export const AdminTable = memo(function AdminTable<
     selectionMode,
   ]);
 
+  /**
+   * 解析最终传给 antd 的行选择配置。
+   * @description 统一处理 checkbox/radio、禁用态、点击行为及受控/非受控联动。
+   */
   const resolvedRowSelection = useMemo<TableRowSelection<TData> | undefined>(() => {
     const source = mergedGridOptions.rowSelection;
     if (!selectionMode && !source) {
@@ -2865,6 +3797,14 @@ export const AdminTable = memo(function AdminTable<
     }
     const sourceGetCheckboxProps = source?.getCheckboxProps;
     const checkMethod = selectionCheckMethod;
+
+    /**
+     * 解析单行选择能力参数，叠加 `checkMethod` 的禁用控制。
+     *
+     * @param record 行数据。
+     * @param rowIndexFromTable 表格传入的行索引。
+     * @returns 行选择参数。
+     */
     const resolveRecordSelectionProps = (record: TData, rowIndexFromTable?: number) => {
       const sourceProps =
         typeof sourceGetCheckboxProps === 'function'
@@ -2983,6 +3923,10 @@ export const AdminTable = memo(function AdminTable<
     updateSelectionState,
   ]);
 
+  /**
+   * 合并表格行事件。
+   * @description 在保留外部 `onRow` 的前提下叠加行策略点击与整行选择逻辑。
+   */
   const mergedOnRow = useMemo(() => {
     const sourceOnRow = mergedGridOptions.onRow;
     const hasSelectionByRow = !!selectionMode && !!selectionTriggerByRow;
@@ -3084,6 +4028,12 @@ export const AdminTable = memo(function AdminTable<
     updateSelectionState,
   ]);
 
+  /**
+   * 渲染工具栏操作按钮
+   * @description 根据工具配置生成按钮节点并绑定点击行为。
+   * @param tool 工具配置项。
+   * @returns 工具栏按钮节点。
+   */
   const renderToolbarActionToolButton = useCallback((tool: Record<string, any>) => {
     const { attrs, classList, disabled, key, presentation, title } =
       resolveToolbarActionButtonRenderState(tool, { keyPrefix: 'tool' });
@@ -3117,6 +4067,14 @@ export const AdminTable = memo(function AdminTable<
     );
   }, [handleToolbarActionToolClick]);
 
+  /**
+   * 渲染行内操作按钮
+   * @description 根据工具配置生成操作按钮并阻止事件冒泡到行点击。
+   * @param tool 工具配置项。
+   * @param row 当前行数据。
+   * @param rowIndex 当前行索引。
+   * @returns 行操作按钮节点。
+   */
   const renderOperationActionToolButton = useCallback(
     (
       tool: Record<string, any>,
@@ -3160,8 +4118,14 @@ export const AdminTable = memo(function AdminTable<
     [handleOperationActionToolClick]
   );
 
+  /**
+   * 是否显示表格标题区域。
+   */
   const showTableTitle =
     !!resolveSlot(runtimeSlots, 'table-title') || !!runtimeTableTitle;
+  /**
+   * 可见扩展工具集合（排除内置 search）。
+   */
   const toolbarTools = useMemo(
     () =>
       resolveVisibleToolbarActionTools({
@@ -3202,6 +4166,10 @@ export const AdminTable = memo(function AdminTable<
       ),
     [localeText, mergedGridOptions.operationColumn]
   );
+  /**
+   * 解析操作列可见动作集合。
+   * @description 基于权限、全屏与查询面板状态过滤不可用操作项。
+   */
   const operationTools = useMemo(() => {
     if (!operationColumnConfig) {
       return [];
@@ -3223,6 +4191,10 @@ export const AdminTable = memo(function AdminTable<
     setupState.accessRoles,
     setupState.permissionChecker,
   ]);
+  /**
+   * 构建最终渲染列集合。
+   * @description 当存在可见操作动作时追加操作列，否则返回原始列配置。
+   */
   const tableColumns = useMemo(() => {
     if (!operationColumnConfig || operationTools.length <= 0) {
       return columns;
@@ -3281,6 +4253,10 @@ export const AdminTable = memo(function AdminTable<
       return;
     }
 
+    /**
+     * 同步工具栏提示文本溢出状态。
+     * @returns 无返回值。
+     */
     const syncOverflow = () => {
       const viewport = toolbarHintViewportRef.current;
       const textNode = toolbarHintTextRef.current;
@@ -3335,6 +4311,10 @@ export const AdminTable = memo(function AdminTable<
       return undefined;
     }
 
+    /**
+     * 同步分页提示文本溢出状态。
+     * @returns 无返回值。
+     */
     const syncOverflow = () => {
       const viewport = pagerHintViewportRef.current;
       const textNode = pagerHintTextRef.current;
@@ -3397,6 +4377,11 @@ export const AdminTable = memo(function AdminTable<
     (tableState.gridOptions ?? {}) as Record<string, any>,
     'height'
   );
+
+  /**
+   * 解析表格滚动配置，统一处理自动高度、锁定滚动与虚拟滚动场景。
+   * @returns 最终传给 antd Table 的滚动配置对象。
+   */
   const resolvedTableScroll = (() => {
     if (bodyScrollLockEnabled) {
       if (
@@ -3511,6 +4496,10 @@ export const AdminTable = memo(function AdminTable<
     actionsLength: pagerExportActions.length,
     pagerEnabled: paginationEnabled,
   });
+  /**
+   * 解析分页区域可见性。
+   * @description 统一决定左/中/右区域与扩展节点（首页、末页、导出）的显示条件。
+   */
   const pagerVisibilityState = useMemo(
     () =>
       resolvePagerVisibilityState({
@@ -3544,6 +4533,10 @@ export const AdminTable = memo(function AdminTable<
       showPagerHome,
     ]
   );
+  /**
+   * 解析斑马纹展示配置。
+   * @description 计算是否启用条纹行以及对应的样式类名。
+   */
   const stripePresentation = useMemo(
     () =>
       resolveTableStripePresentation(
@@ -3556,6 +4549,12 @@ export const AdminTable = memo(function AdminTable<
   );
   const striped = stripePresentation.enabled;
   const stripeClassName = stripePresentation.className;
+  /**
+   * 解析弹层容器节点
+   * @description 优先使用外部配置，兜底到表格根节点或触发节点父级。
+   * @param triggerNode 触发弹层的 DOM 节点。
+   * @returns 弹层挂载容器节点。
+   */
   const resolvePopupContainer = useCallback((triggerNode: HTMLElement) => {
     const sourceResolver = mergedGridOptions.getPopupContainer;
     if (typeof sourceResolver === 'function') {
@@ -3580,6 +4579,14 @@ export const AdminTable = memo(function AdminTable<
     return triggerNode;
   }, [mergedGridOptions.getPopupContainer]);
 
+  /**
+   * 自定义分页项渲染
+   * @description 根据布局配置决定分页项是否显示。
+   * @param _page 当前页码（未使用）。
+   * @param type 分页项类型。
+   * @param element 默认分页项节点。
+   * @returns 可渲染的分页项节点或 `null`。
+   */
   const pagerItemRender = useCallback((
     _page: number,
     type: 'jump-next' | 'jump-prev' | 'next' | 'page' | 'prev',
@@ -3645,6 +4652,10 @@ export const AdminTable = memo(function AdminTable<
     let rafId = 0;
     let resizeObserver: null | ResizeObserver = null;
 
+    /**
+     * 测量并同步表格主体纵向可滚动高度。
+     * @returns 无返回值。
+     */
     const syncBodyScrollY = () => {
       const rootElement = tableRootRef.current;
       if (!rootElement) {
@@ -3712,6 +4723,10 @@ export const AdminTable = memo(function AdminTable<
       });
     };
 
+    /**
+     * 将高度同步任务压入动画帧，避免重复测量。
+     * @returns 无返回值。
+     */
     const scheduleSync = () => {
       if (rafId !== 0) {
         return;
@@ -3759,6 +4774,15 @@ export const AdminTable = memo(function AdminTable<
     pagination.total,
   ]);
 
+  /**
+   * 处理表格分页/筛选/排序变更
+   * @description 同步分页与排序状态，触发相关事件并在代理模式下发起查询。
+   * @param nextPagination 最新分页信息。
+   * @param nextFilters 最新筛选条件。
+   * @param sorter 最新排序信息。
+   * @param extra Ant Design 额外上下文。
+   * @returns 无返回值。
+   */
   const handleTableChange = useCallback((
     nextPagination: TablePaginationConfig,
     nextFilters: Record<string, any> = {},
@@ -3894,6 +4918,12 @@ export const AdminTable = memo(function AdminTable<
     runtimeGridEvents,
   ]);
 
+  /**
+   * 分页导航跳转
+   * @description 规范化目标页后复用 `handleTableChange` 触发分页变更。
+   * @param targetPage 目标页码。
+   * @returns 无返回值。
+   */
   const handlePagerNavigate = useCallback((targetPage: number) => {
     const nextCurrent = Math.max(1, Math.min(pagerPageCount, targetPage));
     const current = paginationRef.current.current ?? 1;
@@ -3926,6 +4956,14 @@ export const AdminTable = memo(function AdminTable<
     pagerTotal,
   ]);
 
+  /**
+   * 计算表格行 className，合并条纹、选中、策略样式与外部配置。
+   *
+   * @param record 行数据。
+   * @param index 行索引。
+   * @param indent 树形缩进层级。
+   * @returns 行 className 字符串。
+   */
   const rowClassName = (record: TData, index: number, indent: number) => {
     const sourceRowClassName = mergedGridOptions.rowClassName;
     const baseClass =
@@ -3957,6 +4995,9 @@ export const AdminTable = memo(function AdminTable<
     return classNames.filter(Boolean).join(' ');
   };
 
+  /**
+   * 分页首页快捷按钮节点。
+   */
   const pagerHomeNode = paginationEnabled && showPagerHome
     ? (
         <li
@@ -3983,6 +5024,9 @@ export const AdminTable = memo(function AdminTable<
       )
     : null;
 
+  /**
+   * 分页末页快捷按钮节点。
+   */
   const pagerEndNode = paginationEnabled && showPagerEnd
     ? (
         <li
@@ -4010,6 +5054,10 @@ export const AdminTable = memo(function AdminTable<
     : null;
 
   const showPagerExportInRight = pagerVisibilityState.showExportInRight;
+  /**
+   * 分页栏导出工具节点。
+   * @description 当导出功能可见时渲染按钮及可选下拉动作列表。
+   */
   const pagerExportToolNode = showPagerExportInRight
     ? (
         <div className="admin-table__pager-export">
@@ -4051,6 +5099,9 @@ export const AdminTable = memo(function AdminTable<
   const showPagerLeftRegion = pagerVisibilityState.showLeft;
   const showPagerCenterRegion = pagerVisibilityState.showCenter;
   const showPagerRightRegion = pagerVisibilityState.showRight;
+  /**
+   * 分页栏左区域节点。
+   */
   const pagerLeftNode = showPagerLeftRegion
     ? (
         <li className="admin-table__pager-region is-left">
@@ -4069,6 +5120,9 @@ export const AdminTable = memo(function AdminTable<
         </li>
       )
     : null;
+  /**
+   * 分页栏中区域节点。
+   */
   const pagerCenterNode = showPagerCenterRegion
     ? (
         <li className="admin-table__pager-region is-center">
@@ -4096,6 +5150,9 @@ export const AdminTable = memo(function AdminTable<
         </li>
       )
     : null;
+  /**
+   * 分页栏右区域节点。
+   */
   const pagerRightNode = showPagerRightRegion
     ? (
         <li className="admin-table__pager-region is-right">

@@ -249,6 +249,11 @@ const [Grid, gridApi] = useAdminTable<DemoRow>({
   gridOptions,
 });
 
+/**
+ * 模拟表格加载态切换。
+ *
+ * @returns 无返回值。
+ */
 async function triggerLoading() {
   gridApi.setLoading(true);
   await new Promise((resolve) => {

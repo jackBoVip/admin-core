@@ -3,6 +3,10 @@ import { useMemo } from 'react';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 单元格编辑示例页。
+ * @description 演示点击单元格进入编辑模式。
+ */
 export default function TableEditCell() {
   const [TableView] = useAdminTable<DemoProductRow>(
     useMemo(

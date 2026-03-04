@@ -1,3 +1,6 @@
+/**
+ * 表单适配器注册中心解析优先级与桥接能力测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import {
   createFormAdapterBridge,

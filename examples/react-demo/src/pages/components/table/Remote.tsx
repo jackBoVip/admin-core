@@ -4,6 +4,10 @@ import { Button } from 'antd';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 远程数据表示例页。
+ * @description 演示 `proxyConfig` 驱动的分页与远程排序。
+ */
 export default function TableRemote() {
   const [TableView, tableApi] = useAdminTable<DemoProductRow>(
     useMemo(

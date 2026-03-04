@@ -4,6 +4,10 @@ import { Button } from 'antd';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 行编辑示例页。
+ * @description 演示按行进入编辑态并执行保存/取消。
+ */
 export default function TableEditRow() {
   const [TableView, tableApi] = useAdminTable<DemoProductRow>(
     useMemo(

@@ -1,19 +1,25 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { resolve } from 'path';
-import { resolveDtsPlugin } from '../../../internal/build-config/vite.js';
+import { createStripJSDocCommentsPlugin, resolveDtsPlugin } from '../../../internal/build-config/vite.js';
 
-// NPM 构建配置
+/**
+ * `@admin-core/preferences-vue` 的 NPM 构建配置。
+ * @description 产物仅外部化 `vue`，并将 core/shared 资源内联到当前包，便于消费者直接使用单包能力。
+ */
 const npmConfig = defineConfig(async () => {
   const dtsPlugins = await resolveDtsPlugin({
     include: ['src/**/*.ts', 'src/**/*.vue'],
     outDir: 'dist',
     rollupTypes: false,
     insertTypesEntry: true,
+    compilerOptions: {
+      removeComments: true,
+    },
   });
 
   return {
-    plugins: [vue(), ...dtsPlugins],
+    plugins: [vue(), ...dtsPlugins, createStripJSDocCommentsPlugin()],
     resolve: {
       alias: {
         // 解析 core 包的资源文件，以便内联
@@ -39,6 +45,9 @@ const npmConfig = defineConfig(async () => {
       },
       sourcemap: process.env.NODE_ENV !== 'production',
       minify: 'esbuild',
+      esbuild: {
+        legalComments: 'none',
+      },
       target: 'es2020',
       // 内联小于 100KB 的资源为 base64
       assetsInlineLimit: 102400,
@@ -46,4 +55,7 @@ const npmConfig = defineConfig(async () => {
   };
 });
 
+/**
+ * 默认导出 npm 构建配置。
+ */
 export default npmConfig;

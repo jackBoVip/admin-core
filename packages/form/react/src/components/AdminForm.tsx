@@ -1,4 +1,7 @@
-
+/**
+ * Form React 主表单组件实现。
+ * @description 负责字段渲染、值同步、动作区布局与查询模式交互行为。
+ */
 
 import type { RenderFieldItem 
  
@@ -52,8 +55,15 @@ import { useLocaleVersion } from '../hooks/useLocaleVersion';
 import type { AdminFormReactProps } from '../types';
 import type { CSSProperties, KeyboardEvent, ReactElement } from 'react';
 
+/** 需要注入 Ant Design 弹层容器属性的语义组件键集合。 */
 const ANTD_POPUP_KEYS = new Set(['date', 'date-range', 'range', 'select', 'time']);
 
+/**
+ * 判断当前字段是否需要注入 Ant Design 弹层属性。
+ * @param resolved 组件解析结果。
+ * @param field 字段配置。
+ * @returns 是否需要注入弹层属性。
+ */
 function shouldInjectAntdPopupProps(
   resolved: ResolvedComponentBinding<any>,
   field: RenderFieldItem
@@ -65,6 +75,9 @@ function shouldInjectAntdPopupProps(
   return ANTD_POPUP_KEYS.has(resolvedKey);
 }
 
+/**
+ * 获取弹层容器节点。
+ */
 function resolvePopupContainer() {
   if (typeof document === 'undefined') {
     return undefined;
@@ -72,6 +85,11 @@ function resolvePopupContainer() {
   return document.body;
 }
 
+/**
+ * 将未知值安全转换为普通对象。
+ * @param value 待转换值。
+ * @returns 对象值，非对象返回 `undefined`。
+ */
 function asRecord(value: any): Record<string, any> | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return undefined;
@@ -79,6 +97,10 @@ function asRecord(value: any): Record<string, any> | undefined {
   return value as Record<string, any>;
 }
 
+/**
+ * 规范化 Ant Design 弹层相关属性，统一 className 与 style 写法。
+ * @param componentProps 组件属性对象。
+ */
 function normalizeAntdPopupProps(componentProps: Record<string, any>) {
   const defaultPopupClassName = 'admin-form-popup';
   const defaultPopupStyle = {
@@ -121,6 +143,11 @@ function normalizeAntdPopupProps(componentProps: Record<string, any>) {
   delete componentProps.dropdownStyle;
 }
 
+/**
+ * 清理跨框架互操作遗留属性，确保 React 组件可安全接收。
+ * @param componentProps 组件属性对象。
+ * @param modelPropName 当前 model 属性名。
+ */
 function sanitizeReactInteropProps(
   componentProps: Record<string, any>,
   modelPropName: string
@@ -138,6 +165,13 @@ function sanitizeReactInteropProps(
   }
 }
 
+/**
+ * 订阅表单快照切片并返回派生值。
+ * @param api 表单 API。
+ * @param selector 快照选择器。
+ * @param isEqual 切片比较函数。
+ * @returns 当前切片值。
+ */
 function useFormSelector<TSlice>(
   api: AdminFormApi,
   selector: (snapshot: ReturnType<AdminFormApi['getSnapshot']>) => TSlice,
@@ -154,15 +188,26 @@ function useFormSelector<TSlice>(
   return slice;
 }
 
-
+/**
+ * 单个字段渲染组件属性。
+ */
 interface FormFieldItemProps {
+  /** 表单 API。 */
   api: AdminFormApi;
+  /** 字段配置。 */
   field: RenderFieldItem;
+  /** 索引。 */
   index: number;
+  /** 组件解析结果。 */
   resolved: ResolvedComponentBinding<any>;
+  /** 运行时 props。 */
   runtimeProps: Record<string, any>;
 }
 
+/**
+ * 单字段渲染组件。
+ * @description 负责字段值订阅、状态计算与组件事件桥接。
+ */
 const FormFieldItem = memo(function FormFieldItem({
   api,
   field,
@@ -337,33 +382,75 @@ const FormFieldItem = memo(function FormFieldItem({
   previous.runtimeProps === next.runtimeProps
 );
 
+/**
+ * 管理表单组件。
+ * @description 负责解析 schema、挂载适配器组件并驱动联动校验与提交流程。
+ */
 export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
+  /**
+   * 首次解析后的表单 props 快照。
+   * @description 仅用于内部创建 formApi 时的初始化输入，避免重复取值带来漂移。
+   */
   const initialFormPropsRef = useRef<Record<string, any> | null>(null);
   if (!initialFormPropsRef.current) {
     initialFormPropsRef.current = pickFormProps(props as Record<string, any>);
   }
+  /**
+   * 当前生效表单 API。
+   * @description 优先使用外部注入实例，缺省时在组件内创建。
+   */
   const api = useMemo(
     () => props.formApi ?? createFormApi(initialFormPropsRef.current ?? {}),
     [props.formApi]
   );
+  /**
+   * 表单语言版本号订阅值。
+   */
   const localeVersion = useLocaleVersion();
+  /**
+   * 运行时快照（触发订阅刷新）。
+   */
   const runtime = useFormSelector(api, useCallback((snapshot) => snapshot.runtime, []));
+  /**
+   * 运行时 props（触发订阅刷新）。
+   */
   const runtimeProps = useFormSelector(api, useCallback((snapshot) => snapshot.props, []));
   void runtime;
   void runtimeProps;
+  /**
+   * 表单渲染态快照。
+   */
   const renderState = api.getRenderState();
+  /**
+   * 当前语言下表单文案集合。
+   */
   const messages = useMemo(() => {
     void localeVersion;
     return getLocaleMessages().form;
   }, [localeVersion]);
+  /**
+   * 字段组件解析缓存。
+   */
   const resolvedBindingCacheRef = useRef(
     new Map<string, ResolvedComponentBinding<any> | null>()
   );
+  /**
+   * props 同步追踪器。
+   */
   const propsSyncTrackerRef = useRef(createFormPropsSyncTracker());
+  /**
+   * 受控值同步桥接器。
+   */
   const controlledValuesBridgeRef = useRef(
     createControlledValuesBridge<Record<string, any>>()
   );
+  /**
+   * 是否已自动注入 query 折叠初始值。
+   */
   const queryAutoCollapsedRef = useRef(false);
+  /**
+   * 外部值变化回调引用快照。
+   */
   const onValuesChange = props.onValuesChange;
   useEffect(() => {
     api.mount();
@@ -434,6 +521,10 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
     resolvedBindingCacheRef.current.clear();
   }, [runtimeProps.schema, runtimeProps.commonConfig?.modelPropName]);
 
+  /**
+   * 显式可见字段集合。
+   * @description 当存在 `visibleFieldNames` 时用于快速过滤字段。
+   */
   const visibleFieldSet = useMemo(() => {
     const effectiveVisibleFieldNames = runtimeProps.visibleFieldNames;
     if (
@@ -444,8 +535,17 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
     }
     return new Set(effectiveVisibleFieldNames);
   }, [runtimeProps.visibleFieldNames]);
+  /**
+   * 当前是否处于查询模式。
+   */
   const queryMode = !!runtimeProps.queryMode;
 
+  /**
+   * 渲染单个表单字段节点。
+   * @param field 字段渲染描述。
+   * @param index 字段索引。
+   * @returns 字段节点或错误提示节点。
+   */
   const renderField = (field: RenderFieldItem, index: number) => {
     const registry = getReactFormAdapterRegistry();
     const { key, resolved } = resolveFieldComponentBinding({
@@ -474,6 +574,9 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
       />
     );
   };
+  /**
+   * 过滤后的可渲染字段列表。
+   */
   const filteredFields = useMemo(
     () =>
       renderState.fields.filter((field) => {
@@ -487,6 +590,9 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
       }),
     [renderState.fields, visibleFieldSet]
   );
+  /**
+   * 查询模式下字段可见性解析结果。
+   */
   const queryVisible = useMemo(
     () =>
       resolveQueryVisibleFields({
@@ -504,7 +610,13 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
       runtimeProps.gridColumns,
     ]
   );
+  /**
+   * 最终参与渲染的字段列表。
+   */
   const fieldsToRender = queryMode ? queryVisible.fields : filteredFields;
+  /**
+   * 当前动作按钮渲染项。
+   */
   const actionItems = queryMode
     ? resolveQueryActionItems({
         actionButtonsReverse: runtimeProps.actionButtonsReverse,
@@ -527,7 +639,13 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
           submitButtonOptions: runtimeProps.submitButtonOptions,
         })
       );
+  /**
+   * 是否存在动作按钮。
+   */
   const hasActionItems = actionItems.length > 0;
+  /**
+   * 查询模式下动作区域栅格位置。
+   */
   const queryActionsPlacement =
     queryMode && hasActionItems
       ? resolveQueryActionsGridPlacement({
@@ -535,8 +653,15 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
           visibleCount: fieldsToRender.length,
         })
       : null;
+  /**
+   * 动作按钮节点集合。
+   */
   const actionNodes: ReactElement[] = [];
 
+  /**
+   * 处理默认重置动作。
+   * @returns 无返回值。
+   */
   const handleResetAction = async () => {
     await api.resetForm();
   };
@@ -573,11 +698,17 @@ export const AdminForm = memo(function AdminForm(props: AdminFormReactProps) {
     );
   }
 
+  /**
+   * 字段网格 className。
+   */
   const gridClassName = [
     'admin-form__grid',
     resolveGridColumnsClass(runtimeProps.gridColumns, 1),
     runtimeProps.wrapperClass ?? '',
   ].join(' ');
+  /**
+   * 字段网格内联样式。
+   */
   const gridStyle = resolveGridColumnsStyle(runtimeProps.gridColumns, 1) as CSSProperties;
 
   return (

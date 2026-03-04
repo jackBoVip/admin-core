@@ -1,16 +1,30 @@
 /**
- * 页脚组件
+ * 页脚组件。
+ * @description 负责渲染布局底部插槽与版权信息，并处理固定/静态布局样式。
  */
 
 import { memo, useMemo, type ReactNode, type CSSProperties } from 'react';
 import { useLayoutContext, useLayoutComputed } from '../../hooks';
 
+/**
+ * 页脚组件插槽属性。
+ * @description 支持左中右三个区域的自定义内容覆盖。
+ */
 export interface LayoutFooterProps {
+  /** 左侧区域内容。 */
   left?: ReactNode;
+  /** 中间区域内容。 */
   center?: ReactNode;
+  /** 右侧区域内容。 */
   right?: ReactNode;
 }
 
+/**
+ * 布局底部组件。
+ * @description 渲染左右中三段 footer 插槽，并根据布局配置控制显示。
+ * @param props 页脚插槽参数。
+ * @returns 布局页脚节点。
+ */
 export const LayoutFooter = memo(function LayoutFooter({ left, center, right }: LayoutFooterProps) {
   const context = useLayoutContext();
   const computed = useLayoutComputed();
@@ -19,14 +33,18 @@ export const LayoutFooter = memo(function LayoutFooter({ left, center, right }: 
   const show = !computed.isFullContent;
   const isFixed = footerConfig.fixed;
 
-  // 类名
+  /**
+   * 页脚样式类名集合。
+   */
   const footerClassName = useMemo(() => {
     const classes = ['layout-footer'];
     if (isFixed) classes.push('layout-footer--fixed');
     return classes.join(' ');
   }, [isFixed]);
 
-  // 样式
+  /**
+   * 页脚容器样式。
+   */
   const footerStyle = useMemo(() => {
     const style: CSSProperties = {
       height: `${computed.footerHeight}px`,

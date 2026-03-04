@@ -5,8 +5,25 @@
  */
 import { useRefresh } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
+import { computed } from 'vue';
 
+/**
+ * 页面刷新状态与触发器。
+ */
 const { isRefreshing, refresh } = useRefresh();
+
+/**
+ * 刷新图标动画样式。
+ * @description 仅在刷新中启用旋转动画，空闲态返回 `undefined`。
+ */
+const spinStyle = computed(() =>
+  isRefreshing.value
+    ? {
+        animation: 'spin var(--admin-duration-slow, 500ms) var(--admin-easing-default, ease-in-out)',
+        transition: 'none',
+      }
+    : undefined
+);
 </script>
 
 <template>
@@ -19,7 +36,7 @@ const { isRefreshing, refresh } = useRefresh();
     <LayoutIcon
       name="refresh"
       size="sm"
-      :style="isRefreshing ? { animation: 'spin var(--admin-duration-slow, 500ms) var(--admin-easing-default, ease-in-out)', transition: 'none' } : undefined"
+      :style="spinStyle"
     />
   </button>
 </template>

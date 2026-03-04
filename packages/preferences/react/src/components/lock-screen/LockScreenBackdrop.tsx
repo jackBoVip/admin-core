@@ -4,6 +4,9 @@
  */
 import React, { memo } from 'react';
 
+/**
+ * 锁屏背景组件参数。
+ */
 export interface LockScreenBackdropProps {
   /** 实际背景图片 URL（为空时仅展示渐变 + 光斑 + 网格） */
   backgroundImage?: string | null;
@@ -11,13 +14,21 @@ export interface LockScreenBackdropProps {
   backgroundStyle?: React.CSSProperties;
 }
 
+/**
+ * 锁屏背景展示组件。
+ */
 export const LockScreenBackdrop: React.FC<LockScreenBackdropProps> = memo(({
   backgroundImage,
   backgroundStyle,
 }) => {
+  /**
+   * 背景图片是否可用。
+   */
+  const hasBackgroundImage = Boolean(backgroundImage);
+
   return (
     <div className="preferences-lock-backdrop" aria-hidden="true">
-      {backgroundImage && (
+      {hasBackgroundImage && (
         <div
           className="preferences-lock-backdrop-image"
           style={backgroundStyle}
@@ -32,5 +43,3 @@ export const LockScreenBackdrop: React.FC<LockScreenBackdropProps> = memo(({
 });
 
 LockScreenBackdrop.displayName = 'LockScreenBackdrop';
-
-

@@ -1,3 +1,6 @@
+/**
+ * 值访问依赖路径采集与交集判定测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   pathDependenciesIntersect,

@@ -6,6 +6,10 @@ const tableData = [
   { id: 5, name: '商品E', price: 499.00, stock: 10, status: '上架' },
 ];
 
+/**
+ * 基础表格示例页。
+ * @description 展示静态数据表格的渲染与常见操作列样式。
+ */
 export default function ComponentsTable() {
   return (
     <div className="page-container">

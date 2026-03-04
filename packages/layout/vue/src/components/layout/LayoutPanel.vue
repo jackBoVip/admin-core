@@ -6,19 +6,41 @@ import { computed } from 'vue';
 import { useLayoutContext, useLayoutComputed, usePanelState } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
 
+/**
+ * 布局上下文
+ * @description 提供面板配置、禁用项开关与国际化能力。
+ */
 const context = useLayoutContext();
+/**
+ * 布局派生状态
+ * @description 提供头部高度、侧栏宽度及区域显隐计算结果。
+ */
 const layoutComputed = useLayoutComputed();
+/**
+ * 面板运行时状态
+ * @description 包含折叠状态、宽度、停靠方向及切换方法。
+ */
 const { collapsed, width, position, toggle } = usePanelState();
 
-// 配置
+/**
+ * 面板配置
+ * @description 读取 `panel` 配置并提供空对象兜底。
+ */
 const panelConfig = computed(() => context.props.panel || {});
 
-// 是否显示折叠按钮
+/**
+ * 是否显示面板折叠按钮
+ * @description 同时受面板配置与禁用项配置控制。
+ */
 const showCollapseButton = computed(() => 
   panelConfig.value.collapsedButton !== false && 
   context.props.disabled?.panelCollapseButton !== true
 );
 
+/**
+ * 面板折叠图标类名
+ * @description 根据面板位置与折叠状态决定箭头旋转方向。
+ */
 const collapseIconClass = computed(() =>
   `layout-panel__collapse-icon transition-transform duration-layout-normal ${
     position.value === 'left'
@@ -27,7 +49,10 @@ const collapseIconClass = computed(() =>
   }`
 );
 
-// 类名
+/**
+ * 面板类名集合
+ * @description 根据停靠位置与折叠状态生成语义类。
+ */
 const panelClass = computed(() => [
   'layout-panel',
   `layout-panel--${position.value}`,
@@ -36,7 +61,10 @@ const panelClass = computed(() => [
   },
 ]);
 
-// 样式
+/**
+ * 面板内联样式
+ * @description 计算宽度、顶部偏移，并在左侧停靠时避让主侧栏。
+ */
 const panelStyle = computed(() => {
   const style: Record<string, string> = {
     width: `${width.value}px`,

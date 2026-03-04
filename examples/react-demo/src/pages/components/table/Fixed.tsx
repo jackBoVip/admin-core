@@ -4,6 +4,10 @@ import { Button } from 'antd';
 
 import { fetchProductRows, type DemoProductRow } from './data';
 
+/**
+ * 固定列示例页。
+ * @description 演示左/右固定列与远程分页组合用法。
+ */
 export default function TableFixed() {
   const [TableView] = useAdminTable<DemoProductRow>(
     useMemo(

@@ -7,6 +7,28 @@ import {
 
 import { AdminTabs } from '../components/AdminTabs';
 
+/** 测试桩数据项（对应 `antd Tabs.items`）。 */
+interface MockTabsItem {
+  /** 标签唯一键。 */
+  key: string;
+  /** 标签展示内容。 */
+  label: React.ReactNode;
+}
+
+/** 测试桩属性定义（对应 `antd Tabs`）。 */
+interface MockTabsProps {
+  /** 当前激活键。 */
+  activeKey?: string;
+  /** 额外类名。 */
+  className?: string;
+  /** 标签项列表。 */
+  items?: MockTabsItem[];
+  /** 切换回调。 */
+  onChange?: (key: string) => void;
+  /** 行内样式。 */
+  style?: React.CSSProperties;
+}
+
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock('antd', async () => {
@@ -18,13 +40,7 @@ vi.mock('antd', async () => {
       items = [],
       onChange,
       style,
-    }: {
-      activeKey?: string;
-      className?: string;
-      items?: Array<{ key: string; label: React.ReactNode }>;
-      onChange?: (key: string) => void;
-      style?: React.CSSProperties;
-    }) => {
+    }: MockTabsProps) => {
       return React.createElement(
         'div',
         {
@@ -54,6 +70,11 @@ vi.mock('antd', async () => {
 });
 
 describe('AdminTabs (react)', () => {
+  /**
+   * 断言测试渲染器实例存在。
+   * @param renderer 测试渲染器实例。
+   * @returns 非空渲染器实例。
+   */
   const ensureRenderer = (renderer: null | ReactTestRenderer) => {
     if (!renderer) {
       throw new Error('expected react test renderer instance');

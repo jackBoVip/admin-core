@@ -1,44 +1,53 @@
 /**
  * 锁屏管理工具
- * @description 处理自动锁屏逻辑
+ * @description 提供自动锁屏定时器与锁屏管理器创建能力。
  */
 
 import type { Preferences } from '../types';
 
 /**
- * 锁屏管理器配置
+ * 锁屏管理器配置。
  */
 export interface LockScreenManagerOptions {
-  /** 偏好设置 */
+  /** 获取最新偏好设置。 */
   getPreferences: () => Preferences;
-  /** 锁定回调 */
+  /** 触发锁屏时的回调。 */
   onLock: () => void;
 }
 
-/** 节流延迟时间（毫秒） */
+/** 默认活动事件节流间隔（毫秒）。 */
 const THROTTLE_DELAY = 1000;
 
-/** 自动锁屏事件列表 */
+/** 默认用于重置自动锁屏计时器的活动事件列表。 */
 const DEFAULT_AUTO_LOCK_EVENTS = ['mousedown', 'mousemove', 'keydown', 'touchstart', 'wheel'];
 
-/** setTimeout 最大值（约 24.8 天） */
+/** `setTimeout` 可接受的最大毫秒值（约 24.8 天）。 */
 const MAX_TIMEOUT_MS = 2147483647; // 2^31 - 1
 
+/**
+ * 自动锁屏定时器参数。
+ */
 export interface AutoLockTimerOptions {
-  /** 获取自动锁屏时间（分钟） */
+  /** 获取自动锁屏时间（分钟）。 */
   getAutoLockTime: () => number;
-  /** 锁定回调 */
+  /** 达到超时阈值后触发的锁定回调。 */
   onLock: () => void;
-  /** 是否已锁定（可选） */
+  /** 查询当前是否已锁定（可选）。 */
   isLocked?: () => boolean;
-  /** 监听的事件列表 */
+  /** 需要监听的活动事件列表。 */
   events?: string[];
-  /** 节流时间（毫秒），<=0 表示不节流 */
+  /** 活动事件节流时间（毫秒），`<= 0` 表示不节流。 */
   throttleMs?: number;
-  /** 事件目标（默认 window/document） */
+  /** 事件绑定目标（默认自动选择 `window/document`）。 */
   target?: EventTarget;
 }
 
+/**
+ * 解析事件绑定目标。
+ *
+ * @param target 显式指定目标。
+ * @returns 可用事件目标；无可用目标时返回 `null`。
+ */
 function resolveEventTarget(target?: EventTarget): EventTarget | null {
   if (target) return target;
   if (typeof window !== 'undefined') return window;
@@ -47,8 +56,12 @@ function resolveEventTarget(target?: EventTarget): EventTarget | null {
 }
 
 /**
- * 创建自动锁屏定时器（通用）
- * @returns 销毁函数
+ * 创建自动锁屏定时器（通用）。
+ * @description
+ * 当用户发生活动事件时重置计时器；达到超时时间后触发 `onLock`。
+ * 支持动态读取超时时间与锁定状态，适配运行时配置变更。
+ * @param options 自动锁屏定时器配置。
+ * @returns 销毁函数，用于移除事件监听并清理计时器。
  */
 export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
   const {
@@ -63,8 +76,10 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
   const eventTarget = resolveEventTarget(target);
   if (!eventTarget) return () => {};
 
-  // 🔧 关键修复：在创建定时器之前检查 autoLockTime
-  // 如果 autoLockTime 为 0 或小于等于 0，直接返回空销毁函数，不添加任何监听器
+  /**
+   * 读取初始化自动锁定时长。
+   * @returns 自动锁定时长（分钟）；读取失败时返回 `0`。
+   */
   const initialAutoLockTime = (() => {
     try {
       return getAutoLockTime();
@@ -72,9 +87,8 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
       return 0;
     }
   })();
-  
+
   if (!initialAutoLockTime || initialAutoLockTime <= 0) {
-    // autoLockTime 不合法时，直接返回空销毁函数，不添加任何监听器
     return () => {};
   }
 
@@ -82,12 +96,20 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
   let lastActivityTime = 0;
   let isDestroyed = false;
 
+  /**
+   * 解析锁屏延迟毫秒值。
+   * @returns 延迟毫秒值；不可用时返回 `0`。
+   */
   const getDelayMs = () => {
     const autoLockTime = getAutoLockTime();
     if (!autoLockTime || autoLockTime <= 0) return 0;
     return Math.min(Math.round(autoLockTime * 60 * 1000), MAX_TIMEOUT_MS);
   };
 
+  /**
+   * 判断当前是否允许触发锁屏。
+   * @returns 允许锁屏返回 `true`。
+   */
   const canLock = () => {
     if (!isLocked) return true;
     try {
@@ -97,6 +119,10 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
     }
   };
 
+  /**
+   * 重置自动锁屏计时器。
+   * @returns 无返回值。
+   */
   const resetTimer = () => {
     if (isDestroyed) return;
     if (timer) {
@@ -107,7 +133,6 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
     const delayMs = getDelayMs();
     const canLockNow = canLock();
 
-    // 如果延迟时间为 0 或不能锁定，直接返回（不设置定时器）
     if (!delayMs || !canLockNow) {
       return;
     }
@@ -125,6 +150,10 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
     }, delayMs);
   };
 
+  /**
+   * 处理用户活动事件并按节流策略重置计时器。
+   * @returns 无返回值。
+   */
   const handleActivity = () => {
     if (throttleMs <= 0) {
       resetTimer();
@@ -156,9 +185,10 @@ export function createAutoLockTimer(options: AutoLockTimerOptions): () => void {
 }
 
 /**
- * 创建锁屏管理器
- * @param options - 配置选项
- * @returns 销毁函数
+ * 创建锁屏管理器。
+ * @description 基于偏好设置读取 `autoLockTime` 与 `isLocked`，并复用通用自动锁屏定时器。
+ * @param options 锁屏管理器配置。
+ * @returns 销毁函数，用于释放自动锁屏监听资源。
  */
 export function createLockScreenManager(options: LockScreenManagerOptions): () => void {
   const { getPreferences, onLock } = options;

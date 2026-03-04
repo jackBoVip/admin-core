@@ -5,14 +5,22 @@
 import type { PageTransitionType } from '../types';
 
 /**
+ * 页面切换动画选项定义。
+ */
+export interface PageTransitionOption {
+  /** 动画名称文案 i18n key。 */
+  labelKey: string;
+  /** 值。 */
+  value: PageTransitionType;
+  /** 动画说明文案 i18n key。 */
+  descriptionKey: string;
+}
+
+/**
  * 页面切换动画选项
  * @description labelKey 和 descriptionKey 使用 i18n key，需要在 UI 层翻译
  */
-export const PAGE_TRANSITION_OPTIONS: Array<{
-  labelKey: string;
-  value: PageTransitionType;
-  descriptionKey: string;
-}> = [
+export const PAGE_TRANSITION_OPTIONS: PageTransitionOption[] = [
   { labelKey: 'transition.nameFade', value: 'fade', descriptionKey: 'transition.nameFadeDesc' },
   { labelKey: 'transition.nameFadeSlide', value: 'fade-slide', descriptionKey: 'transition.nameFadeSlideDesc' },
   { labelKey: 'transition.nameFadeUp', value: 'fade-up', descriptionKey: 'transition.nameFadeUpDesc' },

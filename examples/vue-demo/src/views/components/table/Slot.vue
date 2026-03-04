@@ -6,6 +6,9 @@ import { useAdminTable } from '@admin-core/table-vue';
 
 import { BASIC_ROWS, type DemoRow } from './data';
 
+/**
+ * 关联搜索表单配置。
+ */
 const formOptions: AdminFormProps = {
   collapsed: false,
   schema: [
@@ -21,6 +24,9 @@ const formOptions: AdminFormProps = {
   submitOnEnter: false,
 };
 
+/**
+ * 表格主体配置。
+ */
 const gridOptions: VxeTableGridOptions<DemoRow> = {
   columns: [
     { title: '序号', type: 'seq', width: 60 },
@@ -41,6 +47,9 @@ const gridOptions: VxeTableGridOptions<DemoRow> = {
   },
 };
 
+/**
+ * 角色标签的视觉样式映射。
+ */
 const roleStyleMap: Record<string, { background: string; color: string }> = {
   admin: { background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626' },
   guest: { background: 'rgba(107, 114, 128, 0.15)', color: '#4b5563' },
@@ -48,11 +57,20 @@ const roleStyleMap: Record<string, { background: string; color: string }> = {
   user: { background: 'rgba(16, 185, 129, 0.12)', color: '#059669' },
 };
 
+/**
+ * `useAdminTable` 返回的组件与 API。
+ */
 const [Grid, gridApi] = useAdminTable<DemoRow>({
   formOptions,
   gridOptions,
 });
 
+/**
+ * 根据角色名返回标签样式。
+ *
+ * @param role 角色名。
+ * @returns 对应样式对象。
+ */
 function getRoleStyle(role: string) {
   return (
     roleStyleMap[role.toLowerCase()] ?? {
@@ -62,6 +80,11 @@ function getRoleStyle(role: string) {
   );
 }
 
+/**
+ * 模拟表格加载态切换。
+ *
+ * @returns 无返回值。
+ */
 async function triggerLoading() {
   gridApi.setLoading(true);
   await new Promise((resolve) => {

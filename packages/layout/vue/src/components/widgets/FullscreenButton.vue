@@ -8,12 +8,20 @@ import { useLayoutContext } from '../../composables';
 import { logger } from '@admin-core/layout';
 import LayoutIcon from '../common/LayoutIcon.vue';
 
+/**
+ * 布局上下文
+ * @description 提供全屏状态切换后对外事件通知能力。
+ */
 const context = useLayoutContext();
 
-// 是否全屏
+/**
+ * 当前浏览器是否处于全屏状态。
+ */
 const isFullscreen = ref(false);
 
-// 检查全屏状态
+/**
+ * 检测浏览器当前全屏状态并同步到响应式状态。
+ */
 const checkFullscreen = () => {
   isFullscreen.value = !!(
     document.fullscreenElement ||
@@ -23,11 +31,13 @@ const checkFullscreen = () => {
   );
 };
 
-// 切换全屏
+/**
+ * 切换浏览器全屏状态，兼容不同浏览器前缀 API。
+ */
 const toggleFullscreen = async () => {
   try {
     if (isFullscreen.value) {
-      // 退出全屏
+      /** 退出全屏。 */
       if (document.exitFullscreen) {
         await document.exitFullscreen();
       } else if ((document as any).webkitExitFullscreen) {
@@ -38,7 +48,7 @@ const toggleFullscreen = async () => {
         await (document as any).msExitFullscreen();
       }
     } else {
-      // 进入全屏
+      /** 进入全屏。 */
       const element = document.documentElement;
       if (element.requestFullscreen) {
         await element.requestFullscreen();
@@ -57,8 +67,10 @@ const toggleFullscreen = async () => {
   }
 };
 
-// 监听全屏变化事件
 onMounted(() => {
+  /**
+   * 挂载后同步全屏状态并注册全屏变化监听。
+   */
   checkFullscreen();
   document.addEventListener('fullscreenchange', checkFullscreen);
   document.addEventListener('webkitfullscreenchange', checkFullscreen);
@@ -67,6 +79,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  /**
+   * 卸载时移除全屏变化监听，避免重复注册与内存泄漏。
+   */
   document.removeEventListener('fullscreenchange', checkFullscreen);
   document.removeEventListener('webkitfullscreenchange', checkFullscreen);
   document.removeEventListener('mozfullscreenchange', checkFullscreen);

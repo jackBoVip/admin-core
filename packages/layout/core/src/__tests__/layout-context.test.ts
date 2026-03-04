@@ -1,3 +1,6 @@
+/**
+ * 布局上下文状态初始化、补丁同步与动作控制测试。
+ */
 import { describe, expect, it } from 'vitest';
 import {
   applyStatePatch,

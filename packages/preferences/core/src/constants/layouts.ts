@@ -13,16 +13,28 @@ import type {
 } from '../types';
 
 /**
+ * 基础“文案键 + 值”选项定义。
+ */
+export interface LabeledValueOption<TValue extends string> {
+  /** 选项文案 i18n key。 */
+  labelKey: string;
+  /** 选项值。 */
+  value: TValue;
+}
+
+/**
+ * 布局类型选项定义。
+ */
+export interface LayoutOption extends LabeledValueOption<LayoutType> {
+  /** 布局说明文案 i18n key。 */
+  descriptionKey: string;
+}
+
+/**
  * 布局类型选项
  * @description label 和 description 使用 i18n key，需要在 UI 层翻译
  */
-export const LAYOUT_OPTIONS: Array<{
-  /** i18n key for label */
-  labelKey: string;
-  value: LayoutType;
-  /** i18n key for description */
-  descriptionKey: string;
-}> = [
+export const LAYOUT_OPTIONS: LayoutOption[] = [
   {
     labelKey: 'layout.sidebarNav',
     value: 'sidebar-nav',
@@ -63,10 +75,7 @@ export const LAYOUT_OPTIONS: Array<{
 /**
  * 标签栏样式选项
  */
-export const TABS_STYLE_OPTIONS: Array<{
-  labelKey: string;
-  value: TabsStyleType;
-}> = [
+export const TABS_STYLE_OPTIONS: LabeledValueOption<TabsStyleType>[] = [
   { labelKey: 'tabbar.styleChrome', value: 'chrome' },
   { labelKey: 'tabbar.styleCard', value: 'card' },
   { labelKey: 'tabbar.stylePlain', value: 'plain' },
@@ -76,10 +85,7 @@ export const TABS_STYLE_OPTIONS: Array<{
 /**
  * 导航风格选项
  */
-export const NAVIGATION_STYLE_OPTIONS: Array<{
-  labelKey: string;
-  value: NavigationStyleType;
-}> = [
+export const NAVIGATION_STYLE_OPTIONS: LabeledValueOption<NavigationStyleType>[] = [
   { labelKey: 'navigation.styleRounded', value: 'rounded' },
   { labelKey: 'navigation.stylePlain', value: 'plain' },
 ];
@@ -87,10 +93,7 @@ export const NAVIGATION_STYLE_OPTIONS: Array<{
 /**
  * 面包屑样式选项
  */
-export const BREADCRUMB_STYLE_OPTIONS: Array<{
-  labelKey: string;
-  value: BreadcrumbStyleType;
-}> = [
+export const BREADCRUMB_STYLE_OPTIONS: LabeledValueOption<BreadcrumbStyleType>[] = [
   { labelKey: 'breadcrumb.styleNormal', value: 'normal' },
   { labelKey: 'breadcrumb.styleBackground', value: 'background' },
 ];
@@ -98,10 +101,7 @@ export const BREADCRUMB_STYLE_OPTIONS: Array<{
 /**
  * 顶栏模式选项
  */
-export const HEADER_MODE_OPTIONS: Array<{
-  labelKey: string;
-  value: LayoutHeaderModeType;
-}> = [
+export const HEADER_MODE_OPTIONS: LabeledValueOption<LayoutHeaderModeType>[] = [
   { labelKey: 'header.modeFixed', value: 'fixed' },
   { labelKey: 'header.modeStatic', value: 'static' },
   { labelKey: 'header.modeAuto', value: 'auto' },
@@ -111,10 +111,7 @@ export const HEADER_MODE_OPTIONS: Array<{
 /**
  * 顶栏菜单对齐选项
  */
-export const HEADER_MENU_ALIGN_OPTIONS: Array<{
-  labelKey: string;
-  value: LayoutHeaderMenuAlignType;
-}> = [
+export const HEADER_MENU_ALIGN_OPTIONS: LabeledValueOption<LayoutHeaderMenuAlignType>[] = [
   { labelKey: 'header.menuAlignStart', value: 'start' },
   { labelKey: 'header.menuAlignCenter', value: 'center' },
   { labelKey: 'header.menuAlignEnd', value: 'end' },
@@ -123,10 +120,7 @@ export const HEADER_MENU_ALIGN_OPTIONS: Array<{
 /**
  * 内容宽度模式选项
  */
-export const CONTENT_COMPACT_OPTIONS: Array<{
-  labelKey: string;
-  value: ContentCompactType;
-}> = [
+export const CONTENT_COMPACT_OPTIONS: LabeledValueOption<ContentCompactType>[] = [
   { labelKey: 'layout.contentWide', value: 'wide' },
   { labelKey: 'layout.contentCompact', value: 'compact' },
 ];

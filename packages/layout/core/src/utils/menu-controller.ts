@@ -23,10 +23,18 @@ import type { MenuItem } from '../types';
  * @description
  * - 支持使用 key / path / name 作为标识，保证不同场景下都能正确回溯父级
  * - 该映射在 React/Vue 两端均使用，避免实现漂移
+ * @param menus 菜单树数据。
+ * @returns 菜单标识到父级标识的映射表；根节点父级为 `null`。
  */
 export function buildMenuParentPathMap(menus: MenuItem[]): Map<string, string | null> {
   const map = new Map<string, string | null>();
 
+  /**
+   * 递归遍历菜单并记录父级关系。
+   * @param items 当前层菜单列表。
+   * @param parent 父级菜单标识。
+   * @returns 无返回值。
+   */
   const visit = (items: MenuItem[], parent: string | null) => {
     for (const menu of items) {
       const rawKey = menu.key ?? '';
@@ -53,6 +61,9 @@ export function buildMenuParentPathMap(menus: MenuItem[]): Map<string, string | 
  * 根据当前激活路径构建父级激活集合
  * @description
  * - 通过 parentPathMap 逐级向上查找父级，直到根节点或出现循环
+ * @param activePath 当前激活菜单路径或标识。
+ * @param parentPathMap 菜单父级映射表。
+ * @returns 需要高亮为“父级激活”的菜单标识集合。
  */
 export function buildActiveParentSet(
   activePath: string,
@@ -75,6 +86,9 @@ export function buildActiveParentSet(
   return parentSet;
 }
 
+/**
+ * 打开菜单时的策略参数。
+ */
 export interface OpenMenuOptions {
   /** 是否启用手风琴模式 */
   accordion?: boolean;
@@ -87,6 +101,10 @@ export interface OpenMenuOptions {
  * @description
  * - 保证幂等：重复打开同一菜单不会产生重复项
  * - 当 accordion=true 时，仅保留同一父级下的展开项
+ * @param prevOpenedMenus 变更前的已展开菜单列表。
+ * @param path 当前准备展开的菜单路径或标识。
+ * @param options 展开策略参数。
+ * @returns 计算后的已展开菜单列表。
  */
 export function computeOpenedMenusOnOpen(
   prevOpenedMenus: string[],
@@ -107,7 +125,7 @@ export function computeOpenedMenusOnOpen(
 
   if (accordion) {
     if (normalizedParents.length === 0) {
-      // 根级手风琴：只保留当前点击的根菜单
+      /* 根级手风琴：只保留当前点击的根菜单。 */
       next = [];
     } else {
       const filtered: string[] = [];
@@ -130,7 +148,10 @@ export function computeOpenedMenusOnOpen(
 }
 
 /**
- * 计算「关闭菜单」后的新 openedMenus 数组
+ * 计算关闭菜单后的新展开列表。
+ * @param prevOpenedMenus 变更前的已展开菜单列表。
+ * @param path 当前准备关闭的菜单路径或标识。
+ * @returns 计算后的已展开菜单列表。
  */
 export function computeOpenedMenusOnClose(prevOpenedMenus: string[], path: string): string[] {
   const target = normalizeMenuKey(path);
@@ -145,6 +166,9 @@ export function computeOpenedMenusOnClose(prevOpenedMenus: string[], path: strin
 /**
  * 折叠状态变化时重置展开菜单
  * @description 折叠时关闭所有菜单，展开时保持原状
+ * @param prevOpenedMenus 变更前的已展开菜单列表。
+ * @param collapse 最新折叠状态。
+ * @returns 折叠状态切换后的已展开菜单列表。
  */
 export function computeOpenedMenusOnCollapseChange(
   prevOpenedMenus: string[],
@@ -159,13 +183,21 @@ export function computeOpenedMenusOnCollapseChange(
  * @description
  * - 水平菜单必定为弹出模式
  * - 垂直折叠菜单也视为弹出模式
+ * @param mode 菜单布局模式。
+ * @param collapse 侧边栏是否折叠。
+ * @returns 当前菜单是否应按弹出层模式展示。
  */
 export function isMenuPopup(mode: 'horizontal' | 'vertical', collapse: boolean): boolean {
   return mode === 'horizontal' || (mode === 'vertical' && collapse);
 }
 
+/**
+ * 计算可见菜单时使用的输入参数。
+ */
 export interface VisibleMenusParams {
+  /** 完整菜单树（当前层级）。 */
   menus: MenuItem[];
+  /** 菜单模式：水平或垂直。 */
   mode: 'horizontal' | 'vertical';
   /** 水平模式下，可见菜单的分割索引；-1 表示全部可见 */
   sliceIndex: number;
@@ -174,7 +206,9 @@ export interface VisibleMenusParams {
 }
 
 /**
- * 计算基础可见菜单列表（不包含虚拟滚动与溢出逻辑）
+ * 计算基础可见菜单列表（不包含虚拟滚动与溢出逻辑）。
+ * @param params 可见菜单计算参数。
+ * @returns 当前渲染阶段应展示的菜单列表。
  */
 export function computeBaseVisibleMenus(params: VisibleMenusParams): MenuItem[] {
   const { menus, mode, sliceIndex, renderCount } = params;
@@ -191,14 +225,22 @@ export function computeBaseVisibleMenus(params: VisibleMenusParams): MenuItem[] 
   return menus;
 }
 
+/**
+ * 计算溢出菜单时的输入参数。
+ */
 export interface OverflowMenusParams {
+  /** 完整菜单列表。 */
   menus: MenuItem[];
+  /** 菜单模式。 */
   mode: 'horizontal' | 'vertical';
+  /** 水平模式的可见切分索引。 */
   sliceIndex: number;
 }
 
 /**
- * 计算溢出菜单列表（用于「更多」按钮）
+ * 计算溢出菜单列表（用于“更多”菜单）。
+ * @param params 溢出菜单计算参数。
+ * @returns 需要放入溢出区的菜单列表。
  */
 export function computeOverflowMenus(params: OverflowMenusParams): MenuItem[] {
   const { menus, mode, sliceIndex } = params;
@@ -206,16 +248,25 @@ export function computeOverflowMenus(params: OverflowMenusParams): MenuItem[] {
   return menus.slice(sliceIndex);
 }
 
+/**
+ * 菜单根节点类名计算参数。
+ */
 export interface MenuClassNameOptions {
+  /** 菜单布局模式。 */
   mode: 'horizontal' | 'vertical';
+  /** 菜单主题。 */
   theme: 'light' | 'dark';
+  /** 是否处于折叠态。 */
   collapse?: boolean;
+  /** 是否启用圆角风格。 */
   rounded?: boolean;
 }
 
 /**
  * 计算菜单根节点类名
  * @description 统一 React/Vue 两端的类名生成规则，避免样式分叉
+ * @param options 菜单根节点类名计算参数。
+ * @returns 菜单根节点 className 字符串。
  */
 export function getMenuRootClassName(options: MenuClassNameOptions): string {
   const { mode, theme, collapse, rounded } = options;

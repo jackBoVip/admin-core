@@ -463,12 +463,22 @@ describe('table shared toolbar utils', () => {
     const logs: string[] = [];
     const tool = {
       code: 'export',
+      /**
+       * 工具按钮点击回调测试桩。
+       *
+       * @param payload 工具触发负载。
+       */
       onClick(payload: { code?: string; index: number }) {
         logs.push(`tool:${payload.code}:${payload.index}`);
       },
     };
 
     triggerToolbarActionTool(tool, 2, {
+      /**
+       * 工具事件分发回调测试桩。
+       *
+       * @param payload 工具触发负载。
+       */
       onToolbarToolClick(payload) {
         logs.push(`event:${payload.code}`);
       },

@@ -1,14 +1,16 @@
 import type { RouteRecordStringComponent } from '@admin-core/layout-vue';
 
 /**
- * 动态菜单 API
+ * 获取示例动态菜单数据。
  * @description
- * 从后端获取菜单数据，返回路由配置
+ * 从后端获取菜单数据并转换为路由配置，示例中使用本地 mock 数据代替真实请求。
  *
  * 注意：如果路由已经在路由模块中定义（routes/modules 下的模块文件），
  * 则可以通过后端 API 来覆盖或扩展这些路由。
  *
  * 合并顺序：静态路由 -> 路由模块 -> 动态路由（后面的覆盖前面的）
+ *
+ * @returns 返回动态路由列表（包含顶级菜单与子路由）。
  */
 export async function fetchMenuList(): Promise<RouteRecordStringComponent[]> {
   // 模拟 API 调用

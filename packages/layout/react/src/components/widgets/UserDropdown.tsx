@@ -7,16 +7,38 @@ import { useCallback, useMemo, memo, type ReactNode } from 'react';
 import { useLayoutContext } from '../../hooks';
 import { renderLayoutIcon } from '../../utils';
 
+/**
+ * 用户下拉菜单参数。
+ */
 export interface UserDropdownProps {
+  /** 自定义菜单内容插槽，传入后覆盖默认菜单项。 */
   menuSlot?: ReactNode;
 }
 
+/**
+ * 头部用户下拉菜单组件。
+ * @param props 用户下拉参数。
+ * @returns 用户头像按钮与下拉菜单节点。
+ */
 export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdownProps) {
+  /**
+   * 布局上下文能力。
+   * @description 提供用户信息快照、国际化与交互事件分发。
+   */
   const { props, events, t } = useLayoutContext();
+  /**
+   * 下拉展开状态与控制方法。
+   */
   const { isOpen, close: handleClose, toggle: handleToggleOpen } = useOpenState();
 
+  /**
+   * 当前用户信息快照。
+   */
   const userInfo = props.userInfo;
 
+  /**
+   * 默认头像地址，未配置用户头像时作为兜底资源使用。
+   */
   const defaultAvatar = useMemo(
     () =>
       props.defaultAvatar ||
@@ -24,6 +46,11 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
     [props.defaultAvatar]
   );
 
+  /**
+   * 处理用户菜单动作，派发统一事件并执行内置动作分支。
+   *
+   * @param key 菜单动作键。
+   */
   const handleMenuSelect = useCallback(
     (key: string) => {
       events.onUserMenuSelect?.(key);
@@ -38,12 +65,23 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
     [events, handleClose]
   );
 
+  /**
+   * 处理菜单按钮点击事件并提取动作键。
+   *
+   * @param e React 鼠标事件对象。
+   */
   const handleMenuClick = useCallback((e: React.MouseEvent) => {
     const key = (e.currentTarget as HTMLElement).dataset.value;
     if (key) {
       handleMenuSelect(key);
     }
   }, [handleMenuSelect]);
+
+  /**
+   * 当前展示用户名。
+   * @description 优先级：displayName > username > 空字符串。
+   */
+  const displayName = userInfo?.displayName || userInfo?.username || '';
 
   return (
     <div
@@ -63,7 +101,7 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
           className="h-8 w-8 rounded-full object-cover"
         />
         <span className="hidden max-w-24 truncate text-sm font-medium sm:inline">
-          {userInfo?.displayName || userInfo?.username || ''}
+          {displayName}
         </span>
         {renderLayoutIcon(
           'menu-arrow-down',
@@ -86,7 +124,7 @@ export const UserDropdown = memo(function UserDropdown({ menuSlot }: UserDropdow
               />
               <div className="flex-1 overflow-hidden">
                 <div className="truncate font-medium">
-                  {userInfo?.displayName || userInfo?.username || t('layout.user.guest')}
+                  {displayName || t('layout.user.guest')}
                 </div>
                 {userInfo?.roles && userInfo.roles.length > 0 && (
                   <div className="truncate text-xs text-gray-500">{userInfo.roles.join(', ')}</div>

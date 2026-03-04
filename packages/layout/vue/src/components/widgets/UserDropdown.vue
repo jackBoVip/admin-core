@@ -7,35 +7,61 @@ import { computed, ref } from 'vue';
 import { useLayoutContext } from '../../composables';
 import LayoutIcon from '../common/LayoutIcon.vue';
 
+/**
+ * 布局上下文
+ * @description 提供用户信息、国际化文案与用户动作回调。
+ */
 const context = useLayoutContext();
 
-// 下拉菜单状态
+/**
+ * 用户下拉菜单开关状态。
+ */
 const isOpen = ref(false);
 
-// 用户信息
+/**
+ * 当前用户信息。
+ */
 const userInfo = computed(() => context.props.userInfo);
 
-// 默认头像
+/**
+ * 默认头像地址，用户未配置头像时回退使用。
+ */
 const defaultAvatar = computed(() => 
   context.props.defaultAvatar || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM5OTkiIHN0cm9rZS13aWR0aD0iMiI+PGNpcmNsZSBjeD0iMTIiIGN5PSI4IiByPSI1Ii8+PHBhdGggZD0iTTIwIDIxYTggOCAwIDEgMC0xNiAwIi8+PC9zdmc+'
 );
 
-// 切换下拉菜单
+/**
+ * 当前展示用户名。
+ * @description 优先使用展示名，其次用户名，均为空时回退空字符串。
+ */
+const displayName = computed(
+  () => userInfo.value?.displayName || userInfo.value?.username || ''
+);
+
+/**
+ * 切换用户下拉菜单显示状态。
+ */
 const toggleDropdown = () => {
   isOpen.value = !isOpen.value;
 };
 
-// 关闭下拉菜单
+/**
+ * 关闭用户下拉菜单。
+ */
 const closeDropdown = () => {
   isOpen.value = false;
 };
 
-// 处理菜单选择
+/**
+ * 处理用户菜单动作，派发事件并执行内置动作分支。
+ *
+ * @param key 菜单动作键。
+ */
 const handleMenuSelect = (key: string) => {
   context.events.onUserMenuSelect?.(key);
   isOpen.value = false;
   
-  // 特殊处理
+  /** 特殊内置行为处理。 */
   if (key === 'logout') {
     context.events.onLogout?.();
   } else if (key === 'lock') {
@@ -43,6 +69,11 @@ const handleMenuSelect = (key: string) => {
   }
 };
 
+/**
+ * 处理菜单按钮点击，并从数据属性中提取动作键。
+ *
+ * @param e 鼠标事件对象。
+ */
 const handleMenuClick = (e: MouseEvent) => {
   const key = (e.currentTarget as HTMLElement | null)?.dataset?.value;
   if (key) {
@@ -65,7 +96,7 @@ const handleMenuClick = (e: MouseEvent) => {
         class="h-8 w-8 rounded-full object-cover"
       />
       <span class="hidden max-w-24 truncate text-sm font-medium sm:inline">
-        {{ userInfo?.displayName || userInfo?.username || '' }}
+        {{ displayName }}
       </span>
       <LayoutIcon
         name="menu-arrow-down"
@@ -91,7 +122,7 @@ const handleMenuClick = (e: MouseEvent) => {
             />
             <div class="flex-1 overflow-hidden">
               <div class="truncate font-medium">
-                {{ userInfo?.displayName || userInfo?.username || context.t('layout.user.guest') }}
+                {{ displayName || context.t('layout.user.guest') }}
               </div>
               <div v-if="userInfo?.roles?.length" class="truncate text-xs text-gray-500">
                 {{ userInfo.roles.join(', ') }}

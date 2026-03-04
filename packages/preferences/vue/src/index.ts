@@ -28,7 +28,7 @@
  * ```
  */
 
-// Composables
+/** 组合式 API 与初始化能力（Vue）。 */
 export {
   destroyPreferences,
   getPreferencesManager,
@@ -44,31 +44,31 @@ export {
   type UseDebouncedValueReturn,
 } from './composables';
 
-// Components
+/** 组件导出（Vue）。 */
 export {
   AdminIcon,
   AdminLayoutIcon,
   Icon,
   LayoutIcon,
-  // Icon 组件类型
+  /** 图标组件类型。 */
   type IconProps,
   type LayoutIconProps,
-  // 主组件（推荐）
+  /** 主组件（推荐） */
   PreferencesProvider,
-  // 单独使用（高级场景）
+  /** 单独使用（高级场景） */
   PreferencesDrawer,
   PreferencesTrigger,
-  // Tab 组件（可独立使用）
+  /** 页签组件（可独立使用）。 */
   AppearanceTab,
   LayoutTab,
   ShortcutKeysTab,
   GeneralTab,
-  // 基础组件
+  /** 基础组件 */
   PreferencesBlock,
   PreferencesSwitchItem,
   PreferencesSelectItem,
   PreferencesSliderItem,
-  // 组件类型
+  /** 组件类型 */
   type PreferencesDrawerProps,
   type PreferencesTriggerProps,
   type AppearanceTabProps,
@@ -81,12 +81,12 @@ export {
   type PreferencesSliderItemProps,
 } from './components';
 
-// 导出默认锁屏背景图片（供用户自定义使用）
+/** 导出默认锁屏背景图片（供用户自定义使用）。 */
 export { defaultLockScreenBg } from '@admin-core/preferences';
 
-// Re-export core types and utilities for convenience
+/** 便捷转导 core 层类型与工具。 */
 export {
-  // Types
+  /** 核心类型。 */
   type AppPreferences,
   type BreadcrumbPreferences,
   type BuiltinThemePreset,
@@ -110,7 +110,7 @@ export {
   type ThemePreferences,
   type TransitionPreferences,
   type WidgetPreferences,
-  // Drawer UI Config Types
+  /** 抽屉 UI 配置类型。 */
   type FeatureItemConfig,
   type FeatureBlockConfig,
   type AppearanceTabConfig,
@@ -120,14 +120,14 @@ export {
   type HeaderActionsConfig,
   type FooterActionsConfig,
   type PreferencesDrawerUIConfig,
-  // Constants
+  /** 常量。 */
   BUILT_IN_THEME_PRESETS,
   COLOR_PRESETS,
   DEFAULT_PREFERENCES,
   LAYOUT_OPTIONS,
   PAGE_TRANSITION_OPTIONS,
   TABS_STYLE_OPTIONS,
-  // Locales
+  /** 国际化资源。 */
   enUS,
   getLocaleLabel,
   getLocaleMessages,

@@ -1,10 +1,11 @@
 /**
- * CSS 变量名常量
- * @description 统一管理所有 CSS 变量名，避免硬编码
+ * 样式变量名常量。
+ * @description 统一管理所有样式变量名，避免硬编码。
  */
 
 /**
- * 布局相关 CSS 变量
+ * 布局相关样式变量。
+ * @description 用于定义布局尺寸、内边距与结构区域对应的 CSS 变量名。
  */
 export const CSS_VAR_LAYOUT = {
   /** 内容高度 */
@@ -42,7 +43,8 @@ export const CSS_VAR_LAYOUT = {
 } as const;
 
 /**
- * 主题相关 CSS 变量
+ * 主题相关样式变量。
+ * @description 用于定义主题色、语义色、字体与圆角等变量名。
  */
 export const CSS_VAR_THEME = {
   /** 主色 */
@@ -92,7 +94,8 @@ export const CSS_VAR_THEME = {
 } as const;
 
 /**
- * 动画相关 CSS 变量
+ * 动画相关样式变量。
+ * @description 用于定义过渡时长与缓动曲线变量名。
  */
 export const CSS_VAR_ANIMATION = {
   /** 快速动画时长 */
@@ -112,7 +115,8 @@ export const CSS_VAR_ANIMATION = {
 } as const;
 
 /**
- * z-index 相关 CSS 变量
+ * 层级索引相关样式变量。
+ * @description 用于统一管理弹层体系的 z-index 变量名。
  */
 export const CSS_VAR_Z_INDEX = {
   /** 基础层级 */
@@ -125,14 +129,15 @@ export const CSS_VAR_Z_INDEX = {
   POPOVER: '--admin-z-index-popover',
   /** 提示层级 */
   TOOLTIP: '--admin-z-index-tooltip',
-  /** Toast 层级 */
+  /** 通知弹层层级 */
   TOAST: '--admin-z-index-toast',
   /** 锁屏层级 */
   LOCK_SCREEN: '--admin-z-index-lock-screen',
 } as const;
 
 /**
- * z-index 默认值
+ * z-index 默认值。
+ * @description 对应 `CSS_VAR_Z_INDEX` 各变量在未覆盖时的回退数值。
  */
 export const DEFAULT_Z_INDEX = {
   base: 200,
@@ -145,7 +150,8 @@ export const DEFAULT_Z_INDEX = {
 } as const;
 
 /**
- * 所有 CSS 变量常量
+ * 所有样式变量常量。
+ * @description 聚合布局、主题、动画与层级变量名，便于统一遍历与导出。
  */
 export const CSS_VARIABLES = {
   ...CSS_VAR_LAYOUT,

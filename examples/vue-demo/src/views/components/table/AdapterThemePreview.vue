@@ -9,15 +9,41 @@ import {
 } from 'vxe-pc-ui';
 import { onMounted, onUnmounted, ref } from 'vue';
 
+/**
+ * 开关示例值。
+ */
 const demoSwitch = ref(true);
+/**
+ * 复选框示例值。
+ */
 const demoChecked = ref(true);
+/**
+ * 下拉示例值。
+ */
 const demoLevel = ref<'high' | 'low' | 'medium'>('medium');
+/**
+ * 输入框示例值。
+ */
 const demoName = ref('Theme Adapter');
+/**
+ * 当前激活的表单适配器标识。
+ */
 const activeFormLibrary = getVueFormAdapterRegistry().getActiveLibrary();
+/**
+ * 主题主色变量快照。
+ */
 const primaryColor = ref('');
 
+/**
+ * 文档根节点样式监听器。
+ */
 let observer: MutationObserver | null = null;
 
+/**
+ * 同步当前主题色快照。
+ *
+ * @returns 无返回值。
+ */
 function syncThemeSnapshot() {
   const styles = getComputedStyle(document.documentElement);
   primaryColor.value = styles.getPropertyValue('--primary').trim();

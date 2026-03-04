@@ -13,6 +13,10 @@ import {
 } from '../utils/route-access';
 import type { RouteRecordStringComponent } from '../types';
 
+/**
+ * 测试用占位组件。
+ * @returns 空节点。
+ */
 const DummyComponent = () => null;
 
 describe('route-access utils', () => {

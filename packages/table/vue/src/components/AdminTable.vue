@@ -1,4 +1,8 @@
 <script lang="ts" setup>
+/**
+ * Table Vue 主表格组件实现。
+ * @description 负责 VXE 表格渲染、列自定义、查询联动、工具栏与分页交互等核心逻辑。
+ */
 import type {
   VxeGridInstance,
   VxeGridListeners,
@@ -150,53 +154,151 @@ import {
 } from '../setup';
 import '../styles/index.css';
 
+/**
+ * AdminTable 组件属性定义，继承通用 Vue 表格属性并强制要求表格 API 实例。
+ */
 interface Props extends AdminTableVueProps {
+  /** 表格 API 实例。 */
   api: AdminTableApi;
 }
 
+/**
+ * 表格行选择键类型，兼容数值和字符串主键。
+ */
 type TableSelectionKey = number | string;
+/**
+ * 表格行选择模式。
+ */
 type TableSelectionMode = 'checkbox' | 'radio';
+/**
+ * 分页关键信号，用于判断外部传入分页是否变化。
+ */
 interface TablePagerSignal {
+  /** 当前页码。 */
   currentPage: null | number;
+  /** 每页条数。 */
   pageSize: null | number;
+  /** 总记录数。 */
   total: null | number;
 }
 
+/**
+ * 组件入参
+ * @description 接收表格运行时配置与 API 实例。
+ */
 const props = defineProps<Props>();
+/** 当前组件插槽映射。 */
 const slots = useSlots() as Record<string, (...args: any[]) => any>;
+/**
+ * Vue 端表格初始化状态
+ * @description 提供权限、主题等运行时上下文能力。
+ */
 const setupState = getAdminTableVueSetupState();
+/**
+ * 主题变化信号
+ * @description 用于驱动表格主题 CSS 变量的响应式刷新。
+ */
 const themeSignal = getAdminTableVueThemeSignal();
+/**
+ * 当前应用可用指令映射
+ * @description 在权限场景下生成按钮指令绑定时使用。
+ */
 const appDirectives = (getCurrentInstance()?.appContext.directives ?? {}) as Record<string, any>;
+/**
+ * 表格根节点引用
+ * @description 用于测量布局尺寸与同步滚动区域高度。
+ */
 const tableRootRef = ref<HTMLElement | null>(null);
+/**
+ * VxeGrid 组件实例引用
+ * @description 用于读取运行时行数据与触发表格方法。
+ */
 const gridRef = ref<VxeGridInstance>();
+/**
+ * 工具栏提示视口节点引用
+ * @description 用于检测提示文本是否溢出并决定是否滚动。
+ */
 const toolbarHintViewportRef = ref<HTMLDivElement | null>(null);
+/**
+ * 工具栏提示文本节点引用
+ * @description 与视口引用配合计算文本溢出状态。
+ */
 const toolbarHintTextRef = ref<HTMLSpanElement | null>(null);
+/**
+ * 工具栏提示是否滚动
+ * @description 为模板层提供提示文本滚动动画开关。
+ */
 const toolbarHintShouldScroll = ref(false);
+/**
+ * 分页提示视口节点引用
+ * @description 用于检测分页提示区域文本溢出。
+ */
 const pagerHintViewportRef = ref<HTMLDivElement | null>(null);
+/**
+ * 分页提示文本节点引用
+ * @description 与视口引用配合计算分页提示滚动状态。
+ */
 const pagerHintTextRef = ref<HTMLSpanElement | null>(null);
+/**
+ * 分页提示是否滚动
+ * @description 为模板层提供分页提示滚动动画开关。
+ */
 const pagerHintShouldScroll = ref(false);
+/**
+ * 语言版本信号
+ * @description 用于触发表格文案在语言切换后的重算。
+ */
 const localeVersion = useLocaleVersion();
+/** 表格语言文案。 */
 const localeText = computed(() => {
   const tick = localeVersion.value;
   void tick;
   return createTableLocaleText(getLocaleMessages().table);
 });
 
+/**
+ * 表格运行时状态快照
+ * @description 镜像 `api.store` 的 props 子状态，驱动组件渲染。
+ */
 const state = ref(props.api.getSnapshot().props as AdminTableVueProps);
+/**
+ * 状态订阅取消函数
+ * @description 组件卸载时调用，释放 store 订阅监听。
+ */
 const unsub = props.api.store.subscribeSelector(
   (snapshot) => snapshot.props,
   (next) => {
     state.value = next as AdminTableVueProps;
   }
 );
+/**
+ * 最近一次写入 store 的外部属性快照
+ * @description 用于浅比较去重，避免重复触发 `setState`。
+ */
 let latestIncomingProps: null | AdminTableVueProps = null;
+/**
+ * 最近一次写入的分页信号
+ * @description 用于识别分页字段是否真正变化，保护运行时分页状态。
+ */
 let latestIncomingPagerSignal: null | TablePagerSignal = null;
 
+/**
+ * 将任意分页字段值规范为数值或空值。
+ *
+ * @param value 待转换的原始值。
+ * @returns 有效数值返回 number，否则返回 null。
+ */
 function toPagerSignalNumber(value: unknown) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * 从分页配置中提取用于比较的分页信号。
+ *
+ * @param pagerConfig 分页配置对象。
+ * @returns 规范化后的分页信号对象。
+ */
 function resolvePagerSignal(pagerConfig: unknown): TablePagerSignal {
   const record =
     pagerConfig && typeof pagerConfig === 'object'
@@ -209,6 +311,12 @@ function resolvePagerSignal(pagerConfig: unknown): TablePagerSignal {
   };
 }
 
+/**
+ * 判断分页信号是否至少包含一个有效字段。
+ *
+ * @param signal 待判断的分页信号。
+ * @returns 是否存在有效分页字段。
+ */
 function hasPagerSignal(signal: null | TablePagerSignal) {
   return !!signal && (
     signal.currentPage !== null ||
@@ -217,6 +325,13 @@ function hasPagerSignal(signal: null | TablePagerSignal) {
   );
 }
 
+/**
+ * 比较两次分页信号是否一致。
+ *
+ * @param previous 上一次分页信号。
+ * @param next 本次分页信号。
+ * @returns 是否完全一致。
+ */
 function isSamePagerSignal(
   previous: null | TablePagerSignal,
   next: TablePagerSignal
@@ -301,6 +416,10 @@ watch(
   { immediate: true }
 );
 
+/**
+ * 查询表单组件与表单 API
+ * @description 统一承载表格查询条件输入、提交与重置回调桥接。
+ */
 const [SearchForm, formApi] = useAdminForm({
   ...createTableSearchFormActionHandlers({
     getFormApi: () => formApi as any,
@@ -320,6 +439,10 @@ const [SearchForm, formApi] = useAdminForm({
   wrapperClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
 });
 
+/**
+ * 同步外部查询表单配置
+ * @description 当 `state.formOptions` 变更时合并到内部表单状态。
+ */
 watch(
   () => state.value.formOptions,
   (next) => {
@@ -328,6 +451,10 @@ watch(
   { immediate: true }
 );
 
+/**
+ * 同步查询按钮文案
+ * @description 语言变化后刷新表单提交按钮文本。
+ */
 watch(
   localeText,
   (next) => {
@@ -342,28 +469,108 @@ watch(
   { immediate: true }
 );
 
+/**
+ * 当前是否命中移动端断点
+ * @description 用于切换移动端布局与交互分支。
+ */
 const isMobile = ref(false);
+/**
+ * 表格是否处于最大化状态
+ * @description 控制全屏样式及相关工具按钮状态。
+ */
 const maximized = ref(false);
+/**
+ * 刷新进行中状态
+ * @description 防止重复触发刷新动作并显示加载反馈。
+ */
 const refreshing = ref(false);
+/**
+ * 分页尺寸变更后待回到第一页标记
+ * @description 在页大小切换时协调分页状态重置流程。
+ */
 const resetPageSizeToFirstPending = ref(false);
+/**
+ * 自动计算的表格主体高度
+ * @description 在滚动锁模式下用于写入 `scrollY.gt`。
+ */
 const autoBodyScrollHeight = ref<null | number>(null);
 
+/**
+ * 列自定义面板开关状态
+ * @description 控制列设置弹层的展开与关闭。
+ */
 const customPanelOpen = ref(false);
+/**
+ * 列可见性草稿状态
+ * @description 在列设置面板内暂存用户变更，确认后再提交。
+ */
 const customDraftVisibleColumns = ref<Record<string, boolean>>({});
+/**
+ * 列筛选能力草稿状态
+ * @description 暂存列“可筛选”开关变更。
+ */
 const customDraftFilterableColumns = ref<Record<string, boolean>>({});
+/**
+ * 列固定位置草稿状态
+ * @description 暂存列固定方向调整（左/右/不固定）。
+ */
 const customDraftFixedColumns = ref<Record<string, TableColumnFixedValue>>({});
+/**
+ * 列顺序草稿状态
+ * @description 暂存列拖拽排序后的字段顺序。
+ */
 const customDraftOrder = ref<string[]>([]);
+/**
+ * 列可排序能力草稿状态
+ * @description 暂存列“可排序”开关变更。
+ */
 const customDraftSortableColumns = ref<Record<string, boolean>>({});
+/**
+ * 列拖拽状态初始值
+ * @description 提供拖拽状态与悬停状态的统一初始快照。
+ */
 const initialCustomDragState = createColumnCustomDragResetState();
+/**
+ * 当前列拖拽运行时状态
+ * @description 记录拖拽过程中的位置信息与动画状态。
+ */
 const customDragState = ref<ColumnCustomDragState>(initialCustomDragState.dragState);
+/**
+ * 内部选中行键集合
+ * @description 作为受控/非受控选择态同步的中间状态。
+ */
 const innerSelectedRowKeys = ref<TableSelectionKey[]>([]);
 
+/**
+ * 生效列可见性映射
+ * @description 驱动运行时列显隐计算。
+ */
 const visibleColumns = ref<Record<string, boolean>>({});
+/**
+ * 生效列筛选能力映射
+ * @description 驱动运行时列筛选配置构建。
+ */
 const filterableColumns = ref<Record<string, boolean>>({});
+/**
+ * 生效列固定位置映射
+ * @description 驱动运行时列固定布局。
+ */
 const fixedColumns = ref<Record<string, TableColumnFixedValue>>({});
+/**
+ * 生效列顺序数组
+ * @description 控制运行时列渲染顺序。
+ */
 const columnOrder = ref<string[]>([]);
+/**
+ * 生效列可排序能力映射
+ * @description 控制列是否允许排序交互。
+ */
 const sortableColumns = ref<Record<string, boolean>>({});
 
+/**
+ * 列自定义原始快照
+ * @description 打开列设置面板时记录基线，用于比较“是否有改动”。
+ */
 const customOriginState = ref<ColumnCustomSnapshot>({
   filterable: {},
   fixed: {},
@@ -371,25 +578,81 @@ const customOriginState = ref<ColumnCustomSnapshot>({
   sortable: {},
   visible: {},
 });
+/**
+ * 列设置行节点引用映射
+ * @description 按字段缓存 DOM 引用，服务拖拽动画与自动滚动。
+ */
 const customRowRefs = ref<Record<string, HTMLDivElement | null>>({});
+/**
+ * 列设置面板内容容器引用
+ * @description 用于处理拖拽时的滚动边界计算。
+ */
 const customBodyRef = ref<HTMLDivElement | null>(null);
+/**
+ * 列设置弹层节点引用
+ * @description 用于面板内外点击与定位相关逻辑。
+ */
 const customPopoverRef = ref<HTMLDivElement | null>(null);
+/**
+ * 列设置触发按钮引用
+ * @description 用于弹层关闭后恢复焦点。
+ */
 const customTriggerRef = ref<HTMLButtonElement | null>(null);
 
+/**
+ * 列设置行矩形缓存
+ * @description FLIP 动画过程中缓存每行布局矩形。
+ */
 let customRowRects = new Map<string, ColumnCustomFlipRect>();
+/**
+ * 行 FLIP 动画帧句柄
+ * @description 用于取消未执行的行位移动画帧。
+ */
 let customRowAnimationFrame: null | number = null;
+/**
+ * 拖拽移动动画帧句柄
+ * @description 用于节流拖拽移动过程中的重排计算。
+ */
 let customMoveAnimationFrame: null | number = null;
+/**
+ * 待应用的拖拽移动目标
+ * @description 在动画帧中合并处理拖拽位置更新请求。
+ */
 let customPendingMove: null | {
   dragKey: string;
   overKey: string;
   position: ColumnCustomDragPosition;
 } = null;
+/**
+ * 当前拖拽中的列字段
+ * @description 标记正在拖拽的列键。
+ */
 const customDraggingKey = ref<null | string>(null);
+/**
+ * 当前拖拽悬停状态
+ * @description 标记目标列与插入方向，用于提示线展示。
+ */
 const customDragHover = ref<ColumnCustomDragHoverState>(initialCustomDragState.dragHover);
+/**
+ * 运行时筛选后的行缓存
+ * @description 为默认筛选选项构建提供稳定数据源。
+ */
 const runtimeFilterRows = ref<null | Array<Record<string, any>>>(null);
+/**
+ * 是否正在从外部状态同步选中态
+ * @description 防止选中事件回写导致循环更新。
+ */
 let syncingSelectionFromState = false;
+/**
+ * 是否已应用默认选中
+ * @description 用于只在初次加载阶段应用默认选中行。
+ */
 let hasAppliedDefaultSelection = false;
 
+/**
+ * 刷新移动端匹配状态并同步提示溢出与表格主体高度。
+ * @returns 无返回值。
+ */
 const updateMobile = () => {
   isMobile.value = resolveTableMobileMatched();
   void nextTick(syncToolbarHintOverflow);
@@ -397,10 +660,30 @@ const updateMobile = () => {
   void nextTick(syncBodyScrollHeight);
 };
 
+/**
+ * 主体滚动锁类名
+ * @description 命中该类名时启用“锁定主体高度”滚动策略。
+ */
 const BODY_SCROLL_LOCK_CLASS = 'admin-table--lock-body-scroll';
+/**
+ * 主体滚动高度安全间隙（像素）
+ * @description 避免临界高度造成滚动条闪动。
+ */
 const BODY_SCROLL_SAFE_GAP = 2;
+/**
+ * 固定页脚选择器
+ * @description 用于计算可用视口底部边界，避免表格被固定页脚遮挡。
+ */
 const FIXED_FOOTER_SELECTOR = '.layout-footer--fixed, .layout-footer[data-fixed="true"]';
+/**
+ * 空表格行常量
+ * @description 统一复用空数组引用，减少无意义对象创建。
+ */
 const EMPTY_TABLE_ROWS: Array<Record<string, any>> = [];
+/**
+ * 是否启用主体滚动锁定模式。
+ * @description 通过类名开关决定表格是否按“锁定容器高度”策略计算滚动区。
+ */
 const bodyScrollLockEnabled = computed(() => {
   const className = typeof state.value.class === 'string'
     ? state.value.class
@@ -414,11 +697,23 @@ const bodyScrollLockEnabled = computed(() => {
     .includes(BODY_SCROLL_LOCK_CLASS);
 });
 
+/**
+ * 解析 CSS 像素值字符串。
+ *
+ * @param value 像素值文本。
+ * @returns 有效浮点数，非法值返回 0。
+ */
 function parseCssPixel(value: string) {
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * 计算元素外部高度（包含上下外边距）。
+ *
+ * @param element 目标元素。
+ * @returns 外部高度。
+ */
 function resolveElementOuterHeight(element: null | HTMLElement) {
   if (!element) {
     return 0;
@@ -430,6 +725,12 @@ function resolveElementOuterHeight(element: null | HTMLElement) {
   );
 }
 
+/**
+ * 解析显式像素高度配置。
+ *
+ * @param value 高度配置值。
+ * @returns 合法像素高度，否则返回 null。
+ */
 function resolveExplicitPixelHeight(value: unknown) {
   if (typeof value === 'number') {
     return Number.isFinite(value) && value > 0 ? value : null;
@@ -448,6 +749,12 @@ function resolveExplicitPixelHeight(value: unknown) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+/**
+ * 解析表格主体可用的底部边界，规避固定页脚遮挡。
+ *
+ * @param rootElement 表格根节点。
+ * @returns 可用区域底部坐标。
+ */
 function resolveBodyScrollBottomBoundary(rootElement: HTMLElement) {
   if (typeof window === 'undefined') {
     return 0;
@@ -475,6 +782,10 @@ function resolveBodyScrollBottomBoundary(rootElement: HTMLElement) {
   return bottomBoundary;
 }
 
+/**
+ * 同步主体滚动区高度，优先使用容器测量值并提供多级降级计算。
+ * @returns 无返回值。
+ */
 function syncBodyScrollHeight() {
   if (!bodyScrollLockEnabled.value) {
     autoBodyScrollHeight.value = null;
@@ -549,6 +860,10 @@ function syncBodyScrollHeight() {
   autoBodyScrollHeight.value = null;
 }
 
+/**
+ * 延迟调度主体滚动区高度同步，覆盖渲染后与下一帧布局阶段。
+ * @returns 无返回值。
+ */
 function scheduleSyncBodyScrollHeight() {
   void nextTick(() => {
     syncBodyScrollHeight();
@@ -560,6 +875,10 @@ function scheduleSyncBodyScrollHeight() {
   });
 }
 
+/**
+ * 读取状态层表格数据数组。
+ * @description 统一保证返回数组引用，避免后续流程出现空值分支。
+ */
 const stateGridRows = computed<Array<Record<string, any>>>(() => {
   const rows = state.value.gridOptions?.data;
   return Array.isArray(rows)
@@ -567,10 +886,20 @@ const stateGridRows = computed<Array<Record<string, any>>>(() => {
     : EMPTY_TABLE_ROWS;
 });
 
+/**
+ * 获取状态层中的表格行数据。
+ *
+ * @returns 当前状态中的数据行集合。
+ */
 function resolveStateGridRows() {
   return stateGridRows.value;
 }
 
+/**
+ * 从 VxeGrid 运行时实例读取当前数据行。
+ *
+ * @returns 运行时行数据，不可用时返回 null。
+ */
 function resolveGridRuntimeRows() {
   const grid = gridRef.value as
     | (VxeGridInstance & {
@@ -592,6 +921,10 @@ function resolveGridRuntimeRows() {
   return null;
 }
 
+/**
+ * 将运行时行数据同步到筛选缓存，优先取运行时数据。
+ * @returns 无返回值。
+ */
 function syncRuntimeFilterRows() {
   const runtimeRows = resolveGridRuntimeRows();
   const nextRows = runtimeRows ?? resolveStateGridRows();
@@ -600,6 +933,12 @@ function syncRuntimeFilterRows() {
   }
 }
 
+/**
+ * 包装代理请求成功回调，在执行原逻辑后刷新筛选缓存与高度。
+ *
+ * @param callback 原始回调函数。
+ * @returns 供 proxy 使用的异步成功回调。
+ */
 function createProxySuccessHook(callback: unknown) {
   return async (...args: any[]) => {
     const result =
@@ -613,10 +952,17 @@ function createProxySuccessHook(callback: unknown) {
   };
 }
 
+/**
+ * 解析工具栏配置对象。
+ */
 const toolbarConfig = computed(() => {
   return (state.value.gridOptions?.toolbarConfig ?? {}) as Record<string, any>;
 });
 
+/**
+ * 解析可见工具栏动作列表。
+ * @description 会结合权限、全屏状态与查询面板状态过滤不可用工具。
+ */
 const toolbarTools = computed<ResolvedToolbarActionTool[]>(() => {
   return resolveVisibleToolbarActionTools({
     accessCodes: setupState.accessCodes,
@@ -632,18 +978,26 @@ const toolbarTools = computed<ResolvedToolbarActionTool[]>(() => {
   });
 });
 
+/**
+ * 解析工具栏中部提示配置。
+ */
 const toolbarHintConfig = computed(() => {
   return resolveToolbarHintConfig(toolbarConfig.value.hint);
 });
 
+/**
+ * 解析工具栏中部提示展示形态。
+ */
 const toolbarHintPresentation = computed(() => {
   return resolveToolbarHintPresentation(toolbarHintConfig.value);
 });
 
+/** 是否提供 `toolbar-center` 插槽。 */
 const hasToolbarCenterSlot = computed(() => {
   return !!slots['toolbar-center'];
 });
 
+/** 是否展示工具栏中部区域（插槽或提示任一存在）。 */
 const showToolbarCenter = computed(() => {
   return resolveToolbarCenterVisible({
     hasCenterSlot: hasToolbarCenterSlot.value,
@@ -651,14 +1005,17 @@ const showToolbarCenter = computed(() => {
   });
 });
 
+/** 工具栏动作默认插入位置。 */
 const toolbarToolsPosition = computed(() => {
   return resolveToolbarInlinePosition(toolbarConfig.value.toolsPosition, 'after');
 });
 
+/** 工具栏动作插槽位置策略。 */
 const toolbarToolsSlotPosition = computed(() => {
   return resolveToolbarToolsSlotPosition(toolbarConfig.value.toolsSlotPosition);
 });
 
+/** 工具栏动作插槽命中状态。 */
 const toolbarToolsSlotState = computed(() => {
   return resolveToolbarToolsSlotState(
     !!slots['toolbar-tools'],
@@ -666,22 +1023,27 @@ const toolbarToolsSlotState = computed(() => {
   );
 });
 
+/** 是否存在工具栏动作插槽。 */
 const hasToolbarToolsSlot = computed(() => {
   return toolbarToolsSlotState.value.hasSlot;
 });
 
+/** 工具栏动作插槽是否替换内置动作。 */
 const hasToolbarToolsSlotReplaceBuiltin = computed(() => {
   return toolbarToolsSlotState.value.replace;
 });
 
+/** 工具栏动作插槽是否在内置动作前渲染。 */
 const hasToolbarToolsSlotBeforeBuiltin = computed(() => {
   return toolbarToolsSlotState.value.before;
 });
 
+/** 工具栏动作插槽是否在内置动作后渲染。 */
 const hasToolbarToolsSlotAfterBuiltin = computed(() => {
   return toolbarToolsSlotState.value.after;
 });
 
+/** 解析工具栏动作在“前/后”区域的分配结果。 */
 const toolbarToolsPlacement = computed(() => {
   return resolveToolbarToolsPlacement(
     toolbarTools.value,
@@ -690,14 +1052,20 @@ const toolbarToolsPlacement = computed(() => {
   );
 });
 
+/** 工具栏前置动作列表。 */
 const toolbarToolsBeforeBuiltin = computed(() => {
   return toolbarToolsPlacement.value.before;
 });
 
+/** 工具栏后置动作列表。 */
 const toolbarToolsAfterBuiltin = computed(() => {
   return toolbarToolsPlacement.value.after;
 });
 
+/**
+ * 构建内置工具栏按钮列表。
+ * @description 根据配置决定是否展示刷新、全屏、列设置等默认工具。
+ */
 const builtinToolbarTools = computed(() => {
   return buildBuiltinToolbarTools(toolbarConfig.value as any, localeText.value, {
     hasToolbarToolsSlot: hasToolbarToolsSlotReplaceBuiltin.value,
@@ -705,45 +1073,60 @@ const builtinToolbarTools = computed(() => {
   });
 });
 
+/** 是否显示工具栏查询按钮。 */
 const showSearchButton = computed(() => {
   return !!toolbarConfig.value.search && !!state.value.formOptions;
 });
 
+/**
+ * 解析分页配置记录。
+ */
 const pagerConfigRecord = computed(() => {
   return ((state.value.gridOptions as Record<string, any> | undefined)?.pagerConfig ??
     {}) as Record<string, any>;
 });
 
+/** 分页条主要工具区域位置（左/右）。 */
 const pagerPosition = computed(() => {
   return pagerConfigRecord.value.position === 'left' ? 'left' : 'right';
 });
 
+/**
+ * 解析分页条工具栏配置。
+ * @description 兼容 `toolbar` 与 `toolbarConfig` 字段。
+ */
 const pagerToolbarConfig = computed(() => {
   return resolveToolbarConfigRecord(
     pagerConfigRecord.value.toolbar ?? pagerConfigRecord.value.toolbarConfig
   );
 });
 
+/** 是否提供 `pager-left` 插槽。 */
 const hasPagerLeftSlot = computed(() => {
   return !!slots['pager-left'];
 });
 
+/** 是否提供 `pager-center` 插槽。 */
 const hasPagerCenterSlot = computed(() => {
   return !!slots['pager-center'];
 });
 
+/** 是否提供 `pager-tools` 插槽。 */
 const hasPagerToolsSlot = computed(() => {
   return !!slots['pager-tools'];
 });
 
+/** 分页中部提示配置。 */
 const pagerHintConfig = computed(() => {
   return resolveToolbarHintConfig(pagerToolbarConfig.value.hint);
 });
 
+/** 分页中部提示展示形态。 */
 const pagerHintPresentation = computed(() => {
   return resolveToolbarHintPresentation(pagerHintConfig.value);
 });
 
+/** 是否展示分页中部区域（插槽或提示任一存在）。 */
 const showPagerCenter = computed(() => {
   return resolveToolbarCenterVisible({
     hasCenterSlot: hasPagerCenterSlot.value,
@@ -751,14 +1134,17 @@ const showPagerCenter = computed(() => {
   });
 });
 
+/** 分页左侧动作默认插入位置。 */
 const pagerLeftToolsPosition = computed(() => {
   return resolveToolbarInlinePosition(pagerToolbarConfig.value.leftToolsPosition, 'before');
 });
 
+/** 分页左侧动作插槽位置策略。 */
 const pagerLeftToolsSlotPosition = computed(() => {
   return resolveToolbarToolsSlotPosition(pagerToolbarConfig.value.leftToolsSlotPosition);
 });
 
+/** 分页左侧插槽命中状态。 */
 const pagerLeftSlotState = computed(() => {
   return resolveToolbarToolsSlotState(
     !!slots['pager-left'],
@@ -766,18 +1152,22 @@ const pagerLeftSlotState = computed(() => {
   );
 });
 
+/** 分页左侧插槽是否替换左侧动作。 */
 const hasPagerLeftSlotReplaceTools = computed(() => {
   return pagerLeftSlotState.value.replace;
 });
 
+/** 分页左侧插槽是否在动作前渲染。 */
 const hasPagerLeftSlotBeforeTools = computed(() => {
   return pagerLeftSlotState.value.before;
 });
 
+/** 分页左侧插槽是否在动作后渲染。 */
 const hasPagerLeftSlotAfterTools = computed(() => {
   return pagerLeftSlotState.value.after;
 });
 
+/** 解析分页左侧可见动作列表。 */
 const pagerLeftTools = computed<ResolvedToolbarActionTool[]>(() => {
   return resolveVisibleToolbarActionTools({
     accessCodes: setupState.accessCodes,
@@ -792,6 +1182,7 @@ const pagerLeftTools = computed<ResolvedToolbarActionTool[]>(() => {
   });
 });
 
+/** 解析分页左侧动作在“前/后”区域的分配结果。 */
 const pagerLeftToolsPlacement = computed(() => {
   return resolveToolbarToolsPlacement(
     pagerLeftTools.value,
@@ -800,14 +1191,17 @@ const pagerLeftToolsPlacement = computed(() => {
   );
 });
 
+/** 分页左侧插槽前置动作。 */
 const pagerLeftToolsBeforeSlot = computed(() => {
   return pagerLeftToolsPlacement.value.before;
 });
 
+/** 分页左侧插槽后置动作。 */
 const pagerLeftToolsAfterSlot = computed(() => {
   return pagerLeftToolsPlacement.value.after;
 });
 
+/** 分页右侧动作原始来源（优先 `rightTools`）。 */
 const pagerRightToolsSource = computed(() => {
   if (Array.isArray(pagerToolbarConfig.value.rightTools)) {
     return pagerToolbarConfig.value.rightTools;
@@ -815,6 +1209,7 @@ const pagerRightToolsSource = computed(() => {
   return pagerToolbarConfig.value.tools;
 });
 
+/** 分页右侧动作默认插入位置。 */
 const pagerRightToolsPosition = computed(() => {
   return resolveToolbarInlinePosition(
     pagerToolbarConfig.value.rightToolsPosition ??
@@ -823,6 +1218,7 @@ const pagerRightToolsPosition = computed(() => {
   );
 });
 
+/** 分页右侧动作插槽位置策略。 */
 const pagerRightToolsSlotPosition = computed(() => {
   return resolveToolbarToolsSlotPosition(
     pagerToolbarConfig.value.rightToolsSlotPosition ??
@@ -830,6 +1226,7 @@ const pagerRightToolsSlotPosition = computed(() => {
   );
 });
 
+/** 分页右侧动作插槽命中状态。 */
 const pagerToolsSlotState = computed(() => {
   return resolveToolbarToolsSlotState(
     !!slots['pager-tools'],
@@ -837,18 +1234,22 @@ const pagerToolsSlotState = computed(() => {
   );
 });
 
+/** 分页右侧插槽是否替换内置动作。 */
 const hasPagerToolsSlotReplaceTools = computed(() => {
   return pagerToolsSlotState.value.replace;
 });
 
+/** 分页右侧插槽是否在动作前渲染。 */
 const hasPagerToolsSlotBeforeTools = computed(() => {
   return pagerToolsSlotState.value.before;
 });
 
+/** 分页右侧插槽是否在动作后渲染。 */
 const hasPagerToolsSlotAfterTools = computed(() => {
   return pagerToolsSlotState.value.after;
 });
 
+/** 解析分页右侧可见动作列表。 */
 const pagerRightTools = computed<ResolvedToolbarActionTool[]>(() => {
   return resolveVisibleToolbarActionTools({
     accessCodes: setupState.accessCodes,
@@ -863,6 +1264,7 @@ const pagerRightTools = computed<ResolvedToolbarActionTool[]>(() => {
   });
 });
 
+/** 解析分页右侧动作在“前/后”区域的分配结果。 */
 const pagerRightToolsPlacement = computed(() => {
   return resolveToolbarToolsPlacement(
     pagerRightTools.value,
@@ -871,14 +1273,20 @@ const pagerRightToolsPlacement = computed(() => {
   );
 });
 
+/** 分页右侧前置动作列表。 */
 const pagerRightToolsBeforeBuiltin = computed(() => {
   return pagerRightToolsPlacement.value.before;
 });
 
+/** 分页右侧后置动作列表。 */
 const pagerRightToolsAfterBuiltin = computed(() => {
   return pagerRightToolsPlacement.value.after;
 });
 
+/**
+ * 解析分页导出配置。
+ * @description 标准化导出动作、导出文件名与展示标题。
+ */
 const pagerExportConfig = computed(() => {
   return resolveTablePagerExportConfig(
     pagerConfigRecord.value.exportConfig,
@@ -886,6 +1294,10 @@ const pagerExportConfig = computed(() => {
   );
 });
 
+/**
+ * 解析当前可见导出动作。
+ * @description 按权限与动作配置过滤得到最终导出菜单项。
+ */
 const pagerExportActions = computed<Array<ResolvedTablePagerExportAction>>(() => {
   return resolveVisibleTablePagerExportActions({
     accessCodes: setupState.accessCodes,
@@ -895,22 +1307,32 @@ const pagerExportActions = computed<Array<ResolvedTablePagerExportAction>>(() =>
   });
 });
 
+/**
+ * 解析分页导出触发器状态。
+ * @description 判断是否为单动作直出或多动作菜单模式。
+ */
 const pagerExportTriggerState = computed(() => {
   return resolveTablePagerExportTriggerState({
     actions: pagerExportActions.value,
   });
 });
 
+/**
+ * 分页导出单动作
+ * @description 当仅存在一个可导出动作时直接返回该动作，供按钮直出模式使用。
+ */
 const pagerExportSingleAction = computed<
   ResolvedTablePagerExportAction | undefined
 >(() => {
   return pagerExportTriggerState.value.singleAction;
 });
 
+/** 是否以下拉菜单展示分页导出动作。 */
 const showPagerExportMenu = computed(() => {
   return pagerExportTriggerState.value.showMenu;
 });
 
+/** 分页导出入口是否显示。 */
 const showPagerExport = computed(() => {
   return resolveTablePagerExportVisible({
     actionsLength: pagerExportActions.value.length,
@@ -918,6 +1340,10 @@ const showPagerExport = computed(() => {
   });
 });
 
+/**
+ * 解析分页区域展示状态。
+ * @description 汇总左右区域、导出入口、中心区等可见性条件。
+ */
 const pagerVisibilityState = computed(() => {
   return resolvePagerVisibilityState({
     hasLeftSlot: hasPagerLeftSlot.value,
@@ -933,22 +1359,29 @@ const pagerVisibilityState = computed(() => {
   });
 });
 
+/** 导出入口是否放在分页右侧区域。 */
 const showPagerExportInRight = computed(() => {
   return pagerVisibilityState.value.showExportInRight;
 });
 
+/** 分页左侧区域是否显示。 */
 const showPagerLeftArea = computed(() => {
   return pagerVisibilityState.value.showLeft;
 });
 
+/** 分页右侧区域是否显示。 */
 const showPagerRightArea = computed(() => {
   return pagerVisibilityState.value.showRight;
 });
 
+/** 表格标题区域是否显示。 */
 const showTableTitle = computed<boolean>(() => {
   return !!slots['table-title'] || !!state.value.tableTitle;
 });
 
+/**
+ * 计算工具栏是否显示。
+ */
 const showToolbar = computed<boolean>(() => {
   return resolveToolbarVisible({
     builtinToolsLength: builtinToolbarTools.value.length,
@@ -961,6 +1394,10 @@ const showToolbar = computed<boolean>(() => {
   });
 });
 
+/**
+ * 构建基础网格配置。
+ * @description 合并全局 vxe-grid 配置与组件状态配置，并补齐代理钩子与插槽映射。
+ */
 const baseGridOptions = computed(() => {
   const globalGridConfig = (VxeUI?.getConfig()?.grid ?? {}) as VxeTableGridProps;
   const stateGridOptions = (state.value.gridOptions ?? {}) as Record<string, any>;
@@ -1025,6 +1462,10 @@ const baseGridOptions = computed(() => {
   return merged;
 });
 
+/**
+ * 解析最终传入 VxeGrid 的配置。
+ * @description 统一处理分页、插槽绑定、本地分页切片及移动端布局差异。
+ */
 const sourceGridOptions = computed(() => {
   const merged = {
     ...(baseGridOptions.value as Record<string, any>),
@@ -1124,6 +1565,7 @@ const sourceGridOptions = computed(() => {
   return merged;
 });
 
+/** 条纹配置状态（启用与是否跟随主题）。 */
 const stripeConfig = computed(() => {
   const source = sourceGridOptions.value as Record<string, any>;
   const enabled = source?.stripe === true;
@@ -1134,10 +1576,16 @@ const stripeConfig = computed(() => {
   };
 });
 
+/**
+ * 解析条纹样式类名。
+ */
 const stripeClassName = computed(() => {
   return resolveTableStripePresentation(stripeConfig.value).className;
 });
 
+/**
+ * 解析表格根节点主题 CSS 变量。
+ */
 const runtimeRootStyle = computed(() => {
   themeSignal.value;
   return resolveTableThemeCssVars(setupState.theme) as
@@ -1145,15 +1593,24 @@ const runtimeRootStyle = computed(() => {
     | undefined;
 });
 
+/**
+ * 是否在分页尺寸变化时自动回到第一页。
+ */
 const resetToFirstOnPageSizeChange = computed(() => {
   return (state.value.gridOptions as Record<string, any> | undefined)?.pagerConfig
     ?.resetToFirstOnPageSizeChange === true;
 });
 
+/**
+ * 源列配置集合。
+ */
 const sourceColumns = computed<TableColumnRecord[]>(() => {
   return (baseGridOptions.value.columns as TableColumnRecord[]) ?? [];
 });
 
+/**
+ * 列自定义持久化配置。
+ */
 const columnCustomPersistenceConfig = computed(() => {
   return resolveColumnCustomPersistenceConfig(
     baseGridOptions.value as Record<string, any>,
@@ -1161,6 +1618,10 @@ const columnCustomPersistenceConfig = computed(() => {
   );
 });
 
+/**
+ * 外部列自定义状态。
+ * @description 优先读取外部显式配置，未提供时回退到本地持久化存储。
+ */
 const externalColumnCustomState = computed(() => {
   const external = resolveColumnCustomState(baseGridOptions.value as Record<string, any>);
   if (hasColumnCustomSnapshot(external)) {
@@ -1169,6 +1630,10 @@ const externalColumnCustomState = computed(() => {
   return readColumnCustomStateFromStorage(columnCustomPersistenceConfig.value);
 });
 
+/**
+ * 默认筛选项缓存
+ * @description 按字段缓存默认筛选选项，避免在同一数据源上重复构建。
+ */
 const defaultColumnFilterOptionsCache = new Map<
   string,
   {
@@ -1178,6 +1643,10 @@ const defaultColumnFilterOptionsCache = new Map<
   }
 >();
 
+/**
+ * 解析运行时列定义。
+ * @description 处理列可见/固定/顺序、默认筛选、格式化与单元格策略样式。
+ */
 const runtimeColumns = computed<TableColumnRecord[]>(() => {
   const sourceData = runtimeFilterRows.value ?? resolveStateGridRows();
   const emptyFilterLabel = localeText.value.emptyValue;
@@ -1193,6 +1662,12 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
       }
     >
   >();
+  /**
+   * 解析列默认筛选项并按数据源与空值文案做缓存复用。
+   *
+   * @param field 列字段名。
+   * @returns 默认筛选选项列表。
+   */
   const resolveDefaultFilterOptions = (field: string) => {
     const cached = defaultColumnFilterOptionsCache.get(field);
     if (
@@ -1211,6 +1686,16 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
     });
     return next;
   };
+  /**
+   * 解析单元格策略结果，并基于行与字段缓存避免重复计算。
+   *
+   * @param column 当前列配置。
+   * @param field 字段名。
+   * @param row 当前行数据。
+   * @param rowIndex 当前行索引。
+   * @param rawValue 原始单元格值。
+   * @returns 单元格策略解析结果。
+   */
   const resolveCellStrategy = (
     column: TableColumnRecord,
     field: string,
@@ -1411,6 +1896,9 @@ const runtimeColumns = computed<TableColumnRecord[]>(() => {
   });
 });
 
+/**
+ * 补齐序号列后的运行时列集合。
+ */
 const runtimeColumnsWithSeq = computed(() => {
   return ensureSeqColumn(
     runtimeColumns.value,
@@ -1421,6 +1909,9 @@ const runtimeColumnsWithSeq = computed(() => {
   );
 });
 
+/**
+ * 解析操作列配置。
+ */
 const operationColumnConfig = computed(() => {
   return resolveOperationColumnConfig(
     (sourceGridOptions.value as Record<string, any>)?.operationColumn as any,
@@ -1428,6 +1919,9 @@ const operationColumnConfig = computed(() => {
   );
 });
 
+/**
+ * 解析可见操作列工具。
+ */
 const operationTools = computed<ResolvedToolbarActionTool[]>(() => {
   if (!operationColumnConfig.value) {
     return [];
@@ -1446,6 +1940,9 @@ const operationTools = computed<ResolvedToolbarActionTool[]>(() => {
   });
 });
 
+/**
+ * 解析当前行选择模式。
+ */
 const selectionMode = computed<TableSelectionMode | undefined>(() => {
   return resolveSelectionMode(
     sourceGridOptions.value as Record<string, any>,
@@ -1453,11 +1950,17 @@ const selectionMode = computed<TableSelectionMode | undefined>(() => {
   );
 });
 
+/**
+ * 解析通用 rowSelection 配置。
+ */
 const rowSelectionConfig = computed(() => {
   return ((sourceGridOptions.value as Record<string, any>)?.rowSelection ??
     undefined) as Record<string, any> | undefined;
 });
 
+/**
+ * 按模式解析行选择专属配置（radio/checkbox）。
+ */
 const modeSelectionConfig = computed(() => {
   if (selectionMode.value === 'radio') {
     return (sourceGridOptions.value as Record<string, any>)?.radioConfig as Record<string, any> | undefined;
@@ -1468,6 +1971,9 @@ const modeSelectionConfig = computed(() => {
   return undefined;
 });
 
+/**
+ * 解析行主键字段。
+ */
 const selectionRowKeyField = computed(() => {
   const rowConfig = (sourceGridOptions.value as Record<string, any>)?.rowConfig as Record<string, any> | undefined;
   const keyField = rowConfig?.keyField;
@@ -1476,6 +1982,9 @@ const selectionRowKeyField = computed(() => {
     : 'id';
 });
 
+/**
+ * 解析勾选字段名（checkField）。
+ */
 const selectionCheckField = computed(() => {
   const modeValue = modeSelectionConfig.value?.checkField;
   const rowValue = rowSelectionConfig.value?.checkField;
@@ -1489,6 +1998,9 @@ const selectionCheckField = computed(() => {
     : undefined;
 });
 
+/**
+ * 解析行可选判定方法（checkMethod）。
+ */
 const selectionCheckMethod = computed(() => {
   if (typeof modeSelectionConfig.value?.checkMethod === 'function') {
     return modeSelectionConfig.value.checkMethod as ((ctx: { row: Record<string, any>; rowIndex: number }) => boolean);
@@ -1499,6 +2011,9 @@ const selectionCheckMethod = computed(() => {
   return undefined;
 });
 
+/**
+ * 解析行选择触发方式。
+ */
 const selectionTrigger = computed(() => {
   const trigger = modeSelectionConfig.value?.trigger ?? rowSelectionConfig.value?.trigger;
   if (
@@ -1512,6 +2027,9 @@ const selectionTrigger = computed(() => {
   return undefined;
 });
 
+/**
+ * 解析选中高亮开关。
+ */
 const selectionHighlight = computed(() => {
   const modeValue = modeSelectionConfig.value?.highlight;
   if (typeof modeValue === 'boolean') {
@@ -1524,6 +2042,9 @@ const selectionHighlight = computed(() => {
   return selectionMode.value ? true : undefined;
 });
 
+/**
+ * 解析选择严格模式。
+ */
 const selectionStrict = computed(() => {
   const modeValue = modeSelectionConfig.value?.strict;
   if (typeof modeValue === 'boolean') {
@@ -1536,6 +2057,9 @@ const selectionStrict = computed(() => {
   return undefined;
 });
 
+/**
+ * 受控选中键集合。
+ */
 const controlledSelectedRowKeys = computed<TableSelectionKey[] | undefined>(() => {
   const mode = selectionMode.value;
   if (!mode) {
@@ -1548,6 +2072,9 @@ const controlledSelectedRowKeys = computed<TableSelectionKey[] | undefined>(() =
   return normalizeTableSelectionKeys<TableSelectionKey>(value, mode);
 });
 
+/**
+ * 默认选中键集合（非受控初始值）。
+ */
 const defaultSelectedRowKeys = computed<TableSelectionKey[]>(() => {
   const mode = selectionMode.value;
   if (!mode) {
@@ -1560,6 +2087,9 @@ const defaultSelectedRowKeys = computed<TableSelectionKey[]>(() => {
   return normalizeTableSelectionKeys<TableSelectionKey>(value, mode);
 });
 
+/**
+ * 当前生效的选中键集合。
+ */
 const effectiveSelectedRowKeys = computed<TableSelectionKey[]>(() => {
   if (!selectionMode.value) {
     return [];
@@ -1567,6 +2097,10 @@ const effectiveSelectedRowKeys = computed<TableSelectionKey[]>(() => {
   return controlledSelectedRowKeys.value ?? innerSelectedRowKeys.value;
 });
 
+/**
+ * 生成最终传给 VxeGrid 的运行时配置。
+ * @description 聚合列定义、行策略、选择策略、分页配置与代理配置。
+ */
 const gridOptions = computed(() => {
   const baseGridOptionsRecord =
     baseGridOptions.value as Record<string, any>;
@@ -1612,6 +2146,13 @@ const gridOptions = computed(() => {
     Record<string, any>,
     Map<number, ReturnType<typeof resolveTableRowStrategyInlineStyle> | undefined>
   >();
+  /**
+   * 解析行策略结果，并按行实例与索引进行缓存。
+   *
+   * @param row 当前行数据。
+   * @param rowIndex 当前行索引。
+   * @returns 行策略解析结果。
+   */
   const resolveRowStrategy = (
     row: Record<string, any>,
     rowIndex: number
@@ -1639,6 +2180,13 @@ const gridOptions = computed(() => {
     rowCache.set(rowIndex, resolved);
     return resolved;
   };
+  /**
+   * 解析行策略内联样式，并对结果进行缓存复用。
+   *
+   * @param row 当前行数据。
+   * @param rowIndex 当前行索引。
+   * @returns 行内联样式对象或空值。
+   */
   const resolveRowStrategyInlineStyleCached = (
     row: Record<string, any>,
     rowIndex: number
@@ -1840,12 +2388,27 @@ const gridOptions = computed(() => {
   });
 });
 
+/**
+ * 解析运行时网格事件配置。
+ */
 const runtimeGridEvents = computed(() => {
   return (state.value.gridEvents ?? {}) as Record<string, any>;
 });
 
+/**
+ * 选中行扁平化缓存的源数据引用
+ * @description 用于判断源数据是否变化，从而决定是否复用缓存。
+ */
 let flattenedSelectionRowsSource: null | Array<Record<string, any>> = null;
+/**
+ * 选中行扁平化缓存结果
+ * @description 复用 flatten 结果，降低频繁读取时的计算开销。
+ */
 let flattenedSelectionRowsCache: Array<Record<string, any>> = EMPTY_TABLE_ROWS;
+/**
+ * 缓存扁平化后的可选行集合。
+ * @description 当源数据引用不变时复用上次展开结果，减少重复 flatten 计算。
+ */
 const flattenedSelectionRows = computed(() => {
   const sourceRows = stateGridRows.value;
   if (flattenedSelectionRowsSource === sourceRows) {
@@ -1858,10 +2421,21 @@ const flattenedSelectionRows = computed(() => {
   return flattenedSelectionRowsCache;
 });
 
+/**
+ * 获取扁平化后的可选行集合。
+ *
+ * @returns 当前可选行数组。
+ */
 function getSelectionRows() {
   return flattenedSelectionRows.value;
 }
 
+/**
+ * 基于行数据提取选中键集合。
+ *
+ * @param rows 待提取的行数据。
+ * @returns 归一化后的选中键数组。
+ */
 function getSelectionKeysByRows(rows: Array<Record<string, any>>) {
   return collectSelectionKeysByRows<
     Record<string, any>,
@@ -1872,6 +2446,12 @@ function getSelectionKeysByRows(rows: Array<Record<string, any>>) {
   });
 }
 
+/**
+ * 将选中状态同步到 `checkField` 字段，保证数据层与组件选中状态一致。
+ *
+ * @param keys 当前选中键集合。
+ * @returns 无返回值。
+ */
 function applySelectionCheckField(keys: TableSelectionKey[]) {
   const checkField = selectionCheckField.value;
   if (!checkField) {
@@ -1894,6 +2474,13 @@ function applySelectionCheckField(keys: TableSelectionKey[]) {
   }
 }
 
+/**
+ * 统一更新选中状态，并向外触发 onChange 回调。
+ *
+ * @param keys 新的选中键集合。
+ * @param params 表格事件参数。
+ * @returns 无返回值。
+ */
 function updateSelectionState(
   keys: TableSelectionKey[],
   params?: Record<string, any>
@@ -1932,6 +2519,12 @@ function updateSelectionState(
   }
 }
 
+/**
+ * 处理单选模式下的选择变更。
+ *
+ * @param params VxeTable 单选事件参数。
+ * @returns 无返回值。
+ */
 function handleSelectionRadioChange(params: Record<string, any>) {
   if (syncingSelectionFromState) {
     return;
@@ -1949,6 +2542,12 @@ function handleSelectionRadioChange(params: Record<string, any>) {
   updateSelectionState(keys, params);
 }
 
+/**
+ * 处理多选模式下的选择变更。
+ *
+ * @param params VxeTable 多选事件参数。
+ * @returns 无返回值。
+ */
 function handleSelectionCheckboxChange(params: Record<string, any>) {
   if (syncingSelectionFromState) {
     return;
@@ -1959,6 +2558,10 @@ function handleSelectionCheckboxChange(params: Record<string, any>) {
   updateSelectionState(getSelectionKeysByRows(records), params);
 }
 
+/**
+ * 根据受控选中键将选择状态回写到 VxeGrid 实例。
+ * @returns 无返回值。
+ */
 async function syncGridSelectionFromState() {
   const grid = gridRef.value as any;
   const mode = selectionMode.value;
@@ -2020,6 +2623,10 @@ async function syncGridSelectionFromState() {
   }
 }
 
+/**
+ * 汇总 VxeGrid 事件处理器。
+ * @description 统一桥接分页、选择、单元格策略和原始事件回调。
+ */
 const gridEvents = computed(() => {
   const source = runtimeGridEvents.value;
   const baseGridOptionsRecord = baseGridOptions.value as Record<string, any>;
@@ -2037,24 +2644,48 @@ const gridEvents = computed(() => {
   const sourcePageChange = source.pageChange;
   const sourceRowClick = source.rowClick;
 
+  /**
+   * 处理单选变化事件，先同步内部选中态再透传原事件处理器。
+   *
+   * @param params VxeTable 事件参数。
+   * @returns 无返回值。
+   */
   next.radioChange = (params: Record<string, any>) => {
     handleSelectionRadioChange(params);
     if (typeof sourceRadioChange === 'function') {
       sourceRadioChange(params);
     }
   };
+  /**
+   * 处理多选变化事件（单项勾选），并透传原事件处理器。
+   *
+   * @param params VxeTable 事件参数。
+   * @returns 无返回值。
+   */
   next.checkboxChange = (params: Record<string, any>) => {
     handleSelectionCheckboxChange(params);
     if (typeof sourceCheckboxChange === 'function') {
       sourceCheckboxChange(params);
     }
   };
+  /**
+   * 处理多选全选/全不选事件，并透传原事件处理器。
+   *
+   * @param params VxeTable 事件参数。
+   * @returns 无返回值。
+   */
   next.checkboxAll = (params: Record<string, any>) => {
     handleSelectionCheckboxChange(params);
     if (typeof sourceCheckboxAll === 'function') {
       sourceCheckboxAll(params);
     }
   };
+  /**
+   * 处理单元格点击事件，优先执行单元格策略点击逻辑，再透传原事件。
+   *
+   * @param params VxeTable 事件参数。
+   * @returns 无返回值。
+   */
   next.cellClick = (params: Record<string, any>) => {
     const row = (params?.row ?? {}) as Record<string, any>;
     const rowIndex =
@@ -2098,6 +2729,12 @@ const gridEvents = computed(() => {
       sourceCellClick(params);
     }
   };
+  /**
+   * 处理行点击事件，优先执行行策略点击逻辑，再透传原事件。
+   *
+   * @param params VxeTable 事件参数。
+   * @returns 无返回值。
+   */
   next.rowClick = (params: Record<string, any>) => {
     const row = (params?.row ?? {}) as Record<string, any>;
     const rowIndex =
@@ -2125,6 +2762,12 @@ const gridEvents = computed(() => {
       sourceRowClick(params);
     }
   };
+  /**
+   * 处理分页变化事件，同步分页状态并派发统一分页回调。
+   *
+   * @param params VxeTable 分页事件参数。
+   * @returns 无返回值。
+   */
   next.pageChange = (params: Record<string, any>) => {
     const eventCurrentPageRaw = params?.currentPage ?? params?.page?.currentPage;
     const eventCurrentPage = Number(eventCurrentPageRaw);
@@ -2335,6 +2978,11 @@ watch(
   { flush: 'post', immediate: true }
 );
 
+/**
+ * 获取当前生效的列自定义状态快照。
+ *
+ * @returns 当前列可见性、固定、排序与顺序配置。
+ */
 function getCurrentColumnCustomState() {
   return {
     filterable: filterableColumns.value,
@@ -2345,6 +2993,11 @@ function getCurrentColumnCustomState() {
   };
 }
 
+/**
+ * 获取列自定义面板中的草稿状态。
+ *
+ * @returns 面板草稿的列配置快照。
+ */
 function getDraftColumnCustomState() {
   return {
     filterable: customDraftFilterableColumns.value,
@@ -2355,6 +3008,12 @@ function getDraftColumnCustomState() {
   };
 }
 
+/**
+ * 应用列自定义“当前态”快照到运行时状态。
+ *
+ * @param snapshot 待应用的快照。
+ * @returns 无返回值。
+ */
 function applyCurrentColumnCustomSnapshot(snapshot: ColumnCustomSnapshot) {
   if (!deepEqual(visibleColumns.value, snapshot.visible)) {
     visibleColumns.value = snapshot.visible;
@@ -2373,6 +3032,12 @@ function applyCurrentColumnCustomSnapshot(snapshot: ColumnCustomSnapshot) {
   }
 }
 
+/**
+ * 应用列自定义“草稿态”快照到面板状态。
+ *
+ * @param snapshot 待应用的草稿快照。
+ * @returns 无返回值。
+ */
 function applyDraftColumnCustomSnapshot(snapshot: ColumnCustomSnapshot) {
   if (!deepEqual(customDraftVisibleColumns.value, snapshot.visible)) {
     customDraftVisibleColumns.value = snapshot.visible;
@@ -2428,6 +3093,9 @@ watch(
   }
 );
 
+/**
+ * 列自定义面板控制项集合。
+ */
 const customColumnControls = computed(() => {
   return buildColumnCustomControls(sourceColumns.value, {
     filterable: customDraftFilterableColumns.value,
@@ -2437,10 +3105,12 @@ const customColumnControls = computed(() => {
     visible: customDraftVisibleColumns.value,
   });
 });
+/** 列控制顺序摘要，用于驱动 FLIP 动画重排检测。 */
 const customColumnControlOrderDigest = computed(() => {
   return createColumnCustomControlsOrderDigest(customColumnControls.value);
 });
 
+/** 列自定义面板是否“全选”。 */
 const customAllChecked = computed(() => {
   return (
     customColumnControls.value.length > 0 &&
@@ -2448,6 +3118,7 @@ const customAllChecked = computed(() => {
   );
 });
 
+/** 列自定义面板是否处于半选态。 */
 const customAllIndeterminate = computed(() => {
   return (
     customColumnControls.value.some((column) => column.checked) &&
@@ -2455,6 +3126,9 @@ const customAllIndeterminate = computed(() => {
   );
 });
 
+/**
+ * 列自定义草稿是否发生变更。
+ */
 const customPanelDirty = computed(() => {
   return hasColumnCustomDraftChanges(
     getDraftColumnCustomState(),
@@ -2513,6 +3187,10 @@ watch(
   { flush: 'post' }
 );
 
+/**
+ * 透传到 VxeGrid 的普通插槽名称集合。
+ * @description 排除组件内部占用插槽，仅保留业务扩展插槽。
+ */
 const delegatedSlots = computed<string[]>(() => {
   return Object.keys(slots).filter(
     (name) =>
@@ -2531,12 +3209,18 @@ const delegatedSlots = computed<string[]>(() => {
   );
 });
 
+/**
+ * 透传到查询表单的插槽名称集合（去除 `form-` 前缀）。
+ */
 const delegatedFormSlots = computed<string[]>(() => {
   return Object.keys(slots)
     .filter((name) => name.startsWith('form-'))
     .map((name) => name.replace('form-', ''));
 });
 
+/**
+ * 是否显示查询区分隔线。
+ */
 const showSeparator = computed(() => {
   return shouldShowSeparator({
     hasFormOptions: !!state.value.formOptions,
@@ -2545,10 +3229,17 @@ const showSeparator = computed(() => {
   });
 });
 
+/**
+ * 查询区分隔线样式。
+ */
 const separatorStyle = computed(() => {
   return getSeparatorStyle(state.value.separator);
 });
 
+/**
+ * 同步工具栏中部提示是否需要滚动播放。
+ * @returns 无返回值。
+ */
 function syncToolbarHintOverflow() {
   const config = toolbarHintConfig.value;
   if (!resolveToolbarHintOverflowEnabled({ hasCenterSlot: hasToolbarCenterSlot.value, hint: config })) {
@@ -2580,6 +3271,10 @@ watch(
   { immediate: true }
 );
 
+/**
+ * 同步分页区域提示文本是否需要滚动播放。
+ * @returns 无返回值。
+ */
 function syncPagerHintOverflow() {
   const config = pagerHintConfig.value;
   if (!resolveToolbarHintOverflowEnabled({ hasCenterSlot: hasPagerCenterSlot.value, hint: config })) {
@@ -2611,6 +3306,10 @@ watch(
   { immediate: true }
 );
 
+/**
+ * 取消列自定义面板行动画帧。
+ * @returns 无返回值。
+ */
 function cancelCustomRowAnimation() {
   if (typeof window !== 'undefined' && customRowAnimationFrame !== null) {
     window.cancelAnimationFrame(customRowAnimationFrame);
@@ -2618,6 +3317,10 @@ function cancelCustomRowAnimation() {
   customRowAnimationFrame = null;
 }
 
+/**
+ * 清理列拖拽重排调度帧与待处理移动任务。
+ * @returns 无返回值。
+ */
 function clearCustomMoveFrame() {
   customPendingMove = null;
   if (typeof window !== 'undefined' && customMoveAnimationFrame !== null) {
@@ -2626,6 +3329,10 @@ function clearCustomMoveFrame() {
   customMoveAnimationFrame = null;
 }
 
+/**
+ * 重置列拖拽状态到初始值。
+ * @returns 无返回值。
+ */
 function resetCustomDragState() {
   clearCustomMoveFrame();
   const nextState = createColumnCustomDragResetState();
@@ -2634,6 +3341,13 @@ function resetCustomDragState() {
   customDragState.value = nextState.dragState;
 }
 
+/**
+ * 维护列自定义行节点引用缓存。
+ *
+ * @param key 列键。
+ * @param node 行节点。
+ * @returns 无返回值。
+ */
 function setCustomRowRef(key: string, node: HTMLDivElement | null) {
   if (node) {
     customRowRefs.value[key] = node;
@@ -2642,6 +3356,12 @@ function setCustomRowRef(key: string, node: HTMLDivElement | null) {
   delete customRowRefs.value[key];
 }
 
+/**
+ * 拖拽列时根据鼠标位置自动滚动自定义面板内容区。
+ *
+ * @param clientY 鼠标纵向坐标。
+ * @returns 无返回值。
+ */
 function autoScrollCustomBody(clientY: number) {
   const body = customBodyRef.value;
   if (!body) {
@@ -2664,6 +3384,12 @@ function autoScrollCustomBody(clientY: number) {
   }
 }
 
+/**
+ * 将列自定义快照写入存储并同步到表格列配置。
+ *
+ * @param snapshot 已确认的列快照。
+ * @returns 无返回值。
+ */
 function applyDraftToGrid(snapshot: ColumnCustomSnapshot) {
   writeColumnCustomStateToStorage(columnCustomPersistenceConfig.value, snapshot);
   const nextColumns = buildColumnRuntimeItems(
@@ -2680,6 +3406,13 @@ function applyDraftToGrid(snapshot: ColumnCustomSnapshot) {
   });
 }
 
+/**
+ * 对外派发列自定义状态变化事件。
+ *
+ * @param action 触发动作。
+ * @param snapshot 对应列快照。
+ * @returns 无返回值。
+ */
 function emitColumnCustomChange(action: 'cancel' | 'confirm' | 'open' | 'reset', snapshot: ColumnCustomSnapshot) {
   runtimeGridEvents.value?.columnCustomChange?.(
     createColumnCustomChangePayload(
@@ -2690,6 +3423,10 @@ function emitColumnCustomChange(action: 'cancel' | 'confirm' | 'open' | 'reset',
   );
 }
 
+/**
+ * 打开列自定义面板并初始化草稿态。
+ * @returns 无返回值。
+ */
 function openCustomPanel() {
   const transition = resolveColumnCustomOpenTransition(
     sourceColumns.value,
@@ -2706,6 +3443,10 @@ function openCustomPanel() {
   emitColumnCustomChange(transition.action, transition.snapshot);
 }
 
+/**
+ * 取消列自定义修改并回退面板草稿态。
+ * @returns 无返回值。
+ */
 function handleCustomCancel() {
   const transition = resolveColumnCustomCancelTransition(
     sourceColumns.value,
@@ -2720,6 +3461,10 @@ function handleCustomCancel() {
   emitColumnCustomChange(transition.action, transition.snapshot);
 }
 
+/**
+ * 确认列自定义修改并应用到表格。
+ * @returns 无返回值。
+ */
 function handleCustomConfirm() {
   const transition = resolveColumnCustomConfirmTransition(
     sourceColumns.value,
@@ -2734,6 +3479,10 @@ function handleCustomConfirm() {
   emitColumnCustomChange(transition.action, transition.snapshot);
 }
 
+/**
+ * 重置列自定义配置到默认状态。
+ * @returns 无返回值。
+ */
 function handleCustomReset() {
   if (!customPanelDirty.value) {
     return;
@@ -2758,6 +3507,10 @@ function handleCustomReset() {
   emitColumnCustomChange(transition.action, transition.snapshot);
 }
 
+/**
+ * 切换列自定义面板中的“全选/全不选”状态。
+ * @returns 无返回值。
+ */
 function toggleCustomAllColumns() {
   const next = toggleAllColumnCustomVisible(
     sourceColumns.value,
@@ -2768,6 +3521,12 @@ function toggleCustomAllColumns() {
   }
 }
 
+/**
+ * 切换指定列的可见状态。
+ *
+ * @param key 列键。
+ * @returns 无返回值。
+ */
 function toggleCustomColumnVisibleByKey(key: string) {
   const next = toggleColumnCustomVisible(customDraftVisibleColumns.value, key);
   if (!deepEqual(customDraftVisibleColumns.value, next)) {
@@ -2775,6 +3534,13 @@ function toggleCustomColumnVisibleByKey(key: string) {
   }
 }
 
+/**
+ * 切换指定列的固定位置。
+ *
+ * @param key 列键。
+ * @param value 固定方向。
+ * @returns 无返回值。
+ */
 function toggleCustomColumnFixedByKey(
   key: string,
   value: TableColumnFixedValue
@@ -2785,6 +3551,12 @@ function toggleCustomColumnFixedByKey(
   }
 }
 
+/**
+ * 切换指定列的可排序状态。
+ *
+ * @param key 列键。
+ * @returns 无返回值。
+ */
 function toggleCustomColumnSortableByKey(key: string) {
   const next = toggleColumnCustomSortable(customDraftSortableColumns.value, key);
   if (!deepEqual(customDraftSortableColumns.value, next)) {
@@ -2792,6 +3564,12 @@ function toggleCustomColumnSortableByKey(key: string) {
   }
 }
 
+/**
+ * 切换指定列的可筛选状态。
+ *
+ * @param key 列键。
+ * @returns 无返回值。
+ */
 function toggleCustomColumnFilterableByKey(key: string) {
   const next = toggleColumnCustomFilterable(customDraftFilterableColumns.value, key);
   if (!deepEqual(customDraftFilterableColumns.value, next)) {
@@ -2799,6 +3577,14 @@ function toggleCustomColumnFilterableByKey(key: string) {
   }
 }
 
+/**
+ * 执行列拖拽重排并更新草稿顺序。
+ *
+ * @param dragKey 被拖拽列键。
+ * @param overKey 目标列键。
+ * @param position 落点位置。
+ * @returns 无返回值。
+ */
 function moveCustomColumnTo(
   dragKey: string,
   overKey: string,
@@ -2816,6 +3602,14 @@ function moveCustomColumnTo(
   }
 }
 
+/**
+ * 合并同帧列重排请求，减少拖拽过程中的重复计算。
+ *
+ * @param dragKey 被拖拽列键。
+ * @param overKey 目标列键。
+ * @param position 落点位置。
+ * @returns 无返回值。
+ */
 function queueCustomMove(
   dragKey: string,
   overKey: string,
@@ -2852,6 +3646,13 @@ function queueCustomMove(
   });
 }
 
+/**
+ * 处理列拖拽开始事件并初始化拖拽状态。
+ *
+ * @param key 被拖拽列键。
+ * @param event 原始拖拽事件。
+ * @returns 无返回值。
+ */
 function handleCustomDragStart(key: string, event: DragEvent) {
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move';
@@ -2864,6 +3665,13 @@ function handleCustomDragStart(key: string, event: DragEvent) {
   customDragState.value = nextState.dragState;
 }
 
+/**
+ * 处理列拖拽经过目标行事件，计算拖拽悬停状态并调度重排。
+ *
+ * @param key 目标列键。
+ * @param event 原始拖拽事件。
+ * @returns 无返回值。
+ */
 function handleCustomDragOver(key: string, event: DragEvent) {
   event.preventDefault();
   if (event.dataTransfer) {
@@ -2915,6 +3723,12 @@ function handleCustomDragOver(key: string, event: DragEvent) {
   );
 }
 
+/**
+ * 处理自定义面板内容区拖拽经过事件，保持拖拽过程可自动滚动。
+ *
+ * @param event 原始拖拽事件。
+ * @returns 无返回值。
+ */
 function handleCustomBodyDragOver(event: DragEvent) {
   const dragKey = resolveColumnCustomDraggingKey(
     customDraggingKey.value,
@@ -2934,15 +3748,30 @@ function handleCustomBodyDragOver(event: DragEvent) {
   }
 }
 
+/**
+ * 处理列拖拽落下事件并清理拖拽状态。
+ *
+ * @param _key 目标列键（保留参数）。
+ * @param event 原始拖拽事件。
+ * @returns 无返回值。
+ */
 function handleCustomDrop(_key: string, event: DragEvent) {
   event.preventDefault();
   resetCustomDragState();
 }
 
+/**
+ * 处理列拖拽结束事件。
+ * @returns 无返回值。
+ */
 function handleCustomDragEnd() {
   resetCustomDragState();
 }
 
+/**
+ * 切换列自定义面板显示状态。
+ * @returns 无返回值。
+ */
 function toggleCustomPanel() {
   if (customPanelOpen.value) {
     handleCustomCancel();
@@ -2951,6 +3780,10 @@ function toggleCustomPanel() {
   openCustomPanel();
 }
 
+/**
+ * 切换查询表单显示状态并触发工具栏点击事件。
+ * @returns 无返回值。
+ */
 function handleSearchToggle() {
   props.api.toggleSearchForm();
   runtimeGridEvents.value?.toolbarToolClick?.({
@@ -2958,6 +3791,11 @@ function handleSearchToggle() {
   } as any);
 }
 
+/**
+ * 解析当前分页导出所需的分页元信息。
+ *
+ * @returns 当前页、页大小与总数信息。
+ */
 function resolvePagerExportMeta() {
   const grid = gridRef.value as Record<string, any> | undefined;
   const pagerConfig = (gridOptions.value?.pagerConfig ??
@@ -2982,6 +3820,11 @@ function resolvePagerExportMeta() {
   });
 }
 
+/**
+ * 解析“当前页导出”时的行数据集合。
+ *
+ * @returns 当前页扁平化行数据。
+ */
 function resolveCurrentPageRowsForExport() {
   const grid = gridRef.value as Record<string, any> | undefined;
   const tableData = grid?.getTableData?.();
@@ -2996,6 +3839,12 @@ function resolveCurrentPageRowsForExport() {
   );
 }
 
+/**
+ * 解析“选中导出”时的行数据集合。
+ *
+ * @param currentRows 当前页行数据，可选。
+ * @returns 选中行数组。
+ */
 function resolveSelectedRowsForExport(
   currentRows?: Array<Record<string, any>>
 ) {
@@ -3019,6 +3868,11 @@ function resolveSelectedRowsForExport(
   );
 }
 
+/**
+ * 处理分页导出动作并对外派发导出事件。
+ *
+ * @param action 导出动作配置。
+ */
 async function handlePagerExportAction(
   action: ResolvedTablePagerExportAction
 ) {
@@ -3080,6 +3934,10 @@ async function handlePagerExportAction(
   } as any);
 }
 
+/**
+ * 处理分页导出主按钮点击（单动作场景）。
+ * @returns 无返回值。
+ */
 function handlePagerExportTriggerClick() {
   if (!pagerExportSingleAction.value) {
     return;
@@ -3087,6 +3945,13 @@ function handlePagerExportTriggerClick() {
   void handlePagerExportAction(pagerExportSingleAction.value);
 }
 
+/**
+ * 调用 VxeGrid 的代理执行器并在完成后同步运行时状态。
+ *
+ * @param mode 代理执行模式。
+ * @param params 查询参数。
+ * @returns 代理执行结果。
+ */
 async function runCommitProxy(mode: 'query' | 'reload', params: Record<string, any>) {
   if (!gridRef.value?.commitProxy) {
     return undefined;
@@ -3098,6 +3963,12 @@ async function runCommitProxy(mode: 'query' | 'reload', params: Record<string, a
   return result;
 }
 
+/**
+ * 处理内置工具栏按钮点击（刷新、全屏）。
+ *
+ * @param code 工具栏按钮编码。
+ * @returns 无返回值。
+ */
 async function handleBuiltinToolClick(code: 'refresh' | 'zoom') {
   if (code === 'refresh') {
     const hasProxy = isProxyEnabled(gridOptions.value.proxyConfig as Record<string, any> | undefined);
@@ -3131,6 +4002,13 @@ async function handleBuiltinToolClick(code: 'refresh' | 'zoom') {
   } as any);
 }
 
+/**
+ * 处理自定义工具栏按钮点击。
+ *
+ * @param tool 工具配置。
+ * @param index 工具索引。
+ * @returns 无返回值。
+ */
 function handleCustomToolClick(tool: Record<string, any>, index: number) {
   if (tool?.disabled) {
     return;
@@ -3142,6 +4020,15 @@ function handleCustomToolClick(tool: Record<string, any>, index: number) {
   });
 }
 
+/**
+ * 处理操作列按钮点击。
+ *
+ * @param tool 操作工具配置。
+ * @param index 工具索引。
+ * @param row 当前行数据。
+ * @param rowIndex 当前行索引。
+ * @returns 无返回值。
+ */
 function handleOperationToolClick(
   tool: Record<string, any>,
   index: number,
@@ -3160,6 +4047,12 @@ function handleOperationToolClick(
   });
 }
 
+/**
+ * 将权限配置转换为 Vue 指令元组，供 `withDirectives` 使用。
+ *
+ * @param tool 工具配置。
+ * @returns 指令元组，不可渲染时返回 null。
+ */
 function toButtonDirectiveTuple(
   tool: ResolvedToolbarActionTool
 ): null | [any, any, any, Record<string, boolean>] {
@@ -3193,6 +4086,12 @@ function toButtonDirectiveTuple(
   ];
 }
 
+/**
+ * 判断工具项在当前权限上下文中是否可渲染。
+ *
+ * @param tool 工具配置。
+ * @returns 是否可渲染。
+ */
 function canRenderToolbarActionTool(
   tool: null | Record<string, any> | undefined
 ) {
@@ -3206,6 +4105,10 @@ function canRenderToolbarActionTool(
   });
 }
 
+/**
+ * 工具栏动作按钮渲染组件
+ * @description 统一封装权限判断、指令绑定与按钮展示态渲染。
+ */
 const ToolbarActionButton = defineComponent({
   name: 'AdminTableToolbarActionButton',
   props: {
@@ -3214,6 +4117,11 @@ const ToolbarActionButton = defineComponent({
       type: Object as any,
     },
   },
+  /**
+   * 工具栏动作按钮渲染逻辑。
+   * @param buttonProps 组件属性。
+   * @returns 渲染函数。
+   */
   setup(buttonProps) {
     return () => {
       const tool = buttonProps.tool as ResolvedToolbarActionTool;
@@ -3249,6 +4157,9 @@ const ToolbarActionButton = defineComponent({
           disabled,
           title,
           type: 'button',
+          /**
+           * 触发工具栏动作按钮点击。
+           */
           onClick: () => {
             handleCustomToolClick(tool, tool.index);
           },
@@ -3265,6 +4176,10 @@ const ToolbarActionButton = defineComponent({
   },
 });
 
+/**
+ * 操作列动作按钮渲染组件
+ * @description 为行级动作提供与工具栏一致的渲染与权限处理逻辑。
+ */
 const OperationActionButton = defineComponent({
   name: 'AdminTableOperationActionButton',
   props: {
@@ -3281,6 +4196,11 @@ const OperationActionButton = defineComponent({
       type: Object as any,
     },
   },
+  /**
+   * 操作列动作按钮渲染逻辑。
+   * @param buttonProps 组件属性。
+   * @returns 渲染函数。
+   */
   setup(buttonProps) {
     return () => {
       const tool = buttonProps.tool as ResolvedToolbarActionTool;
@@ -3316,6 +4236,12 @@ const OperationActionButton = defineComponent({
           disabled,
           title,
           type: 'button',
+          /**
+           * 触发操作列动作按钮点击，并阻止事件冒泡到行点击。
+           *
+           * @param event 鼠标事件。
+           * @returns 无返回值。
+           */
           onClick: (event: MouseEvent) => {
             event.stopPropagation();
             handleOperationToolClick(
@@ -3338,6 +4264,12 @@ const OperationActionButton = defineComponent({
   },
 });
 
+/**
+ * 处理文档点击，点击面板外区域时关闭列自定义面板。
+ *
+ * @param event 鼠标事件。
+ * @returns 无返回值。
+ */
 function handleDocumentMouseDown(event: MouseEvent) {
   if (!customPanelOpen.value) {
     return;
@@ -3355,6 +4287,12 @@ function handleDocumentMouseDown(event: MouseEvent) {
   handleCustomCancel();
 }
 
+/**
+ * 处理全局键盘事件，支持 `Escape` 关闭面板或退出全屏。
+ *
+ * @param event 键盘事件。
+ * @returns 无返回值。
+ */
 function handleWindowKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') {
     return;
@@ -3370,6 +4308,10 @@ function handleWindowKeydown(event: KeyboardEvent) {
   }
 }
 
+/**
+ * 监听全屏状态并同步页面滚动锁定。
+ * @description 最大化时禁止 `body` 滚动，退出时恢复默认滚动行为。
+ */
 watch(maximized, (enabled) => {
   if (typeof document === 'undefined') {
     return;
@@ -3377,9 +4319,17 @@ watch(maximized, (enabled) => {
   document.body.style.overflow = enabled ? 'hidden' : '';
 });
 
+/**
+ * 初始化表格实例挂载、执行器绑定与自动加载逻辑。
+ * @returns 无返回值。
+ */
 async function initialize() {
   await nextTick();
 
+  /**
+   * 挂载核心表格 API。
+   * @description 注入查询/重载执行器与表单 API，建立组件与 core 层桥接。
+   */
   props.api.mount(gridRef.value, {
     executors: {
       query: ({ params }) => runCommitProxy('query', params),
@@ -3392,11 +4342,19 @@ async function initialize() {
   const enableProxy = !!gridOptions.value.proxyConfig?.enabled;
 
   if (autoLoad && enableProxy) {
+    /**
+     * 自动加载查询参数。
+     * @description 存在查询表单时读取表单值，否则使用空参数对象。
+     */
     const values = state.value.formOptions ? await formApi.getValues() : {};
     await runCommitProxy('query', values ?? {});
   }
 }
 
+/**
+ * 组件挂载生命周期。
+ * @description 负责注册全局监听、初始化尺寸观察器并启动首次数据加载。
+ */
 onMounted(() => {
   syncAdminTableVueWithPreferences();
   updateMobile();
@@ -3430,6 +4388,10 @@ onMounted(() => {
   void initialize();
 });
 
+/**
+ * 主体滚动高度观察器引用
+ * @description 监听表格容器尺寸变化并触发滚动高度重算。
+ */
 let bodyScrollResizeObserver: null | ResizeObserver = null;
 
 watch(
@@ -3453,6 +4415,10 @@ watch(
   { immediate: true }
 );
 
+/**
+ * 组件卸载生命周期。
+ * @description 释放事件监听、动画帧、观察器与状态订阅，避免内存泄漏。
+ */
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', updateMobile);

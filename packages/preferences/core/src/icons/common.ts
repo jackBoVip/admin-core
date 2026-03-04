@@ -26,7 +26,7 @@ export const ICON_SIZES: Record<IconSize, number> = {
  * 通用图标集合
  */
 export const icons = {
-  // ========== 方向/导航 ==========
+  /* ========== 方向/导航 ========== */
   /** 左箭头 */
   arrowLeft: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>`,
 
@@ -51,7 +51,7 @@ export const icons = {
   /** 下展开 */
   chevronDown: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`,
 
-  // ========== 操作 ==========
+  /* ========== 操作 ========== */
   /** 关闭 */
   close: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>`,
 
@@ -75,7 +75,7 @@ export const icons = {
   /** 更多（水平） */
   moreHorizontal: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>`,
 
-  // ========== 主题 ==========
+  /* ========== 主题 ========== */
   /** 太阳（亮色模式） */
   sun: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M6.34 17.66l-1.41 1.41"/><path d="M19.07 4.93l-1.41 1.41"/></svg>`,
 
@@ -85,7 +85,7 @@ export const icons = {
   /** 电脑（跟随系统） */
   monitor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`,
 
-  // ========== 状态 ==========
+  /* ========== 状态 ========== */
   /** 成功/勾选 */
   check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`,
 
@@ -101,7 +101,7 @@ export const icons = {
   /** 错误 */
   alertCircle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
 
-  // ========== 功能 ==========
+  /* ========== 功能 ========== */
   /** 全屏 */
   maximize: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>`,
 
@@ -132,7 +132,7 @@ export const icons = {
   /** 语言 */
   globe: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
 
-  // ========== 侧边栏 ==========
+  /* ========== 侧边栏 ========== */
   /** 侧边栏展开 */
   panelLeftOpen: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>`,
 
@@ -157,7 +157,7 @@ export const icons = {
   /** 导入/粘贴 */
   import: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11v6"/><path d="m9 14 3-3 3 3"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>`,
 
-  // ========== 导航/页面 ==========
+  /* ========== 导航/页面 ========== */
   /** 首页 */
   home: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>`,
 
@@ -185,12 +185,24 @@ export const iconAliases = {
  * 图标名称类型
  */
 export type IconName = keyof typeof icons;
+/**
+ * 图标别名类型。
+ */
 export type IconAlias = keyof typeof iconAliases;
+/**
+ * 图标名称或别名类型。
+ */
 export type IconNameOrAlias = IconName | IconAlias;
 
 /** 空 SVG 占位符（安全的默认值） */
 const EMPTY_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>';
 
+/**
+ * 将图标输入名称解析为真实图标名。
+ *
+ * @param name 输入图标名或别名。
+ * @returns 解析后的真实图标名。
+ */
 const resolveIconName = (name: string) => {
   if (Object.prototype.hasOwnProperty.call(iconAliases, name)) {
     return iconAliases[name as IconAlias];
@@ -205,7 +217,7 @@ const resolveIconName = (name: string) => {
  * @security 仅返回预定义的 SVG，防止 XSS
  */
 export function getIcon(name: IconNameOrAlias | string): string {
-  // 类型守卫：确保只返回预定义的图标
+  /* 类型守卫：确保只返回预定义的图标。 */
   if (typeof name !== 'string') {
     return EMPTY_SVG;
   }

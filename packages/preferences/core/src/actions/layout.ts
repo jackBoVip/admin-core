@@ -1,41 +1,79 @@
 /**
- * 布局操作
- * @description 框架无关的布局相关业务逻辑
+ * 布局操作集合。
+ * @description 提供与框架无关的布局偏好写入与状态查询能力。
  */
 
 import type { PreferencesManager } from '../manager/preferences-manager';
 import type { DeepPartial, Preferences, LayoutType } from '../types';
 
 /**
- * 布局操作接口
+ * 布局操作接口定义。
  */
 export interface LayoutActions {
-  /** 设置应用配置 */
+  /**
+   * 更新应用级布局配置。
+   * @param updates 应用配置差量。
+   * @returns 无返回值。
+   */
   setApp: (updates: DeepPartial<Preferences['app']>) => void;
-  /** 设置布局类型 */
+  /**
+   * 设置全局布局模式。
+   * @param layout 目标布局类型。
+   * @returns 无返回值。
+   */
   setLayout: (layout: LayoutType) => void;
-  /** 设置侧边栏配置 */
+  /**
+   * 更新侧边栏配置。
+   * @param updates 侧边栏配置差量。
+   * @returns 无返回值。
+   */
   setSidebar: (updates: DeepPartial<Preferences['sidebar']>) => void;
-  /** 设置头部配置 */
+  /**
+   * 更新顶栏配置。
+   * @param updates 顶栏配置差量。
+   * @returns 无返回值。
+   */
   setHeader: (updates: DeepPartial<Preferences['header']>) => void;
-  /** 设置标签栏配置 */
+  /**
+   * 更新标签栏配置。
+   * @param updates 标签栏配置差量。
+   * @returns 无返回值。
+   */
   setTabbar: (updates: DeepPartial<Preferences['tabbar']>) => void;
-  /** 设置底部配置 */
+  /**
+   * 更新页脚配置。
+   * @param updates 页脚配置差量。
+   * @returns 无返回值。
+   */
   setFooter: (updates: DeepPartial<Preferences['footer']>) => void;
-  /** 设置面包屑配置 */
+  /**
+   * 更新面包屑配置。
+   * @param updates 面包屑配置差量。
+   * @returns 无返回值。
+   */
   setBreadcrumb: (updates: DeepPartial<Preferences['breadcrumb']>) => void;
-  /** 切换侧边栏折叠状态 */
+  /**
+   * 切换侧边栏折叠状态。
+   * @returns 无返回值。
+   */
   toggleSidebarCollapsed: () => void;
-  /** 设置侧边栏折叠状态 */
+  /**
+   * 直接设置侧边栏折叠状态。
+   * @param collapsed 目标折叠状态。
+   * @returns 无返回值。
+   */
   setSidebarCollapsed: (collapsed: boolean) => void;
-  /** 获取侧边栏是否折叠 */
+  /**
+   * 获取当前侧边栏折叠状态。
+   * @returns 已折叠返回 `true`，否则返回 `false`。
+   */
   isSidebarCollapsed: () => boolean;
 }
 
 /**
- * 创建布局操作
- * @param manager - 偏好设置管理器实例
- * @returns 布局操作对象
+ * 创建布局操作对象。
+ * @param manager 偏好设置管理器实例。
+ * @returns 布局操作对象。
  */
 export function createLayoutActions(manager: PreferencesManager): LayoutActions {
   return {

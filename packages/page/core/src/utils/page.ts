@@ -1,3 +1,8 @@
+/**
+ * Page 运行态工具函数集合。
+ * @description 提供页面配置标准化、路由命中、滚动策略解析与 keep-inactive 面板状态维护能力。
+ */
+
 import {
   DEFAULT_PAGE_FORM_TABLE_BRIDGE_OPTIONS,
   DEFAULT_SCROLL_OPTIONS,
@@ -19,6 +24,10 @@ import {
   isPageRouteItem,
 } from './guards';
 
+/**
+ * 页面运行时状态字段白名单。
+ * @description 用于从组件配置中提取可写入内部 store 的受控运行态字段。
+ */
 type PageRuntimeStateKeys =
   | 'activeKey'
   | 'keepInactivePages'
@@ -28,6 +37,11 @@ type PageRuntimeStateKeys =
   | 'router'
   | 'scroll';
 
+/**
+ * 解析页面 store selector，未传时返回 identity selector。
+ * @param selector 外部 selector。
+ * @returns 最终 selector。
+ */
 export function resolvePageStoreSelector<TState, TSlice = TState>(
   selector?: (state: TState) => TSlice
 ) {
@@ -37,6 +51,11 @@ export function resolvePageStoreSelector<TState, TSlice = TState>(
   );
 }
 
+/**
+ * 从完整配置中提取运行时状态相关字段。
+ * @param options 原始配置。
+ * @returns 运行时状态字段子集。
+ */
 export function pickPageRuntimeStateOptions<TComponent = unknown>(
   options: Record<string, unknown> | undefined
 ): Pick<AdminPageOptions<TComponent>, PageRuntimeStateKeys> {
@@ -54,6 +73,12 @@ export function pickPageRuntimeStateOptions<TComponent = unknown>(
   };
 }
 
+/**
+ * 同步页面运行时状态到 API，并在可用时触发路由同步。
+ * @param api 页面 API。
+ * @param options 原始配置。
+ * @returns 无返回值。
+ */
 export function syncPageRuntimeState<TComponent = unknown>(
   api: Pick<AdminPageApi<TComponent>, 'setState' | 'syncRoute'>,
   options: Record<string, unknown> | undefined
@@ -66,6 +91,11 @@ export function syncPageRuntimeState<TComponent = unknown>(
   }
 }
 
+/**
+ * 标准化滚动配置。
+ * @param scroll 原始滚动配置。
+ * @returns 标准化滚动配置。
+ */
 export function normalizeScrollOptions(
   scroll: AdminPageOptions['scroll']
 ): NormalizedPageScrollOptions {
@@ -81,6 +111,11 @@ export function normalizeScrollOptions(
   };
 }
 
+/**
+ * 标准化表单-表格桥接配置。
+ * @param options 原始桥接配置。
+ * @returns 标准化桥接配置。
+ */
 export function normalizePageFormTableBridgeOptions<
   TFormValues extends Record<string, unknown> = Record<string, unknown>,
   TFormApi = unknown,
@@ -107,6 +142,12 @@ export function normalizePageFormTableBridgeOptions<
   };
 }
 
+/**
+ * 解析页面 key。
+ * @param page 页面项。
+ * @param index 页面索引。
+ * @returns 稳定页面 key。
+ */
 export function resolvePageKey<TComponent = unknown>(
   page: AdminPageItem<TComponent>,
   index: number
@@ -120,6 +161,12 @@ export function resolvePageKey<TComponent = unknown>(
   return `component-${index + 1}`;
 }
 
+/**
+ * 解析页面标题，缺失时使用“未命名页面 + 序号”。
+ * @param page 页面项。
+ * @param index 页面索引。
+ * @returns 页面标题。
+ */
 export function resolvePageTitle<TComponent = unknown>(
   page: AdminPageItem<TComponent>,
   index: number
@@ -130,6 +177,11 @@ export function resolvePageTitle<TComponent = unknown>(
   return `${getLocaleMessages().page.untitled} ${index + 1}`;
 }
 
+/**
+ * 标准化页面列表，补齐 key/title 与默认字段。
+ * @param pages 原始页面列表。
+ * @returns 标准化页面列表。
+ */
 export function normalizePageItems<TComponent = unknown>(
   pages: AdminPageOptions<TComponent>['pages']
 ): AdminPageItem<TComponent>[] {
@@ -154,17 +206,30 @@ export function normalizePageItems<TComponent = unknown>(
   });
 }
 
+/** 单个页面内容解析参数。 */
+export interface ResolvePageItemContentOptions<
+  TComponent = unknown,
+  TResult = unknown,
+> {
+  /** 当前页面项。 */
+  page: AdminPageItem<TComponent>;
+  /** 组件页渲染器。 */
+  renderComponent: (component: TComponent, props?: Record<string, unknown>) => TResult;
+  /** 路由页渲染器。 */
+  renderRoute: (page: RoutePageItem<TComponent>) => TResult;
+}
+
+/**
+ * 解析单个页面项的渲染内容。
+ * @param options 渲染参数。
+ * @returns 渲染结果。
+ */
 export function resolvePageItemContent<
   TComponent = unknown,
   TResult = unknown,
->(options: {
-  page: AdminPageItem<TComponent>;
-  renderComponent: (
-    component: TComponent,
-    props?: Record<string, unknown>
-  ) => TResult;
-  renderRoute: (page: RoutePageItem<TComponent>) => TResult;
-}) {
+>(
+  options: ResolvePageItemContentOptions<TComponent, TResult>
+) {
   if (isPageComponentItem(options.page)) {
     return options.renderComponent(
       options.page.component,
@@ -183,33 +248,69 @@ export function resolvePageItemContent<
   return options.renderRoute(routePage);
 }
 
+/** 当前激活页内容解析参数。 */
+export interface ResolvePageActiveContentOptions<
+  TComponent = unknown,
+  TResult = unknown,
+> {
+  /** 当前激活页面。 */
+  activePage: AdminPageItem<TComponent> | null;
+  /** 空态渲染器。 */
+  renderEmpty: () => TResult;
+  /** 页面渲染器。 */
+  renderPage: (page: AdminPageItem<TComponent>) => TResult;
+}
+
+/**
+ * 渲染当前激活页内容，不存在时渲染空态。
+ * @param options 渲染参数。
+ * @returns 渲染结果。
+ */
 export function resolvePageActiveContent<
   TComponent = unknown,
   TResult = unknown,
->(options: {
-  activePage: AdminPageItem<TComponent> | null;
-  renderEmpty: () => TResult;
-  renderPage: (page: AdminPageItem<TComponent>) => TResult;
-}) {
+>(
+  options: ResolvePageActiveContentOptions<TComponent, TResult>
+) {
   if (!options.activePage) {
     return options.renderEmpty();
   }
   return options.renderPage(options.activePage);
 }
 
+/**
+ * 保留非激活页面模式下的页面面板描述。
+ * @description 对单个页面在 keep-inactive 模式下的展示状态进行扁平描述。
+ */
 export type PagePaneDescriptor<TComponent = unknown> = {
+  /** 是否当前激活。 */
   active: boolean;
+  /** 样式类名。 */
   className: string;
+  /** 对应页面项。 */
   page: AdminPageItem<TComponent>;
 };
 
+/**
+ * 保留非激活页面模式下的面板缓存状态。
+ * @description 在页面引用未变化时复用索引映射与描述数组，降低重建开销。
+ */
 export type KeepInactivePagePaneState<TComponent = unknown> = {
+  /** 当前激活页面 key。 */
   activeKey: null | string;
+  /** 面板描述列表。 */
   descriptors: Array<PagePaneDescriptor<TComponent>>;
+  /** 页面 key 到索引映射。 */
   indexByKey: Map<string, number>;
+  /** 当前 pages 引用，用于快速判断是否需要整体重建。 */
   pagesRef: AdminPageItem<TComponent>[];
 };
 
+/**
+ * 解析页面内容容器 class。
+ * @param scrollEnabled 是否启用滚动。
+ * @returns 页面内容容器 class 名称。
+ */
 export function resolvePageContentClassName(scrollEnabled: boolean) {
   return [
     'admin-page__content',
@@ -219,6 +320,12 @@ export function resolvePageContentClassName(scrollEnabled: boolean) {
   ].join(' ');
 }
 
+/**
+ * 判断页面面板是否激活。
+ * @param pageKey 页面 key。
+ * @param activeKey 当前激活 key。
+ * @returns 是否激活。
+ */
 export function isPagePaneActive(
   pageKey: string | undefined,
   activeKey: null | string
@@ -226,6 +333,11 @@ export function isPagePaneActive(
   return pageKey === activeKey;
 }
 
+/**
+ * 解析页面面板 class。
+ * @param active 是否激活。
+ * @returns 页面面板 class 名称。
+ */
 export function resolvePagePaneClassName(active: boolean) {
   return [
     'admin-page__pane',
@@ -233,6 +345,12 @@ export function resolvePagePaneClassName(active: boolean) {
   ].join(' ');
 }
 
+/**
+ * 基于页面列表与激活 key 生成 keep-inactive 面板描述列表。
+ * @param pages 页面列表。
+ * @param activeKey 当前激活 key。
+ * @returns 面板描述列表。
+ */
 export function resolveKeepInactivePagePanes<TComponent = unknown>(
   pages: AdminPageItem<TComponent>[],
   activeKey: null | string
@@ -247,6 +365,12 @@ export function resolveKeepInactivePagePanes<TComponent = unknown>(
   });
 }
 
+/**
+ * 创建 keep-inactive 面板状态。
+ * @param pages 页面列表。
+ * @param activeKey 当前激活 key。
+ * @returns 面板状态。
+ */
 export function createKeepInactivePagePaneState<TComponent = unknown>(
   pages: AdminPageItem<TComponent>[],
   activeKey: null | string
@@ -268,6 +392,13 @@ export function createKeepInactivePagePaneState<TComponent = unknown>(
   };
 }
 
+/**
+ * 在页面列表引用未变化时复用并增量更新 keep-inactive 面板状态。
+ * @param previous 旧状态。
+ * @param pages 当前页面列表。
+ * @param activeKey 当前激活 key。
+ * @returns 新状态。
+ */
 export function reconcileKeepInactivePagePaneState<TComponent = unknown>(
   previous: KeepInactivePagePaneState<TComponent> | null | undefined,
   pages: AdminPageItem<TComponent>[],
@@ -318,6 +449,12 @@ export function reconcileKeepInactivePagePaneState<TComponent = unknown>(
   };
 }
 
+/**
+ * 判断路由页是否命中给定路径。
+ * @param page 路由页配置。
+ * @param path 当前路径。
+ * @returns 命中返回 `true`，否则返回 `false`。
+ */
 function isRouteMatched<TComponent = unknown>(
   page: RoutePageItem<TComponent>,
   path: string
@@ -328,6 +465,12 @@ function isRouteMatched<TComponent = unknown>(
   return path === page.path;
 }
 
+/**
+ * 按路径查找命中的路由页。
+ * @param pages 页面列表。
+ * @param path 当前路径。
+ * @returns 命中的路由页。
+ */
 export function resolveRoutePageByPath<TComponent = unknown>(
   pages: AdminPageItem<TComponent>[],
   path: string
@@ -343,6 +486,13 @@ export function resolveRoutePageByPath<TComponent = unknown>(
   return null;
 }
 
+/**
+ * 解析当前激活页面 key。
+ * @description 优先级为：外部受控 key > 当前路由匹配页 > 页面列表首项。
+ * @param options 页面配置。
+ * @param pages 标准化页面列表。
+ * @returns 激活 key。
+ */
 export function resolveActiveKey<TComponent = unknown>(
   options: AdminPageOptions<TComponent>,
   pages: AdminPageItem<TComponent>[]
@@ -367,6 +517,12 @@ export function resolveActiveKey<TComponent = unknown>(
   return pages[0]?.key ?? null;
 }
 
+/**
+ * 解析当前激活页是否启用滚动。
+ * @param globalScroll 全局滚动配置。
+ * @param page 当前激活页。
+ * @returns 是否启用滚动。
+ */
 export function resolveScrollEnabled<TComponent = unknown>(
   globalScroll: AdminPageOptions<TComponent>['scroll'],
   page: AdminPageItem<TComponent> | null
@@ -385,6 +541,11 @@ export function resolveScrollEnabled<TComponent = unknown>(
   return normalizedGlobal.enabled;
 }
 
+/**
+ * 计算页面运行态派生状态。
+ * @param options 页面配置。
+ * @returns 计算后的页面状态。
+ */
 export function resolveComputedState<TComponent = unknown>(
   options: AdminPageOptions<TComponent>
 ): PageComputedState<TComponent> {
@@ -401,6 +562,12 @@ export function resolveComputedState<TComponent = unknown>(
   };
 }
 
+/**
+ * 导航到指定路由页。
+ * @param router 路由能力对象。
+ * @param page 目标路由页。
+ * @returns 无返回值。
+ */
 export function navigateToRoutePage<TComponent = unknown>(
   router: PageRouterLike<TComponent> | undefined,
   page: RoutePageItem<TComponent> | null

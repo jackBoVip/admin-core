@@ -1,3 +1,7 @@
+/**
+ * Table React 内置渲染器集合。
+ * @description 提供标签、开关、操作列等常用单元格/编辑渲染器注册实现。
+ */
 import type { TableRenderContext } from '@admin-core/table-core';
 
 import { Button, Popconfirm, Space, Switch, Tag } from 'antd';
@@ -5,6 +9,11 @@ import { createElement } from 'react';
 
 import { registerReactTableRenderer } from './registry';
 
+/**
+ * 规范化标签渲染选项。
+ * @param value 原始选项配置。
+ * @returns 统一选项数组。
+ */
 function normalizeOptions(value: any) {
   if (Array.isArray(value)) {
     return value;
@@ -15,12 +24,22 @@ function normalizeOptions(value: any) {
   ];
 }
 
+/**
+ * 内置标签单元格渲染器。
+ * @param context 渲染上下文。
+ * @returns React 节点。
+ */
 function cellTag(context: TableRenderContext) {
   const options = normalizeOptions(context.options);
   const item = options.find((entry) => entry.value === context.value);
   return createElement(Tag, { color: item?.color ?? 'default' }, item?.label ?? String(context.value ?? ''));
 }
 
+/**
+ * 内置开关单元格渲染器。
+ * @param context 渲染上下文。
+ * @returns React 节点。
+ */
 function cellSwitch(context: TableRenderContext) {
   const checkedValue = context.props?.checkedValue ?? 1;
   const uncheckedValue = context.props?.uncheckedValue ?? 0;
@@ -39,6 +58,11 @@ function cellSwitch(context: TableRenderContext) {
   });
 }
 
+/**
+ * 构建操作列按钮配置。
+ * @param context 渲染上下文。
+ * @returns 规范化后的操作项数组。
+ */
 function buildOperations(context: TableRenderContext) {
   const presets: Record<string, Record<string, any>> = {
     delete: { code: 'delete', danger: true, text: 'Delete' },
@@ -64,6 +88,11 @@ function buildOperations(context: TableRenderContext) {
     .filter((item: any) => item.show !== false);
 }
 
+/**
+ * 内置操作列渲染器。
+ * @param context 渲染上下文。
+ * @returns React 节点。
+ */
 function cellOperation(context: TableRenderContext) {
   const operations = buildOperations(context);
 
@@ -72,6 +101,11 @@ function cellOperation(context: TableRenderContext) {
     null,
     operations.map((item: any) => {
       const disabled = !!item.disabled;
+      /**
+       * 处理操作按钮点击
+       * @description 在按钮可用时派发操作事件并透传当前行数据。
+       * @returns 无返回值。
+       */
       const onClick = () => {
         if (disabled) return;
         context.attrs?.onClick?.({
@@ -108,6 +142,10 @@ function cellOperation(context: TableRenderContext) {
   );
 }
 
+/**
+ * 注册 React 内置单元格渲染器。
+ * @returns 无返回值。
+ */
 export function registerBuiltinReactRenderers() {
   registerReactTableRenderer('CellTag', cellTag);
   registerReactTableRenderer('CellSwitch', cellSwitch);

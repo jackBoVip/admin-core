@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+/* @vitest-environment jsdom */
 import { createFormApi, setLocale } from '@admin-core/form-core';
 import { mount } from '@vue/test-utils';
 import { defineComponent, h, markRaw } from 'vue';
@@ -8,6 +8,11 @@ import { AdminForm } from '../components/AdminForm';
 import { AdminSearchForm } from '../components/AdminSearchForm';
 import { setupAdminFormVue } from '../registry';
 
+/**
+ * 刷新微任务队列，等待组件异步更新完成。
+ *
+ * @returns 无返回值。
+ */
 async function flushTasks() {
   await Promise.resolve();
   await Promise.resolve();
@@ -202,6 +207,13 @@ describe('vue ui contract', () => {
           default: '',
         },
       },
+      /**
+       * Probe 输入组件渲染逻辑。
+       *
+       * @param props 组件属性。
+       * @param context 组件上下文。
+       * @returns 渲染函数。
+       */
       setup(props, { slots }) {
         return () =>
           h('div', { class: 'probe-input' }, [
@@ -256,6 +268,13 @@ describe('vue ui contract', () => {
     let receivedProps: Record<string, any> | null = null;
     const ProbeVxeSelect = defineComponent({
       name: 'VxeSelect',
+      /**
+       * 记录 `attrs` 的探针组件组合逻辑。
+       *
+       * @param _props 组件属性。
+       * @param context 组件上下文。
+       * @returns 渲染函数。
+       */
       setup(_, { attrs }) {
         receivedProps = attrs as Record<string, any>;
         return () => h('div');
@@ -296,6 +315,11 @@ describe('vue ui contract', () => {
     };
     const ProbeVxeInput = defineComponent({
       name: 'VxeInput',
+      /**
+       * VxeInput 探针组件渲染逻辑。
+       *
+       * @returns 渲染函数。
+       */
       setup() {
         return () => {
           renderMarkers.input += 1;
@@ -305,6 +329,11 @@ describe('vue ui contract', () => {
     });
     const ProbeVxeNumberInput = defineComponent({
       name: 'VxeNumberInput',
+      /**
+       * VxeNumberInput 探针组件渲染逻辑。
+       *
+       * @returns 渲染函数。
+       */
       setup() {
         return () => {
           renderMarkers.number += 1;
@@ -475,6 +504,13 @@ describe('vue ui contract', () => {
           default: '',
         },
       },
+      /**
+       * 字段 A 探针组件渲染逻辑。
+       *
+       * @param props 组件属性。
+       * @param context 组件上下文。
+       * @returns 渲染函数。
+       */
       setup(props, { emit }) {
         return () =>
           h('input', {
@@ -493,6 +529,12 @@ describe('vue ui contract', () => {
           default: '',
         },
       },
+      /**
+       * 字段 B 探针组件渲染逻辑。
+       *
+       * @param props 组件属性。
+       * @returns 渲染函数。
+       */
       setup(props) {
         return () => {
           fieldBRenders += 1;
@@ -687,6 +729,10 @@ describe('vue ui contract', () => {
     });
     await flushTasks();
 
+    /**
+     * 获取主提交按钮节点。
+     * @returns 主按钮组件包装器。
+     */
     const findPrimaryButton = () =>
       wrapper
         .findAll('button')
@@ -715,6 +761,11 @@ describe('vue ui contract', () => {
       components: {
         AdminSearchForm,
       },
+      /**
+       * 提供受控表单测试初始数据。
+       *
+       * @returns 组件模板绑定所需的 `schema` 与 `values`。
+       */
       data() {
         return {
           schema,
@@ -752,6 +803,11 @@ describe('vue ui contract', () => {
       components: {
         AdminForm,
       },
+      /**
+       * 提供 kebab-case 属性测试所需的初始数据。
+       *
+       * @returns 包含查询 schema 与初始 values 的对象。
+       */
       data() {
         return {
           schema,

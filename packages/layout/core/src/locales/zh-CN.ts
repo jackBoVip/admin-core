@@ -4,7 +4,7 @@
 
 export default {
   layout: {
-    // 通用
+    /* 通用 */
     common: {
       collapse: '收起',
       expand: '展开',
@@ -24,7 +24,7 @@ export default {
       loading: '加载中...',
     },
 
-    // 顶栏
+    /* 顶栏 */
     header: {
       title: '顶栏',
       toggleSidebar: '切换侧边栏',
@@ -39,7 +39,7 @@ export default {
       notifications: '通知',
     },
 
-    // 侧边栏
+    /* 侧边栏 */
     sidebar: {
       title: '侧边栏',
       collapse: '收起侧边栏',
@@ -48,7 +48,7 @@ export default {
       unpin: '取消固定',
     },
 
-    // 标签栏
+    /* 标签栏 */
     tabbar: {
       title: '标签栏',
       close: '关闭标签',
@@ -77,25 +77,25 @@ export default {
       },
     },
 
-    // 面包屑
+    /* 面包屑 */
     breadcrumb: {
       title: '面包屑',
       home: '首页',
     },
 
-    // 页脚
+    /* 页脚 */
     footer: {
       title: '页脚',
     },
 
-    // 功能区
+    /* 功能区 */
     panel: {
       title: '功能区',
       collapse: '收起功能区',
       expand: '展开功能区',
     },
 
-    // 小部件
+    /* 小部件 */
     widget: {
       fullscreen: {
         title: '全屏',
@@ -110,14 +110,14 @@ export default {
       },
     },
 
-    // 主题
+    /* 主题 */
     theme: {
       light: '浅色模式',
       dark: '深色模式',
       auto: '跟随系统',
     },
 
-    // 通知
+    /* 通知 */
     notification: {
       title: '通知',
       empty: '暂无通知',
@@ -131,7 +131,7 @@ export default {
       daysAgo: '天前',
     },
 
-    // 搜索
+    /* 搜索 */
     search: {
       placeholder: '搜索菜单、功能...',
       noResults: '未找到相关结果',
@@ -141,7 +141,7 @@ export default {
       close: '关闭',
     },
 
-    // 用户
+    /* 用户 */
     user: {
       guest: '访客',
       profile: '个人中心',
@@ -150,7 +150,7 @@ export default {
       logout: '退出登录',
     },
 
-    // 小部件 (旧版，保持兼容)
+    /* 小部件 (旧版，保持兼容) */
     widgetLegacy: {
       locale: {
         title: '语言',
@@ -205,7 +205,7 @@ export default {
       },
     },
 
-    // 菜单
+    /* 菜单 */
     menu: {
       search: '搜索菜单',
       searchPlaceholder: '输入关键词搜索菜单...',
@@ -214,7 +214,7 @@ export default {
       collapse: '收起全部',
     },
 
-    // 内容区
+    /* 内容区 */
     content: {
       loading: '页面加载中...',
       error: '页面加载失败',
@@ -222,7 +222,7 @@ export default {
       empty: '暂无内容',
     },
 
-    // 版权
+    /* 版权 */
     copyright: {
       powered: '技术支持',
       icp: '备案号',
@@ -230,4 +230,7 @@ export default {
   },
 };
 
+/**
+ * 布局语言包对象类型别名。
+ */
 export type LayoutLocale = typeof import('./zh-CN').default;

@@ -1,11 +1,26 @@
+/**
+ * Form Core 字段映射工具。
+ * @description 提供日期区间、字符串数组等字段值映射与反向映射能力。
+ */
 import { deleteByPath, getByPath, setByPath } from './path';
 import type { ArrayToStringFields, FieldMappingTime } from '../types';
 
 
+/**
+ * 数字补零。
+ * @param value 数值。
+ * @param length 目标长度。
+ * @returns 补零后的字符串。
+ */
 function pad(value: number, length = 2) {
   return String(value).padStart(length, '0');
 }
 
+/**
+ * 将输入值尽可能转换为合法 `Date`。
+ * @param value 原始值。
+ * @returns `Date` 或 `null`。
+ */
 function asDate(value: any): Date | null {
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value;
@@ -39,6 +54,12 @@ function asDate(value: any): Date | null {
   return null;
 }
 
+/**
+ * 按给定模式格式化日期。
+ * @param date 日期对象。
+ * @param pattern 格式化模式。
+ * @returns 格式化后的日期字符串。
+ */
 function formatDatePattern(date: Date, pattern: string) {
   const tokens: Record<string, string> = {
     YYYY: String(date.getFullYear()),
@@ -53,6 +74,12 @@ function formatDatePattern(date: Date, pattern: string) {
   return pattern.replace(/YYYY|YY|MM|DD|HH|mm|ss/g, (token) => tokens[token] ?? token);
 }
 
+/**
+ * 格式化日期类值，支持 dayjs/moment 风格对象与原生日期值。
+ * @param value 原始值。
+ * @param format 日期格式。
+ * @returns 格式化结果。
+ */
 function formatDateLike(value: any, format: string) {
   if (value === undefined || value === null || value === '') {
     return value;
@@ -62,7 +89,7 @@ function formatDateLike(value: any, format: string) {
     try {
       return value.format(format);
     } catch {
-      // ignore and fallback
+      /* ignore and fallback */
     }
   }
 
@@ -74,6 +101,12 @@ function formatDateLike(value: any, format: string) {
   return formatDatePattern(date, format);
 }
 
+/**
+ * 将值转换为数组。
+ * @param value 原始值。
+ * @param separator 字符串分隔符。
+ * @returns 数组值。
+ */
 function normalizeToArray(value: any, separator: string) {
   if (Array.isArray(value)) return value;
   if (typeof value === 'string') {
@@ -83,11 +116,24 @@ function normalizeToArray(value: any, separator: string) {
   return value;
 }
 
+/**
+ * 将值转换为字符串。
+ * @param value 原始值。
+ * @param separator 数组拼接分隔符。
+ * @returns 字符串值。
+ */
 function normalizeToString(value: any, separator: string) {
   if (Array.isArray(value)) return value.join(separator);
   return value;
 }
 
+/**
+ * 按字段列表执行数组与字符串互转。
+ * @param values 值对象。
+ * @param fields 字段路径列表。
+ * @param separator 分隔符。
+ * @param mode 转换模式。
+ */
 function processFields(
   values: Record<string, any>,
   fields: string[],
@@ -105,6 +151,13 @@ function processFields(
   }
 }
 
+/**
+ * 根据 `arrayToStringFields` 配置执行字段值互转。
+ * @param values 原始值对象。
+ * @param config 互转配置。
+ * @param mode 转换模式。
+ * @returns 转换后的值对象。
+ */
 export function mapArrayStringFields(
   values: Record<string, any>,
   config: ArrayToStringFields | undefined,
@@ -135,6 +188,12 @@ export function mapArrayStringFields(
   return mutable;
 }
 
+/**
+ * 根据时间映射配置拆分时间区间字段。
+ * @param values 原始值对象。
+ * @param mapping 时间映射配置。
+ * @returns 转换后的值对象。
+ */
 export function mapFieldMappingTime(
   values: Record<string, any>,
   mapping: FieldMappingTime | undefined

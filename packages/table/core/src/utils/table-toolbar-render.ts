@@ -1,3 +1,7 @@
+/**
+ * Table Core 工具栏渲染映射工具。
+ * @description 负责将工具栏动作定义转换为渲染态按钮与工具项模型。
+ */
 import type { ToolbarToolConfig } from '../types';
 import type {
   ResolvedToolbarActionButtonClassState,
@@ -14,6 +18,19 @@ import {
   isTablePlainObject,
 } from './table-permission';
 
+/**
+ * 解析工具栏动作按钮渲染态时的附加参数。
+ */
+export interface ResolveToolbarActionButtonRenderStateOptions {
+  /** 渲染键名前缀。 */
+  keyPrefix?: string;
+}
+
+/**
+ * 规范化工具项图标类名。
+ * @param icon 原始图标配置。
+ * @returns 可用图标类名；无效时返回 `undefined`。
+ */
 function normalizeToolbarToolIconClass(icon: unknown) {
   if (!isTableNonEmptyString(icon)) {
     return undefined;
@@ -21,6 +38,11 @@ function normalizeToolbarToolIconClass(icon: unknown) {
   return icon.trim();
 }
 
+/**
+ * 解析工具项展示态（图标/文本/仅图标模式）。
+ * @param tool 工具项信息。
+ * @returns 标准化后的展示态对象。
+ */
 export function resolveToolbarActionPresentation(
   tool?: Pick<ResolvedToolbarActionTool, 'icon' | 'iconOnly' | 'text' | 'title'> | null
 ): ResolvedToolbarActionPresentation {
@@ -39,6 +61,12 @@ export function resolveToolbarActionPresentation(
   };
 }
 
+/**
+ * 规范化类名输入为类名数组。
+ * 支持字符串、数组与对象语法（Vue/React 常见 class 写法）。
+ * @param value 原始类名输入。
+ * @returns 扁平化且过滤后的类名数组。
+ */
 function normalizeToolbarClassTokens(value: unknown): string[] {
   if (isTableNonEmptyString(value)) {
     return value
@@ -58,6 +86,12 @@ function normalizeToolbarClassTokens(value: unknown): string[] {
   return [];
 }
 
+/**
+ * 解析工具栏动作按钮的类名状态。
+ * 会结合按钮类型、主题、图标模式和外部 class 配置生成最终类名列表。
+ * @param tool 工具项配置。
+ * @returns 包含类名集合与展示态的结果。
+ */
 export function resolveToolbarActionButtonClassState(
   tool?: (null | Pick<ToolbarToolConfig, 'attrs' | 'type'> | Record<string, any>)
 ): ResolvedToolbarActionButtonClassState {
@@ -88,11 +122,16 @@ export function resolveToolbarActionButtonClassState(
   };
 }
 
+/**
+ * 解析工具栏动作按钮渲染态。
+ * 会清理 `attrs` 中 class 相关字段并生成稳定渲染 key。
+ * @param tool 工具项配置。
+ * @param options 渲染选项。
+ * @returns 可直接用于渲染层的按钮状态对象。
+ */
 export function resolveToolbarActionButtonRenderState(
   tool: null | Record<string, any> | undefined,
-  options: {
-    keyPrefix?: string;
-  } = {}
+  options: ResolveToolbarActionButtonRenderStateOptions = {}
 ): ResolvedToolbarActionButtonRenderState {
   const sourceTool = isTablePlainObject(tool) ? tool : {};
   const attrs = isTablePlainObject(sourceTool.attrs)

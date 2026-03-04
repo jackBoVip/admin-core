@@ -1,3 +1,6 @@
+/**
+ * 布局面板折叠状态控制器测试。
+ */
 import { describe, expect, it } from 'vitest';
 import { createLayoutPanelStateController } from '../utils';
 

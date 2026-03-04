@@ -1,3 +1,6 @@
+/**
+ * 布局刷新运行时与刷新控制器行为测试。
+ */
 import { describe, expect, it, vi } from 'vitest';
 import { createLayoutRefreshController, createLayoutRefreshRuntime } from '../utils';
 

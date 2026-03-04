@@ -26,7 +26,12 @@ import zhCN from 'antd/locale/zh_CN';
 // 样式
 import './styles/index.css';
 
-initPreferences({ namespace: 'admin-core' });
+/**
+ * 偏好系统初始化参数。
+ */
+const preferencesInitOptions = { namespace: 'admin-core' };
+
+initPreferences(preferencesInitOptions);
 
 setupAdminPageReact({
   form: {
@@ -72,7 +77,14 @@ setupAdminTabsReact({
   },
 });
 
+/**
+ * React 示例应用 Provider 组合器。
+ * @description 注入 antd 主题、国际化以及路由上下文。
+ */
 function AppProviders() {
+  /**
+   * antd 主题配置（由偏好设置驱动）。
+   */
   const antdThemeConfig = useAdminAntdTheme({
     algorithms: {
       dark: antdTheme.darkAlgorithm,
@@ -80,7 +92,15 @@ function AppProviders() {
     },
     cssVar: { key: 'admin-core' },
   });
+
+  /**
+   * 当前偏好设置快照。
+   */
   const { preferences } = usePreferences();
+
+  /**
+   * antd 国际化配置。
+   */
   const antdLocale =
     preferences.app.locale === 'en-US'
       ? enUS
@@ -95,7 +115,12 @@ function AppProviders() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+/**
+ * 应用挂载根节点。
+ */
+const rootElement = document.getElementById('root')!;
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <AppProviders />
   </React.StrictMode>

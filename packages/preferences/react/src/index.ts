@@ -28,7 +28,7 @@
  * ```
  */
 
-// Hooks
+/** 偏好系统 Hooks 与初始化 API（React）。 */
 export {
   destroyPreferences,
   getPreferencesManager,
@@ -47,25 +47,25 @@ export {
   type UseDebouncedValueReturn,
 } from './hooks';
 
-// Components
+/** 组件导出（React）。 */
 export {
-  // Icon 组件
+  /** 图标组件。 */
   Icon,
   AdminIcon,
   LayoutIcon,
   AdminLayoutIcon,
   type IconProps,
   type LayoutIconProps,
-  // 主组件（推荐）
+  /** 主组件（推荐） */
   PreferencesProvider,
   usePreferencesContext,
   type PreferencesProviderProps,
-  // 单独使用（高级场景）
+  /** 单独使用（高级场景） */
   PreferencesDrawer,
   PreferencesTrigger,
   type PreferencesDrawerProps,
   type PreferencesTriggerProps,
-  // Tab 组件（可独立使用）
+  /** 页签组件（可独立使用）。 */
   AppearanceTab,
   LayoutTab,
   ShortcutKeysTab,
@@ -74,7 +74,7 @@ export {
   type LayoutTabProps,
   type ShortcutKeysTabProps,
   type GeneralTabProps,
-  // 基础组件
+  /** 基础组件 */
   PreferencesBlock,
   PreferencesSwitchItem,
   PreferencesSelectItem,
@@ -85,9 +85,9 @@ export {
   type PreferencesSliderItemProps,
 } from './components';
 
-// Re-export core types and utilities for convenience
+/** 便捷转导 core 层类型与工具。 */
 export {
-  // Types
+  /** 核心类型。 */
   type AppPreferences,
   type BreadcrumbPreferences,
   type BuiltinThemePreset,
@@ -111,7 +111,7 @@ export {
   type ThemePreferences,
   type TransitionPreferences,
   type WidgetPreferences,
-  // Drawer UI Config Types
+  /** 抽屉 UI 配置类型。 */
   type FeatureItemConfig,
   type FeatureBlockConfig,
   type AppearanceTabConfig,
@@ -121,16 +121,16 @@ export {
   type HeaderActionsConfig,
   type FooterActionsConfig,
   type PreferencesDrawerUIConfig,
-  // Constants
+  /** 常量。 */
   BUILT_IN_THEME_PRESETS,
   COLOR_PRESETS,
   DEFAULT_PREFERENCES,
   LAYOUT_OPTIONS,
   PAGE_TRANSITION_OPTIONS,
   TABS_STYLE_OPTIONS,
-  // Assets
+  /** 资源。 */
   defaultLockScreenBg,
-  // Locales
+  /** 国际化资源。 */
   enUS,
   getLocaleLabel,
   getLocaleMessages,

@@ -63,6 +63,7 @@ export const FONT_SCALE_PRESETS = [
  * 字体缩放 CSS 变量名
  */
 export const FONT_SCALE_CSS_VAR = '--font-scale';
+/** 基础字号 CSS 变量名。 */
 export const FONT_SIZE_BASE_CSS_VAR = '--font-size-base';
 
 /**

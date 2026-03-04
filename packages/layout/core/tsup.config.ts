@@ -1,6 +1,9 @@
 import { defineConfig } from 'tsup';
 import { createCoreLibraryTsupConfig } from '../../../internal/build-config/tsup.js';
 
+/**
+ * layout-core 包构建配置。
+ */
 export default defineConfig(
   createCoreLibraryTsupConfig({
     entry: {

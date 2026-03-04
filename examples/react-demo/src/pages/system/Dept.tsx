@@ -1,3 +1,7 @@
+/**
+ * 部门管理示例页。
+ * @description 展示组织层级数据与基础操作入口。
+ */
 export default function SystemDept() {
   return (
     <div className="page-container">

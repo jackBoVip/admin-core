@@ -265,6 +265,12 @@ describe('form api', () => {
           label: '金额区间',
           rules: createRangeRule({
             message: '金额区间必须从小到大',
+            /**
+             * 将区间输入值归一化为数值类型，便于后续比较。
+             *
+             * @param value 原始输入值。
+             * @returns 转换后的数值。
+             */
             normalize(value) {
               return Number(value);
             },
@@ -365,6 +371,12 @@ describe('form api', () => {
         {
           component: 'password',
           dependencies: {
+            /**
+             * 基于主密码字段动态生成确认密码校验规则。
+             *
+             * @param values 当前表单值快照。
+             * @returns Zod 校验器。
+             */
             rules(values) {
               return z
                 .string()
@@ -550,6 +562,10 @@ describe('form api', () => {
     const querySelector = vi.fn(() => null);
     const scrollIntoView = vi.fn();
 
+    /**
+     * 测试用元素桩。
+     * @description 仅实现 `scrollIntoView`，用于验证错误字段滚动回退逻辑。
+     */
     class FakeElement {
       scrollIntoView = scrollIntoView;
     }
@@ -580,6 +596,10 @@ describe('form api', () => {
     const originalEvent = (globalThis as any).Event;
     const dispatchEvent = vi.fn();
 
+    /**
+     * 测试用事件桩。
+     * @description 模拟浏览器 `Event` 构造行为，供 resize 派发断言使用。
+     */
     class FakeEvent {
       type: string;
       constructor(type: string) {
@@ -678,6 +698,12 @@ describe('form api', () => {
           component: 'input',
           dependencies: {
             triggerFields: ['controller'],
+            /**
+             * 根据控制字段动态决定目标字段是否显示。
+             *
+             * @param values 当前表单值快照。
+             * @returns `true` 时显示目标字段。
+             */
             show(values) {
               return values.controller === 'x';
             },
@@ -700,6 +726,11 @@ describe('form api', () => {
   it('handleValuesChange payload should keep unchanged branches stable', async () => {
     const payloads: Record<string, any>[] = [];
     const api = createFormApi({
+      /**
+       * 收集每次值变更后派发的 payload。
+       *
+       * @param values 当前完整表单值。
+       */
       handleValuesChange(values) {
         payloads.push(values);
       },

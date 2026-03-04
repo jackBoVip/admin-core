@@ -1,6 +1,6 @@
 /**
- * 偏好设置接口定义
- * @description 完整的偏好设置类型定义
+ * 偏好设置类型定义集合。
+ * @description 统一描述后台系统在布局、主题、导航、组件显隐等维度的可配置项。
  */
 
 import type {
@@ -20,7 +20,8 @@ import type {
 import type { BuiltinThemeType, PageTransitionType, ThemeModeType } from './theme';
 
 /**
- * 应用偏好设置
+ * 应用级偏好设置。
+ * @description 定义与应用整体行为相关的配置，例如布局模式、语言、全局色彩能力和系统策略。
  */
 export interface AppPreferences {
   /** 权限模式 */
@@ -94,7 +95,8 @@ export interface AppPreferences {
 }
 
 /**
- * 面包屑偏好设置
+ * 面包屑偏好设置。
+ * @description 控制面包屑是否展示、展示风格与首页节点策略。
  */
 export interface BreadcrumbPreferences {
   /** 启用面包屑 */
@@ -110,7 +112,8 @@ export interface BreadcrumbPreferences {
 }
 
 /**
- * 版权偏好设置
+ * 版权偏好设置。
+ * @description 定义页脚版权模块的展示开关与文案链接内容。
  */
 export interface CopyrightPreferences {
   /** 公司名称 */
@@ -121,16 +124,17 @@ export interface CopyrightPreferences {
   date: string;
   /** 启用版权信息 */
   enable: boolean;
-  /** ICP 备案号 */
+  /** 备案编号 */
   icp: string;
-  /** ICP 链接 */
+  /** 备案信息链接 */
   icpLink: string;
   /** 在设置面板中显示 */
   settingShow?: boolean;
 }
 
 /**
- * 页脚偏好设置
+ * 页脚偏好设置。
+ * @description 控制页脚区域是否启用、是否固定以及高度。
  */
 export interface FooterPreferences {
   /** 启用页脚 */
@@ -142,7 +146,8 @@ export interface FooterPreferences {
 }
 
 /**
- * 顶栏偏好设置
+ * 顶栏偏好设置。
+ * @description 负责顶部导航栏的显示形态、尺寸参数以及菜单展现方式。
  */
 export interface HeaderPreferences {
   /** 启用顶栏 */
@@ -172,21 +177,23 @@ export interface HeaderPreferences {
 }
 
 /**
- * Logo 偏好设置
+ * 应用标识偏好设置。
+ * @description 约束 Logo 资源与不同主题模式下的展示策略。
  */
 export interface LogoPreferences {
-  /** 启用 Logo */
+  /** 启用应用标识 */
   enable: boolean;
   /** 图片适应方式 */
   fit: 'contain' | 'cover' | 'fill' | 'none' | 'scale-down';
-  /** Logo 图片 URL */
+  /** 应用标识图片地址 */
   source: string;
-  /** 暗色模式 Logo URL（可选） */
+  /** 暗色模式应用标识图片地址（可选） */
   sourceDark?: string;
 }
 
 /**
- * 导航偏好设置
+ * 导航偏好设置。
+ * @description 用于控制菜单展开方式与导航视觉样式。
  */
 export interface NavigationPreferences {
   /** 手风琴模式（同级只展开一个） */
@@ -198,7 +205,8 @@ export interface NavigationPreferences {
 }
 
 /**
- * 侧边栏偏好设置
+ * 侧边栏偏好设置。
+ * @description 定义侧边栏宽度、折叠策略、悬停行为和可见性。
  */
 export interface SidebarPreferences {
   /** 点击目录自动激活子菜单 */
@@ -230,7 +238,8 @@ export interface SidebarPreferences {
 }
 
 /**
- * 快捷键偏好设置
+ * 快捷键偏好设置。
+ * @description 定义系统级快捷键能力总开关及各项功能快捷键开关。
  */
 export interface ShortcutKeyPreferences {
   /** 启用全局快捷键 */
@@ -246,7 +255,8 @@ export interface ShortcutKeyPreferences {
 }
 
 /**
- * 标签栏偏好设置
+ * 标签栏偏好设置。
+ * @description 控制页签交互能力（拖拽、滚轮、中键关闭）与展示风格。
  */
 export interface TabbarPreferences {
   /** 可拖拽排序 */
@@ -312,7 +322,8 @@ export interface ThemePreferences {
 }
 
 /**
- * 过渡动画偏好设置
+ * 过渡动画偏好设置。
+ * @description 定义页面切换动画、加载动画和进度条展示策略。
  */
 export interface TransitionPreferences {
   /** 启用页面切换动画 */
@@ -326,7 +337,8 @@ export interface TransitionPreferences {
 }
 
 /**
- * 小部件偏好设置
+ * 小部件偏好设置。
+ * @description 控制顶栏工具小部件的显示开关。
  */
 export interface WidgetPreferences {
   /** 全屏按钮 */
@@ -350,7 +362,7 @@ export interface WidgetPreferences {
 }
 
 /**
- * 功能区位置类型
+ * 功能区停靠位置类型。
  */
 export type PanelPositionType = 'left' | 'right';
 
@@ -374,7 +386,8 @@ export interface PanelPreferences {
 }
 
 /**
- * 锁屏偏好设置
+ * 锁屏偏好设置。
+ * @description 定义锁屏状态、密码数据与自动锁定策略。
  */
 export interface LockScreenPreferences {
   /** 是否已锁定 */
@@ -388,7 +401,8 @@ export interface LockScreenPreferences {
 }
 
 /**
- * 完整偏好设置
+ * 完整偏好设置对象。
+ * @description 聚合所有子模块偏好，用作持久化、初始化和运行时同步的数据基线。
  */
 export interface Preferences {
   /** 应用配置 */
@@ -403,7 +417,7 @@ export interface Preferences {
   header: HeaderPreferences;
   /** 锁屏配置 */
   lockScreen: LockScreenPreferences;
-  /** Logo 配置 */
+  /** 应用标识配置 */
   logo: LogoPreferences;
   /** 导航配置 */
   navigation: NavigationPreferences;
@@ -424,6 +438,6 @@ export interface Preferences {
 }
 
 /**
- * 偏好设置键名类型
+ * 偏好设置顶层键名类型。
  */
 export type PreferencesKeys = keyof Preferences;

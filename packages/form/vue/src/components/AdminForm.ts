@@ -1,3 +1,7 @@
+/**
+ * Form Vue 主表单组件实现。
+ * @description 负责字段渲染、值同步、动作区布局与查询模式交互行为。
+ */
 import type { PropType, VNode } from 'vue';
 
 import type { RenderFieldItem, ResolvedComponentBinding } from '@admin-core/form-core';
@@ -47,8 +51,17 @@ import { useLocaleVersion } from '../composables/useLocaleVersion';
 import type { AdminFormComponentProps } from '../types';
 import { normalizeVueAttrs } from '../utils/attrs';
 
+/** 需要自动开启 VXE `transfer` 的语义组件键集合。 */
 const VXE_TRANSFER_KEYS = new Set(['select', 'date', 'date-range', 'range', 'time']);
 
+/**
+ * 判断当前字段是否需要自动开启 `transfer`（弹层挂载到 body）。
+ * 主要用于 VXE 的日期/选择类组件，避免在容器内被裁剪。
+ *
+ * @param resolved 字段组件解析结果。
+ * @param field 字段渲染项。
+ * @returns 命中策略时返回 `true`。
+ */
 function shouldEnableTransfer(
   resolved: ResolvedComponentBinding<any>,
   field: RenderFieldItem
@@ -67,6 +80,12 @@ function shouldEnableTransfer(
   return `${componentName}`.toLowerCase().includes('vxe');
 }
 
+/**
+ * 判断解析后的组件是否来自 VXE 生态。
+ *
+ * @param resolved 字段组件解析结果。
+ * @returns 是否为 VXE 组件。
+ */
 function isVxeResolvedComponent(resolved: ResolvedComponentBinding<any>) {
   if (resolved.library === 'vxe') {
     return true;
@@ -78,6 +97,13 @@ function isVxeResolvedComponent(resolved: ResolvedComponentBinding<any>) {
   return `${componentName}`.toLowerCase().includes('vxe');
 }
 
+/**
+ * 判断是否应将普通 `input[type=number]` 替换为 `VxeNumberInput`。
+ *
+ * @param resolved 字段组件解析结果。
+ * @param rawFieldProps 字段原始组件属性。
+ * @returns 命中替换条件时返回 `true`。
+ */
 function shouldUseVxeNumberInput(
   resolved: ResolvedComponentBinding<any>,
   rawFieldProps: Record<string, any>
@@ -88,6 +114,14 @@ function shouldUseVxeNumberInput(
   return `${rawFieldProps?.type ?? ''}`.toLowerCase() === 'number';
 }
 
+/**
+ * 解析 `renderComponentContent` 回调返回值并转换为 Vue slots 结构。
+ *
+ * @param field 字段渲染项。
+ * @param values 当前表单值。
+ * @param api 表单 API 实例。
+ * @returns Vue 可消费的 slots 对象；无内容时返回 `undefined`。
+ */
 function resolveRenderComponentSlots(
   field: RenderFieldItem,
   values: Record<string, any>,
@@ -108,6 +142,10 @@ function resolveRenderComponentSlots(
   return Object.keys(slots).length > 0 ? slots : undefined;
 }
 
+/**
+ * 单个字段渲染组件。
+ * 负责字段级状态同步、组件事件桥接与标签/错误态展示。
+ */
 const AdminFormField = defineComponent({
   name: 'AdminFormField',
   props: {
@@ -136,6 +174,11 @@ const AdminFormField = defineComponent({
       type: Object as PropType<Record<string, any>>,
     },
   },
+  /**
+   * 表单字段渲染逻辑。
+   * @param props 字段组件属性。
+   * @returns 渲染函数。
+   */
   setup(props) {
     const currentInstance = getCurrentInstance();
     const appComponents = currentInstance?.appContext.components ?? {};
@@ -356,6 +399,10 @@ const AdminFormField = defineComponent({
   },
 });
 
+/**
+ * Vue 表单主组件。
+ * 负责表单状态管理、字段渲染、查询模式动作区和提交交互。
+ */
 export const AdminForm = defineComponent({
   name: 'AdminForm',
   inheritAttrs: false,
@@ -378,6 +425,12 @@ export const AdminForm = defineComponent({
       type: Array as PropType<string[] | undefined>,
     },
   },
+  /**
+   * 表单主组件组合逻辑。
+   * @param rawProps 组件属性。
+   * @param context 组件上下文。
+   * @returns 渲染函数。
+   */
   setup(rawProps: AdminFormComponentProps, { attrs, emit, slots, expose }) {
     const initialFormProps = pickFormProps(normalizeVueAttrs(attrs as any));
     const api = rawProps.formApi ?? createFormApi(initialFormProps);
@@ -495,6 +548,13 @@ export const AdminForm = defineComponent({
       getFormApi: () => api,
     });
 
+    /**
+     * 渲染单个字段节点。
+     *
+     * @param field 字段配置。
+     * @param index 字段序号。
+     * @returns 字段节点；组件无法解析时返回错误提示节点。
+     */
     const renderField = (field: RenderFieldItem, index: number): VNode | null => {
       const fieldSlot = slots[field.fieldName];
 
@@ -584,12 +644,26 @@ export const AdminForm = defineComponent({
       });
     });
 
+    /**
+     * 构建动作按钮节点列表。
+     * @returns 动作区域节点数组。
+     */
     const buildActionNodes = () => {
+      /**
+       * 处理默认重置动作。
+       * @returns 无返回值。
+       */
       const handleResetAction = async () => {
         await api.resetForm();
       };
 
       const buttons: any[] = [];
+
+      /**
+       * 将指定插槽渲染结果推入按钮列表。
+       * @param slotName 插槽名。
+       * @returns 无返回值。
+       */
       const pushSlotNodes = (slotName?: null | string) => {
         if (!slotName) {
           return;
@@ -647,6 +721,10 @@ export const AdminForm = defineComponent({
       return buttons.filter((node) => node !== null && node !== undefined);
     };
 
+    /**
+     * 渲染普通模式下位于网格外部的动作区。
+     * @returns 动作区节点；无需渲染时返回 `null`。
+     */
     const renderActionsOutsideGrid = () => {
       if (queryMode.value || !hasActionItems.value) {
         return null;

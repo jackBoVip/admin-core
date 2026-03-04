@@ -1,14 +1,34 @@
 /**
- * Tooltip positioning helpers
- * @description Position preference tooltips with fixed coordinates to avoid clipping.
+ * 偏好设置 Tooltip 定位工具
+ * @description 通过固定定位与边界裁剪，避免提示层在容器中被裁切。
  */
 import { isBrowser } from './platform';
 
+/** 提示层与触发节点的默认垂直间距（像素）。 */
 const DEFAULT_TOOLTIP_OFFSET = 8;
+/** 提示层箭头与触发节点的默认垂直间距（像素）。 */
 const DEFAULT_TOOLTIP_ARROW_OFFSET = 6;
+/** 提示层默认最大宽度（像素）。 */
 const DEFAULT_TOOLTIP_MAX_WIDTH = 240;
+/** 提示层在视口边缘保留的默认外边距（像素）。 */
 const DEFAULT_TOOLTIP_MARGIN = 12;
 
+/**
+ * Tooltip 节点集合。
+ */
+interface TooltipElements {
+  /** 提示层节点。 */
+  tooltip: HTMLDivElement;
+  /** 提示层箭头节点。 */
+  arrow: HTMLDivElement;
+}
+
+/**
+ * 解析长度值（支持 `px`/`rem`/`em`）。
+ * @param value 原始长度字符串。
+ * @param base 基准像素值（用于 `rem/em` 换算）。
+ * @returns 解析后的像素值；失败返回 `null`。
+ */
 const parseLength = (value: string, base: number): number | null => {
   const raw = value.trim();
   if (!raw) return null;
@@ -28,6 +48,12 @@ const parseLength = (value: string, base: number): number | null => {
   return Number.isFinite(num) ? num : null;
 };
 
+/**
+ * 读取根节点 CSS 变量长度值。
+ * @param name 变量名。
+ * @param fallback 回退值。
+ * @returns 解析后的像素值。
+ */
 const readRootLength = (name: string, fallback: number): number => {
   if (!isBrowser) return fallback;
   const root = document.documentElement;
@@ -38,15 +64,31 @@ const readRootLength = (name: string, fallback: number): number => {
   return parsed ?? fallback;
 };
 
+/**
+ * 将数值限制在指定区间。
+ * @param value 原始值。
+ * @param min 最小值。
+ * @param max 最大值。
+ * @returns 夹紧后的值。
+ */
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
+/**
+ * 查找最近的 tooltip 触发元素。
+ * @param eventTarget 事件目标。
+ * @returns 匹配到的触发元素。
+ */
 const findTooltipTarget = (eventTarget: EventTarget | null): HTMLElement | null => {
   const node = eventTarget as HTMLElement | null;
   if (!node) return null;
   return node.closest?.('[data-preference-tooltip]') as HTMLElement | null;
 };
 
-const createTooltipElements = (): { tooltip: HTMLDivElement; arrow: HTMLDivElement } => {
+/**
+ * 创建 tooltip 与箭头节点。
+ * @returns 节点对象。
+ */
+const createTooltipElements = (): TooltipElements => {
   const tooltip = document.createElement('div');
   tooltip.className = 'preferences-tooltip';
   tooltip.setAttribute('data-state', 'closed');
@@ -62,9 +104,9 @@ const createTooltipElements = (): { tooltip: HTMLDivElement; arrow: HTMLDivEleme
 };
 
 /**
- * Attach tooltip positioning on hover/focus.
- * @param root - Container element or document to listen on
- * @returns cleanup function
+ * 初始化偏好设置 Tooltip 悬浮/聚焦定位行为。
+ * @param root 事件委托容器，默认使用 `document`。
+ * @returns 清理函数，用于移除监听并销毁 Tooltip 节点。
  */
 export const setupPreferenceTooltip = (root?: HTMLElement | Document): (() => void) => {
   if (!isBrowser) return () => {};
@@ -75,6 +117,10 @@ export const setupPreferenceTooltip = (root?: HTMLElement | Document): (() => vo
   let currentTarget: HTMLElement | null = null;
   let rafId = 0;
 
+  /**
+   * 懒创建 tooltip 与箭头节点。
+   * @returns 无返回值。
+   */
   const ensureTooltip = () => {
     if (!tooltipEl || !arrowEl) {
       const created = createTooltipElements();
@@ -83,6 +129,11 @@ export const setupPreferenceTooltip = (root?: HTMLElement | Document): (() => vo
     }
   };
 
+  /**
+   * 计算并更新 tooltip 位置。
+   * @param target 当前触发节点。
+   * @returns 无返回值。
+   */
   const updatePosition = (target: HTMLElement) => {
     if (!tooltipEl || !arrowEl) return;
     const rect = target.getBoundingClientRect();
@@ -107,6 +158,11 @@ export const setupPreferenceTooltip = (root?: HTMLElement | Document): (() => vo
     arrowEl.style.top = `${arrowTop}px`;
   };
 
+  /**
+   * 显示 tooltip。
+   * @param target 当前触发节点。
+   * @returns 无返回值。
+   */
   const showTooltip = (target: HTMLElement) => {
     const content = target.getAttribute('data-preference-tooltip');
     if (!content) return;
@@ -125,6 +181,10 @@ export const setupPreferenceTooltip = (root?: HTMLElement | Document): (() => vo
     rafId = requestAnimationFrame(() => updatePosition(target));
   };
 
+  /**
+   * 隐藏 tooltip。
+   * @returns 无返回值。
+   */
   const hideTooltip = () => {
     if (tooltipEl) tooltipEl.setAttribute('data-state', 'closed');
     if (arrowEl) arrowEl.setAttribute('data-state', 'closed');
@@ -132,24 +192,43 @@ export const setupPreferenceTooltip = (root?: HTMLElement | Document): (() => vo
     currentTarget = null;
   };
 
+  /**
+   * 处理鼠标移入事件。
+   * @param event 事件对象。
+   * @returns 无返回值。
+   */
   const handleOver = (event: Event) => {
     const target = findTooltipTarget(event.target);
     if (!target || target === currentTarget) return;
     showTooltip(target);
   };
 
+  /**
+   * 处理焦点进入事件。
+   * @param event 事件对象。
+   * @returns 无返回值。
+   */
   const handleFocus = (event: Event) => {
     const target = findTooltipTarget(event.target);
     if (!target) return;
     showTooltip(target);
   };
 
+  /**
+   * 处理鼠标移出/失焦事件。
+   * @param event 事件对象。
+   * @returns 无返回值。
+   */
   const handleOut = (event: Event) => {
     const related = (event as MouseEvent).relatedTarget as HTMLElement | null;
     if (currentTarget && related && currentTarget.contains(related)) return;
     hideTooltip();
   };
 
+  /**
+   * 处理滚动/窗口尺寸变化事件。
+   * @returns 无返回值。
+   */
   const handleScroll = () => {
     if (currentTarget) updatePosition(currentTarget);
   };

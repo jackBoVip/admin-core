@@ -47,21 +47,51 @@ import {
   resetColumnCustomFlipTransforms,
 } from '../utils';
 
+/**
+ * 创建用于测试的内存版 `Storage` 对象。
+ * @returns 满足 `Storage` 接口的最小实现。
+ */
 function createMockStorage() {
   const bucket = new Map<string, string>();
   return {
+    /**
+     * 清空测试存储桶。
+     */
     clear() {
       bucket.clear();
     },
+    /**
+     * 读取指定键对应的值。
+     *
+     * @param key 存储键名。
+     * @returns 命中时返回字符串，否则返回 `null`。
+     */
     getItem(key: string) {
       return bucket.has(key) ? bucket.get(key) ?? null : null;
     },
+    /**
+     * 按索引返回键名。
+     *
+     * @param index 键索引。
+     * @returns 对应键名，不存在时返回 `null`。
+     */
     key(index: number) {
       return Array.from(bucket.keys())[index] ?? null;
     },
+    /**
+     * 删除指定键。
+     *
+     * @param key 待删除的键名。
+     */
     removeItem(key: string) {
       bucket.delete(key);
     },
+    /**
+     * 写入键值对。
+     *
+     * @param key 存储键名。
+     * @param value 存储值。
+     */
     setItem(key: string, value: string) {
       bucket.set(key, value);
     },

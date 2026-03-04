@@ -1,3 +1,6 @@
+/**
+ * tabs-core 选项归一化、激活态计算与语言订阅测试。
+ */
 import {
   createAdminTabsChangePayload,
   createAdminTabsClosePayload,

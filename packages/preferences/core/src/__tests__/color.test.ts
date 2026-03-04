@@ -59,7 +59,7 @@ describe('OKLCH 工具', () => {
 
   describe('oklchToHex', () => {
     it('应该转换为十六进制颜色', () => {
-      // oklchToHex 接收颜色字符串
+      /* `oklchToHex` 接收颜色字符串。 */
       const result = oklchToHex('oklch(0.5 0.15 250)');
       expect(result).toMatch(/^#[0-9a-fA-F]{6}$/);
     });
@@ -67,7 +67,7 @@ describe('OKLCH 工具', () => {
 
   describe('createOklch', () => {
     it('应该创建 OKLCH CSS 字符串', () => {
-      // createOklch 返回字符串
+      /* `createOklch` 返回字符串。 */
       const result = createOklch(0.6, 0.2, 250);
       expect(typeof result).toBe('string');
       expect(result).toContain('oklch');
@@ -89,7 +89,7 @@ describe('OKLCH 工具', () => {
 
   describe('adjustLightness', () => {
     it('应该调整亮度', () => {
-      // adjustLightness 接收颜色字符串
+      /* `adjustLightness` 接收颜色字符串。 */
       const original = 'oklch(0.5 0.2 250)';
       const result = adjustLightness(original, 0.1);
       expect(typeof result).toBe('string');

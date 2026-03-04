@@ -1,17 +1,18 @@
 /**
- * 快捷键管理工具
- * @description 处理全局快捷键的监听和匹配
+ * 快捷键管理工具。
+ * @description 处理全局快捷键的匹配、监听注册与动作回调分发。
  */
 
 import { SHORTCUT_KEY_BINDINGS } from '../config/defaults';
 import { isMacOs } from './platform';
 import type { Preferences } from '../types';
 
-// 缓存平台检测结果（避免每次调用都检测）
+/** 缓存平台检测结果（避免每次调用都检测）。 */
 let cachedIsMac: boolean | null = null;
 
 /**
- * 获取是否为 Mac 平台（带缓存）
+ * 获取是否为 Mac 平台（带缓存）。
+ * @returns 当前运行环境是否为 macOS。
  */
 function getIsMac(): boolean {
   if (cachedIsMac === null) {
@@ -21,7 +22,8 @@ function getIsMac(): boolean {
 }
 
 /**
- * 快捷键事件类型
+ * 快捷键事件类型。
+ * @description 对应偏好设置中可开关的全局快捷动作键。
  */
 export type ShortcutKeyAction =
   | 'globalPreferences'
@@ -30,31 +32,37 @@ export type ShortcutKeyAction =
   | 'globalLogout';
 
 /**
- * 快捷键回调函数映射
+ * 快捷键回调函数映射。
+ * @description 仅在匹配到对应快捷键且功能启用时触发。
  */
 export interface ShortcutKeyCallbacks {
+  /** 打开偏好设置回调。 */
   onPreferences?: () => void;
+  /** 打开全局搜索回调。 */
   onSearch?: () => void;
+  /** 触发锁屏回调。 */
   onLockScreen?: () => void;
+  /** 触发登出回调。 */
   onLogout?: () => void;
 }
 
 /**
- * 快捷键管理器配置
+ * 快捷键管理器配置。
  */
 export interface ShortcutManagerOptions {
-  /** 偏好设置（用于检查功能是否启用） */
+  /** 偏好设置读取函数（用于检查功能是否启用）。 */
   getPreferences: () => Preferences;
-  /** 回调函数 */
+  /** 快捷动作回调集合。 */
   callbacks: ShortcutKeyCallbacks;
-  /** 是否启用快捷键监听（默认 true） */
+  /** 是否启用快捷键监听（默认 `true`）。 */
   enabled?: boolean;
-  /** 可选的事件目标（默认 window） */
+  /** 可选事件目标（默认 `window`）。 */
   target?: Window | Document;
 }
 
 /**
- * 按键到 KeyboardEvent.code 的映射
+ * 按键到 `KeyboardEvent.code` 的映射。
+ * @description 用于将符号主键映射为标准 `KeyboardEvent.code`。
  */
 const KEY_CODE_MAP: Record<string, string> = {
   ',': 'Comma',
@@ -71,22 +79,22 @@ const KEY_CODE_MAP: Record<string, string> = {
 };
 
 /**
- * 检查键盘事件是否匹配指定的快捷键
- * @param event - 键盘事件
- * @param action - 快捷键动作标识
- * @returns 是否匹配
+ * 检查键盘事件是否匹配指定快捷键。
+ * @param event 键盘事件。
+ * @param action 快捷键动作标识。
+ * @returns 当前事件是否命中目标快捷键。
  */
 export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction): boolean {
-  // 防御性检查
+  /* 防御性检查。 */
   if (!event || !action) return false;
-  
+
   const binding = SHORTCUT_KEY_BINDINGS[action];
   if (!binding) return false;
 
   const isMac = getIsMac();
   const keys = isMac ? binding.keysMac : binding.keys;
 
-  // 检查修饰键
+  /* 检查修饰键。 */
   let needCtrl = false;
   let needAlt = false;
   let needShift = false;
@@ -98,14 +106,14 @@ export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction
     if (isMac && key === '⌘') needMeta = true;
   }
 
-  // Mac 上 ⌘ 对应 metaKey，Windows 上 Ctrl 对应 ctrlKey
+  /* Mac 上 ⌘ 对应 `metaKey`，Windows 上 Ctrl 对应 `ctrlKey`。 */
   const ctrlMatch = isMac ? event.metaKey === needMeta : event.ctrlKey === needCtrl;
   const altMatch = event.altKey === needAlt;
   const shiftMatch = event.shiftKey === needShift;
 
   if (!ctrlMatch || !altMatch || !shiftMatch) return false;
 
-  // 获取主键（非修饰键）
+  /* 获取主键（非修饰键）。 */
   let mainKey: string | undefined;
   for (const key of keys) {
     if (!['Ctrl', 'Alt', 'Shift', '⌘', '⌥', '⇧'].includes(key)) {
@@ -115,11 +123,11 @@ export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction
   }
   if (!mainKey) return false;
 
-  // 使用 event.code 匹配（更可靠，不受 Shift 影响）
+  /* 使用 `event.code` 匹配（更可靠，不受 Shift 影响）。 */
   const targetCode = KEY_CODE_MAP[mainKey] || `Key${mainKey.toUpperCase()}`;
   if (event.code === targetCode) return true;
 
-  // 备用：使用 event.key 匹配（处理字母键）
+  /* 备用：使用 `event.key` 匹配（处理字母键）。 */
   const pressedKey = event.key.toUpperCase();
   const targetKey = mainKey.toUpperCase();
   if (targetKey === pressedKey) return true;
@@ -128,15 +136,20 @@ export function matchShortcutKey(event: KeyboardEvent, action: ShortcutKeyAction
 }
 
 /**
- * 创建快捷键管理器
- * @param options - 配置选项
- * @returns 销毁函数
+ * 创建快捷键管理器。
+ * @param options 配置选项。
+ * @returns 销毁函数，用于移除已注册的键盘监听。
  */
 export function createShortcutManager(options: ShortcutManagerOptions): () => void {
   const { getPreferences, callbacks, enabled = true, target = window } = options;
 
+  /**
+   * 处理键盘按下事件并触发对应快捷动作。
+   * @param event 键盘事件。
+   * @returns 无返回值。
+   */
   const handleKeyDown = (event: KeyboardEvent) => {
-    // 防御性检查
+    /* 防御性检查。 */
     if (!enabled) return;
     let preferences: Preferences;
     try {
@@ -146,12 +159,12 @@ export function createShortcutManager(options: ShortcutManagerOptions): () => vo
       return;
     }
 
-    // 检查是否启用快捷键
+    /* 检查是否启用快捷键。 */
     if (!preferences.shortcutKeys.enable) {
       return;
     }
 
-    // 检查是否在输入框中（避免干扰输入）
+    /* 检查是否在输入框中（避免干扰输入）。 */
     const target = event.target;
     if (!target || !(target instanceof HTMLElement)) {
       return;
@@ -164,7 +177,7 @@ export function createShortcutManager(options: ShortcutManagerOptions): () => vo
       return;
     }
 
-    // 匹配并执行快捷键
+    /* 匹配并执行快捷键。 */
     if (
       preferences.shortcutKeys.globalPreferences &&
       matchShortcutKey(event, 'globalPreferences')
@@ -202,19 +215,19 @@ export function createShortcutManager(options: ShortcutManagerOptions): () => vo
     }
   };
 
-  // 注册事件监听
+  /* 注册事件监听。 */
   target.addEventListener('keydown', handleKeyDown as EventListener);
 
-  // 返回销毁函数
+  /* 返回销毁函数。 */
   return () => {
     target.removeEventListener('keydown', handleKeyDown as EventListener);
   };
 }
 
 /**
- * 快捷键 Hook 的返回类型
+ * 快捷键 Hook 的返回类型。
  */
 export interface UseShortcutKeysResult {
-  /** 销毁快捷键监听 */
+  /** 销毁快捷键监听。 */
   destroy: () => void;
 }
